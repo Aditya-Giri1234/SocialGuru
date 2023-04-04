@@ -10,4 +10,6 @@
 
     <color name="orange">#CB8010</color>
     <color name="green">#23B929</color>
+    <color name="grey">#646262</color>
+    <color name="black_shed" >#88373434</color>
 </resources>
