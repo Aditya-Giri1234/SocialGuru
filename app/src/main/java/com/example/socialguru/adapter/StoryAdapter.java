@@ -1,6 +1,9 @@
 package com.example.socialguru.adapter;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,7 +39,9 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.ViewHolder> 
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
      StoryModel model=list.get(position);
      holder.profile_image.setImageResource(model.getProfile_image());
-     holder.story.setImageResource(model.getStory());
+     Drawable drawable=context.getResources().getDrawable(model.getStory());
+     Bitmap bitmap=((BitmapDrawable)drawable).getBitmap();
+     holder.story.setImageBitmap(Bitmap.createScaledBitmap(bitmap,bitmap.getWidth(),bitmap.getHeight(),false));
      holder.storyType.setImageResource(model.getStoryType());
      holder.name.setText(model.getName());
 

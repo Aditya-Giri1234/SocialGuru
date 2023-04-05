@@ -8,22 +8,23 @@
         android:id="@+id/story"
         android:layout_width="@dimen/_130mdp"
         android:layout_height="@dimen/_85mdp"
+        android:layout_marginEnd="16dp"
         android:scaleType="centerCrop"
-        android:src="@drawable/pic2"
+        android:src="@drawable/pic4"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:riv_border_color="#333333"
-        app:riv_border_width="2dip"
         app:riv_corner_radius="10dip"
         app:riv_mutate_background="true"
-        app:riv_tile_mode="repeat" />
+
+        />
 
     <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/profile_image"
         android:layout_width="@dimen/_30mdp"
         android:layout_height="@dimen/_30mdp"
+        android:layout_marginLeft="4dp"
         android:layout_marginTop="4dp"
-        android:layout_marginRight="4dp"
         android:padding="4dp"
         android:src="@drawable/pic1"
         app:layout_constraintLeft_toLeftOf="@id/story"
@@ -41,8 +42,8 @@
 
     <ImageView
         android:id="@+id/storyType"
-        android:layout_width="30dp"
-        android:layout_height="20dp"
+        android:layout_width="@dimen/_40mdp"
+        android:layout_height="@dimen/_30mdp"
         android:layout_marginTop="4dp"
         android:layout_marginRight="8dp"
         app:layout_constraintRight_toRightOf="@id/story"
