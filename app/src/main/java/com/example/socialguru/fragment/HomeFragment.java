@@ -6,23 +6,34 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.socialguru.R;
-import com.example.socialguru.adapter.DashboardAdapter;
+import com.example.socialguru.adapter.PostAdapter;
 import com.example.socialguru.adapter.StoryAdapter;
-import com.example.socialguru.model.DashboardModel;
+import com.example.socialguru.model.Post;
 import com.example.socialguru.model.StoryModel;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class HomeFragment extends Fragment {
 
-    RecyclerView storyRv,dashboardRv;
+    RecyclerView storyRv,postRv;
     ArrayList<StoryModel> list;
-    ArrayList<DashboardModel> dashboardList;
+    ArrayList<Post> postList;
+    PostAdapter postAdapter;
+
+    FirebaseDatabase database;
+    FirebaseAuth auth;
 
 
 
@@ -32,6 +43,8 @@ public class HomeFragment extends Fragment {
         // Inflate the layout for this fragment
         View view= inflater.inflate(R.layout.fragment_home, container, false);
         storyRv=view.findViewById(R.id.storyRV);
+        database=FirebaseDatabase.getInstance();
+        auth=FirebaseAuth.getInstance();
         list=new ArrayList<>();
         list.add(new StoryModel(R.drawable.pic1,R.drawable.camera,R.drawable.pic2,"Aditya"));
         list.add(new StoryModel(R.drawable.pic2,R.drawable.camera,R.drawable.pic1,"Raju"));
@@ -46,18 +59,36 @@ public class HomeFragment extends Fragment {
         storyRv.setNestedScrollingEnabled(false);
         storyRv.setAdapter(storyAdapter);
 
-        dashboardRv=view.findViewById(R.id.dashboardRv);
-        dashboardList=new ArrayList<>();
-        dashboardList.add(new DashboardModel(R.drawable.pic3,R.drawable.save,R.drawable.pic2,"Aditya","love travelling","100","50","25"));
-        dashboardList.add(new DashboardModel(R.drawable.pic1,R.drawable.save,R.drawable.pic5,"Raju","Go to the hell","300","500","250"));
-        dashboardList.add(new DashboardModel(R.drawable.pic4,R.drawable.save,R.drawable.pic1,"Upendra","gate Smasher","400","250","90"));
-        dashboardList.add(new DashboardModel(R.drawable.pic2,R.drawable.save,R.drawable.pic3,"Ritu","Love to watch movie","70","90","10"));
-        dashboardList.add(new DashboardModel(R.drawable.pic5,R.drawable.save,R.drawable.pic1,"Neha","Love Study","700","100","250"));
 
-        DashboardAdapter dashboardAdapter=new DashboardAdapter(getContext(),dashboardList);
-        dashboardRv.setLayoutManager(new LinearLayoutManager(getContext()));
-        dashboardRv.setNestedScrollingEnabled(false);
-        dashboardRv.setAdapter(dashboardAdapter);
+        // Dashboard RecyclerView
+
+        postRv=view.findViewById(R.id.dashboardRv);
+        postList=new ArrayList<>();
+
+        database.getReference().child("Posts").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                postList.clear();
+                for (DataSnapshot dataSnapshot:snapshot.getChildren()){
+                    Post post=dataSnapshot.getValue(Post.class);
+                    post.setPostId(dataSnapshot.getKey());
+                    postList.add(post);
+                }
+                Collections.reverse(postList);
+                postAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+
+         postAdapter=new PostAdapter(getContext(),postList);
+        postRv.setLayoutManager(new LinearLayoutManager(getContext()));
+        postRv.setNestedScrollingEnabled(false);
+        postRv.setAdapter(postAdapter);
         return view;
     }
 }

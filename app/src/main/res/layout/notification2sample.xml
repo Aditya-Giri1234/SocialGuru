@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/profile_image"
+        android:layout_width="@dimen/_50mdp"
+        android:layout_height="@dimen/_50mdp"
+        android:layout_marginTop="8dp"
+        android:padding="4dp"
+        android:src="@drawable/pic1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/home_circle_back"
+        app:layout_constraintBottom_toBottomOf="@id/profile_image"
+        app:layout_constraintEnd_toEndOf="@+id/profile_image"
+        app:layout_constraintStart_toStartOf="@+id/profile_image"
+        app:layout_constraintTop_toTopOf="@+id/profile_image" />
+
+
+        <ScrollView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@id/profile_image"
+            app:layout_constraintTop_toTopOf="@id/profile_image"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="5dp"
+                android:paddingRight="5dp">
+
+
+                <TextView
+                    android:id="@+id/notification"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment.Aditya you in my comment."
+                    android:textColor="@color/black"
+                    android:textSize="@dimen/_14font_mdp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+
+                <TextView
+                    android:id="@+id/time"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="just now"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/notification" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </ScrollView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "618892497747",
+    "project_id": "socialguru-70f3f",
+    "storage_bucket": "socialguru-70f3f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:618892497747:android:072d33fbe1b3d0c6fe87a6",
+        "android_client_info": {
+          "package_name": "com.example.socialguru"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "618892497747-n2nun0s3ddf33nh484k6fkvn5kolrqnk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBATMCj_Tkgs2wRzJejeQgUu7N1llK45DY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "618892497747-n2nun0s3ddf33nh484k6fkvn5kolrqnk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

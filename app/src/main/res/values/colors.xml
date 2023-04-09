@@ -8,8 +8,20 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <color name="orange">#CB8010</color>
+    <color name="orange">#FF9800</color>
+    <color name="silver">#C0C0C0</color>
     <color name="green">#23B929</color>
-    <color name="grey">#646262</color>
+    <color name="grey">#8B8888</color>
+    <color name="greyTrans">#6A000000</color>
+    <color name="greyTrans1">#92000000</color>
+    <color name="darkGrey">#7C7B7B</color>
     <color name="black_shed" >#88373434</color>
+
+    <color name="blue">#03AEFB</color>
+    <color name="red">#F81504</color>
+
+    <color name="transparent">#00FFFCFC</color>
+    <color name="lightGreen">#DBF3EF</color>
+
+
 </resources>
