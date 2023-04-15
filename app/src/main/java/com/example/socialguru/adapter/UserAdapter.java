@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.socialguru.R;
 import com.example.socialguru.model.FollowModel;
+import com.example.socialguru.model.Notification;
 import com.example.socialguru.model.User;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -30,6 +31,7 @@ import java.util.Date;
 public class UserAdapter  extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     Context context;
     ArrayList<User> list;
+    String currentUserProfile="";
 
     public UserAdapter(Context context, ArrayList<User> list) {
         this.context = context;
@@ -47,11 +49,23 @@ public class UserAdapter  extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
        User user=list.get(position);
 
+       FirebaseDatabase.getInstance().getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+           @Override
+           public void onDataChange(@NonNull DataSnapshot snapshot) {
+               currentUserProfile=snapshot.child("profile").getValue(String.class);
+           }
+
+           @Override
+           public void onCancelled(@NonNull DatabaseError error) {
+
+           }
+       });
+
         Picasso.get().load(user.getProfile()).placeholder(R.drawable.change_cover_photo).into(holder.profile_image);
        holder.profession.setText(user.getProfession());
        holder.name.setText(user.getName());
 
-        FirebaseDatabase.getInstance().getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).child("followers").child(user.getUserID()).addListenerForSingleValueEvent(new ValueEventListener() {
+        FirebaseDatabase.getInstance().getReference().child("Users").child(user.getUserID()).child("followers").child(FirebaseAuth.getInstance().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
@@ -69,34 +83,29 @@ public class UserAdapter  extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
                             FollowModel followModel = new FollowModel();
                             followModel.setFollowedBy(FirebaseAuth.getInstance().getUid());
                             followModel.setFollowsAt(new Date().getTime());
-                            followModel.setProfile(user.getProfile());
-                            FirebaseDatabase.getInstance().getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).child("followers").child(user.getUserID()).setValue(followModel).addOnSuccessListener(new OnSuccessListener<Void>() {
+                            followModel.setProfile(currentUserProfile);
+
+                            FirebaseDatabase.getInstance().getReference().child("Users").child(user.getUserID()).child("followers").child(FirebaseAuth.getInstance().getUid()).setValue(followModel).addOnSuccessListener(new OnSuccessListener<Void>() {
                                 @Override
                                 public void onSuccess(Void unused) {
-                                    FirebaseDatabase.getInstance().getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+                                    FirebaseDatabase.getInstance().getReference().child("Users").child(user.getUserID()).child("followerCount").setValue(user.getFollowerCount()+1).addOnSuccessListener(new OnSuccessListener<Void>() {
                                         @Override
-                                        public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                            if(snapshot!=null){
-                                                User user=snapshot.getValue(User.class);
-                                                FirebaseDatabase.getInstance().getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).child("followerCount").setValue(user.getFollowerCount() + 1).addOnSuccessListener(new OnSuccessListener<Void>() {
-                                                    @Override
-                                                    public void onSuccess(Void unused) {
-                                                        holder.followBtn.setBackground(ContextCompat.getDrawable(context, R.drawable.follow_active_btn));
-                                                        holder.followBtn.setText("Following");
-                                                        holder.followBtn.setTextColor(context.getResources().getColor(R.color.grey));
-                                                        holder.followBtn.setEnabled(false);
-                                                        Toast.makeText(context, "You followed " + user.getName(), Toast.LENGTH_SHORT).show();
+                                        public void onSuccess(Void unused) {
+                                            holder.followBtn.setBackground(ContextCompat.getDrawable(context, R.drawable.follow_active_btn));
+                                            holder.followBtn.setText("Following");
+                                            holder.followBtn.setTextColor(context.getResources().getColor(R.color.grey));
+                                            holder.followBtn.setEnabled(false);
+                                            Toast.makeText(context, "You followed " + user.getName(), Toast.LENGTH_SHORT).show();
 
-                                                    }
-                                                });
-                                            }
-                                        }
+                                            Notification notification=new Notification();
+                                            notification.setNotificationBy(FirebaseAuth.getInstance().getUid());
+                                            notification.setNotificationAt(new Date().getTime());
+                                            notification.setType("follow");
 
-                                        @Override
-                                        public void onCancelled(@NonNull DatabaseError error) {
-
+                                            FirebaseDatabase.getInstance().getReference().child("Notifications").child(user.getUserID()).push().setValue(notification);
                                         }
                                     });
+
 
                                 }
                             });

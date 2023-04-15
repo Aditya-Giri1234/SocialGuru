@@ -30,11 +30,15 @@
         app:layout_constraintLeft_toLeftOf="@id/story"
         app:layout_constraintTop_toTopOf="@id/story" />
 
-    <View
-        android:id="@+id/view"
+    <com.devlomi.circularstatusview.CircularStatusView
+        android:id="@+id/statusCircle"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="@drawable/home_circle_back_white"
+        app:portion_color="@color/orange"
+        app:portion_spacing="6dp"
+        app:portion_width="2dp"
+        app:portions_count="2"
         app:layout_constraintBottom_toBottomOf="@id/profile_image"
         app:layout_constraintEnd_toEndOf="@+id/profile_image"
         app:layout_constraintStart_toStartOf="@+id/profile_image"

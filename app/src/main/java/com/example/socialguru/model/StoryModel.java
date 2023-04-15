@@ -1,55 +1,37 @@
 package com.example.socialguru.model;
 
+import java.util.ArrayList;
+
 public class StoryModel {
-    int story,storyType,profile_image;
-    String name;
+   private String storyBy;
+   private long storyAt;
 
-    public StoryModel(int story, int storyType, int profile_image, String name) {
-        this.story = story;
-        this.storyType = storyType;
-        this.profile_image = profile_image;
-        this.name = name;
+   ArrayList<UserStories> stories;
+
+    public StoryModel() {
     }
 
-    public int getStory() {
-        return story;
+    public String getStoryBy() {
+        return storyBy;
     }
 
-    public void setStory(int story) {
-        this.story = story;
+    public void setStoryBy(String storyBy) {
+        this.storyBy = storyBy;
     }
 
-    public int getStoryType() {
-        return storyType;
+    public long getStoryAt() {
+        return storyAt;
     }
 
-    public void setStoryType(int storyType) {
-        this.storyType = storyType;
+    public void setStoryAt(long storyAt) {
+        this.storyAt = storyAt;
     }
 
-    public int getProfile_image() {
-        return profile_image;
+    public ArrayList<UserStories> getStories() {
+        return stories;
     }
 
-    public void setProfile_image(int profile_image) {
-        this.profile_image = profile_image;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public String toString() {
-        return "StoryModel{" +
-                "story=" + story +
-                ", storyType=" + storyType +
-                ", profile_image=" + profile_image +
-                ", name='" + name + '\'' +
-                '}';
+    public void setStories(ArrayList<UserStories> stories) {
+        this.stories = stories;
     }
 }

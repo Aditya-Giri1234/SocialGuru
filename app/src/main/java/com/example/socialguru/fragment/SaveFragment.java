@@ -13,8 +13,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.socialguru.R;
-import com.example.socialguru.adapter.NotificationAdapter;
-import com.example.socialguru.model.Notification;
+import com.example.socialguru.adapter.SaveAdapter;
+import com.example.socialguru.model.Post;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -24,47 +24,42 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.Collections;
 
+public class SaveFragment extends Fragment {
 
-public class Notification2Fragment extends Fragment {
+ RecyclerView saveRv;
+ ArrayList<Post> list;
 
-
-RecyclerView recyclerView;
-ArrayList<Notification> list;
-FirebaseDatabase database;
-    public Notification2Fragment() {
+    public SaveFragment() {
 
     }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        database=FirebaseDatabase.getInstance();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view= inflater.inflate(R.layout.fragment_notification_notification, container, false);
-        recyclerView=view.findViewById(R.id.notification2RV);
-        list=new ArrayList<>();
+        View view= inflater.inflate(R.layout.fragment_notification_save_post, container, false);
 
-
-        NotificationAdapter notification2Adapter=new NotificationAdapter(getContext(),list);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-  
-        recyclerView.setAdapter(notification2Adapter);
-        database.getReference().child("Notifications").child(FirebaseAuth.getInstance().getUid()).addValueEventListener(new ValueEventListener() {
+      saveRv=view.findViewById(R.id.saveRV);
+      list=new ArrayList<>();
+        SaveAdapter saveAdapter=new SaveAdapter(getContext(),list);
+        FirebaseDatabase.getInstance().getReference().child("Posts").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 list.clear();
                 for(DataSnapshot dataSnapshot:snapshot.getChildren()){
-                    Notification notification=dataSnapshot.getValue(Notification.class);
-                    notification.setNotificationId(dataSnapshot.getKey());
-                    list.add(notification);
+                    if(dataSnapshot.child("save").exists()&&dataSnapshot.child("save").child(FirebaseAuth.getInstance().getUid())!=null){
+                        Post post=dataSnapshot.getValue(Post.class);
+                        post.setPostId(dataSnapshot.getKey());
+                        list.add(post);
+                    }
                 }
                 Collections.reverse(list);
-                notification2Adapter.notifyDataSetChanged();
+                saveAdapter.notifyDataSetChanged();
             }
 
             @Override
@@ -72,6 +67,10 @@ FirebaseDatabase database;
 
             }
         });
+
+        saveRv.setLayoutManager(new LinearLayoutManager(getContext()));
+        saveRv.setAdapter(saveAdapter);
+
 
         return view;
     }

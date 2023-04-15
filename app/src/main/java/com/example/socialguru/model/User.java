@@ -6,6 +6,15 @@ public class User {
     String profile;
     String userID;
     private int followerCount;
+    private boolean save=false;
+
+    public boolean isSave() {
+        return save;
+    }
+
+    public void setSave(boolean save) {
+        this.save = save;
+    }
 
     public int getFollowerCount() {
         return followerCount;

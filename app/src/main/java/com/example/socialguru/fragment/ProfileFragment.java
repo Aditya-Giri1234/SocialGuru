@@ -73,8 +73,7 @@ User user;
 
 
         FollowAdapter freindAdapter=new FollowAdapter(getContext(),list);
-        binding.followersRV.setLayoutManager(new LinearLayoutManager(getContext()));
-        binding.followersRV.setNestedScrollingEnabled(false);
+        binding.followersRV.setLayoutManager(new LinearLayoutManager(getContext(),LinearLayoutManager.HORIZONTAL,false));
         binding.followersRV.setAdapter(freindAdapter);
         database.getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).child("followers").addValueEventListener(new ValueEventListener() {
             @Override
@@ -82,6 +81,7 @@ User user;
                 list.clear();
                 for(DataSnapshot dataSnapshot:snapshot.getChildren()){
                     FollowModel followModel=dataSnapshot.getValue(FollowModel.class);
+
                     list.add(followModel);
                 }
                 freindAdapter.notifyDataSetChanged();
@@ -185,4 +185,5 @@ User user;
         }
 
     }
+
 }

@@ -7,15 +7,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.socialguru.CommentActivity;
 import com.example.socialguru.R;
 import com.example.socialguru.databinding.DashboardRvSampleBinding;
+import com.example.socialguru.model.Notification;
 import com.example.socialguru.model.Post;
 import com.example.socialguru.model.User;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -25,6 +29,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
     Context context;
@@ -44,25 +49,27 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Post model = list.get(position);
-        Picasso.get().load(model.getPostImg()).placeholder(R.drawable.image).into(holder.binding.postImg);
-        holder.binding.like.setText(model.getPostLike()+"");
-        String description = model.getPostDescription();
+        Post post = list.get(position);
+        Picasso.get().load(post.getPostImg()).placeholder(R.drawable.image).into(holder.binding.postImg);
+        holder.binding.like.setText(post.getPostLike()+"");
+        String description = post.getPostDescription();
+        holder.binding.comment.setText(post.getCommentCount()+"");
 
         if (description.equals("")) {
             holder.binding.postDescription.setVisibility(View.GONE);
         } else {
-            holder.binding.postDescription.setText(model.getPostDescription());
+            holder.binding.postDescription.setText(post.getPostDescription());
             holder.binding.postDescription.setVisibility(View.VISIBLE);
         }
 
-            FirebaseDatabase.getInstance().getReference().child("Users").child(model.getPostedBy()).addValueEventListener(new ValueEventListener() {
+            FirebaseDatabase.getInstance().getReference().child("Users").child(post.getPostedBy()).addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     User user = snapshot.getValue(User.class);
                     Picasso.get().load(user.getProfile()).placeholder(R.drawable.image).into(holder.binding.profileImage);
                     holder.binding.userName.setText(user.getName());
                     holder.binding.about.setText(user.getProfession());
+
 
                 }
 
@@ -71,7 +78,9 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
 
                 }
             });
-        FirebaseDatabase.getInstance().getReference().child("Posts").child(model.getPostId()).child("Likes").child(FirebaseAuth.getInstance().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+        FirebaseDatabase.getInstance().getReference().child("Posts").child(post.getPostId()).child("Likes").child(FirebaseAuth.getInstance().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+
+         //    setOnClickListener on like button
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
@@ -80,13 +89,26 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
                     holder.binding.like.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            FirebaseDatabase.getInstance().getReference().child("Posts").child(model.getPostId()).child("Likes").child(FirebaseAuth.getInstance().getUid()).setValue(true).addOnSuccessListener(new OnSuccessListener<Void>() {
+                            FirebaseDatabase.getInstance().getReference().child("Posts").child(post.getPostId()).child("Likes").child(FirebaseAuth.getInstance().getUid()).setValue(true).addOnSuccessListener(new OnSuccessListener<Void>() {
                                 @Override
                                 public void onSuccess(Void unused) {
-                                    FirebaseDatabase.getInstance().getReference().child("Posts").child(model.getPostId()).child("postLike").setValue(model.getPostLike() + 1).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    FirebaseDatabase.getInstance().getReference().child("Posts").child(post.getPostId()).child("postLike").setValue(post.getPostLike() + 1).addOnSuccessListener(new OnSuccessListener<Void>() {
                                         @Override
                                         public void onSuccess(Void unused) {
                                             holder.binding.like.setCompoundDrawablesWithIntrinsicBounds(R.drawable.heart, 0, 0, 0);
+                                            Notification notification=new Notification();
+                                            notification.setNotificationBy(FirebaseAuth.getInstance().getUid());
+                                            notification.setNotificationAt(new Date().getTime());
+                                            notification.setPostId(post.getPostId());
+                                            notification.setPostBy(post.getPostedBy());
+                                            notification.setType("Like");
+
+                                            FirebaseDatabase.getInstance().getReference().child("Notifications").child(post.getPostedBy()).push().setValue(notification).addOnFailureListener(new OnFailureListener() {
+                                                @Override
+                                                public void onFailure(@NonNull Exception e) {
+                                                    Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+                                                }
+                                            });
                                         }
                                     });
                                 }
@@ -106,12 +128,70 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
             @Override
             public void onClick(View view) {
                 Intent intent=new Intent(context,CommentActivity.class);
-                intent.putExtra("postId",model.getPostId());
-                intent.putExtra("postedBy",model.getPostedBy());
+                intent.putExtra("postId",post.getPostId());
+                intent.putExtra("postedBy",post.getPostedBy());
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(intent);
             }
         });
+
+        FirebaseDatabase.getInstance().getReference().child("Posts").child(post.getPostId()).child("save").child(FirebaseAuth.getInstance().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if(snapshot.exists()){
+                    if(snapshot.getValue(Boolean.class)){
+                        holder.binding.save.setImageResource(R.drawable.fill_save);
+                        holder.binding.save.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                holder.binding.save.setImageResource(R.drawable.save);
+                                FirebaseDatabase.getInstance().getReference().child("Posts").child(post.getPostId()).child("save").child(FirebaseAuth.getInstance().getUid()).setValue(false).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void unused) {
+                                        Toast.makeText(context, "Post is Saved !", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    else{
+                        holder.binding.save.setImageResource(R.drawable.save);
+                       holder.binding.save.setOnClickListener(new View.OnClickListener() {
+                           @Override
+                           public void onClick(View view) {
+                               holder.binding.save.setImageResource(R.drawable.fill_save);
+                               FirebaseDatabase.getInstance().getReference().child("Posts").child(post.getPostId()).child("save").child(FirebaseAuth.getInstance().getUid()).setValue(true).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                   @Override
+                                   public void onSuccess(Void unused) {
+                                       Toast.makeText(context, "Post is Saved !", Toast.LENGTH_SHORT).show();
+                                   }
+                               });
+                           }
+                       });
+                    }
+                }
+                else{
+                    holder.binding.save.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            holder.binding.save.setImageResource(R.drawable.fill_save);
+                            FirebaseDatabase.getInstance().getReference().child("Posts").child(post.getPostId()).child("save").child(FirebaseAuth.getInstance().getUid()).setValue(true).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                @Override
+                                public void onSuccess(Void unused) {
+                                    Toast.makeText(context, "Post is Saved !", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+ 
 
 
     }

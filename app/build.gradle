@@ -55,6 +55,10 @@ dependencies {
     implementation 'com.github.florent37:diagonallayout:1.0.7'
     implementation 'com.google.firebase:firebase-storage'
     implementation 'com.squareup.picasso:picasso:2.8'
+    implementation 'com.github.marlonlom:timeago:4.0.3'
+    implementation 'com.github.3llomi:CircularStatusView:V1.0.3'
+    implementation 'com.github.OMARIHAMZA:StoryView:1.0.2-alpha'
+    implementation 'com.github.sharish:ShimmerRecyclerView:v1.3'
 }
 
 apply plugin: 'com.google.gms.google-services'

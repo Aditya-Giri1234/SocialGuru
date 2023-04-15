@@ -23,5 +23,7 @@
     <color name="transparent">#00FFFCFC</color>
     <color name="lightGreen">#DBF3EF</color>
 
+    <color name="demo">#CDC8C8</color>
+
 
 </resources>

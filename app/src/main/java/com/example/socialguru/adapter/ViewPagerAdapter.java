@@ -7,7 +7,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentPagerAdapter;
 
 import com.example.socialguru.fragment.Notification2Fragment;
-import com.example.socialguru.fragment.RequestFragment;
+import com.example.socialguru.fragment.SaveFragment;
 
 public class ViewPagerAdapter extends FragmentPagerAdapter {
     public ViewPagerAdapter(@NonNull FragmentManager fm) {
@@ -21,7 +21,7 @@ public class ViewPagerAdapter extends FragmentPagerAdapter {
             case 0:
                 return new Notification2Fragment();
             case 1:
-                return new RequestFragment();
+                return new SaveFragment();
             default:return new Notification2Fragment();
         }
 
@@ -42,7 +42,7 @@ public class ViewPagerAdapter extends FragmentPagerAdapter {
         }
         else{
             if(position==1){
-                title="Request";
+                title="Save_Post";
             }
         }
         return title;

@@ -46,7 +46,7 @@
                 app:layout_constraintTop_toTopOf="parent" />
 
             <View
-                android:id="@+id/view"
+                android:id="@+id/statusCircle"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:background="@drawable/home_circle_back"
@@ -64,7 +64,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/view" />
+                app:layout_constraintTop_toBottomOf="@+id/statusCircle" />
 
             <HorizontalScrollView
                 android:id="@+id/horizontalScrollView"
@@ -159,7 +159,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/horizontalScrollView" />
 
-            <androidx.recyclerview.widget.RecyclerView
+            <com.cooltechworks.views.shimmer.ShimmerRecyclerView
                 android:id="@+id/dashboardRv"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -169,7 +169,9 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/view4" />
+                app:layout_constraintTop_toBottomOf="@+id/view4"
+                app:shimmer_demo_child_count="10"
+                app:shimmer_demo_layout="@layout/demo_layout"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>

@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -30,6 +31,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.iammert.library.readablebottombar.ReadableBottomBar;
 import com.squareup.picasso.Picasso;
 
 import java.util.Date;
@@ -145,6 +147,11 @@ public class AddPostFragment extends Fragment {
                               public void onSuccess(Void unused) {
                                   dialog.dismiss();
                                   Toast.makeText(getContext(), "Posted Successfully !", Toast.LENGTH_SHORT).show();
+                                  FragmentTransaction transaction=getActivity().getSupportFragmentManager().beginTransaction();
+                                  transaction.replace(R.id.container,new HomeFragment());
+                                  transaction.addToBackStack(null);
+                                  transaction.commit();
+
                               }
                           });
 

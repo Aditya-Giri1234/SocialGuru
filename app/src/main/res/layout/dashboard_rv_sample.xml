@@ -17,7 +17,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <View
-        android:id="@+id/view"
+        android:id="@+id/statusCircle"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="@drawable/home_circle_back"
@@ -81,8 +81,7 @@
         android:layout_marginEnd="16dp"
         app:layout_constraintEnd_toEndOf="@+id/postImg"
         app:layout_constraintTop_toTopOf="@+id/postImg"
-        app:srcCompat="@drawable/save"
-        app:tint="@color/white" />
+        app:srcCompat="@drawable/save" />
 
     <TextView
         android:id="@+id/postDescription"

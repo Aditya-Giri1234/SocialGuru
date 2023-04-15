@@ -38,7 +38,7 @@ public class NotificationFragment extends Fragment {
         // Inflate the layout for this fragment
         View view=inflater.inflate(R.layout.fragment_notification, container, false);
         viewPager=view.findViewById(R.id.viewPager);
-        viewPager.setAdapter(new ViewPagerAdapter((getFragmentManager())));
+        viewPager.setAdapter(new ViewPagerAdapter(getChildFragmentManager()));
         tabLayout=view.findViewById(R.id.tabLayout);
         tabLayout.setupWithViewPager(viewPager);
         return view;

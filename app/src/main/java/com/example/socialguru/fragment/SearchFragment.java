@@ -53,15 +53,17 @@ public class SearchFragment extends Fragment {
         binding.userRV.setNestedScrollingEnabled(false);
         binding.userRV.setAdapter(adapter);
 
-        database.getReference().child("Users").addListenerForSingleValueEvent(new ValueEventListener() {
+        database.getReference().child("Users").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if(snapshot!=null){
+                    list.clear();
                     for(DataSnapshot dataSnapshot:snapshot.getChildren()){
                         User user=dataSnapshot.getValue(User.class);
                         user.setUserID(dataSnapshot.getKey());
-                        if(!dataSnapshot.getKey().equals(FirebaseAuth.getInstance().getUid()))
-                        list.add(user);
+                        if(!dataSnapshot.getKey().equals(FirebaseAuth.getInstance().getUid())) {
+                            list.add(user);
+                        }
                     }
                     adapter.notifyDataSetChanged();
                 }
