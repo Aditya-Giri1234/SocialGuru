@@ -1,6 +1,7 @@
 package com.example.socialguru.adapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,6 +10,8 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.socialguru.CommentActivity;
+import com.example.socialguru.ImageActivity;
 import com.example.socialguru.R;
 import com.example.socialguru.databinding.NotificationRvSampleBinding;
 import com.example.socialguru.model.Notification;
@@ -24,6 +27,7 @@ import java.util.ArrayList;
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.ViewHolder> {
     Context context;
     ArrayList<Notification> list;
+    final static String image="Image";
 
     public NotificationAdapter(Context context, ArrayList<Notification> list) {
         this.context = context;
@@ -54,6 +58,25 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 else{
                     holder.binding.notification.setText(Html.fromHtml("<b>"+user.getName()+"</b> "+" start Following you."));
                 }
+
+                holder.binding.profileImage.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        Intent intent=new Intent(context, ImageActivity.class);
+                        intent.putExtra(image,user.getProfile());
+                        context.startActivity(intent);
+                    }
+                });
+
+                holder.binding.notification.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        Intent intent=new Intent(context, CommentActivity.class);
+                        intent.putExtra("postId",model.getPostId());
+                        intent.putExtra("postedBy",model.getPostBy());
+                        context.startActivity(intent);
+                    }
+                });
             }
 
             @Override

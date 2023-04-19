@@ -7,6 +7,15 @@ public class User {
     String userID;
     private int followerCount;
     private boolean save=false;
+    private int postCount;
+
+    public int getPostCount() {
+        return postCount;
+    }
+
+    public void setPostCount(int postCount) {
+        this.postCount = postCount;
+    }
 
     public boolean isSave() {
         return save;

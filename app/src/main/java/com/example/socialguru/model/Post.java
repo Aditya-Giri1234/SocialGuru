@@ -10,7 +10,6 @@ public class Post {
     private  int commentCount;
 
 
-
     public int getCommentCount() {
         return commentCount;
     }

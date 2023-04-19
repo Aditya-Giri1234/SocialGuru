@@ -23,6 +23,7 @@ import com.example.socialguru.databinding.FragmentAddPostBinding;
 import com.example.socialguru.model.Post;
 import com.example.socialguru.model.User;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -131,6 +132,8 @@ public class AddPostFragment extends Fragment {
           dialog.show();
           final StorageReference storageReference=storage.getReference().child("Posts").child(FirebaseAuth.getInstance().getUid()).child(new Date().getTime()+"");
 
+
+            if(uri!=null)
           storageReference.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
               @Override
               public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
@@ -151,6 +154,8 @@ public class AddPostFragment extends Fragment {
                                   transaction.replace(R.id.container,new HomeFragment());
                                   transaction.addToBackStack(null);
                                   transaction.commit();
+                                  ReadableBottomBar readableBottomBar=getActivity().findViewById(R.id.bottom_bar);
+                                  readableBottomBar.selectItem(0);
 
                               }
                           });
@@ -159,6 +164,46 @@ public class AddPostFragment extends Fragment {
                   });
               }
           });
+            else{
+                Post post=new Post();
+                post.setPostedBy(FirebaseAuth.getInstance().getUid());
+                post.setPostDescription(binding.postDescription.getText().toString());
+                post.setPostedAt(new Date().getTime());
+                database.getReference().child("Posts").push().setValue(post).addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        FirebaseDatabase.getInstance().getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                int postCount=0;
+                                if(snapshot.child("postCount").exists())
+                                 postCount=snapshot.child("postCount").getValue(Integer.class);
+
+                                FirebaseDatabase.getInstance().getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).child("postCount").setValue(postCount+1).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void unused) {
+                                        dialog.dismiss();
+                                        Toast.makeText(getContext(), "Posted Successfully !", Toast.LENGTH_SHORT).show();
+                                        FragmentTransaction transaction=getActivity().getSupportFragmentManager().beginTransaction();
+                                        transaction.replace(R.id.container,new HomeFragment());
+                                        transaction.addToBackStack(null);
+                                        transaction.commit();
+                                        ReadableBottomBar readableBottomBar=getActivity().findViewById(R.id.bottom_bar);
+                                        readableBottomBar.selectItem(0);
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+
+                            }
+                        });
+
+
+                    }
+                });
+            }
       }
   });
 

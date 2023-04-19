@@ -50,7 +50,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Post post = list.get(position);
+        if(post.getPostImg()!=null)
         Picasso.get().load(post.getPostImg()).placeholder(R.drawable.image).into(holder.binding.postImg);
+        else
+            holder.binding.postImg.setVisibility(View.GONE);
         holder.binding.like.setText(post.getPostLike()+"");
         String description = post.getPostDescription();
         holder.binding.comment.setText(post.getCommentCount()+"");

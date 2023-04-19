@@ -14,7 +14,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.example.socialguru.CallActivity;
+import com.example.socialguru.ChatActivity;
+import com.example.socialguru.FriendActivity;
 import com.example.socialguru.ImageActivity;
+import com.example.socialguru.MainActivity;
 import com.example.socialguru.R;
 import com.example.socialguru.adapter.FollowAdapter;
 import com.example.socialguru.databinding.FragmentProfileBinding;
@@ -61,6 +65,7 @@ User user;
                     binding.profession.setText(user.getProfession());
                    Picasso.get().load(user.getProfile()).placeholder(R.drawable.change_cover_photo).into(binding.profileImage);
                    binding.followers.setText(user.getFollowerCount()+"");
+                   binding.postCount.setText(user.getPostCount()+"");
                 }
             }
 
@@ -70,6 +75,26 @@ User user;
             }
         });
 
+        binding.freindView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getContext().startActivity(new Intent(getContext(), FriendActivity.class));
+            }
+        });
+
+        binding.commentView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getContext().startActivity(new Intent(getContext(), ChatActivity.class));
+            }
+        });
+
+        binding.callView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getContext().startActivity(new Intent(getContext(), CallActivity.class));
+            }
+        });
 
 
         FollowAdapter freindAdapter=new FollowAdapter(getContext(),list);

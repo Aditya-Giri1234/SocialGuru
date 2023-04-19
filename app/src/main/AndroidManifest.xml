@@ -12,7 +12,20 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.SocialGuru"
+        android:roundIcon="@mipmap/ic_launcher"
         tools:targetApi="31">
+        <activity
+            android:name=".CallActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"/>
+        <activity
+            android:name=".ChatActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"/>
+        <activity
+            android:name=".FriendActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
         <activity
             android:name=".CommentActivity"
             android:exported="false" />

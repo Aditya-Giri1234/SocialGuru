@@ -9,10 +9,8 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.FrameLayout;
 
 import com.example.socialguru.databinding.ActivityMainBinding;
-import com.example.socialguru.fragment.AddFragment;
 import com.example.socialguru.fragment.AddPostFragment;
 import com.example.socialguru.fragment.HomeFragment;
 import com.example.socialguru.fragment.NotificationFragment;

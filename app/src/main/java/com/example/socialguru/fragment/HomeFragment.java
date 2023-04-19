@@ -37,6 +37,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.iammert.library.readablebottombar.ReadableBottomBar;
 import com.makeramen.roundedimageview.RoundedImageView;
 
 import java.util.ArrayList;
@@ -94,6 +95,8 @@ public class HomeFragment extends Fragment {
                 FragmentTransaction transaction=getActivity().getSupportFragmentManager().beginTransaction();
                 transaction.replace(R.id.container,new ProfileFragment());
                 transaction.commit();
+                ReadableBottomBar readableBottomBar=view.findViewById(R.id.bottom_bar);
+                readableBottomBar.selectItem(4);
             }
         });
 
