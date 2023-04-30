@@ -213,7 +213,7 @@ public class AddPostFragment extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(data.getData()!=null){
+        if(data!=null){
              uri=data.getData();
             binding.postImg.setImageURI(uri);
             binding.postImg.setVisibility(View.VISIBLE);
@@ -221,5 +221,6 @@ public class AddPostFragment extends Fragment {
             binding.postBtn.setTextColor(getContext().getResources().getColor(R.color.white));
             binding.postBtn.setEnabled(true);
         }
+
     }
 }

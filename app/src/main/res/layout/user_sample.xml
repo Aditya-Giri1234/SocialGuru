@@ -57,17 +57,39 @@
 
             <Button
                 android:id="@+id/followBtn"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="@dimen/_30mdp"
                 android:layout_marginEnd="16dp"
                 android:background="@drawable/follow_btn_bg"
-                android:text="Follow"
-                android:textColor="@color/white"
                 android:paddingStart="10dp"
                 android:paddingRight="10dp"
-                app:layout_constraintBottom_toBottomOf="@+id/profile_image"
+                android:text="Follow"
+                android:textColor="@color/white"
+                app:layout_constraintBottom_toBottomOf="@+id/addFriend"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/profile_image" />
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/addFriend"
+                app:layout_constraintTop_toTopOf="@+id/addFriend" />
+
+            <Button
+                android:id="@+id/addFriend"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/_30mdp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/follow_btn_bg"
+                android:paddingStart="10dp"
+                android:paddingRight="10dp"
+                android:text="Add Freind"
+                android:textColor="@color/white"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/followBtn"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintHorizontal_chainStyle="spread"
+                app:layout_constraintStart_toEndOf="@+id/profile_image"
+                app:layout_constraintStart_toStartOf="@+id/profession"
+                app:layout_constraintTop_toBottomOf="@+id/profession" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>
 

@@ -17,7 +17,11 @@ import com.example.socialguru.fragment.NotificationFragment;
 import com.example.socialguru.fragment.ProfileFragment;
 import com.example.socialguru.fragment.SearchFragment;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.FirebaseDatabase;
 import com.iammert.library.readablebottombar.ReadableBottomBar;
+
+import java.util.Date;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         ActivityMainBinding binding=ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        FirebaseDatabase.getInstance().getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).child("lastSeen").setValue(new Date().getTime());
 
 
         FragmentTransaction transaction=getSupportFragmentManager().beginTransaction();
@@ -86,5 +92,11 @@ public class MainActivity extends AppCompatActivity {
             finish();
         }
         return true;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        FirebaseDatabase.getInstance().getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).child("lastSeen").setValue(new Date().getTime());
     }
 }

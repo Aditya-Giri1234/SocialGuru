@@ -6,6 +6,8 @@ public class FollowModel {
     private long followsAt;
     private String profile;
 
+
+
     public String getProfile() {
         return profile;
     }

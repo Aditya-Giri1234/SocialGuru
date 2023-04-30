@@ -8,6 +8,15 @@ public class User {
     private int followerCount;
     private boolean save=false;
     private int postCount;
+    private int friendCount;
+
+    public int getFriendCount() {
+        return friendCount;
+    }
+
+    public void setFriendCount(int friendCount) {
+        this.friendCount = friendCount;
+    }
 
     public int getPostCount() {
         return postCount;

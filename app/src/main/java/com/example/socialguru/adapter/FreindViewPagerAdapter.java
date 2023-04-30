@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentPagerAdapter;
 
+import com.example.socialguru.fragment.freind.FollowerListFragment;
 import com.example.socialguru.fragment.freind.FriendListFragment;
 import com.example.socialguru.fragment.freind.FriendRequestFragment;
 
@@ -21,18 +22,21 @@ public class FreindViewPagerAdapter extends FragmentPagerAdapter {
         switch (position){
 
             case 0:
-                return new FriendListFragment();
+                return new FollowerListFragment();
             case 1:
                 return new FriendRequestFragment();
-            default:
+
+            case 2:
                 return new FriendListFragment();
+            default:
+                return new FollowerListFragment();
 
         }
     }
 
     @Override
     public int getCount() {
-        return 2;
+        return 3;
     }
     @Nullable
     @Override
@@ -40,15 +44,22 @@ public class FreindViewPagerAdapter extends FragmentPagerAdapter {
 
         String title="";
 
-            if(position==0){
-                title="FriendList";
-            }
-            else{
-                if(position==1){
-                    title="FriendRequest";
+        if(position==0){
+            title = "Follower";
+        }
+        else {
+
+            if (position == 1) {
+                title = "FriendRequest";
+
+            } else {
+                if (position == 2) {
+                    title = "FriendList";
                 }
             }
+        }
 
         return title;
     }
+
 }

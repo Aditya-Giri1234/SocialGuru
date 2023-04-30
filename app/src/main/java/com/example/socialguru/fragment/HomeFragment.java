@@ -92,12 +92,11 @@ public class HomeFragment extends Fragment {
         profile_image.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                FragmentTransaction transaction=getActivity().getSupportFragmentManager().beginTransaction();
-                transaction.replace(R.id.container,new ProfileFragment());
+                FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
+                transaction.replace(R.id.container, new ProfileFragment());
                 transaction.commit();
-                ReadableBottomBar readableBottomBar=view.findViewById(R.id.bottom_bar);
-                readableBottomBar.selectItem(4);
             }
+
         });
 
        // Story adapter
@@ -177,38 +176,41 @@ public class HomeFragment extends Fragment {
         galleryLauncher=registerForActivityResult(new ActivityResultContracts.GetContent(), new ActivityResultCallback<Uri>() {
             @Override
             public void onActivityResult(Uri result) {
-                addStoryImage.setImageURI(result);
-                dialog.show();
-                final StorageReference reference=storage.getReference().child("stories").child(FirebaseAuth.getInstance().getUid()).child(new Date().getTime()+"");
-                reference.putFile(result).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                    @Override
-                    public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                        reference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
-                            @Override
-                            public void onSuccess(Uri uri) {
-                                StoryModel storyModel=new StoryModel();
+                if (result != null) {
+                    addStoryImage.setImageURI(result);
+                    dialog.show();
+                    final StorageReference reference = storage.getReference().child("stories").child(FirebaseAuth.getInstance().getUid()).child(new Date().getTime() + "");
+                    reference.putFile(result).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            reference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                @Override
+                                public void onSuccess(Uri uri) {
+                                    StoryModel storyModel = new StoryModel();
 
-                                storyModel.setStoryAt(new Date().getTime());
-                                database.getReference().child("Stories").child(FirebaseAuth.getInstance().getUid()).child("postedBy").setValue(storyModel.getStoryAt()).addOnSuccessListener(new OnSuccessListener<Void>() {
-                                    @Override
-                                    public void onSuccess(Void unused) {
-                                        UserStories userStories=new UserStories(uri.toString(),storyModel.getStoryAt());
-                                        database.getReference().child("Stories").child(FirebaseAuth.getInstance().getUid()).child("UserStories").push().setValue(userStories).addOnSuccessListener(new OnSuccessListener<Void>() {
-                                            @Override
-                                            public void onSuccess(Void unused) {
-                                                dialog.dismiss();
-                                                Toast.makeText(getContext(), "Story Uploaded !", Toast.LENGTH_SHORT).show();
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
+                                    storyModel.setStoryAt(new Date().getTime());
+                                    database.getReference().child("Stories").child(FirebaseAuth.getInstance().getUid()).child("postedBy").setValue(storyModel.getStoryAt()).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                        @Override
+                                        public void onSuccess(Void unused) {
+                                            UserStories userStories = new UserStories(uri.toString(), storyModel.getStoryAt());
+                                            database.getReference().child("Stories").child(FirebaseAuth.getInstance().getUid()).child("UserStories").push().setValue(userStories).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                                @Override
+                                                public void onSuccess(Void unused) {
+                                                    dialog.dismiss();
+                                                    Toast.makeText(getContext(), "Story Uploaded !", Toast.LENGTH_SHORT).show();
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
             }
         });
 
         return view;
     }
+
 }

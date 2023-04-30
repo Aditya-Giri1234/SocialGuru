@@ -10,18 +10,20 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.SocialGuru"
-        android:roundIcon="@mipmap/ic_launcher"
         tools:targetApi="31">
         <activity
-            android:name=".CallActivity"
-            android:exported="false"
-            android:parentActivityName=".MainActivity"/>
+            android:name=".ShowFriendActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ChatMainActivity"
+            android:exported="false" />
         <activity
             android:name=".ChatActivity"
             android:exported="false"
-            android:parentActivityName=".MainActivity"/>
+            android:parentActivityName=".MainActivity" />
         <activity
             android:name=".FriendActivity"
             android:exported="false"

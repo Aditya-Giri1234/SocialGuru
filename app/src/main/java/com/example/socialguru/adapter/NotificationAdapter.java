@@ -16,6 +16,7 @@ import com.example.socialguru.R;
 import com.example.socialguru.databinding.NotificationRvSampleBinding;
 import com.example.socialguru.model.Notification;
 import com.example.socialguru.model.User;
+import com.github.marlonlom.utilities.timeago.TimeAgo;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
@@ -23,6 +24,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.Timer;
 
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.ViewHolder> {
     Context context;
@@ -45,18 +47,32 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
       Notification model=list.get(position);
       String type=model.getType();
+      holder.binding.time.setText(TimeAgo.using(model.getNotificationAt()));
         FirebaseDatabase.getInstance().getReference().child("Users").child(model.getNotificationBy()).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 User user=snapshot.getValue(User.class);
+
                 Picasso.get().load(user.getProfile()).placeholder(R.drawable.image).into(holder.binding.profileImage);
+
+
                 if(type.equals("Like")){
                     holder.binding.notification.setText(Html.fromHtml("<b>"+user.getName()+"</b> "+"Liked your post"));
                 } else if (type.equals("comment")) {
                     holder.binding.notification.setText(Html.fromHtml("<b>"+user.getName()+"</b> "+"Commented your post"));
+
                 }
                 else{
+                    if(type.equals("friendRequest")){
+                        holder.binding.notification.setText(Html.fromHtml("<b>"+user.getName()+"</b> "+" sent friend request."));
+                    }
+                    else{
+                if(type.equals("accept_friend")){
+                    holder.binding.notification.setText(Html.fromHtml("<b>"+user.getName()+"</b> "+" accept friend request."));
+                }
+                else
                     holder.binding.notification.setText(Html.fromHtml("<b>"+user.getName()+"</b> "+" start Following you."));
+                    }
                 }
 
                 holder.binding.profileImage.setOnClickListener(new View.OnClickListener() {
@@ -71,10 +87,12 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 holder.binding.notification.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        Intent intent=new Intent(context, CommentActivity.class);
-                        intent.putExtra("postId",model.getPostId());
-                        intent.putExtra("postedBy",model.getPostBy());
-                        context.startActivity(intent);
+                        if(type.equals("comment")) {
+                            Intent intent = new Intent(context, CommentActivity.class);
+                            intent.putExtra("postId", model.getPostId());
+                            intent.putExtra("postedBy", model.getPostBy());
+                            context.startActivity(intent);
+                        }
                     }
                 });
             }

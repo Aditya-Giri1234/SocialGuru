@@ -7,20 +7,16 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.example.socialguru.CallActivity;
-import com.example.socialguru.ChatActivity;
+import com.example.socialguru.ChatMainActivity;
 import com.example.socialguru.FriendActivity;
 import com.example.socialguru.ImageActivity;
-import com.example.socialguru.MainActivity;
 import com.example.socialguru.R;
-import com.example.socialguru.adapter.FollowAdapter;
 import com.example.socialguru.databinding.FragmentProfileBinding;
 import com.example.socialguru.model.FollowModel;
 import com.example.socialguru.model.User;
@@ -33,6 +29,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.iammert.library.readablebottombar.ReadableBottomBar;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -66,6 +63,7 @@ User user;
                    Picasso.get().load(user.getProfile()).placeholder(R.drawable.change_cover_photo).into(binding.profileImage);
                    binding.followers.setText(user.getFollowerCount()+"");
                    binding.postCount.setText(user.getPostCount()+"");
+                   binding.friendCount.setText(user.getFriendCount()+"");
                 }
             }
 
@@ -85,38 +83,14 @@ User user;
         binding.commentView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                getContext().startActivity(new Intent(getContext(), ChatActivity.class));
-            }
-        });
-
-        binding.callView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                getContext().startActivity(new Intent(getContext(), CallActivity.class));
+                getContext().startActivity(new Intent(getContext(), ChatMainActivity.class));
             }
         });
 
 
-        FollowAdapter freindAdapter=new FollowAdapter(getContext(),list);
-        binding.followersRV.setLayoutManager(new LinearLayoutManager(getContext(),LinearLayoutManager.HORIZONTAL,false));
-        binding.followersRV.setAdapter(freindAdapter);
-        database.getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).child("followers").addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                list.clear();
-                for(DataSnapshot dataSnapshot:snapshot.getChildren()){
-                    FollowModel followModel=dataSnapshot.getValue(FollowModel.class);
 
-                    list.add(followModel);
-                }
-                freindAdapter.notifyDataSetChanged();
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
 
-            }
-        });
 
         binding.changeCoverPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -170,7 +144,7 @@ User user;
         super.onActivityResult(requestCode, resultCode, data);
 
         if(requestCode==11){
-            if(data.getData()!=null){
+            if(data!=null){
                 Uri uri=data.getData();
                 binding.coverPhoto.setImageURI(uri);
                 final StorageReference reference=storage.getReference().child("cover_photo").child(FirebaseAuth.getInstance().getUid());
@@ -189,7 +163,7 @@ User user;
             }
         }
         else{
-            if(data.getData()!=null){
+            if(data!=null){
                 Uri uri=data.getData();
                 binding.profileImage.setImageURI(uri);
                 final StorageReference reference=storage.getReference().child("profile_image").child(FirebaseAuth.getInstance().getUid());
@@ -209,6 +183,14 @@ User user;
 
         }
 
+    }
+    @Override
+    public void onResume() {
+        super.onResume();
+        ReadableBottomBar readableBottomBar = getActivity().findViewById(R.id.bottom_bar);
+        if (readableBottomBar != null) {
+            readableBottomBar.selectItem(4);
+        }
     }
 
 }

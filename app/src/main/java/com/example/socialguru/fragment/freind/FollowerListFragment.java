@@ -12,7 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.socialguru.R;
-import com.example.socialguru.adapter.freindAdpater.FriendListAdapter;
+import com.example.socialguru.adapter.freindAdpater.FollowAdapter;
 import com.example.socialguru.model.FollowModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -22,44 +22,45 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 
-public class FriendListFragment extends Fragment {
+public class FollowerListFragment extends Fragment {
 
-    RecyclerView friendListRv;
+
     ArrayList<FollowModel> list;
+    FirebaseDatabase database;
+    RecyclerView followerRv;
+    FollowAdapter followAdapter;
 
-    public FriendListFragment() {
+    public FollowerListFragment() {
         // Required empty public constructor
     }
-
-
 
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        list=new ArrayList<>();
+        database=FirebaseDatabase.getInstance();
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view= inflater.inflate(R.layout.fragment_friend_list, container, false);
-        friendListRv=view.findViewById(R.id.freindListRv);
-        list=new ArrayList<>();
+        View view= inflater.inflate(R.layout.fragment_follower_list, container, false);
+        followerRv=view.findViewById(R.id.followerRv);
 
-        FriendListAdapter friendListAdapter=new FriendListAdapter(getContext(),list);
+        followAdapter=new FollowAdapter(getContext(),list);
 
-        FirebaseDatabase.getInstance().getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).child("friend").addValueEventListener(new ValueEventListener() {
+        database.getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).child("followers").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if(snapshot.exists()){
-                    list.clear();
-                    for (DataSnapshot dataSnapshot:snapshot.getChildren()){
-                        FollowModel followModel=dataSnapshot.getValue(FollowModel.class);
-                        list.add(followModel);
-                    }
-                    friendListAdapter.notifyDataSetChanged();
+                list.clear();
+                for(DataSnapshot dataSnapshot:snapshot.getChildren()){
+                    FollowModel followModel=dataSnapshot.getValue(FollowModel.class);
+                    list.add(followModel);
                 }
+                followAdapter.notifyDataSetChanged();
             }
 
             @Override
@@ -68,9 +69,9 @@ public class FriendListFragment extends Fragment {
             }
         });
 
-        friendListRv.setLayoutManager(new LinearLayoutManager(getContext()));
-        friendListRv.setNestedScrollingEnabled(false);
-        friendListRv.setAdapter(friendListAdapter);
+        followerRv.setLayoutManager(new LinearLayoutManager(getContext()));
+        followerRv.setNestedScrollingEnabled(false);
+        followerRv.setAdapter(followAdapter);
 
         return view;
     }

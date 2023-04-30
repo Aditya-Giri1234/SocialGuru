@@ -121,6 +121,74 @@ public class UserAdapter  extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
 
             }
         });
+        FirebaseDatabase.getInstance().getReference().child("Users").child(user.getUserID()).child("friendRequest").child(FirebaseAuth.getInstance().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    holder.addFriend.setBackground(ContextCompat.getDrawable(context, R.drawable.follow_active_btn));
+                    holder.addFriend.setText("Friend Request Send");
+                    holder.addFriend.setTextColor(context.getResources().getColor(R.color.grey));
+                    holder.addFriend.setEnabled(false);
+
+                }
+                else {
+                    FirebaseDatabase.getInstance().getReference().child("Users").child(user.getUserID()).child("friend").child(FirebaseAuth.getInstance().getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            if(snapshot.exists()){
+                                holder.addFriend.setBackground(ContextCompat.getDrawable(context, R.drawable.follow_active_btn));
+                                holder.addFriend.setText("Already  Friend ");
+                                holder.addFriend.setTextColor(context.getResources().getColor(R.color.grey));
+                                holder.addFriend.setEnabled(false);
+                            }
+                            else{
+                                holder.addFriend.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+
+                                        FollowModel followModel = new FollowModel();
+                                        followModel.setFollowedBy(FirebaseAuth.getInstance().getUid());
+                                        followModel.setFollowsAt(new Date().getTime());
+                                        followModel.setProfile(currentUserProfile);
+
+                                        FirebaseDatabase.getInstance().getReference().child("Users").child(user.getUserID()).child("friendRequest").child(FirebaseAuth.getInstance().getUid()).setValue(followModel).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                            @Override
+                                            public void onSuccess(Void unused) {
+                                                holder.addFriend.setBackground(ContextCompat.getDrawable(context, R.drawable.follow_active_btn));
+                                                holder.addFriend.setText("Friend Request Sent");
+                                                holder.addFriend.setTextColor(context.getResources().getColor(R.color.grey));
+                                                holder.addFriend.setEnabled(false);
+                                                Toast.makeText(context, "Freind Request Sent " + user.getName(), Toast.LENGTH_SHORT).show();
+
+                                                Notification notification=new Notification();
+                                                notification.setNotificationBy(FirebaseAuth.getInstance().getUid());
+                                                notification.setNotificationAt(new Date().getTime());
+                                                notification.setType("friendRequest");
+
+                                                FirebaseDatabase.getInstance().getReference().child("Notifications").child(user.getUserID()).push().setValue(notification);
+
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+
+                        }
+                    });
+                }
+
+            }
+
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
 
 
     }
@@ -133,13 +201,14 @@ public class UserAdapter  extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     public static class ViewHolder extends RecyclerView.ViewHolder{
          ImageView profile_image;
          TextView name,profession;
-         Button followBtn;
+         Button followBtn,addFriend;
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             profile_image=itemView.findViewById(R.id.profile_image);
             name=itemView.findViewById(R.id.name);
             profession=itemView.findViewById(R.id.profession);
             followBtn=itemView.findViewById(R.id.followBtn);
+            addFriend=itemView.findViewById(R.id.addFriend);
         }
     }
 }
