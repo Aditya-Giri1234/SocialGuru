@@ -24,6 +24,7 @@
     <color name="lightGreen">#DBF3EF</color>
 
     <color name="demo">#CDC8C8</color>
+    <color name="bg_receiver">#DBF1C4</color>
 
 
 </resources>

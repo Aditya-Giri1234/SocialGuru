@@ -9,11 +9,9 @@ import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.example.socialguru.adapter.ChatMainAdapter;
-import com.example.socialguru.databinding.ActivityChatBinding;
+import com.example.socialguru.adapter.chatAdapter.ChatMainAdapter;
 import com.example.socialguru.databinding.ActivityChatMainBinding;
 import com.example.socialguru.model.ChatModel;
-import com.example.socialguru.model.FollowModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -42,7 +40,7 @@ public class ChatMainActivity extends AppCompatActivity {
 
         ChatMainAdapter chatMainAdapter=new ChatMainAdapter(this,list);
 
-        database.getReference().child("Chats").child("chatMain").addValueEventListener(new ValueEventListener() {
+        database.getReference().child("Users").child(FirebaseAuth.getInstance().getUid()).child("chats").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if(snapshot.exists()){

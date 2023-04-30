@@ -52,6 +52,7 @@ public class ShowFriendActivity extends AppCompatActivity {
                             model.setLastSeen(snapshot.child("lastSeen").getValue(Long.class));
                             else
                                 model.setLastSeen(new Date().getTime());
+                            model.setuId(dataSnapshot.getKey());
 
                             list.add(model);
                             showFriendAdapter.notifyDataSetChanged();
