@@ -145,7 +145,7 @@
                 diagonal:layout_constraintHorizontal_bias="0.5" />
 
             <ImageView
-                android:id="@+id/name"
+                android:id="@+id/nameET"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@drawable/comment"
@@ -277,7 +277,7 @@
             </androidx.cardview.widget.CardView>
 
             <TextView
-                android:id="@+id/textView12"
+                android:id="@+id/description"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"

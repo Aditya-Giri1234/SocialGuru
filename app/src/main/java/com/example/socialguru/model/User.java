@@ -9,6 +9,15 @@ public class User {
     private boolean save=false;
     private int postCount;
     private int friendCount;
+    private String description;
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
     public int getFriendCount() {
         return friendCount;

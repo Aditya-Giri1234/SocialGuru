@@ -79,7 +79,7 @@ public class AddPostFragment extends Fragment {
               if(snapshot.exists()){
                   User user=snapshot.getValue(User.class);
                   Picasso.get().load(user.getProfile()).placeholder(R.drawable.image).into(binding.profileImage);
-                  binding.name.setText(user.getName());
+                  binding.nameET.setText(user.getName());
                   binding.profession.setText(user.getProfession());
               }
           }

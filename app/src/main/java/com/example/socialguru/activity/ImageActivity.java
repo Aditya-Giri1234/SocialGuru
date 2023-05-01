@@ -1,10 +1,11 @@
-package com.example.socialguru;
+package com.example.socialguru.activity;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
 
+import com.example.socialguru.R;
 import com.example.socialguru.databinding.ActivityImageBinding;
 import com.example.socialguru.fragment.ProfileFragment;
 import com.squareup.picasso.Picasso;

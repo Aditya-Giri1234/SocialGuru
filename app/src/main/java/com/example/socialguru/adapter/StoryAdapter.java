@@ -60,7 +60,7 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.ViewHolder> 
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     User user = snapshot.getValue(User.class);
                     Picasso.get().load(user.getProfile()).placeholder(R.drawable.image).into(holder.binding.profileImage);
-                    holder.binding.name.setText(user.getName());
+                    holder.binding.nameET.setText(user.getName());
                     holder.binding.story.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {

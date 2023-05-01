@@ -1,4 +1,4 @@
-package com.example.socialguru;
+package com.example.socialguru.activity;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -10,6 +10,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.example.socialguru.R;
 import com.example.socialguru.adapter.CommentAdapter;
 import com.example.socialguru.databinding.ActivityCommentBinding;
 import com.example.socialguru.model.CommentModel;

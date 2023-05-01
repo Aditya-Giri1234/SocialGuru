@@ -73,7 +73,7 @@
                 app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
-                android:id="@+id/name"
+                android:id="@+id/nameET"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
@@ -91,8 +91,8 @@
                 android:layout_height="wrap_content"
                 android:text="Android Developer"
                 app:layout_constraintBottom_toBottomOf="@+id/profile_image"
-                app:layout_constraintStart_toStartOf="@+id/name"
-                app:layout_constraintTop_toBottomOf="@+id/name" />
+                app:layout_constraintStart_toStartOf="@+id/nameET"
+                app:layout_constraintTop_toBottomOf="@+id/nameET" />
 
 
         </androidx.constraintlayout.widget.ConstraintLayout>

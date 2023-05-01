@@ -1,4 +1,4 @@
-package com.example.socialguru;
+package com.example.socialguru.activity;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 
+import com.example.socialguru.R;
 import com.example.socialguru.adapter.chatAdapter.ChatAdapter;
 import com.example.socialguru.databinding.ActivityChatBinding;
 import com.example.socialguru.databinding.ChatActivitySampleBinding;

@@ -15,31 +15,34 @@
         android:theme="@style/Theme.SocialGuru"
         tools:targetApi="31">
         <activity
-            android:name=".ShowFriendActivity"
+            android:name=".activity.ProfileSettingActivity"
             android:exported="false" />
         <activity
-            android:name=".ChatMainActivity"
+            android:name=".activity.ShowFriendActivity"
             android:exported="false" />
         <activity
-            android:name=".ChatActivity"
+            android:name=".activity.ChatMainActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activity.ChatActivity"
             android:exported="false"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".activity.MainActivity" />
         <activity
-            android:name=".FriendActivity"
+            android:name=".activity.FriendActivity"
             android:exported="false"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".activity.MainActivity" />
         <activity
-            android:name=".CommentActivity"
+            android:name=".activity.CommentActivity"
             android:exported="false" />
         <activity
-            android:name=".ImageActivity"
+            android:name=".activity.ImageActivity"
             android:exported="false"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".activity.MainActivity" />
         <activity
-            android:name=".SignUpActivity"
+            android:name=".activity.SignUpActivity"
             android:exported="false" />
         <activity
-            android:name=".LoginActivity"
+            android:name=".activity.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -48,7 +51,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MainActivity"
+            android:name=".activity.MainActivity"
             android:exported="false" />
 
         <meta-data

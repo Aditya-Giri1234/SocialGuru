@@ -1,4 +1,4 @@
-package com.example.socialguru;
+package com.example.socialguru.activity;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -6,7 +6,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import android.os.Bundle;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import com.example.socialguru.adapter.ShowFriendAdapter;
 import com.example.socialguru.databinding.ActivityShowFriendBinding;

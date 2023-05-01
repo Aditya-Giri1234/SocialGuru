@@ -10,8 +10,8 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.socialguru.ChatActivity;
-import com.example.socialguru.ImageActivity;
+import com.example.socialguru.activity.ChatActivity;
+import com.example.socialguru.activity.ImageActivity;
 import com.example.socialguru.R;
 import com.example.socialguru.databinding.ChatActivitySampleBinding;
 import com.example.socialguru.model.ChatModel;

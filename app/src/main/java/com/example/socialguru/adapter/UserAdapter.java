@@ -205,7 +205,7 @@ public class UserAdapter  extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             profile_image=itemView.findViewById(R.id.profile_image);
-            name=itemView.findViewById(R.id.name);
+            name=itemView.findViewById(R.id.nameET);
             profession=itemView.findViewById(R.id.profession);
             followBtn=itemView.findViewById(R.id.followBtn);
             addFriend=itemView.findViewById(R.id.addFriend);

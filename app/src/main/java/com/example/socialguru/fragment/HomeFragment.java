@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.cooltechworks.views.shimmer.ShimmerRecyclerView;
-import com.example.socialguru.MainActivity;
 import com.example.socialguru.R;
 import com.example.socialguru.adapter.PostAdapter;
 import com.example.socialguru.adapter.StoryAdapter;
@@ -37,7 +36,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
-import com.iammert.library.readablebottombar.ReadableBottomBar;
 import com.makeramen.roundedimageview.RoundedImageView;
 
 import java.util.ArrayList;

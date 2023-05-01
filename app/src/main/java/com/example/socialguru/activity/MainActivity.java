@@ -1,4 +1,4 @@
-package com.example.socialguru;
+package com.example.socialguru.activity;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -10,6 +10,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.example.socialguru.R;
 import com.example.socialguru.databinding.ActivityMainBinding;
 import com.example.socialguru.fragment.AddPostFragment;
 import com.example.socialguru.fragment.HomeFragment;
@@ -90,6 +91,9 @@ public class MainActivity extends AppCompatActivity {
             FirebaseAuth.getInstance().signOut();
             startActivity(new Intent(MainActivity.this,LoginActivity.class));
             finish();
+        }
+        if (item.getItemId()==R.id.changeDescription){
+            startActivity(new Intent(this,ProfileSettingActivity.class));
         }
         return true;
     }

@@ -1,4 +1,4 @@
-package com.example.socialguru;
+package com.example.socialguru.activity;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;

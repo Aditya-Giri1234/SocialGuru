@@ -10,7 +10,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.socialguru.CommentActivity;
+import com.example.socialguru.activity.CommentActivity;
 import com.example.socialguru.R;
 import com.example.socialguru.databinding.DashboardRvSampleBinding;
 import com.example.socialguru.model.Post;

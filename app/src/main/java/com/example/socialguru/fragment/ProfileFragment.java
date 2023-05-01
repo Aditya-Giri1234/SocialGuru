@@ -13,9 +13,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.example.socialguru.ChatMainActivity;
-import com.example.socialguru.FriendActivity;
-import com.example.socialguru.ImageActivity;
+import com.example.socialguru.activity.ChatMainActivity;
+import com.example.socialguru.activity.FriendActivity;
+import com.example.socialguru.activity.ImageActivity;
 import com.example.socialguru.R;
 import com.example.socialguru.databinding.FragmentProfileBinding;
 import com.example.socialguru.model.FollowModel;
@@ -64,6 +64,7 @@ User user;
                    binding.followers.setText(user.getFollowerCount()+"");
                    binding.postCount.setText(user.getPostCount()+"");
                    binding.friendCount.setText(user.getFriendCount()+"");
+                   binding.description.setText(user.getDescription());
                 }
             }
 

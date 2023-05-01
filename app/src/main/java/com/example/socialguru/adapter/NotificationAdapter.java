@@ -10,8 +10,8 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.socialguru.CommentActivity;
-import com.example.socialguru.ImageActivity;
+import com.example.socialguru.activity.CommentActivity;
+import com.example.socialguru.activity.ImageActivity;
 import com.example.socialguru.R;
 import com.example.socialguru.databinding.NotificationRvSampleBinding;
 import com.example.socialguru.model.Notification;
@@ -24,7 +24,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
-import java.util.Timer;
 
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.ViewHolder> {
     Context context;
