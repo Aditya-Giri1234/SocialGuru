@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/home_fragment_bar"
+        android:icon="@drawable/ic_home"
+        android:title="Home" />
+    <item
+        android:id="@+id/rescent_chat_fragment_bar"
+        android:icon="@drawable/rescent_chat"
+        android:title="Chats" />
+    <item
+        android:id="@+id/icProxy"
+        android:title="" />
+    <item
+        android:id="@+id/notification_fragment_bar"
+        android:icon="@drawable/ic_notification"
+        android:title="Notification" />
+    <item
+        android:id="@+id/profile_fragment_bar"
+        android:icon="@drawable/ic_person"
+        android:title="Profile" />
+
+</menu>

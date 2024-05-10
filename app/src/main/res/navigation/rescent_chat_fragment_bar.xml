@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rescent_chat_fragment_bar"
+    app:startDestination="@id/recentChatFragment">
+
+    <fragment
+        android:id="@+id/recentChatFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.RecentChatFragment"
+        android:label="fragment_recent_chat"
+        tools:layout="@layout/fragment_recent_chat" />
+</navigation>
