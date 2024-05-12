@@ -5,16 +5,22 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.view.ViewGroup
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.get
 import androidx.core.view.isGone
+import androidx.core.view.marginBottom
 import androidx.core.view.updatePadding
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.ReportFragment.Companion.reportFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
+import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import com.aditya.socialguru.databinding.ActivityMainBinding
@@ -24,9 +30,11 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Constants.IntentTable
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setupWithNavController
 import com.aditya.socialguru.domain_layer.helper.show
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import com.google.firebase.FirebaseApp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -38,20 +46,26 @@ class MainActivity : AppCompatActivity() {
     var navController: LiveData<NavController>? = null
     private var loader: MyLoader? = null
 
-    private var isMainActivityRunning = false
+    private var bottomMargin:Int=0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle =
+            SystemBarStyle.dark(
+                Color.BLACK
+            )
+        )
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
 
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            bottomMargin=-systemBars.bottom
             v.setPadding(
                 systemBars.left,
                 systemBars.top,
                 systemBars.right,
-                0
+                systemBars.bottom
             )
             insets
         }
@@ -66,6 +80,8 @@ class MainActivity : AppCompatActivity() {
     private fun handleInitialization() {
         initUi()
         subscribeToObserver()
+        subscribeToDestinationChanges()
+
     }
 
     private fun subscribeToObserver() {
@@ -118,37 +134,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun showLoader(message: String, percentage: Int? = null, state: String) {
-        if (loader == null) {
-            loader = MyLoader(message)
-        }
-        loader?.show(supportFragmentManager, "My Loader")
-    }
 
-    private fun updateLoader(message: String, percentage: Int? = null, state: String) {
-        sendBroadcast(
-            getStoryIntent(
-                message,
-                percentage,
-                state
-            )
-        )
-    }
-
-    private fun hideLoader(message: String, state: String) {
-        sendBroadcast(
-            getStoryIntent(
-                message,
-                null,
-                state
-            )
-        )
-        lifecycleScope.launch {
-            delay(200)
-            loader?.dismiss()
-            loader = null
-        }
-    }
 
     private fun subscribeToDestinationChanges() {
         MyLogger.v(isFunctionCall = true)
@@ -164,7 +150,11 @@ class MainActivity : AppCompatActivity() {
                 MyLogger.d(msg = "Destination is change occurred :- ${destination.label}")
                 if (bottomBarDestination.contains(destination.id)) {
                     showBottomNavigation()
+
                 } else {
+                    val param=(binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
+                    param.setMargins(0,0,0,0)
+                    binding.localNavHostFragment.layoutParams= param
                     hideBottomNavigation()
                 }
 
@@ -177,11 +167,7 @@ class MainActivity : AppCompatActivity() {
         binding.apply {
             bottomNavigationView.menu[2].isEnabled = false
 
-            //Just avoid extra padding in bottom app bar
-            bottomApp.setOnApplyWindowInsetsListener { view, insets ->
-                view.updatePadding(bottom = 0)
-                insets
-            }
+            setListener()
         }
         setUpBottomNav()
     }
@@ -204,7 +190,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun ActivityMainBinding.setListener() {
-
+        //Just avoid extra padding in bottom app bar
+        bottomApp.setOnApplyWindowInsetsListener { view, insets ->
+            view.updatePadding(bottom = bottomMargin)
+            insets
+        }
+        fab.setOnClickListener {
+            Intent(this@MainActivity,ContainerActivity::class.java).apply {
+                putExtra(Constants.FRAGMENT_NAVIGATION,Constants.FragmentNavigation.AddPostFragment.name)
+                startActivity(this)
+                overridePendingTransition(
+                    R.anim.slide_in_top,
+                    R.anim.slide_out_top
+                )
+            }
+        }
     }
 
     private fun hideBottomNavigation() {
@@ -245,6 +245,9 @@ class MainActivity : AppCompatActivity() {
                 override fun onAnimationEnd(p0: Animator) {
                     binding.bottomApp.show()
                     binding.fab.show()
+                    val param=(binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
+                    param.setMargins(0,0,0,actionBar?.height?:56)
+                    binding.localNavHostFragment.layoutParams= param
                 }
 
                 override fun onAnimationCancel(p0: Animator) {
@@ -267,11 +270,50 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showLoader(message: String, percentage: Int? = null, state: String) {
+        if (loader == null) {
+            loader = MyLoader(message)
+        }
+        loader?.show(supportFragmentManager, "My Loader")
+    }
 
+    private fun updateLoader(message: String, percentage: Int? = null, state: String) {
+        sendBroadcast(
+            getStoryIntent(
+                message,
+                percentage,
+                state
+            )
+        )
+    }
+
+    private fun hideLoader(message: String, state: String) {
+        sendBroadcast(
+            getStoryIntent(
+                message,
+                null,
+                state
+            )
+        )
+        lifecycleScope.launch {
+            delay(200)
+            loader?.dismiss()
+            loader = null
+        }
+    }
     override fun onResume() {
         super.onResume()
         MyLogger.v(isFunctionCall = true)
-        subscribeToDestinationChanges()
+
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        return navController?.value?.navigateUp() ?: super.onSupportNavigateUp()
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {

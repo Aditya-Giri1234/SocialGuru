@@ -19,7 +19,7 @@
             android:name=".MainActivity"
             android:exported="false"/>
         <activity
-            android:name=".ui_layer.activity.IntroActivity"
+            android:name=".ui_layer.activity.ContainerActivity"
             android:windowSoftInputMode="adjustPan"
             android:exported="false"/>
         <activity

@@ -3,20 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
+    android:background="@android:color/transparent"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
-        android:id="@+id/coordLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        android:rotation="180"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.5" />
+
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/localNavHostFragment"
@@ -26,7 +17,7 @@
         android:layout_gravity="top"
         android:layout_marginBottom="?actionBarSize"
         app:defaultNavHost="true"
-        app:navGraph="@navigation/app_navigation" />
+        app:navGraph="@navigation/bottom_navigation" />
 
     <!-- BottomAppBar -->
     <com.google.android.material.bottomappbar.BottomAppBar

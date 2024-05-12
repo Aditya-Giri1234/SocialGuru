@@ -10,7 +10,7 @@ import com.aditya.socialguru.databinding.FragmentOnboardingScreenBinding
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.aditya.socialguru.ui_layer.activity.IntroActivity
+import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import com.aditya.socialguru.ui_layer.adapter.OnBoardingPagerAdapter
 import com.aditya.socialguru.ui_layer.fragment.intro_part.onboarding_screen.OnBaordingStoryIntroFragment
 import com.aditya.socialguru.ui_layer.fragment.intro_part.onboarding_screen.OnBoardingAppIntroFragment
@@ -22,7 +22,7 @@ class OnboardingScreenFragment : Fragment() {
     private var _binding: FragmentOnboardingScreenBinding? = null
     private val binding get() = _binding!!
 
-    private val navController get() = (requireActivity() as IntroActivity).navController
+    private val navController get() = (requireActivity() as ContainerActivity).navController
 
     private val pagerAdapter: OnBoardingPagerAdapter by lazy {
         OnBoardingPagerAdapter(

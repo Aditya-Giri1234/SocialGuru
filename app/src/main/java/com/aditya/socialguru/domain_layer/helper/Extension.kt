@@ -12,6 +12,7 @@ import androidx.navigation.NavDirections
 import androidx.navigation.NavOptions
 import com.google.android.gms.tasks.Task
 import com.google.android.material.textfield.TextInputLayout
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
 
+//region:: View related extension come here
 fun View.gone(){
     isGone=true
 }
@@ -30,6 +32,8 @@ fun View.show(){
 fun EditText.getStringText():String{
     return text.toString()
 }
+
+//endregion
 
 
 fun NavController.safeNavigate(direction: NavDirections) {
@@ -117,5 +121,11 @@ suspend fun <T> Task<T>.await():T{
             }
         }
     }
+}
+
+
+suspend fun CoroutineScope.delay(time:Long,run:()->Unit){
+    kotlinx.coroutines.delay(time)
+    run()
 }
 

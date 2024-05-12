@@ -42,8 +42,6 @@ class StoryAdapter(val onAddStory:()->Unit) : RecyclerView.Adapter<RecyclerView.
 
             fun bind(data:Stories){
                 view.apply {
-//                    Gli
-//                    ivStory.setImageResource(data.image!!)
                     profileImage.setImageResource(
                         R.drawable.person
                     )

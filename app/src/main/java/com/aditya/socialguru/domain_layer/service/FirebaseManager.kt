@@ -33,6 +33,11 @@ object FirebaseManager {
     //Firebase Auth reference
     private val auth = FirebaseAuth.getInstance()
 
+
+    fun isUserLogin():Boolean{
+        return auth.currentUser!=null
+    }
+
     fun uploadStory(imageUri: Uri) {
         AppBroadcastHelper.setUploadState(Constants.StoryUploadState.StartUploading)
         storageReference.child("${Constants.FolderName.StoryImage.name}/${imageUri.lastPathSegment}")
@@ -153,6 +158,12 @@ object FirebaseManager {
                 // Close any resources here
                 databaseReference.removeEventListener(valueEventListener)
             }
+        }
+    }
+
+    fun signOutUser(){
+        if (auth.currentUser!=null){
+            auth.signOut()
         }
     }
 

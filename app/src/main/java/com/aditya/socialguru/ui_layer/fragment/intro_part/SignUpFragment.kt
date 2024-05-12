@@ -1,5 +1,6 @@
 package com.aditya.socialguru.ui_layer.fragment.intro_part
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -7,6 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
@@ -14,11 +16,13 @@ import com.aditya.socialguru.databinding.FragmentSignUpBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.customError
+import com.aditya.socialguru.domain_layer.helper.delay
 import com.aditya.socialguru.domain_layer.helper.getStringText
 import com.aditya.socialguru.domain_layer.helper.removeErrorOnTextChanged
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.aditya.socialguru.ui_layer.activity.IntroActivity
+import com.aditya.socialguru.domain_layer.service.SharePref
+import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import com.aditya.socialguru.ui_layer.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
@@ -30,9 +34,13 @@ class SignUpFragment : Fragment() {
 
     private val tagLogin = Constants.LogTag.LogIn
 
-    private val navController get() = (requireActivity() as IntroActivity).navController
+    private val navController get() = (requireActivity() as ContainerActivity).navController
 
     private val authViewModel: AuthViewModel by viewModels()
+
+    private val pref by lazy {
+        SharePref(requireContext())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,10 +77,23 @@ class SignUpFragment : Fragment() {
                             MyLogger.i(tagLogin, msg = "User created successfully !")
                             Helper.hideLoader()
                             Helper.showSuccessSnackBar(
-                                (requireActivity() as IntroActivity).findViewById(
+                                (requireActivity() as ContainerActivity).findViewById(
                                     R.id.coordLayout
                                 ), "Successfully account created !"
                             )
+                            response.data?.let {data->
+                                pref.setPrefUser(data)
+                            }
+                            delay(200) {
+                                Intent(
+                                    requireActivity(),
+                                    MainActivity::class.java
+                                ).also(::startActivity)
+                                requireActivity().overridePendingTransition(
+                                    R.anim.slide_in_right,R.anim.slide_out_left
+                                )
+                                requireActivity().finish()
+                            }
                         }
 
                         is Resource.Loading -> {
@@ -87,7 +108,7 @@ class SignUpFragment : Fragment() {
                             )
                             Helper.hideLoader()
                             Helper.showSnackBar(
-                                (requireActivity() as IntroActivity).findViewById(R.id.coordLayout),
+                                (requireActivity() as ContainerActivity).findViewById(R.id.coordLayout),
                                 response.message.toString()
                             )
                         }

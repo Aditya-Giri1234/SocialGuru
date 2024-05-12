@@ -90,20 +90,29 @@
                 app:errorTextColor="@color/error_color"
                 app:boxStrokeErrorColor="@color/error_color"
                 app:errorIconTint="@color/error_color"
+                app:endIconMode="password_toggle"
+                app:endIconDrawable="@drawable/iv_open_eye"
+                app:endIconTint="@color/white"
+                android:tag="0"
+                app:passwordToggleEnabled="true"
+                app:passwordToggleDrawable="@drawable/ic_close_eye"
+                app:passwordToggleTint="@color/white"
                 app:layout_constraintStart_toStartOf="@id/tilEmail"
                 app:layout_constraintTop_toBottomOf="@id/tilEmail"
-                app:layout_constraintEnd_toEndOf="@id/tilEmail">
+                app:layout_constraintEnd_toEndOf="@id/tilEmail"
+                tools:ignore="PrivateResource">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/tiEtPassword"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Password"
+                    android:hint="@string/password"
                     android:textColor="@color/white"
                     android:fontFamily="@font/poppins_regular"
                     android:textSize="@dimen/_14ssp"
                     android:inputType="textPassword"
                     android:maxLines="1"
-                    android:ellipsize="end"/>
+                    android:ellipsize="end"
+                    tools:ignore="RtlSymmetry" />
             </com.google.android.material.textfield.TextInputLayout>
 
 
@@ -111,7 +120,7 @@
                 android:id="@+id/btnLogin"
                 android:layout_width="0dp"
                 android:layout_height="@dimen/_45sdp"
-                android:text="Login"
+                android:text="@string/login"
                 android:textAllCaps="false"
                 android:backgroundTint="@color/yellow"
                 android:textColor="@color/black"
@@ -136,7 +145,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Don't have account?"
+                    android:text="@string/don_t_have_account"
                     android:textSize="@dimen/_12ssp"
                     android:fontFamily="@font/poppins_regular"
                     android:textColor="@color/white"
@@ -147,7 +156,7 @@
                     android:id="@+id/tvNavigateToSignUp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="SignUp"
+                    android:text="@string/signup"
                     android:layout_marginStart="@dimen/_3sdp"
                     android:textSize="@dimen/_14ssp"
                     android:fontFamily="@font/poppins_semi_bold"

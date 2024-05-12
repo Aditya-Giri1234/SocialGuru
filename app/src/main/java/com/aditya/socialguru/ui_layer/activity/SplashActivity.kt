@@ -9,8 +9,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.databinding.ActivitySplashBinding
+import com.aditya.socialguru.domain_layer.service.FirebaseManager
 
 
 class SplashActivity : AppCompatActivity() {
@@ -44,7 +46,12 @@ class SplashActivity : AppCompatActivity() {
     private fun handleInitialization() {
         binding.apply {
             Handler(Looper.getMainLooper()).postDelayed({
-               Intent(this@SplashActivity,IntroActivity::class.java).also(::startActivity)
+                val intent=if (FirebaseManager.isUserLogin()){
+                    Intent(this@SplashActivity,MainActivity::class.java)
+                }else{
+                    Intent(this@SplashActivity,ContainerActivity::class.java)
+                }
+               intent.also(::startActivity)
                 overridePendingTransition(R.anim.slide_in_right,R.anim.slide_out_left)
                 finish()
 

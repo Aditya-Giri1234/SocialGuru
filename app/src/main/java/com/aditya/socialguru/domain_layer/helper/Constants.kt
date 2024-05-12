@@ -3,6 +3,13 @@ package com.aditya.socialguru.domain_layer.helper
 object Constants {
 
     const val TYPE="TYPE"
+    const val FRAGMENT_NAVIGATION="Fragment Navigation"
+
+    enum class FragmentNavigation{
+        OnBoardingFragment,
+        SignInFragment,
+        AddPostFragment
+    }
 
 
     enum class FolderName{

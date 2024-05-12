@@ -95,4 +95,7 @@ dependencies {
     //Dot indicator for viewPager
     implementation("com.tbuonomo:dotsindicator:4.3")
 
+    //Data Store Preference
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
 }

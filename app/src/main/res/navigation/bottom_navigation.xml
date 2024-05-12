@@ -9,4 +9,5 @@
     <include app:graph="@navigation/notification_fragment_bar" />
     <include app:graph="@navigation/profile_fragment_bar" />
 
+
 </navigation>

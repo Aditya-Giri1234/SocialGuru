@@ -37,6 +37,10 @@ object Helper {
         .setPopUpTo(popUpTo,isInclusive)
         .build()
 
+    fun givePopUpNavOption(popUpTo:Int, isInclusive:Boolean): NavOptions = NavOptions.Builder()
+        .setPopUpTo(popUpTo,isInclusive)
+        .build()
+
 
     fun showSnackBar(view: View, input: String) {
             val cl = view.findViewById<CoordinatorLayout>(R.id.coordLayout)
