@@ -16,6 +16,7 @@ import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSnackBar
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSnackBarView
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSuccessSnackBar
 import com.google.android.material.snackbar.BaseTransientBottomBar
+import java.util.UUID
 
 object Helper {
 
@@ -86,5 +87,9 @@ object Helper {
     }
     fun isEmailValid(email: String): Boolean {
         return Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    fun generateUUID(): String {
+        return UUID.randomUUID().toString()
     }
 }

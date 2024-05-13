@@ -18,10 +18,13 @@ import com.aditya.socialguru.domain_layer.helper.Constants.StoryUploadState
 import com.aditya.socialguru.domain_layer.helper.Constants.IntentTable
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.show
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 
 class MyLoader(val message: String?=null) : DialogFragment() {
     private var _binding:CustomLoaderLayoutBinding?=null
     private val binding get() = _binding!!
+
+    private val tagStory=Constants.LogTag.Story
 
     private val broadcastReceiver=object : BroadcastReceiver(){
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -31,6 +34,7 @@ class MyLoader(val message: String?=null) : DialogFragment() {
                       val progress = it.getIntExtra(IntentTable.UploadProgress.name, 0)
                       val message = it.getStringExtra(IntentTable.UploadMessage.name)
                       val state = it.getStringExtra(IntentTable.UploadState.name)
+                      MyLogger.d(tagStory, msg = "state:=$state , message:- $message , progress:- $progress")
                       updateContent(progress,message,state)
                   }
 
@@ -39,9 +43,11 @@ class MyLoader(val message: String?=null) : DialogFragment() {
         }
     }
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return super.onCreateDialog(savedInstanceState)
 
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        subscribeToBroadcast()
     }
 
     override fun onCreateView(
@@ -49,9 +55,7 @@ class MyLoader(val message: String?=null) : DialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-         super.onCreateView(inflater, container, savedInstanceState)
         _binding= CustomLoaderLayoutBinding.inflate(layoutInflater)
-        subscribeToBroadcast()
         return binding.root
     }
 
@@ -125,7 +129,7 @@ class MyLoader(val message: String?=null) : DialogFragment() {
                 }
 
                 StoryUploadState.StoryUploadedSuccessfully.name -> {
-                    tvMessage.text = "Story uploaded successfully"
+                    tvMessage.text = ""
                 }
 
                 else -> {
@@ -136,7 +140,11 @@ class MyLoader(val message: String?=null) : DialogFragment() {
     }
 
     override fun onDestroyView() {
-        requireContext().unregisterReceiver(broadcastReceiver)
         super.onDestroyView()
+    }
+
+    override fun onDestroy() {
+        requireContext().unregisterReceiver(broadcastReceiver)
+        super.onDestroy()
     }
 }

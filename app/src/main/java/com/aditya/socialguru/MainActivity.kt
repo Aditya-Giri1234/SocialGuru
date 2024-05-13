@@ -1,7 +1,6 @@
 package com.aditya.socialguru
 
 import android.animation.Animator
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -9,20 +8,14 @@ import android.view.ViewGroup
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.get
-import androidx.core.view.isGone
-import androidx.core.view.marginBottom
+import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.ReportFragment.Companion.reportFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
-import androidx.navigation.findNavController
-import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.ui.AppBarConfiguration
 import com.aditya.socialguru.databinding.ActivityMainBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
@@ -30,12 +23,10 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Constants.IntentTable
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
-import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setupWithNavController
 import com.aditya.socialguru.domain_layer.helper.show
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.ui_layer.activity.ContainerActivity
-import com.google.firebase.FirebaseApp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -46,7 +37,8 @@ class MainActivity : AppCompatActivity() {
     var navController: LiveData<NavController>? = null
     private var loader: MyLoader? = null
 
-    private var bottomMargin:Int=0
+    private var bottomMargin: Int = 0
+    private val tagStory = Constants.LogTag.Story
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
@@ -57,10 +49,11 @@ class MainActivity : AppCompatActivity() {
         )
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
 
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            bottomMargin=-systemBars.bottom
+            bottomMargin = -systemBars.bottom
+
             v.setPadding(
                 systemBars.left,
                 systemBars.top,
@@ -69,7 +62,7 @@ class MainActivity : AppCompatActivity() {
             )
             insets
         }
-        window.navigationBarColor= Color.BLACK
+        window.navigationBarColor = Color.BLACK
 
         MyLogger.v(isFunctionCall = true)
         handleInitialization()
@@ -87,9 +80,10 @@ class MainActivity : AppCompatActivity() {
     private fun subscribeToObserver() {
         lifecycleScope.launch {
             AppBroadcastHelper.uploadStories.collect {
-                MyLogger.v(isFunctionCall = true)
+                MyLogger.v(tagStory, isFunctionCall = true)
                 when (it.first) {
                     Constants.StoryUploadState.StartUploading -> {
+                        MyLogger.v(tagStory, msg = "Loader is show with start uploading state ...")
                         showLoader(
                             "Uploading",
                             state = Constants.StoryUploadState.StartUploading.name
@@ -97,14 +91,19 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     Constants.StoryUploadState.Uploading -> {
+                        MyLogger.v(
+                            tagStory,
+                            msg = "Loader is show with  uploading state ... ${it.second}"
+                        )
                         updateLoader(
                             "Uploading",
-                            it.second,
+                            it.second ?: 0,
                             Constants.StoryUploadState.Uploading.name
                         )
                     }
 
                     Constants.StoryUploadState.UploadingFail -> {
+                        MyLogger.v(tagStory, msg = "Loader is show with  UploadingFail state ...")
                         hideLoader(
                             "Uploading Fail",
                             state = Constants.StoryUploadState.UploadingFail.name
@@ -112,6 +111,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     Constants.StoryUploadState.SavingStory -> {
+                        MyLogger.v(tagStory, msg = "Loader is show with  SavingStory state ...")
                         updateLoader(
                             "Saving Story",
                             state = Constants.StoryUploadState.SavingStory.name
@@ -119,13 +119,19 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     Constants.StoryUploadState.StoryUploadedSuccessfully -> {
+                        MyLogger.v(
+                            tagStory,
+                            msg = "Loader is show with  StoryUploadedSuccessfully state ..."
+                        )
                         hideLoader(
                             "",
                             state = Constants.StoryUploadState.StoryUploadedSuccessfully.name
                         )
+                        Helper.showSuccessSnackBar(binding.coordLayout,"Story uploaded successfully !")
                     }
 
                     Constants.StoryUploadState.UrlNotGet -> {
+                        MyLogger.v(tagStory, msg = "Loader is show with  UrlNotGet state ...")
                         hideLoader("", state = Constants.StoryUploadState.UrlNotGet.name)
                     }
                 }
@@ -133,7 +139,6 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
-
 
 
     private fun subscribeToDestinationChanges() {
@@ -152,9 +157,10 @@ class MainActivity : AppCompatActivity() {
                     showBottomNavigation()
 
                 } else {
-                    val param=(binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
-                    param.setMargins(0,0,0,0)
-                    binding.localNavHostFragment.layoutParams= param
+                    val param =
+                        (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
+                    param.setMargins(0, 0, 0, 0)
+                    binding.localNavHostFragment.layoutParams = param
                     hideBottomNavigation()
                 }
 
@@ -195,9 +201,18 @@ class MainActivity : AppCompatActivity() {
             view.updatePadding(bottom = bottomMargin)
             insets
         }
+        coordLayout.setOnApplyWindowInsetsListener { view, insets ->
+            // Need to give bottom padding because this same amount padding apply by top so that it will dismiss the effect of edgeToEdge top padding
+            view.updatePadding(bottom = bottomMargin)
+            insets
+        }
         fab.setOnClickListener {
-            Intent(this@MainActivity,ContainerActivity::class.java).apply {
-                putExtra(Constants.FRAGMENT_NAVIGATION,Constants.FragmentNavigation.AddPostFragment.name)
+
+            Intent(this@MainActivity, ContainerActivity::class.java).apply {
+                putExtra(
+                    Constants.FRAGMENT_NAVIGATION,
+                    Constants.FragmentNavigation.AddPostFragment.name
+                )
                 startActivity(this)
                 overridePendingTransition(
                     R.anim.slide_in_top,
@@ -245,9 +260,10 @@ class MainActivity : AppCompatActivity() {
                 override fun onAnimationEnd(p0: Animator) {
                     binding.bottomApp.show()
                     binding.fab.show()
-                    val param=(binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
-                    param.setMargins(0,0,0,actionBar?.height?:56)
-                    binding.localNavHostFragment.layoutParams= param
+                    val param =
+                        (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
+                    param.setMargins(0, 0, 0, actionBar?.height ?: 56)
+                    binding.localNavHostFragment.layoutParams = param
                 }
 
                 override fun onAnimationCancel(p0: Animator) {
@@ -262,8 +278,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getStoryIntent(message: String, percentage: Int?, state: String): Intent {
-        return Intent().apply {
+    private fun getStoryIntent(message: String, percentage: Int = 0, state: String): Intent {
+        return Intent(Constants.BroadcastType.StoryUploading.name).apply {
+            putExtra(Constants.TYPE,Constants.BroadcastType.StoryUploading.name)
             putExtra(IntentTable.UploadMessage.name, message)
             putExtra(IntentTable.UploadProgress.name, percentage)
             putExtra(IntentTable.UploadState.name, state)
@@ -277,7 +294,7 @@ class MainActivity : AppCompatActivity() {
         loader?.show(supportFragmentManager, "My Loader")
     }
 
-    private fun updateLoader(message: String, percentage: Int? = null, state: String) {
+    private fun updateLoader(message: String, percentage: Int = 0, state: String) {
         sendBroadcast(
             getStoryIntent(
                 message,
@@ -291,7 +308,7 @@ class MainActivity : AppCompatActivity() {
         sendBroadcast(
             getStoryIntent(
                 message,
-                null,
+                0,
                 state
             )
         )
@@ -301,6 +318,7 @@ class MainActivity : AppCompatActivity() {
             loader = null
         }
     }
+
     override fun onResume() {
         super.onResume()
         MyLogger.v(isFunctionCall = true)

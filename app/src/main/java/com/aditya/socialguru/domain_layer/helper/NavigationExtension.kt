@@ -9,6 +9,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.google.android.material.bottomnavigation.BottomNavigationView
 fun BottomNavigationView.setupWithNavController(
     navGraphIds: List<Int>,
@@ -200,8 +201,11 @@ private fun obtainNavHostFragment(
 ): NavHostFragment {
     // If the Nav Host fragment exists, return it
     val existingFragment = fragmentManager.findFragmentByTag(fragmentTag) as NavHostFragment?
-    existingFragment?.let { return it }
-
+    existingFragment?.let {
+//        MyLogger.d(msg = "Graph id :- $navGraphId   have nav host fragment already !")
+        return it
+    }
+//    MyLogger.d(msg = "Graph id :- $navGraphId  not  have nav host fragment so that create new one !")
     // Otherwise, create it and return it.
     val navHostFragment = NavHostFragment.create(navGraphId)
     fragmentManager.beginTransaction()

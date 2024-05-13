@@ -8,27 +8,66 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.story.UserStories
+import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.HomeRepository
+import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class HomeViewModel(val app: Application) : AndroidViewModel(app) {
 
 
+    private val tagStory= Constants.LogTag.Story
     private val repository = HomeRepository()
     private val _uploadStories = MutableLiveData<Resource<String>>()
     val uploadStories: LiveData<Resource<String>> get() = _uploadStories
 
-    fun storeImageInFirebaseStorage(image: Uri) = viewModelScope.launch {
+    private val _userStories = MutableLiveData<Resource<List<UserStories>?>>()
+    val userStories: LiveData<Resource<List<UserStories>?>> get() = _userStories
+
+
+    init {
+        getAllStory()
+    }
+
+    fun storeImageInFirebaseStorage(image: Uri ,user: User) = viewModelScope.launch {
 
         _uploadStories.postValue(Resource.Loading())
-
+        MyLogger.v(tagStory, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.storeImageInFirebaseStorage(image)
+            MyLogger.v(tagStory, msg = "Network available !")
+            repository.storeImageInFirebaseStorage(image ,user)
         } else {
+            MyLogger.v(tagStory, msg = "Network not available !")
             _uploadStories.postValue(Resource.Error(message = "Internet not available ."))
         }
 
     }
+
+    //region:: Get all story
+
+    fun getAllStory()=viewModelScope.launch {
+        _userStories.postValue(Resource.Loading())
+        MyLogger.v(tagStory, msg = "Request sending ....")
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            MyLogger.v(tagStory, msg = "Network available !")
+            repository.getAllStory { userStories, error ->
+                if (userStories!=null){
+                    MyLogger.v(tagStory, msg = userStories , isJson = true)
+                    _userStories.postValue(Resource.Success(userStories))
+                }else{
+                    _userStories.postValue(Resource.Error(message = error))
+                }
+            }
+        } else {
+            MyLogger.v(tagStory, msg = "Network not available !")
+            _userStories.postValue(Resource.Error(message = "Internet not available ."))
+        }
+    }
+
+    //endregion
 }

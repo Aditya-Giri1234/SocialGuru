@@ -6,24 +6,24 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.RecyclerView.LayoutParams
-import androidx.recyclerview.widget.RecyclerView.Recycler
 import com.aditya.socialguru.R
-import com.aditya.socialguru.data_layer.model.Stories
+import com.aditya.socialguru.data_layer.model.story.Stories
+import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.databinding.AddStoryLayoutBinding
 import com.aditya.socialguru.databinding.SampleStoriesLayoutBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 
 
 class StoryAdapter(val onAddStory:()->Unit) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
-        val callback = object : DiffUtil.ItemCallback<Stories>() {
-            override fun areItemsTheSame(oldItem: Stories, newItem: Stories): Boolean {
-                return oldItem.id == newItem.id
+        val callback = object : DiffUtil.ItemCallback<UserStories>() {
+            override fun areItemsTheSame(oldItem: UserStories, newItem: UserStories): Boolean {
+                return oldItem.user?.userId == newItem.user?.userId
             }
 
-            override fun areContentsTheSame(oldItem: Stories, newItem: Stories): Boolean {
+            override fun areContentsTheSame(oldItem: UserStories, newItem: UserStories): Boolean {
                 return oldItem == newItem
             }
 
@@ -35,18 +35,18 @@ class StoryAdapter(val onAddStory:()->Unit) : RecyclerView.Adapter<RecyclerView.
 
     private val differ = AsyncListDiffer(this, callback)
 
-    fun submitList(list: List<Stories>) = differ.submitList(list)
+    fun submitList(list: List<UserStories>) = differ.submitList(list)
 
     private inner class AvailableStoryViewHolder(val view: SampleStoriesLayoutBinding) :
         RecyclerView.ViewHolder(view.root) {
 
-            fun bind(data:Stories){
+            fun bind(data: UserStories){
                 view.apply {
                     profileImage.setImageResource(
                         R.drawable.person
                     )
-                    tvProfileName.text = data.userName
-                    tvStoryCount.text = "${data.storyCount} stories"
+                    tvProfileName.text = data.user?.userName ?: "Unknown"
+                    tvStoryCount.text = "${data.stories?.size ?: 0} stories"
                 }
             }
 
@@ -54,8 +54,11 @@ class StoryAdapter(val onAddStory:()->Unit) : RecyclerView.Adapter<RecyclerView.
 
     private inner class UploadStoryViewHolder(val view: AddStoryLayoutBinding) :
         RecyclerView.ViewHolder(view.root) {
-        fun bind(data:Stories){
+        fun bind(data: UserStories){
             view.apply {
+                root.setOnClickListener {
+                    MyLogger.w(msg = "Story Adapter is clicked!")
+                }
                 ivAddStory.setOnClickListener {
                     onAddStory()
                 }
@@ -91,7 +94,7 @@ class StoryAdapter(val onAddStory:()->Unit) : RecyclerView.Adapter<RecyclerView.
 
     override fun getItemViewType(position: Int): Int {
         differ.currentList[position].apply {
-            return if (type == Constants.StoryType.UploadStory)
+            return if (user == null)
                 TYPE_UPLOAD
             else
                 TYPE_AVAIBLE

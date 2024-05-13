@@ -40,10 +40,6 @@ object Constants {
         User
     }
 
-    enum class StoryType{
-        UploadStory,
-        AvailableStory
-    }
 
     // LogLevel
     enum class LogLevel {
@@ -90,6 +86,10 @@ object Constants {
         ButtonSwipe("👆"), // Unicode for upward pointing hand
         ForceUpdate("🔥"),
         AudioPlayer("🎵"),
-        JobManager("🚀")
+        JobManager("🚀") ,
+        Story ("📸"),
+        Post ("✍️"),
+        Chats ("💬"),
+        Notification ("🔔")
     }
 }
