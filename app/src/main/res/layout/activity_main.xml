@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/lightBlack"
+    android:background="@color/black"
     tools:context=".MainActivity">
 
 
@@ -59,7 +59,7 @@
                 android:layout_gravity="
 bottom"
                 android:visibility="visible"
-                app:backgroundTint="@color/black"
+                app:backgroundTint="@color/lightBlack"
                 app:fabCradleMargin="@dimen/_8sdp"
                 app:fabCradleRoundedCornerRadius="@dimen/_15sdp"
                 app:fabCradleVerticalOffset="@dimen/_8sdp">
@@ -72,6 +72,7 @@ bottom"
                     android:background="@android:color/transparent"
                     app:itemIconTint="@color/white"
                     app:itemTextColor="@color/white"
+                    app:elevation="0dp"
                     app:menu="@menu/menu" />
             </com.google.android.material.bottomappbar.BottomAppBar>
 

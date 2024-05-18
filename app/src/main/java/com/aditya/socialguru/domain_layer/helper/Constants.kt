@@ -1,5 +1,7 @@
 package com.aditya.socialguru.domain_layer.helper
 
+import androidx.annotation.NonNull
+
 object Constants {
 
     const val TYPE="TYPE"
@@ -38,6 +40,19 @@ object Constants {
     enum class Table{
         Stories ,
         User
+    }
+
+
+    //Post type
+
+    enum class PostType(){
+        OnlyText,
+        OnlyImage,
+        OnlyVideo,
+        TextAndImage,
+        TextAndVideo,
+        ImageAndVideo,
+        All  //Text,Image,Video
     }
 
 

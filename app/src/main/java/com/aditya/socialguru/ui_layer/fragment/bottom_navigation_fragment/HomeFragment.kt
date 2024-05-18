@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
@@ -14,15 +13,16 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
-import com.aditya.socialguru.data_layer.model.story.Stories
 import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.databinding.FragmentHomeBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import com.aditya.socialguru.domain_layer.service.SharePref
+import com.aditya.socialguru.ui_layer.adapter.HomeViewPagerAdapter
 import com.aditya.socialguru.ui_layer.adapter.StoryAdapter
+import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeDiscoverPostFragment
+import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeFollowingPostFragment
 import com.aditya.socialguru.ui_layer.viewmodel.bottom_navigation_bar.HomeViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -34,12 +34,18 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val tagStory = Constants.LogTag.Story
+    private val userData:ArrayList<UserStories> = ArrayList<UserStories>()
+
     private val storyAdapter by lazy {
         StoryAdapter() {
             MyLogger.v(tagStory, msg = "User want upload story !")
             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
         }
     }
+
+    // Don't use lazy it lead to memory leak and not leave old view when fragment switching and come back this view that time thi variable if initialize with lazy that not leave old view and crash app
+    private lateinit var pagerAdapter: HomeViewPagerAdapter
+
 
     private val navController get() = (requireActivity() as MainActivity).navController?.value
 
@@ -90,28 +96,39 @@ class HomeFragment : Fragment() {
         MyLogger.v(isFunctionCall = true)
 
         handleInitialization()
+
     }
 
     private fun handleInitialization() {
         MyLogger.v(isFunctionCall = true)
+
         initUi()
         subscribeToObserver()
     }
 
     private fun subscribeToObserver() {
         homeViewModel.userStories.observe(viewLifecycleOwner) { response ->
+            MyLogger.d(msg = "Response coming and it was $response")
             when (response) {
                 is Resource.Success -> {
+                    userData.clear()
                     response.data?.let {
-                        setData(it as ArrayList<UserStories>)
+                        userData.addAll(it)
                     } ?: run {
-                        setData(ArrayList())
-                        Helper.showSnackBar((requireActivity() as MainActivity).findViewById(R.id.coordLayout) ,response.message.toString())
+                        Helper.showSnackBar(
+                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                            response.message.toString()
+                        )
                     }
+                    setData()
                 }
+
                 is Resource.Loading -> {}
                 is Resource.Error -> {
-                    Helper.showSnackBar((requireActivity() as MainActivity).findViewById(R.id.coordLayout) ,response.message.toString())
+                    Helper.showSnackBar(
+                        (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                        response.message.toString()
+                    )
                 }
             }
         }
@@ -128,8 +145,28 @@ class HomeFragment : Fragment() {
                     LinearLayoutManager.HORIZONTAL, false
                 )
                 adapter = storyAdapter
+                //Empty for show only add Story View
+                setData()
             }
+
+            setUpViewPager()
             setListener()
+        }
+    }
+
+    private fun FragmentHomeBinding.setUpViewPager() {
+        pagerAdapter = HomeViewPagerAdapter(
+            listOf(
+                HomeFollowingPostFragment(),
+                HomeDiscoverPostFragment()
+            ), childFragmentManager, viewLifecycleOwner.lifecycle
+        )
+        viewPagerHome.apply {
+            adapter = pagerAdapter
+        }
+
+        tabHome.apply {
+            attachTo(viewPagerHome)
         }
     }
 
@@ -137,9 +174,9 @@ class HomeFragment : Fragment() {
 
     }
 
-    private fun setData(userData:ArrayList<UserStories>) {
+    private fun setData() {
         MyLogger.v(isFunctionCall = true)
-        userData.add(0, UserStories(null , null))
+        userData.add(0, UserStories(null, null))
         MyLogger.v(msg = "Now data is set into homeFragment !")
         storyAdapter.submitList(userData.toList())
     }

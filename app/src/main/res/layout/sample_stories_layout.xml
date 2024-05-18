@@ -8,7 +8,7 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="@dimen/_150sdp"
-        android:layout_height="@dimen/_200sdp"
+        android:layout_height="@dimen/_170sdp"
         android:orientation="vertical">
 
         <ImageView
@@ -23,7 +23,7 @@
             android:layout_height="@dimen/_50sdp"
             android:layout_gravity="bottom"
             android:alpha="0.7"
-            android:background="@color/black"
+            android:background="@color/lightBlack"
             android:gravity="center"
             android:orientation="vertical"
             app:layout_constraintStart_toStartOf="@id/ivStory"
