@@ -2,13 +2,16 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="lightWhite">#B9B7B7</color>
     <color name="yellow">#FFEB3B</color>
     <color name="darkYellow">#D8C62E</color>
     <color name="dark_orange">#FF5722</color>
+    <color name="deep_dark_orange">#D64B1F</color>
     <color name="grey">#808080</color>
     <color name="lightBlack">#1E1E1E</color>
     <color name="red">#FA0202</color>
     <color name="green">#0EC215</color>
+    <color name="fab_bg">#80B9B7B7</color>
 
     <color name="mtrl_textinput_default_box_stroke_color" tools:override="true">#fff</color>
     <color name="error_color">#FF4081</color>
