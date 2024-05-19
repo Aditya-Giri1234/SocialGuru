@@ -11,7 +11,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.get
-import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.lifecycleScope
@@ -24,7 +23,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants.IntentTable
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.setupWithNavController
-import com.aditya.socialguru.domain_layer.helper.show
+import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import kotlinx.coroutines.delay
@@ -258,7 +257,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onAnimationEnd(p0: Animator) {
-                    binding.bottomApp.show()
+                    binding.bottomApp.myShow()
                     binding.fab.show()
                     val param =
                         (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)

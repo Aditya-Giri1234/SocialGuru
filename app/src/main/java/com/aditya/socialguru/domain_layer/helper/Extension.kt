@@ -1,37 +1,109 @@
 package com.aditya.socialguru.domain_layer.helper
 
+import android.content.Context
+import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import androidx.annotation.IdRes
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isGone
+import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
 import androidx.navigation.NavOptions
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.tasks.Task
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.resumeWithException
+import kotlin.system.measureTimeMillis
 
 
 //region:: View related extension come here
-fun View.gone(){
-    isGone=true
+fun View.gone() {
+    isGone = true
 }
 
-fun View.show(){
-    isGone=false
+fun View.myShow() {
+    isGone = false
 }
 
-fun EditText.getStringText():String{
+fun View.hide() {
+    visibility = View.INVISIBLE
+}
+
+fun View.enabled() {
+    isEnabled = true
+    alpha = 1f
+}
+
+fun View.disabled() {
+    isEnabled = false
+    alpha = .6f
+}
+
+fun AppCompatActivity.isResumed(): Boolean {
+    return lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
+}
+
+/*fun ShimmerFrameLayout.isShimmerOn(): Boolean {
+
+    // this property take some delay to update after stop shimmer stop (so not use this)
+    // return isShimmerStarted || isShimmerVisible
+    return isVisible
+}*/
+
+fun EditText.getStringText(): String {
     return text.toString()
 }
+
+fun View.setSafeOnClickListener(onSafeClick: (View) -> Unit) {
+    val safeClickListener = SafeClickListener {
+        onSafeClick(it)
+    }
+    setOnClickListener(safeClickListener)
+}
+
+fun RecyclerView.safeScrollToPosition(position: Int) {
+    if (position == -1) return
+    postDelayed({ scrollToPosition(position) }, 300)
+}
+
+fun View.hideKeyboard() {
+    val imm = this.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    imm.hideSoftInputFromWindow(windowToken, 0)
+}
+
+fun View.showKeyboard() {
+    val inputMethodManager =
+        this.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    CoroutineScope(Dispatchers.Default).launch {
+        delay(200)
+        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
+    }
+}
+
+fun Fragment.isResume(): Boolean {
+    return this.isAdded && this.isResumed
+}
+
+fun String.convertParseUri(): Uri {
+    return Uri.parse(this)
+}
+
 
 //endregion
 
@@ -70,15 +142,16 @@ fun TextInputLayout.removeErrorOnTextChanged() {
             override fun onViewDetachedFromWindow(v: View) {
                 removeTextChangedListener(watcher)
             }
+
             override fun onViewAttachedToWindow(v: View) {}
         })
 
     }
 }
 
- fun TextInputLayout.customError(msg:String):Boolean{
-     error=msg
-     requestFocus()
+fun TextInputLayout.customError(msg: String): Boolean {
+    error = msg
+    requestFocus()
     return false
 }
 
@@ -109,23 +182,58 @@ fun EditText.getQueryTextChangeStateFlow(): StateFlow<String> {
 
 }
 
+//Safe Click
+
+private var lastTimeClicked: Long =
+    0  //Make global so that click handling possible to global else all view get own lastTimeClicked variable.
+
+class SafeClickListener(
+    private var defaultInterval: Int = 1000,
+    private val onSafeCLick: (View) -> Unit
+) : View.OnClickListener {
+
+    override fun onClick(v: View) {
+        if (SystemClock.elapsedRealtime() - lastTimeClicked < defaultInterval) {
+            return
+        }
+        lastTimeClicked = SystemClock.elapsedRealtime()
+        onSafeCLick(v)
+    }
+}
+
 
 @OptIn(ExperimentalCoroutinesApi::class)
-suspend fun <T> Task<T>.await():T{
-    return suspendCancellableCoroutine {cons->
+suspend fun <T> Task<T>.await(): T {
+    return suspendCancellableCoroutine { cons ->
         addOnCompleteListener {
-            if (it.exception!=null){
+            if (it.exception != null) {
                 cons.resumeWithException(it.exception!!)
-            }else{
-                cons.resume(it.result,null)
+            } else {
+                cons.resume(it.result, null)
             }
         }
     }
 }
 
 
-suspend fun CoroutineScope.delay(time:Long,run:()->Unit){
-    kotlinx.coroutines.delay(time)
-    run()
+suspend fun CoroutineScope.delay(time: Long, run: (() -> Unit) ?= null) {
+    coroutineScope {
+        delay(time)
+        run?.invoke()
+    }
+
+}
+
+
+
+fun runOnUiThread(run:()->Unit){
+    CoroutineScope(Dispatchers.Main).launch {
+        run()
+    }
+}
+fun (() -> Any).getTime(): Long {
+    return measureTimeMillis {
+        invoke()
+    }
 }
 

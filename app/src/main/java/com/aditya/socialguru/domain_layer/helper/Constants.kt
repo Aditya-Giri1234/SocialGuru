@@ -15,7 +15,10 @@ object Constants {
 
 
     enum class FolderName{
-        StoryImage
+        StoryImage ,
+        StoryVideo,
+        PostImage,
+        PostVideo
     }
 
     enum class IntentTable{
@@ -37,9 +40,19 @@ object Constants {
         StoryUploadedSuccessfully
     }
 
+    enum class PostUploadState{
+        VideoUploading,
+        VideoUploaded,
+        ImageUploading,
+        ImageUploaded,
+        PostUploading,
+        PostUploaded
+    }
+
     enum class Table{
         Stories ,
-        User
+        User ,
+        Post
     }
 
 

@@ -15,7 +15,19 @@ object AppBroadcastHelper {
 
     val uploadStories get() = _uploadStories.asSharedFlow()
 
-    fun setUploadState(state: Constants.StoryUploadState, percentage: Int? = null) {
+    private val _uploadPost = MutableSharedFlow<Pair<Constants.PostUploadState, Int?>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+
+    val uploadPost get() = _uploadPost.asSharedFlow()
+
+    fun setStoryUploadState(state: Constants.StoryUploadState, percentage: Int? = null) {
         _uploadStories.tryEmit(Pair(state, percentage))
+    }
+
+    fun setPostUploadState(state: Constants.PostUploadState, percentage: Int? = null) {
+        _uploadPost.tryEmit(Pair(state, percentage))
     }
 }

@@ -8,14 +8,17 @@
     tools:context=".ui_layer.fragment.bottom_navigation_fragment.AddPostFragment">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nestedScroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
         android:orientation="vertical"
         android:layout_marginBottom="@dimen/_10sdp">
         <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/constMain"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:focusableInTouchMode="true">
             <LinearLayout
                 android:id="@+id/linearHeader"
                 android:layout_width="0dp"
@@ -34,6 +37,7 @@
                     android:padding="@dimen/_3sdp">
 
                     <ImageView
+                        android:id="@+id/icClose"
                         android:layout_width="@dimen/_30sdp"
                         android:layout_height="@dimen/_30sdp"
                         android:src="@drawable/ic_close"
@@ -51,6 +55,7 @@
                         android:textSize="@dimen/_16ssp" />
 
                     <Button
+                        android:id="@+id/btnPost"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="end|center_vertical"
@@ -81,6 +86,7 @@
                 android:fontFamily="@font/poppins_regular"
                 android:gravity="start"
                 android:hint="Share your thought...."
+                android:textCursorDrawable="@null"
                 android:imeOptions="actionDone"
                 android:inputType="textMultiLine"
                 android:justificationMode="inter_word"
@@ -126,7 +132,7 @@
                         android:layout_height="match_parent">
 
                         <ImageView
-                            android:id="@+id/ivCreatePost"
+                            android:id="@+id/ivImageCreatePost"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:scaleType="centerCrop"
@@ -296,8 +302,6 @@
             app:fabCustomSize="@dimen/_35sdp"
             android:src="@drawable/add_image"
             android:layout_margin="@dimen/_3sdp" />
-
-
 
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton

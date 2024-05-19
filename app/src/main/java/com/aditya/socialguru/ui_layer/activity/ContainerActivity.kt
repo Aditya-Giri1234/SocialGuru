@@ -60,6 +60,7 @@ class ContainerActivity : AppCompatActivity() {
         handleInitialization()
     }
 
+
     private fun handleInitialization() {
         MyLogger.v(isFunctionCall = true)
         initUi()
@@ -122,6 +123,9 @@ class ContainerActivity : AppCompatActivity() {
         }
     }
 
+    override fun onNavigateUp(): Boolean {
+        return navController?.navigateUp() ?: super.onNavigateUp()
+    }
 
     override fun onDestroy() {
         super.onDestroy()

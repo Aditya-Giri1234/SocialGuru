@@ -2,13 +2,16 @@ package com.aditya.socialguru.domain_layer.service
 
 import android.net.Uri
 import com.aditya.socialguru.data_layer.model.Resource
-import com.aditya.socialguru.data_layer.model.story.Stories
+import com.aditya.socialguru.data_layer.model.UploadingResponse
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.post.Post
+import com.aditya.socialguru.data_layer.model.story.Stories
 import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
+import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
@@ -18,6 +21,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageException
 import com.google.firebase.storage.UploadTask
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,12 +32,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.IOException
 import kotlin.system.measureTimeMillis
 
 object FirebaseManager {
 
     private val tagLogin = Constants.LogTag.LogIn
     private val tagStory = Constants.LogTag.Story
+    private val tagPost=Constants.LogTag.Post
 
     // Firebase database reference
     private val databaseReference =
@@ -47,8 +54,8 @@ object FirebaseManager {
 
 
     //region:: Utility Function
-    fun isUserLogin():Boolean{
-        return auth.currentUser!=null
+    fun isUserLogin(): Boolean {
+        return auth.currentUser != null
     }
 
 
@@ -64,11 +71,12 @@ object FirebaseManager {
     private fun startUploading() {
         MyLogger.v(tagStory, isFunctionCall = true)
         MyLogger.v(tagStory, msg = "Story uploading starting ...")
-        AppBroadcastHelper.setUploadState(Constants.StoryUploadState.StartUploading)
+        AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.StartUploading)
     }
 
     private fun uploadToStorage(imageUri: Uri, user: User) {
-        val storageRef = storageReference.child("${Constants.FolderName.StoryImage.name}/${imageUri.lastPathSegment}")
+        val storageRef =
+            storageReference.child("${Constants.FolderName.StoryImage.name}/${imageUri.lastPathSegment}")
         storageRef.putFile(imageUri)
             .addOnProgressListener { taskSnapshot ->
                 val progress = calculateProgress(taskSnapshot)
@@ -89,7 +97,7 @@ object FirebaseManager {
 
     private fun updateProgress(progress: Int) {
         MyLogger.v(tagStory, msg = "Story uploading in progress ... $progress")
-        AppBroadcastHelper.setUploadState(Constants.StoryUploadState.Uploading, progress)
+        AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.Uploading, progress)
     }
 
     private fun uploadSuccessful(task: Task<UploadTask.TaskSnapshot>, user: User) {
@@ -104,14 +112,14 @@ object FirebaseManager {
                 addStoryToDatabase(urlResult.result.toString(), user)
             } else {
                 MyLogger.e(tagStory, msg = "Story url download failed  ...")
-                AppBroadcastHelper.setUploadState(Constants.StoryUploadState.UrlNotGet)
+                AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.UrlNotGet)
             }
         }
     }
 
     private fun addStoryToDatabase(imageUrl: String, user: User) {
-        user.userId?.let{ userId ->
-            val storyId="${user.userId}${Helper.generateUUID()}"
+        user.userId?.let { userId ->
+            val storyId = "${user.userId}${Helper.generateUUID()}"
             val story = Stories(
                 user.userId,
                 storyId,
@@ -128,10 +136,10 @@ object FirebaseManager {
                 .addOnCompleteListener { addDataBase ->
                     if (addDataBase.isSuccessful) {
                         MyLogger.i(tagStory, msg = "Story add in database successful !")
-                        AppBroadcastHelper.setUploadState(Constants.StoryUploadState.StoryUploadedSuccessfully)
+                        AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.StoryUploadedSuccessfully)
                     } else {
                         MyLogger.e(tagStory, msg = "Story add in database failed !")
-                        AppBroadcastHelper.setUploadState(Constants.StoryUploadState.UploadingFail)
+                        AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.UploadingFail)
                     }
                 }
         }
@@ -139,9 +147,8 @@ object FirebaseManager {
 
     private fun uploadFailed() {
         MyLogger.e(tagStory, msg = "Story uploaded failed ...")
-        AppBroadcastHelper.setUploadState(Constants.StoryUploadState.UploadingFail)
+        AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.UploadingFail)
     }
-
 
 
     //endregion
@@ -212,13 +219,16 @@ object FirebaseManager {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val user = snapshot.getValue(User::class.java)
                     MyLogger.v(tagLogin, msg = "Value is now send - user->$user !")
-                   val result= trySend(Resource.Success(user))
+                    val result = trySend(Resource.Success(user))
                     MyLogger.v(tagLogin, msg = "Value is sending successful ${result.isSuccess} !")
 
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    MyLogger.e(tagLogin, msg = "Some error occurred during get User :- ${error.message}")
+                    MyLogger.e(
+                        tagLogin,
+                        msg = "Some error occurred during get User :- ${error.message}"
+                    )
                     trySend(Resource.Error("Some error occurred during get User :- ${error.message}"))
                 }
             }
@@ -244,8 +254,8 @@ object FirebaseManager {
 
 
     //region:: Logout the user
-    fun signOutUser(){
-        if (auth.currentUser!=null){
+    fun signOutUser() {
+        if (auth.currentUser != null) {
             auth.signOut()
         }
     }
@@ -263,7 +273,7 @@ object FirebaseManager {
 
                 CoroutineScope(Dispatchers.IO).launch {
 
-                    val time= measureTimeMillis {
+                    val time = measureTimeMillis {
                         val deferredList = snapshot.children.map { userSnapshot ->
                             async {
                                 MyLogger.d(tagStory, msg = "User id :- ${userSnapshot.key}")
@@ -294,6 +304,161 @@ object FirebaseManager {
     }
 
 
+    //endregion
+
+
+    //region:: Uploading Post
+
+    suspend fun uploadingPost(post: Post): UploadingResponse {
+        MyLogger.v(tagPost, isFunctionCall = true)
+        val isImagePresent = post.imageUrl != null
+        val isVideoPresent = post.videoUrl != null
+
+        return withContext(Dispatchers.IO) {
+            try {
+                val (onlineImageUri, onlineVideoUri) = if (isImagePresent || isVideoPresent) {
+                    uploadMedia(post, isImagePresent, isVideoPresent)
+                } else {
+                    Pair(null, null)
+                }
+                savePostToDatabase(post, onlineImageUri, onlineVideoUri)
+                AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.PostUploaded,0)
+                UploadingResponse(true)
+            } catch (e: Exception) {
+                MyLogger.e(tagPost, "Failed to upload media: ${e.message}")
+                AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.PostUploaded,0)
+                UploadingResponse(false, errorMessage = e.message)
+            }
+        }
+    }
+
+    // Upload media (both video and image)
+    private suspend fun uploadMedia(
+        post: Post,
+        isImagePresent: Boolean,
+        isVideoPresent: Boolean
+    ): Pair<Uri?, Uri?> {
+        MyLogger.v(tagPost, isFunctionCall = true)
+        var videoUri: Uri? = null
+        var imageUri: Uri? = null
+
+        if (isVideoPresent) {
+            MyLogger.w(tagPost, msg = "Now video is uploading !")
+            videoUri = uploadVideo(post.videoUrl!!)
+            if (videoUri == null) {
+                MyLogger.e(tagPost, msg = "Failed to upload video !")
+                throw Exception("Failed to upload video")
+            }
+        }
+
+        if (isImagePresent) {
+            MyLogger.w(tagPost, msg = "Now image is uploading !")
+            imageUri = uploadImage(post.imageUrl!!)
+            if (imageUri == null) {
+                MyLogger.e(tagPost, msg = "Failed to upload image !")
+                throw Exception("Failed to upload image")
+            }
+        }
+
+        return Pair(imageUri, videoUri)
+    }
+
+    // Upload video to Firebase Storage
+    private suspend fun uploadVideo(videoUrl: String): Uri? {
+        MyLogger.v(tagPost, isFunctionCall = true)
+        val videoUri = videoUrl.convertParseUri()
+        val storageReferenceChild = storageReference.child(Constants.Table.Post.name)
+            .child(Constants.FolderName.PostVideo.name).child(videoUri.lastPathSegment ?: "video.mp4")
+
+        return try {
+            storageReferenceChild.putFile(videoUri).addOnProgressListener {
+                val progress = calculateProgress(it)
+                MyLogger.d(tagPost, msg = "Video uploading in progress .... $progress")
+                AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.VideoUploading,progress)
+            }.await()
+            val downloadUrl = storageReferenceChild.downloadUrl.await()
+            AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.PostUploaded,0)
+            downloadUrl
+        } catch (e: Exception) {
+            MyLogger.e(tagPost, msg = "Some error occurred during uploading video:- ${e.message}")
+            handleUploadException(e)
+            null
+        }
+    }
+
+
+
+    // Upload image to Firebase Storage
+    private suspend fun uploadImage(imageUrl: String): Uri? {
+        MyLogger.v(tagPost, isFunctionCall = true)
+        val imageUri = imageUrl.convertParseUri()
+        val storageReferenceChild = storageReference.child(Constants.Table.Post.name)
+            .child(Constants.FolderName.PostImage.name).child(imageUri.lastPathSegment ?: "image.jpg")
+
+        return try {
+            storageReferenceChild.putFile(imageUri).addOnProgressListener {
+                val progress = calculateProgress(it)
+                MyLogger.d(tagPost, msg = "Image uploading in progress .... $progress")
+                AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.ImageUploading,progress)
+            }.await()
+            val downloadUrl = storageReferenceChild.downloadUrl.await()
+            AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.ImageUploaded,0)
+            downloadUrl
+        } catch (e: Exception) {
+            MyLogger.e(tagPost, msg = "Some error occurred during uploading image:- ${e.message}")
+            handleUploadException(e)
+            null
+        }
+    }
+
+    private suspend fun savePostToDatabase(post: Post, imageUrl: Uri?, videoUrl: Uri?) {
+        MyLogger.v(tagPost, isFunctionCall = true)
+        AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.PostUploading,0)
+        val saveDatabaseReference = databaseReference.child(Constants.Table.Post.name).child(post.postId!!).child(post.userId!!)
+        val updatedPost = post.copy(
+            imageUrl = imageUrl?.toString(),
+            videoUrl = videoUrl?.toString(),
+            uploadingTime = System.currentTimeMillis()
+        )
+        try {
+            saveDatabaseReference.setValue(updatedPost).await()
+            MyLogger.i(tagPost, msg = "Post saved successfully.")
+        } catch (e: Exception) {
+            MyLogger.e(tagPost, msg = "Failed to save post: ${e.message}")
+            throw e
+        }
+    }
+
+    // Handle upload exceptions
+    private fun handleUploadException(e: Exception) {
+        when (e) {
+            is StorageException -> {
+                when (e.errorCode) {
+                    StorageException.ERROR_QUOTA_EXCEEDED -> {
+                        MyLogger.e(tagPost, msg = "Upload failed: Quota exceeded.")
+                    }
+                    StorageException.ERROR_NOT_AUTHENTICATED -> {
+                        MyLogger.e(tagPost, msg = "Upload failed: User not authenticated.")
+                    }
+                    StorageException.ERROR_NOT_AUTHORIZED -> {
+                        MyLogger.e(tagPost, msg = "Upload failed: User not authorized.")
+                    }
+                    else -> {
+                        MyLogger.e(tagPost, msg = "Upload failed: ${e.message}")
+                    }
+                }
+            }
+            is IllegalArgumentException -> {
+                MyLogger.e(tagPost, msg = "Upload failed: Invalid argument - ${e.message}")
+            }
+            is IOException -> {
+                MyLogger.e(tagPost, msg = "Upload failed: Network error - ${e.message}")
+            }
+            else -> {
+                MyLogger.e(tagPost, msg = "Upload failed: ${e.message}")
+            }
+        }
+    }
 
     //endregion
 
