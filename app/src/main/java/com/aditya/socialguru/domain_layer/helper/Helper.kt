@@ -110,4 +110,8 @@ object Helper {
             }
         } ?: -1f  // Indicate error or no cursor returned
     }
+
+
+    fun getPostSubCollectionPath(id:String):String="${Constants.Table.Post.name}_$id"
+    fun getStorySubCollectionPath(id:String):String="${Constants.Table.Stories.name}_$id"
 }

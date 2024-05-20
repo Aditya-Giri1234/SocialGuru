@@ -28,6 +28,7 @@ import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Constants.PostType
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.bufferWithDelay
 import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
@@ -200,7 +201,8 @@ class AddPostFragment : Fragment() {
                 }
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            AppBroadcastHelper.uploadPost.collect {
+            //buffer with delay use to delay for upcoming event due to when loader.show call it take some in millisecond the time duration between  loader.show and loader show that time duration between if some event come that event go to buffer for some time which i mention it.
+            AppBroadcastHelper.uploadPost.bufferWithDelay(100).collect {
                 MyLogger.i(tagPost, msg = "Post Uploading event come ${it.first}")
                 val progress = it.second ?: 0
                 val message: String? = when (it.first) {
@@ -234,10 +236,11 @@ class AddPostFragment : Fragment() {
 
         }
 
+
+
         addPostViewModel.uploadPost.observe(viewLifecycleOwner) { response ->
             when (response) {
                 is Resource.Success -> {
-//                    myLoader.dismiss()
                     response.data?.let {
                         if (it.isSuccess == true) {
                             resetUiScreen()
@@ -260,10 +263,12 @@ class AddPostFragment : Fragment() {
                 }
 
                 is Resource.Loading -> {
+                    MyLogger.v(tagPost, msg = "Post uploading now and now laoder is showing !")
                     myLoader.show(childFragmentManager, "My_Post_Uploading_Loader")
                 }
 
                 is Resource.Error -> {
+                    MyLogger.e(tagPost , msg = "Some error occurred during post uploading :- ${response.message.toString()}")
                     myLoader.dismiss()
                     Helper.showSnackBar(
                         (requireActivity() as ContainerActivity).findViewById(
@@ -280,7 +285,7 @@ class AddPostFragment : Fragment() {
 
     private fun initUi() {
         MyLogger.v(tagPost, isFunctionCall = true)
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+       /* ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
 
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(
@@ -290,7 +295,7 @@ class AddPostFragment : Fragment() {
                 0
             )
             insets
-        }
+        }*/
         binding.apply {
             setFab()
             setListener()
@@ -369,6 +374,7 @@ class AddPostFragment : Fragment() {
     }
 
     private fun uploadPost() {
+        MyLogger.d(tagPost, msg = "Image uri := $imageUri  -  Video uri := $videoUri")
         viewLifecycleOwner.lifecycleScope.launch {
             pref.getPrefUser().first()?.let { user ->
                 addPostViewModel.uploadPost(
@@ -390,8 +396,10 @@ class AddPostFragment : Fragment() {
 
     private fun resetUiScreen() {
         binding.apply {
+            imageUri=null
+            videoUri=null
             etCreatePost.text?.clear()
-            closeMenu()
+            closeMenu()  // This help to convert main fab tag value to 0 means close
             toggleContentVisibility(linearImage, fabImage, true)
             toggleContentVisibility(linearVideo, fabVideo, true)
         }

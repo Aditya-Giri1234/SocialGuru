@@ -12,14 +12,20 @@ import kotlinx.coroutines.flow.map
 
 class SharePref(val context: Context) {
 
-    private val USER_PREFERENCES_NAME = "user_preferences"
 
-    private val Context.dataStore by preferencesDataStore(
-        name = USER_PREFERENCES_NAME
-    )
+    companion object{
+        private val USER_PREFERENCES_NAME = "user_preferences"
+
+        private val Context.dataStore by preferencesDataStore(
+            name = USER_PREFERENCES_NAME
+        )
+    }
+
+
 
 
     private object PreferencesKeys {
+
         val  USER_KEY= stringPreferencesKey("USER_KEY")
     }
 

@@ -15,5 +15,5 @@ class HomeRepository {
         FirebaseManager.uploadStory(image,user)
     }
 
-    fun getAllStory(callback: (List<UserStories>?, error: String?) -> Unit)=FirebaseManager.getAllStories(callback)
+    suspend fun getAllStory(callback: (List<UserStories>?, error: String?) -> Unit)=FirebaseManager.getAllStories(callback)
 }

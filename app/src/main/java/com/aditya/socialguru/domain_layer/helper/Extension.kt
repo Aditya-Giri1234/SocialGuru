@@ -1,6 +1,8 @@
 package com.aditya.socialguru.domain_layer.helper
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
@@ -22,12 +24,17 @@ import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
 import kotlin.coroutines.resumeWithException
 import kotlin.system.measureTimeMillis
 
@@ -91,7 +98,7 @@ fun View.showKeyboard() {
     val inputMethodManager =
         this.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
     CoroutineScope(Dispatchers.Default).launch {
-        delay(200)
+        myDelay(200)
         inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
     }
 }
@@ -216,12 +223,9 @@ suspend fun <T> Task<T>.await(): T {
 }
 
 
-suspend fun CoroutineScope.delay(time: Long, run: (() -> Unit) ?= null) {
-    coroutineScope {
+suspend fun CoroutineScope.myDelay(time: Long, run: (() -> Unit) ?= null) {
         delay(time)
         run?.invoke()
-    }
-
 }
 
 
@@ -237,3 +241,40 @@ fun (() -> Any).getTime(): Long {
     }
 }
 
+fun Context.monitorInternet(): Flow<Boolean> = callbackFlow{
+
+    val callback=object : ConnectivityManager.NetworkCallback(){
+        override fun onAvailable(network: Network) {
+            super.onAvailable(network)
+            trySend(true)
+        }
+
+        override fun onLost(network: Network) {
+            super.onLost(network)
+            trySend(false)
+        }
+    }
+
+    val manager=getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    manager.registerDefaultNetworkCallback(callback)
+
+    awaitClose {
+        manager.unregisterNetworkCallback(callback)
+    }
+
+
+}
+
+
+
+@OptIn(ExperimentalCoroutinesApi::class)
+fun <T> Flow<T>.bufferWithDelay(delay: Long): Flow<T> {
+    return buffer(1) // Buffer one item at a time
+        .flatMapConcat { item ->
+            flow {
+                delay(delay) // Delay for the specified duration
+                emit(item)
+            }
+        }
+}

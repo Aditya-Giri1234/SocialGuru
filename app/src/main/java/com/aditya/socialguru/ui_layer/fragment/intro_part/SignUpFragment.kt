@@ -16,7 +16,7 @@ import com.aditya.socialguru.databinding.FragmentSignUpBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.customError
-import com.aditya.socialguru.domain_layer.helper.delay
+import com.aditya.socialguru.domain_layer.helper.myDelay
 import com.aditya.socialguru.domain_layer.helper.getStringText
 import com.aditya.socialguru.domain_layer.helper.removeErrorOnTextChanged
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
@@ -82,9 +82,11 @@ class SignUpFragment : Fragment() {
                                 ), "Successfully account created !"
                             )
                             response.data?.let {data->
+                                MyLogger.v(tagLogin, msg = "Data is not empty and data saved in preference !")
                                 pref.setPrefUser(data)
                             }
-                            delay(200) {
+                            myDelay(200) {
+                                MyLogger.v(tagLogin, msg = "Now go to main activity !")
                                 Intent(
                                     requireActivity(),
                                     MainActivity::class.java

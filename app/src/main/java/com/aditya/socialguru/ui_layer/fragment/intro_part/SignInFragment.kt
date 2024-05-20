@@ -15,7 +15,7 @@ import com.aditya.socialguru.databinding.FragmentSignInBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.customError
-import com.aditya.socialguru.domain_layer.helper.delay
+import com.aditya.socialguru.domain_layer.helper.myDelay
 import com.aditya.socialguru.domain_layer.helper.getStringText
 import com.aditya.socialguru.domain_layer.helper.removeErrorOnTextChanged
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
@@ -82,7 +82,7 @@ class SignInFragment : Fragment() {
                             it.data?.let { data ->
                                 pref.setPrefUser(data)
                             }
-                            delay(200) {
+                            myDelay(200) {
                                 Intent(
                                     requireActivity(),
                                     MainActivity::class.java

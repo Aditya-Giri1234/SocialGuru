@@ -23,6 +23,7 @@ class MyLoader(val message: String? = null) : DialogFragment() {
     private val binding get() = _binding!!
 
     private val tagStory = Constants.LogTag.Story
+    private val tagPost=Constants.LogTag.Post
 
     private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -49,6 +50,7 @@ class MyLoader(val message: String? = null) : DialogFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         subscribeToBroadcast()
+        MyLogger.v(tagPost , isFunctionCall = true)
     }
 
     override fun onCreateView(
@@ -57,20 +59,24 @@ class MyLoader(val message: String? = null) : DialogFragment() {
         savedInstanceState: Bundle?
     ): View? {
         _binding = CustomLoaderLayoutBinding.inflate(layoutInflater)
+        MyLogger.v(tagPost , isFunctionCall = true)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        MyLogger.v(tagPost , isFunctionCall = true)
         handleInitialization()
     }
 
 
     private fun handleInitialization() {
+        MyLogger.v(tagPost , isFunctionCall = true)
         initUi()
     }
 
     private fun initUi() {
+        MyLogger.v(tagPost , isFunctionCall = true)
         binding.apply {
 
             dialog?.apply {
@@ -98,6 +104,7 @@ class MyLoader(val message: String? = null) : DialogFragment() {
     }
 
     private fun subscribeToBroadcast() {
+        MyLogger.v(tagPost , isFunctionCall = true)
         val filter = IntentFilter()
         filter.addAction(Constants.BroadcastType.StoryUploading.name)
         ContextCompat.registerReceiver(
@@ -109,6 +116,7 @@ class MyLoader(val message: String? = null) : DialogFragment() {
     }
 
     private fun updateContent(progress: Int, message: String?, state: String?) {
+        MyLogger.v(tagPost , isFunctionCall = true)
         binding.apply {
             when (state) {
                 StoryUploadState.StartUploading.name -> {
@@ -150,6 +158,7 @@ class MyLoader(val message: String? = null) : DialogFragment() {
         progress: Int = 0,
         isDismiss: Boolean = false
     ) {
+        MyLogger.v(tagPost , msg = "Now loader is dismiss := $isDismiss , message is $message , progress := $progress")
         if (isDismiss) {
             dismiss()
             return
@@ -176,6 +185,7 @@ class MyLoader(val message: String? = null) : DialogFragment() {
     }
 
     private fun showCircularLoader() {
+        MyLogger.v(tagPost , isFunctionCall = true)
         binding.apply {
             circularProgress.show()
             linearMessageLoader.gone()
@@ -183,6 +193,7 @@ class MyLoader(val message: String? = null) : DialogFragment() {
     }
 
     private fun hideCircularLoader() {
+        MyLogger.v(tagPost , isFunctionCall = true)
         binding.apply {
             linearMessageLoader.myShow()
             circularProgress.gone()
@@ -193,10 +204,13 @@ class MyLoader(val message: String? = null) : DialogFragment() {
     }
 
     override fun onDestroyView() {
+        MyLogger.v(tagPost , isFunctionCall = true)
+        _binding=null
         super.onDestroyView()
     }
 
     override fun onDestroy() {
+        MyLogger.v(tagPost , isFunctionCall = true)
         requireContext().unregisterReceiver(broadcastReceiver)
         super.onDestroy()
     }

@@ -17,6 +17,7 @@ import com.aditya.socialguru.domain_layer.repository.HomeRepository
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlin.coroutines.suspendCoroutine
 
 class HomeViewModel(val app: Application) : AndroidViewModel(app) {
 
@@ -31,7 +32,9 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
 
 
     init {
-        getAllStory()
+       viewModelScope.launch {
+           getAllStory()
+       }
     }
 
     fun storeImageInFirebaseStorage(image: Uri ,user: User) = viewModelScope.launch {
@@ -50,7 +53,7 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
 
     //region:: Get all story
 
-    fun getAllStory()=viewModelScope.launch {
+    suspend fun getAllStory()=viewModelScope.launch {
         _userStories.postValue(Resource.Loading())
         MyLogger.v(tagStory, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {

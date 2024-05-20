@@ -62,12 +62,23 @@ class HomeFragment : Fragment() {
         if (uri != null) {
             MyLogger.v(tagStory, msg = "User select pic now send to server !")
             lifecycleScope.launch {
-                pref.getPrefUser().first()?.let {
-                    MyLogger.v(tagStory, msg = "User data is retreived !")
-                    homeViewModel.storeImageInFirebaseStorage(uri, it)
-                } ?: run {
-                    MyLogger.v(tagStory, msg = "User not found !")
+                try {
+                    pref.getPrefUser().first()?.let {
+                        MyLogger.v(tagStory, msg = "User data is retrieved !")
+                        homeViewModel.storeImageInFirebaseStorage(uri, it)
+                    } ?: run {
+                        MyLogger.v(tagStory, msg = "User not found !")
+                    }
+                }catch (e:Exception){
+                    e.printStackTrace()
+                    MyLogger.e(tagStory, msg = "Some error occurred during uploading story  :- ${e.message}")
+                    Helper.showSnackBar(
+                        (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                        e.message.toString()
+                    )
+
                 }
+
             }
 
         } else {

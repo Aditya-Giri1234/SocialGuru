@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.aditya.socialguru.R
@@ -30,6 +31,7 @@ class ContainerActivity : AppCompatActivity() {
     var navController : NavController?=null
 
     private var isTopAndBottomAnimation=true
+    private var bottomMargin: Int = 0
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,9 +48,10 @@ class ContainerActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
 
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            bottomMargin = -systemBars.bottom
             v.setPadding(
                 systemBars.left,
-                0,
+                systemBars.top,
                 systemBars.right,
                 systemBars.bottom
             )
@@ -79,7 +82,11 @@ class ContainerActivity : AppCompatActivity() {
     }
 
     private fun ActivityContainerBinding.setListener() {
-
+        coordLayout.setOnApplyWindowInsetsListener { view, insets ->
+            // Need to give bottom padding because this same amount padding apply by top so that it will dismiss the effect of edgeToEdge top padding
+            view.updatePadding(bottom = bottomMargin)
+            insets
+        }
     }
 
     private fun checkIntent() {
