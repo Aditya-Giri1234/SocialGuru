@@ -35,7 +35,10 @@ class StoryAdapter(val onAddStory:()->Unit) : RecyclerView.Adapter<RecyclerView.
 
     private val differ = AsyncListDiffer(this, callback)
 
-    fun submitList(list: List<UserStories>) = differ.submitList(list)
+    fun submitList(list: List<UserStories>) {
+        differ.submitList(list)
+        notifyDataSetChanged()
+    }
 
     private inner class AvailableStoryViewHolder(val view: SampleStoriesLayoutBinding) :
         RecyclerView.ViewHolder(view.root) {

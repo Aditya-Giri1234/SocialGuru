@@ -100,4 +100,7 @@ dependencies {
     //Data Store Preference
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
+    //Emoji Picker
+    implementation("com.vanniktech:emoji-google:0.20.0")
+
 }

@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import android.util.Log
 import android.util.Patterns
 import android.view.View
 import android.view.ViewGroup
@@ -15,9 +14,11 @@ import androidx.navigation.NavOptions
 import com.aditya.socialguru.R
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSnackBar
-import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSnackBarView
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSuccessSnackBar
 import com.google.android.material.snackbar.BaseTransientBottomBar
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 object Helper {
@@ -112,6 +113,22 @@ object Helper {
     }
 
 
-    fun getPostSubCollectionPath(id:String):String="${Constants.Table.Post.name}_$id"
-    fun getStorySubCollectionPath(id:String):String="${Constants.Table.Stories.name}_$id"
+    fun getPostId():String="${Constants.Table.Post.name}_${generateUUID()}"
+    fun getStoryId():String="${Constants.Table.Stories.name}_${generateUUID()}"
+    fun getCommentId():String="${Constants.Table.Comment.name}_${generateUUID()}"
+    fun getUserId():String=UUID.randomUUID().toString()
+    fun getPostCommentId(postId:String):String="${Constants.Table.Post.name}_${Constants.Table.Comment.name}_$postId"
+
+
+    /**
+     * @param timestamp is taking time into millisecond.
+     *
+     * @return give corresponding date and time in text.
+    * */
+    fun formatTimestampToDateAndTime(timestamp: Long): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val date = Date(timestamp)
+        return dateFormat.format(date)
+    }
+
 }

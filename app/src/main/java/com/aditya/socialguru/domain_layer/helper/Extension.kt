@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.security.cert.CertPathValidatorException.Reason
 import kotlin.coroutines.resumeWithException
 import kotlin.system.measureTimeMillis
 
@@ -261,6 +262,7 @@ fun Context.monitorInternet(): Flow<Boolean> = callbackFlow{
 
     awaitClose {
         manager.unregisterNetworkCallback(callback)
+        channel.close()
     }
 
 
@@ -278,3 +280,6 @@ fun <T> Flow<T>.bufferWithDelay(delay: Long): Flow<T> {
             }
         }
 }
+
+
+fun giveMeErrorMessage(whatProcessRunning:String,reason: String)="Some error occurred during ${whatProcessRunning.lowercase()} :- $reason"

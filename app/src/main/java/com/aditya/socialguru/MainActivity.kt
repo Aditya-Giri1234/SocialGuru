@@ -1,6 +1,7 @@
 package com.aditya.socialguru
 
 import android.animation.Animator
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -34,7 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     var navController: LiveData<NavController>? = null
-    private var loader: MyLoader? = null
+
 
     private var bottomMargin: Int = 0
     private val tagStory = Constants.LogTag.Story
@@ -78,63 +79,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun subscribeToObserver() {
         lifecycleScope.launch {
-            AppBroadcastHelper.uploadStories.collect {
-                MyLogger.v(tagStory, isFunctionCall = true)
-                when (it.first) {
-                    Constants.StoryUploadState.StartUploading -> {
-                        MyLogger.v(tagStory, msg = "Loader is show with start uploading state ...")
-                        showLoader(
-                            "Uploading",
-                            state = Constants.StoryUploadState.StartUploading.name
-                        )
-                    }
 
-                    Constants.StoryUploadState.Uploading -> {
-                        MyLogger.v(
-                            tagStory,
-                            msg = "Loader is show with  uploading state ... ${it.second}"
-                        )
-                        updateLoader(
-                            "Uploading",
-                            it.second ?: 0,
-                            Constants.StoryUploadState.Uploading.name
-                        )
-                    }
-
-                    Constants.StoryUploadState.UploadingFail -> {
-                        MyLogger.v(tagStory, msg = "Loader is show with  UploadingFail state ...")
-                        hideLoader(
-                            "Uploading Fail",
-                            state = Constants.StoryUploadState.UploadingFail.name
-                        )
-                    }
-
-                    Constants.StoryUploadState.SavingStory -> {
-                        MyLogger.v(tagStory, msg = "Loader is show with  SavingStory state ...")
-                        updateLoader(
-                            "Saving Story",
-                            state = Constants.StoryUploadState.SavingStory.name
-                        )
-                    }
-
-                    Constants.StoryUploadState.StoryUploadedSuccessfully -> {
-                        MyLogger.v(
-                            tagStory,
-                            msg = "Loader is show with  StoryUploadedSuccessfully state ..."
-                        )
-                        hideLoader(
-                            "",
-                            state = Constants.StoryUploadState.StoryUploadedSuccessfully.name
-                        )
-                        Helper.showSuccessSnackBar(binding.coordLayout,"Story uploaded successfully !")
-                    }
-
-                    Constants.StoryUploadState.UrlNotGet -> {
-                        MyLogger.v(tagStory, msg = "Loader is show with  UrlNotGet state ...")
-                        hideLoader("", state = Constants.StoryUploadState.UrlNotGet.name)
-                    }
-                }
-            }
         }
 
     }
@@ -277,46 +222,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getStoryIntent(message: String, percentage: Int = 0, state: String): Intent {
-        return Intent(Constants.BroadcastType.StoryUploading.name).apply {
-            putExtra(Constants.TYPE,Constants.BroadcastType.StoryUploading.name)
-            putExtra(IntentTable.UploadMessage.name, message)
-            putExtra(IntentTable.UploadProgress.name, percentage)
-            putExtra(IntentTable.UploadState.name, state)
-        }
-    }
 
-    private fun showLoader(message: String, percentage: Int? = null, state: String) {
-        if (loader == null) {
-            loader = MyLoader(message)
-        }
-        loader?.show(supportFragmentManager, "My Loader")
-    }
-
-    private fun updateLoader(message: String, percentage: Int = 0, state: String) {
-        sendBroadcast(
-            getStoryIntent(
-                message,
-                percentage,
-                state
-            )
-        )
-    }
-
-    private fun hideLoader(message: String, state: String) {
-        sendBroadcast(
-            getStoryIntent(
-                message,
-                0,
-                state
-            )
-        )
-        lifecycleScope.launch {
-            delay(200)
-            loader?.dismiss()
-            loader = null
-        }
-    }
 
     override fun onResume() {
         super.onResume()
@@ -332,6 +238,7 @@ class MainActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         return navController?.value?.navigateUp() ?: super.onSupportNavigateUp()
     }
+
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)

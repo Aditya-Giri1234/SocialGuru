@@ -230,7 +230,7 @@ class AddPostFragment : Fragment() {
                         null
                     }
                 }
-                myLoader.updateUiState(message, progress, message == null)
+                myLoader.updateUiByPostUpload(message, progress, message == null)
             }
 
 
@@ -315,7 +315,7 @@ class AddPostFragment : Fragment() {
             closeMenu()
             true
         }
-        //Just for making edittext scrollable
+        //Just for making edittext scrollable means pass touch event to edittext so that it consume
         etCreatePost.setOnTouchListener { v, event ->
             if (v.id == R.id.etCreatePost) {
                 v.parent.requestDisallowInterceptTouchEvent(true)
@@ -377,18 +377,18 @@ class AddPostFragment : Fragment() {
         MyLogger.d(tagPost, msg = "Image uri := $imageUri  -  Video uri := $videoUri")
         viewLifecycleOwner.lifecycleScope.launch {
             pref.getPrefUser().first()?.let { user ->
-                addPostViewModel.uploadPost(
-                    Post(
-                        "Post_${user.userId}${Helper.generateUUID()}",
-                        "Comment_${user.userId}${Helper.generateUUID()}",
-                        user.userId,
-                        getPostType(),
-                        binding.etCreatePost.text.toString(),
-                        imageUri?.toString(),
-                        videoUri?.toString(),
-                        System.currentTimeMillis()
-                    )
-                )
+//                addPostViewModel.uploadPost(
+//                    Post(
+//                        "Post_${user.userId}${Helper.generateUUID()}",
+//                        "Comment_${user.userId}${Helper.generateUUID()}",
+//                        user.userId,
+//                        getPostType(),
+//                        binding.etCreatePost.text.toString(),
+//                        imageUri?.toString(),
+//                        videoUri?.toString(),
+//                        System.currentTimeMillis()
+//                    )
+//                )
             }
         }
 

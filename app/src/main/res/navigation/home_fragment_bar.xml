@@ -11,7 +11,11 @@
         android:id="@+id/homeFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.HomeFragment"
         android:label="fragment_home"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_home" >
+        <action
+            android:id="@+id/action_homeFragment_to_writeTextStoryFragment"
+            app:destination="@id/writeTextStoryFragment" />
+    </fragment>
     <fragment
         android:id="@+id/supportHomeFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.SupportHomeFragment"
@@ -21,4 +25,9 @@
             android:id="@+id/action_supportHomeFragment_to_homeFragment"
             app:destination="@id/homeFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/writeTextStoryFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.WriteTextStoryFragment"
+        android:label="fragment_write_text_story"
+        tools:layout="@layout/fragment_write_text_story" />
 </navigation>

@@ -10,14 +10,14 @@ import kotlinx.coroutines.launch
 import kotlin.system.measureTimeMillis
 
 
-suspend fun giveResult() = callbackFlow<Int> {
-    (1..10).forEach {
-//        delay(400)
-        val isSend=trySend(it)
-        println("Value $it is send $isSend")
-    }
-    close() // Close the flow after emissions are complete
-}
+//suspend fun giveResult() = callbackFlow<Int> {
+//    (1..10).forEach {
+////        delay(400)
+//        val isSend=trySend(it)
+//        println("Value $it is send $isSend")
+//    }
+//    close() // Close the flow after emissions are complete
+//}
 
  suspend fun runMe(callback:(where:String)->Unit){
     val scope=CoroutineScope(Dispatchers.Default)

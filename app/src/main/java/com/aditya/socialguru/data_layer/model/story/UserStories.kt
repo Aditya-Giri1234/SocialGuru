@@ -4,5 +4,5 @@ import com.aditya.socialguru.data_layer.model.User
 
 data class UserStories(
     val user: User?=null,
-    val stories: List<Stories>?=null
+    val stories: MutableList<Stories>?=null
 )

@@ -7,5 +7,9 @@ data class User(
     val userProfession:String?=null,
     val userEmailId:String?=null,
     val userPassword:String?=null ,
-    val userProfileImage:String?=null
+    val userProfileImage:String?=null ,
+    val loginTimeInText:String?=null,
+    val loginTimeInTimeStamp:Long?=null,
+    val fcmToken:String?=null,
+    val postCount:Int?=null
 )
