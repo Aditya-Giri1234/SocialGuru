@@ -17,9 +17,15 @@ import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSnackBar
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSuccessSnackBar
 import com.google.android.material.snackbar.BaseTransientBottomBar
 import java.text.SimpleDateFormat
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import kotlin.math.ceil
 
 object Helper {
 
@@ -129,6 +135,23 @@ object Helper {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val date = Date(timestamp)
         return dateFormat.format(date)
+    }
+
+
+    fun timeDifference(timestampMillis: Long): String {
+        // Convert the timestamp in milliseconds to LocalDateTime
+        val pastTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestampMillis), ZoneId.systemDefault())
+        val now = LocalDateTime.now()
+
+        val duration = Duration.between(pastTime, now)
+
+        return when {
+            duration.toMinutes() < 1 -> "just now"
+            duration.toMinutes() < 60 -> "${duration.toMinutes()} minute(s) ago"
+            duration.toHours() < 24 -> "${duration.toHours()} hour(s) ago"
+            duration.toDays() == 1L -> "yesterday"
+            else -> "${duration.toDays()} day(s) ago"
+        }
     }
 
 }

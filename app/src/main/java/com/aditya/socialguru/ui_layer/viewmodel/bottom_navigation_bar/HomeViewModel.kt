@@ -3,8 +3,6 @@ package com.aditya.socialguru.ui_layer.viewmodel.bottom_navigation_bar
 import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
@@ -16,11 +14,11 @@ import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.HomeRepository
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.buffer
-import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -30,15 +28,19 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
 
     private val tagStory = Constants.LogTag.Story
     private val repository = HomeRepository()
-    private val _uploadStories = MutableLiveData<Resource<String>>()
-    val uploadStories: LiveData<Resource<String>> get() = _uploadStories
-
-    private val _userStories = MutableStateFlow<Resource<List<UserStories>>>(
-        Resource.Success(
-            emptyList()
-        )
+    private val _uploadStories = MutableSharedFlow<Resource<String>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
     )
-    val userStories: StateFlow<Resource<List<UserStories>>> get() = _userStories.asStateFlow()
+    val uploadStories: SharedFlow<Resource<String>> get() = _uploadStories.asSharedFlow()
+
+    private val _userStories = MutableSharedFlow<Resource<List<UserStories>>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val userStories: SharedFlow<Resource<List<UserStories>>> get() = _userStories.asSharedFlow()
 
 
     fun uploadStory(
@@ -47,15 +49,14 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
         text: StoryText? = null,
         user: User
     ) = viewModelScope.launch {
-
-        _uploadStories.postValue(Resource.Loading())
+        _uploadStories.tryEmit(Resource.Loading())
         MyLogger.v(tagStory, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
             MyLogger.v(tagStory, msg = "Network available !")
             repository.uploadStory(storyType, uri, text, user)
         } else {
             MyLogger.v(tagStory, msg = "Network not available !")
-            _uploadStories.postValue(Resource.Error(message = "Internet not available ."))
+            _uploadStories.tryEmit(Resource.Error(message = "Internet not available ."))
         }
 
     }
@@ -64,25 +65,26 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
 
     @OptIn(FlowPreview::class)
     suspend fun getAllStory(userId: String) = viewModelScope.launch {
-        _userStories.value = Resource.Loading()
+        _userStories.tryEmit(Resource.Loading())
         MyLogger.v(tagStory, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
             MyLogger.v(tagStory, msg = "Network available !")
             repository.getAllStory(userId).onEach {
                 MyLogger.d(tagStory, msg = it.userStoryList, isJson = true)
-                _userStories.value = handleGetAllStory(it)
+                _userStories.tryEmit(handleGetAllStory(it))
             }.launchIn(this)
         } else {
             MyLogger.v(tagStory, msg = "Network not available !")
-            _userStories.value = Resource.Error(message = "Internet not available .")
+            _userStories.tryEmit(Resource.Error(message = "Internet not available ."))
         }
     }
 
-    private fun handleGetAllStory(storyHandling: StoryListenerEmissionType): Resource<List<UserStories>> {
+    private suspend fun handleGetAllStory(storyHandling: StoryListenerEmissionType): Resource<List<UserStories>> {
 
         MyLogger.v(tagStory, isFunctionCall = true)
 
-        val userStoryList = userStories.value.data?.toMutableList() ?: mutableListOf<UserStories>()
+        var userStoryList =
+            userStories.replayCache[0].data?.toMutableList() ?: mutableListOf<UserStories>()
 
         when (storyHandling.emitChangeType) {
             Constants.StoryEmitType.Starting -> {
@@ -99,15 +101,24 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
                 MyLogger.v(tagStory, msg = "This is added story type :- ${storyHandling.story}")
                 storyHandling.story?.let { story ->
                     story.userId?.let { userId ->
-                        userStoryList.map {
-                            if (it.user == null || it.user.userId != userId) {
-                                return@map it
+                        if (userStoryList.isEmpty()) {
+                            userStoryList.add(
+                                UserStories(
+                                    repository.getUser(userId).first().data,
+                                    listOf(story).toMutableList()
+                                )
+                            )
+                        } else {
+                            userStoryList.map {
+                                if (it.user == null || it.user.userId != userId) {
+                                    return@map it
+                                }
+                                it.stories?.add(story)
+                                it.stories?.sortBy { it.storyUploadingTimeInTimeStamp }
+                                it
                             }
-                            it.stories?.add(story)
-                            it.stories?.sortBy { it.storyUploadingTimeInTimeStamp }
-                            it
-
                         }
+
                     }
                     MyLogger.d(tagStory, msg = userStoryList, isJson = true)
                 }
@@ -120,14 +131,15 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
 
                 storyHandling.story?.let { story ->
                     story.userId?.let { userId ->
-                        userStoryList.map {
-                            if (it.user == null || it.user.userId != userId) {
-                                return@map it
+                        userStoryList.forEach { userStory ->
+                            if (userStory.user?.userId == userId) {
+                                userStory.stories?.remove(story)
+                                if (userStory.stories.isNullOrEmpty()) {
+                                    userStoryList.remove(userStory)
+                                } else {
+                                    userStory.stories.sortBy { it.storyUploadingTimeInTimeStamp }
+                                }
                             }
-                            it.stories?.remove(story)
-                            it.stories?.sortBy { it.storyUploadingTimeInTimeStamp }
-                            it
-
                         }
                     }
                     MyLogger.d(tagStory, msg = userStoryList, isJson = true)
@@ -141,4 +153,6 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
     }
 
     //endregion
+
+
 }

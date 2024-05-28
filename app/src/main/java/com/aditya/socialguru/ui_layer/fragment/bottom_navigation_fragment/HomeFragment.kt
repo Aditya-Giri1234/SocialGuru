@@ -4,19 +4,27 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Point
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
-import android.os.Build.VERSION
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.PopupMenu
+import android.widget.PopupWindow
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.MainActivity
@@ -25,23 +33,25 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.story.StoryText
 import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.databinding.FragmentHomeBinding
+import com.aditya.socialguru.databinding.PopUpHomeSettingBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.bufferWithDelay
+import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.StoryTypeOptions
 import com.aditya.socialguru.domain_layer.service.SharePref
-import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import com.aditya.socialguru.ui_layer.adapter.HomeViewPagerAdapter
 import com.aditya.socialguru.ui_layer.adapter.StoryAdapter
 import com.aditya.socialguru.ui_layer.fragment.dialog_fragment.StoryTypeOptionDialog
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeDiscoverPostFragment
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeFollowingPostFragment
 import com.aditya.socialguru.ui_layer.viewmodel.bottom_navigation_bar.HomeViewModel
-import com.google.firebase.BuildConfig
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -61,11 +71,15 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     private var myLoader: MyLoader? = null
 
     private val storyAdapter by lazy {
-        StoryAdapter() {
+        StoryAdapter({
             MyLogger.v(tagStory, msg = "User want upload story !")
             StoryTypeOptionDialog(this@HomeFragment).show(childFragmentManager, "MyStoryDialogView")
-        }
+        }, { stories ->
+            MyLogger.v(tagStory, msg = "User want to show story !")
+            navigateToStoryShow(stories)
+        })
     }
+
 
     // Don't use lazy it lead to memory leak and not leave old view when fragment switching and come back this view that time thi variable if initialize with lazy that not leave old view and crash app
     private lateinit var pagerAdapter: HomeViewPagerAdapter
@@ -142,17 +156,17 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         }
     }
 
-    private val broadcastManager=object : BroadcastReceiver(){
+    private val broadcastManager = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            when(intent?.action){
-                Constants.BroadcastType.StoryUploading.name->{
-                    MyLogger.i(tagStory  , msg = "Story Uploading event come !")
-                    val storyText=if (Build.VERSION.SDK_INT>= Build.VERSION_CODES.TIRAMISU){
-                        intent.getSerializableExtra(Constants.DATA ,StoryText::class.java)
-                    }else{
+            when (intent?.action) {
+                Constants.BroadcastType.StoryUploading.name -> {
+                    MyLogger.i(tagStory, msg = "Story Uploading event come !")
+                    val storyText = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getSerializableExtra(Constants.DATA, StoryText::class.java)
+                    } else {
                         intent.getSerializableExtra(Constants.DATA) as StoryText?
                     }
-                    handleUserSelectedMedia(Constants.StoryTpye.Text , text = storyText)
+                    handleUserSelectedMedia(Constants.StoryTpye.Text, text = storyText)
 
                 }
             }
@@ -160,17 +174,17 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     }
 
+    private var isUserStorySnackBarShouldShow = true
+
 
     //endregion
 
     //region:: Top level function
-    override fun onCreate(savedInstanceState: Bundle?)
-    {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         subscribeToBroadcastReceiver()
         MyLogger.v(isFunctionCall = true)
     }
-
 
 
     override fun onCreateView(
@@ -199,111 +213,139 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         subscribeToObserver()
         if (!isDataLoaded) {
             getData()
-            isDataLoaded=true
+            isDataLoaded = true
         }
 
     }
 
     private fun subscribeToBroadcastReceiver() {
-        val filter=IntentFilter()
+        val filter = IntentFilter()
         filter.addAction(Constants.BroadcastType.StoryUploading.name)
 
-        ContextCompat.registerReceiver(requireContext() ,broadcastManager,filter , ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(
+            requireContext(),
+            broadcastManager,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
     }
+
     private fun subscribeToObserver() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            homeViewModel.userStories.onEach { response ->
-                response.let {
-                    MyLogger.d(msg = "Response coming and it was $response")
-                    when (response) {
-                        is Resource.Success -> {
-                            userData.clear()
-                            response.data?.let {
-                                setData(it)
-                            } ?: run {
-                                setData()
-                                Helper.showSnackBar(
-                                    (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                    response.message.toString()
-                                )
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                homeViewModel.userStories.onEach { response ->
+                    response.let {
+                        MyLogger.d(msg = "Response coming and it was $response")
+                        when (response) {
+                            is Resource.Success -> {
+                                response.hasBeenMessagedToUser = true
+                                userData.clear()
+                                response.data?.let {
+                                    setData(it)
+                                } ?: run {
+                                    setData()
+                                    if (isUserStorySnackBarShouldShow) {
+                                        Helper.showSnackBar(
+                                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                                            response.message.toString()
+                                        )
+                                    }
+                                }
+                                isUserStorySnackBarShouldShow = false
+
                             }
 
+                            is Resource.Loading -> {
+                                isUserStorySnackBarShouldShow = true
+                            }
+
+                            is Resource.Error -> {
+                                response.hasBeenMessagedToUser = true
+                                if (isUserStorySnackBarShouldShow) {
+                                    Helper.showSnackBar(
+                                        (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                                        response.message.toString()
+                                    )
+                                    isUserStorySnackBarShouldShow = false
+                                }
+                            }
+                        }
+                    }
+
+                }.launchIn(this)
+
+                // bufferWithDelay is because collector is slow ( MyLoader take some  millisecond time to show ui  and publisher is fast. So it throw / public item and collector collect item and call loader but loader is not initialize at. So when you access it ui , it throw null pointer exception because binding is not initialize.
+                AppBroadcastHelper.uploadStories.bufferWithDelay(100).onEach {
+                    MyLogger.v(tagStory, isFunctionCall = true)
+                    when (it.first) {
+                        Constants.StoryUploadState.StartUploading, Constants.StoryUploadState.Uploading, Constants.StoryUploadState.SavingStory -> {
+                            updateLoader(
+                                it.first,
+                                it.second ?: 0
+                            )
                         }
 
-                        is Resource.Loading -> {}
-                        is Resource.Error -> {
+                        Constants.StoryUploadState.UploadingFail, Constants.StoryUploadState.UrlNotGet -> {
+                            MyLogger.e(
+                                tagStory,
+                                msg = "Something went wrong :- ${it.first.name} occurred !"
+                            )
+                            hideLoader()
                             Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                response.message.toString()
+                                (requireActivity() as MainActivity).findViewById(
+                                    R.id.coordLayout
+                                ), "Story uploading failed !"
+                            )
+                        }
+
+                        Constants.StoryUploadState.StoryUploadedSuccessfully -> {
+                            MyLogger.v(
+                                tagStory,
+                                msg = "Loader is show with  StoryUploadedSuccessfully state ..."
+                            )
+                            hideLoader()
+                            Helper.showSuccessSnackBar(
+                                (requireActivity() as MainActivity).findViewById(
+                                    R.id.coordLayout
+                                ), "Story uploaded successfully !"
                             )
                         }
                     }
-                }
+                }.launchIn(this)
 
-            }.launchIn(this)
+                homeViewModel.uploadStories.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            // Do nothing here
+                        }
 
-            // bufferWithDelay is because collector is slow ( MyLoader take some  millisecond time to show ui  and publisher is fast. So it throw / public item and collector collect item and call loader but loader is not initialize at. So when you access it ui , it throw null pointer exception because binding is not initialize.
-            AppBroadcastHelper.uploadStories.bufferWithDelay(100).onEach {
-                MyLogger.v(tagStory, isFunctionCall = true)
-                when (it.first) {
-                    Constants.StoryUploadState.StartUploading , Constants.StoryUploadState.Uploading  ,Constants.StoryUploadState.SavingStory -> {
-                        updateLoader(
-                            it.first,
-                            it.second ?: 0
-                        )
-                    }
-                    Constants.StoryUploadState.UploadingFail, Constants.StoryUploadState.UrlNotGet ->{
-                        MyLogger.e(tagStory, msg = "Something went wrong :- ${it.first.name} occurred !")
-                        hideLoader()
-                        Helper.showSnackBar(
-                            (requireActivity() as MainActivity).findViewById(
-                                R.id.coordLayout
-                            ), "Story uploading failed !"
-                        )
-                    }
+                        is Resource.Loading -> {
+                            MyLogger.v(
+                                tagStory,
+                                msg = "Story uploading now and now loader is showing !"
+                            )
+                            showLoader()
+                        }
 
-                    Constants.StoryUploadState.StoryUploadedSuccessfully -> {
-                        MyLogger.v(
-                            tagStory,
-                            msg = "Loader is show with  StoryUploadedSuccessfully state ..."
-                        )
-                        hideLoader()
-                        Helper.showSuccessSnackBar(
-                            (requireActivity() as MainActivity).findViewById(
-                                R.id.coordLayout
-                            ), "Story uploaded successfully !"
-                        )
+                        is Resource.Error -> {
+                            MyLogger.e(
+                                tagStory,
+                                msg = "Some error occurred during post uploading :- ${response.message.toString()}"
+                            )
+                            hideLoader()
+                            Helper.showSnackBar(
+                                (requireActivity() as MainActivity).findViewById(
+                                    R.id.coordLayout
+                                ),
+                                response.message.toString()
+                            )
+                            response.hasBeenMessagedToUser = true
+                        }
                     }
-                }
-            }.launchIn(this)
-
-            homeViewModel.uploadStories.observe(viewLifecycleOwner) { response ->
-                when (response) {
-                    is Resource.Success -> {
-                        // Do nothing here
-                    }
-
-                    is Resource.Loading -> {
-                        MyLogger.v(tagStory, msg = "Story uploading now and now loader is showing !")
-                        showLoader()
-                    }
-
-                    is Resource.Error -> {
-                        MyLogger.e(
-                            tagStory,
-                            msg = "Some error occurred during post uploading :- ${response.message.toString()}"
-                        )
-                        hideLoader()
-                        Helper.showSnackBar(
-                            (requireActivity() as MainActivity).findViewById(
-                                R.id.coordLayout
-                            ),
-                            response.message.toString()
-                        )
-                    }
-                }
+                }.launchIn(this)
             }
         }
+
     }
 
     //endregion
@@ -318,10 +360,16 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                     requireContext(),
                     LinearLayoutManager.HORIZONTAL, false
                 )
+                myToolbar.icSetting.myShow()
                 adapter = storyAdapter
 
 
             }
+
+            val username = lifecycleScope.async {
+                binding.myToolbar.tvHeaderUserName.text = pref.getPrefUser().first()?.userName
+            }
+
 
             setUpViewPager()
             setListener()
@@ -346,7 +394,9 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
     private fun FragmentHomeBinding.setListener() {
-
+        myToolbar.icSetting.setOnClickListener {
+            showPopupMenu()
+        }
     }
 
     //endregion
@@ -375,16 +425,57 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         storyAdapter.submitList(userData.toList())
     }
 
+    private fun showPopupMenu() {
+        // Pop up menu take two thing first one context and second  is in which view is parent so it adjust size accordingly
+        val layoutInflater =
+            requireContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+
+        val bindingPopUp = PopUpHomeSettingBinding.inflate(layoutInflater)
+        val popUp = PopupWindow(context)
+        popUp.contentView = bindingPopUp.root
+        popUp.width = LinearLayout.LayoutParams.WRAP_CONTENT
+        popUp.height = LinearLayout.LayoutParams.WRAP_CONTENT
+        popUp.isFocusable = true
+        popUp.isOutsideTouchable=true
+        popUp.setBackgroundDrawable(ColorDrawable())
+        popUp.animationStyle = R.style.popup_window_animation
+        popUp.showAsDropDown(binding.myToolbar.icSetting)
+
+        bindingPopUp.linearItemStatus.setSafeOnClickListener {
+            navigateToShowMyStatus()
+            popUp.dismiss()
+        }
+
+
+
+    }
+
+    private fun navigateToShowMyStatus() {
+        val directions: NavDirections =
+            HomeFragmentDirections.actionHomeFragmentToShowMyStoryFragment()
+        navController?.safeNavigate(directions)
+    }
+
+    private fun navigateToStoryShow(stories: UserStories) {
+        val directions: NavDirections =
+            HomeFragmentDirections.actionHomeFragmentToStoryShowFragment(stories)
+        navController?.safeNavigate(directions, Helper.giveAnimationNavOption())
+    }
+
 
     //region:: Upload story helper
 
-    private fun handleUserSelectedMedia(type: Constants.StoryTpye, uri: Uri?=null ,text: StoryText?=null) {
+    private fun handleUserSelectedMedia(
+        type: Constants.StoryTpye,
+        uri: Uri? = null,
+        text: StoryText? = null
+    ) {
 
         lifecycleScope.launch {
             try {
                 pref.getPrefUser().first()?.let {
-                        MyLogger.v(tagStory, msg = "User data is retrieved !")
-                    homeViewModel.uploadStory(type, uri, user = it , text = text)
+                    MyLogger.v(tagStory, msg = "User data is retrieved !")
+                    homeViewModel.uploadStory(type, uri, user = it, text = text)
                 } ?: run {
                     MyLogger.v(tagStory, msg = "User not found !")
                 }
@@ -443,8 +534,9 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         when (selectedStoryType) {
             Constants.StoryTpye.Text -> {
                 MyLogger.v(tagStory, msg = "User select text story !")
-                val navDirections:NavDirections=HomeFragmentDirections.actionHomeFragmentToWriteTextStoryFragment()
-                navController?.safeNavigate(navDirections ,Helper.giveAnimationNavOption())
+                val navDirections: NavDirections =
+                    HomeFragmentDirections.actionHomeFragmentToWriteTextStoryFragment()
+                navController?.safeNavigate(navDirections, Helper.giveAnimationNavOption())
             }
 
             Constants.StoryTpye.Image -> {
@@ -460,6 +552,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
             }
         }
     }
+
 
     //endregion
 

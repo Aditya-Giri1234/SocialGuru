@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="?actionBarSize"
     android:orientation="horizontal"
+    android:weightSum="3"
     android:gravity="center">
 
 
@@ -16,6 +17,7 @@
         android:src="@drawable/person"/>
 
     <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/tvHeaderUserName"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:text="Aditya Giri"
@@ -23,7 +25,15 @@
         android:textColor="@color/white"
         android:textSize="@dimen/_16ssp"
         android:fontFamily="@font/poppin_medium"
+        android:layout_weight="3"
         android:gravity="center_vertical|start"/>
+    <ImageView
+        android:id="@+id/icSetting"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:src="@drawable/three_dot"
+        android:visibility="gone"
+        android:paddingEnd="@dimen/_10sdp"/>
 
 
 

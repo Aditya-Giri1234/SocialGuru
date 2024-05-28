@@ -66,6 +66,9 @@ object FirebaseManager {
 
     suspend fun getAllStories(userId:String) = StoryManager.getAndListenTop30Friend(userId = userId)
 
+    suspend fun getMyStory(userId: String)=StoryManager.getMyStory(userId)
+
+    suspend fun deleteStoryById(storyId: String)=StoryManager.deleteStoryById(storyId)
 
     //endregion
 

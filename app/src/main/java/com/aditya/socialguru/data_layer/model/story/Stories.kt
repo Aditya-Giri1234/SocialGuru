@@ -1,5 +1,7 @@
 package com.aditya.socialguru.data_layer.model.story
 
+import java.io.Serializable
+
 data class Stories(
     val userId: String? = null,
     val storyId: String? = null, // This is uuid [Story_userId_uuid]
@@ -12,4 +14,4 @@ data class Stories(
     val textFontFamily:Int?=null,
     val storyViewCount: Int? = null,  // This is not use full so after some time removed it.
     val storySeenUsersId:List<String>?=null
-)
+) : Serializable

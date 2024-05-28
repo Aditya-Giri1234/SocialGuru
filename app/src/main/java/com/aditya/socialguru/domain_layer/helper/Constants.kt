@@ -4,7 +4,7 @@ package com.aditya.socialguru.domain_layer.helper
 object Constants {
 
     const val TYPE = "TYPE"
-    const val DATA="DATA"
+    const val DATA = "DATA"
     const val FRAGMENT_NAVIGATION = "Fragment Navigation"
 
     //User Table Constant
@@ -52,7 +52,8 @@ object Constants {
         SavingStory,
         StoryUploadedSuccessfully
     }
-    enum class StoryEmitType{
+
+    enum class StoryEmitType {
         Starting,
         Added,
         Removed
@@ -71,7 +72,7 @@ object Constants {
         Stories,
         User,
         Post,
-        Comment ,
+        Comment,
         Follower,
         Following,
         Friend,
@@ -79,7 +80,7 @@ object Constants {
     }
 
 
-    enum class UserTable(val fieldName:String){
+    enum class UserTable(val fieldName: String) {
         USERID("userId"),
         USERNAME("userName"),
         USER_BIO("userBio"),
@@ -93,8 +94,18 @@ object Constants {
         POST_COUNT("postCount")
     }
 
-    enum class StoryTable(val fieldName: String){
-
+    enum class StoryTable(val fieldName: String) {
+        USERID("userId"),
+        STORY_ID("storyId"),
+        STORY_UPLOADING_TIME_IN_TEXT("storyUploadingTimeInText"),
+        STORY_UPLOADING_TIME_IN_TIMESTAMP("storyUploadingTimeInTimeStamp"),
+        STORY_TYPE("storyType"),
+        STORY_URI("storyUri"),
+        TEXT("text"),
+        TEXT_BACKGROUND_COLOR("textBackGroundColor"),
+        TEXT_FONT_FAMILY("textFontFamily"),
+        STORY_VIEW_COUNT("storyViewCount"),
+        STORY_SEEN_USERS_ID("storySeenUsersId")
     }
 
 
@@ -110,17 +121,17 @@ object Constants {
         All  //Text,Image,Video
     }
 
-    enum class StoryTpye{
+    enum class StoryTpye {
         Text,
         Image,
         Video
     }
 
     //Storage Manager State
-    enum class StorageManagerState{
+    enum class StorageManagerState {
         InProgress,
         Error,
-        UrlNotGet ,
+        UrlNotGet,
         Success
     }
 

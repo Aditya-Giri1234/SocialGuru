@@ -1,5 +1,7 @@
 package com.aditya.socialguru.data_layer.model
 
+import java.io.Serializable
+
 data class User(
     val userId:String?=null,
     val userName:String?=null,
@@ -12,4 +14,4 @@ data class User(
     val loginTimeInTimeStamp:Long?=null,
     val fcmToken:String?=null,
     val postCount:Int?=null
-)
+) : Serializable

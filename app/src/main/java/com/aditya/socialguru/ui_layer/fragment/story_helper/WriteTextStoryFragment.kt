@@ -1,4 +1,4 @@
-package com.aditya.socialguru.ui_layer.fragment
+package com.aditya.socialguru.ui_layer.fragment.story_helper
 
 import android.annotation.SuppressLint
 import android.content.Intent

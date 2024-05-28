@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:layout_marginStart="@dimen/_10sdp"
+    android:layout_margin="@dimen/_10sdp"
+    app:strokeWidth="@dimen/_1sdp"
+    app:strokeColor="@color/white"
     app:cardCornerRadius="@dimen/_20sdp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="@dimen/_150sdp"
         android:layout_height="@dimen/_170sdp"
-        android:background="@color/black"
         android:orientation="vertical">
 
         <LinearLayout
@@ -49,6 +51,7 @@
 
         </LinearLayout>
 
+
         <LinearLayout
             android:id="@+id/linearNoImage"
             android:layout_width="match_parent"
@@ -78,6 +81,9 @@
 
         </LinearLayout>
 
+
+
+
         <ImageView
             android:id="@+id/ivStory"
             android:layout_width="match_parent"
@@ -85,7 +91,6 @@
             android:scaleType="centerCrop"
             android:visibility="gone"
             android:src="@drawable/user1" />
-
         <TextView
             android:id="@+id/tvStory"
             android:layout_width="match_parent"
@@ -100,55 +105,30 @@
             android:padding="@dimen/_5sdp"
             android:fontFamily="@font/poppins_semi_bold"/>
 
-        <LinearLayout
+
+        <View
+            android:id="@+id/view"
             android:layout_width="match_parent"
             android:layout_height="@dimen/_50sdp"
             android:layout_gravity="bottom"
             android:alpha="0.7"
             android:background="@color/lightBlack"
-            android:gravity="center"
-            android:orientation="vertical"
-            app:layout_constraintStart_toStartOf="@id/ivStory"
+            app:layout_constraintBottom_toBottomOf="@+id/ivStory"
             app:layout_constraintEnd_toEndOf="@id/ivStory"
-            app:layout_constraintBottom_toBottomOf="@+id/ivStory">
+            app:layout_constraintStart_toStartOf="@id/ivStory"/>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/_5sdp"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-                <de.hdodenhof.circleimageview.CircleImageView
-                    android:id="@+id/profile_image"
-                    android:layout_width="@dimen/_20sdp"
-                    android:layout_height="@dimen/_20sdp"
-                    android:src="@drawable/person" />
-
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/tvProfileName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/_5sdp"
-                    android:fontFamily="@font/poppin_medium"
-                    android:gravity="center"
-                    android:text="Aditya Giri"
-                    android:textColor="@color/white"
-                    android:textSize="@dimen/_10ssp" />
-            </LinearLayout>
-
-
-            <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/tvStoryCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/_5sdp"
-                android:fontFamily="@font/poppin_medium"
-                android:gravity="center"
-                android:text="4 Stories"
-                android:textColor="@color/white"
-                android:textSize="@dimen/_8ssp" />
-        </LinearLayout>
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/tvStatusUploadingDuration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/poppin_medium"
+            android:text="4 min ago"
+            android:textColor="@color/white"
+            android:textSize="@dimen/_10ssp"
+            app:layout_constraintStart_toStartOf="@id/view"
+            app:layout_constraintTop_toTopOf="@id/view"
+            app:layout_constraintEnd_toEndOf="@id/view"
+            app:layout_constraintBottom_toBottomOf="@id/view"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView>

@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.get
+import androidx.core.view.isGone
 import androidx.core.view.updatePadding
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.lifecycleScope
@@ -237,6 +238,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onSupportNavigateUp(): Boolean {
         return navController?.value?.navigateUp() ?: super.onSupportNavigateUp()
+    }
+
+    override fun onBackPressed() {
+        if (binding.bottomApp.isGone){
+            navController?.value?.popBackStack()
+        }else{
+           super.onBackPressed()
+        }
     }
 
 

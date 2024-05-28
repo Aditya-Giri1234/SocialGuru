@@ -12,15 +12,14 @@ import com.aditya.socialguru.domain_layer.helper.Constants.Table
 import com.aditya.socialguru.domain_layer.helper.Constants.UserTable
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
-import com.aditya.socialguru.domain_layer.helper.myDelay
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
 
 
 /**
@@ -29,6 +28,8 @@ import kotlinx.coroutines.flow.callbackFlow
 object StoryManager {
 
     private val tagStory = Constants.LogTag.Story
+
+    private val myStory: UserStories? = null
 
     //Firebase firestore
     private val firestore: FirebaseFirestore by lazy {
@@ -196,19 +197,23 @@ object StoryManager {
         val listOfFriend = getTop30Friend(userId)
 
         // In this way handle because if try return@callBackFlow it give error because you don't use awaitClose and return it 😁😁.
-        if(listOfFriend.isNotEmpty()){
-            MyLogger.v(tagStory, msg = "List of friend is not empty :- $listOfFriend and  ${listOf("5z3GqeOT8ZZxr7nE4Ny231cP68J3")}")
+        if (listOfFriend.isNotEmpty()) {
+            MyLogger.v(
+                tagStory,
+                msg = "List of friend is not empty :- $listOfFriend and  ${listOf("5z3GqeOT8ZZxr7nE4Ny231cP68J3")}"
+            )
             val storiesQuery = firestore.collection(Constants.Table.Stories.name)
                 .whereIn(UserTable.USERID.fieldName, listOfFriend.toList())
             val stories = storiesQuery.get().await()
 
 
-
             //asSequence help to iterate original list and return when iteration over.
             val userStoriesMap = stories.asSequence()
-                .mapNotNull { it.toObject<Stories>().userId?.let{
-                    id-> id to it
-                } }
+                .mapNotNull {
+                    it.toObject<Stories>().userId?.let { id ->
+                        id to it
+                    }
+                }
                 .groupBy({ it.first }, { it.second.toObject<Stories>() })
 
             MyLogger.d(tagStory, msg = userStoriesMap, isJson = true, jsonTitle = "user story map ")
@@ -218,7 +223,12 @@ object StoryManager {
             }.toMutableList()
 
 
-            MyLogger.i(tagStory, msg = userStoriesList, isJson = true , jsonTitle = "User Story list !")
+            MyLogger.i(
+                tagStory,
+                msg = userStoriesList,
+                isJson = true,
+                jsonTitle = "User Story list !"
+            )
 
             trySend(
                 StoryListenerEmissionType(
@@ -236,11 +246,23 @@ object StoryManager {
                     value?.documentChanges?.forEach { document ->
                         when (document.type) {
                             DocumentChange.Type.ADDED -> {
-                                trySend(StoryListenerEmissionType(Constants.StoryEmitType.Added, story = document.document.toObject<Stories>()))
+                                trySend(
+                                    StoryListenerEmissionType(
+                                        Constants.StoryEmitType.Added,
+                                        story = document.document.toObject<Stories>()
+                                    )
+                                )
                             }
+
                             DocumentChange.Type.REMOVED -> {
-                                trySend(StoryListenerEmissionType(Constants.StoryEmitType.Removed, story = document.document.toObject<Stories>()))
+                                trySend(
+                                    StoryListenerEmissionType(
+                                        Constants.StoryEmitType.Removed,
+                                        story = document.document.toObject<Stories>()
+                                    )
+                                )
                             }
+
                             else -> {}
                         }
                     }
@@ -268,6 +290,48 @@ object StoryManager {
             }.take(30).map {
                 it.first
             }
+    }
+
+
+    //endregion
+
+    //region:: Get My Story
+
+    suspend fun getMyStory(userId: String) = flow<UserStories> {
+        val storiesQuery = firestore.collection(Constants.Table.Stories.name)
+            .whereEqualTo(UserTable.USERID.fieldName, userId)
+
+        val stories = storiesQuery.get().await()
+
+        // Map the documents to Stories objects
+        val userStoriesList = stories.documents.mapNotNull {
+            it.toObject<Stories>()
+        }.sortedBy { it.storyUploadingTimeInTimeStamp }.toMutableList()
+
+        // Get the user object
+        val user = UserManager.getUserById(userId)
+        if (user != null) {
+            val userStories = UserStories(user, userStoriesList)
+            MyLogger.d(tagStory, msg = userStories, isJson = true, jsonTitle = "user story map ")
+            emit(userStories)
+        }
+
+    }
+
+    suspend fun deleteStoryById(storyId: String) = callbackFlow<Pair<Boolean, String?>> {
+        val storiesQuery = firestore.collection(Constants.Table.Stories.name)
+            .document(storyId)
+        storiesQuery.delete().addOnCompleteListener {
+            if (it.isSuccessful) {
+                trySend(Pair(true, null))
+            } else {
+                trySend(Pair(false, it.exception?.message.toString()))
+            }
+        }.await()
+
+        awaitClose {
+            close()
+        }
     }
 
 
