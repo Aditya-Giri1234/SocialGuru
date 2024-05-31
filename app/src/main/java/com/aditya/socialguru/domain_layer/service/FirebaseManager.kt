@@ -15,6 +15,7 @@ import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
+import com.aditya.socialguru.domain_layer.service.firebase_service.PostManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.StoryManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.UserManager
 import com.google.android.gms.tasks.Task
@@ -73,176 +74,12 @@ object FirebaseManager {
     //endregion
 
 
-    //region:: Uploading Post
+    //region::  Post Related Work Here
 
-    suspend fun uploadingPost(post: Post): UploadingResponse {
-        MyLogger.v(tagPost, isFunctionCall = true)
-        val isImagePresent = post.imageUrl != null
-        val isVideoPresent = post.videoUrl != null
+    suspend fun uploadingPost(post: Post)= PostManager.uploadPost(post)
 
-        return withContext(Dispatchers.IO) {
-            try {
-                val (onlineImageUri, onlineVideoUri) = if (isImagePresent || isVideoPresent) {
-                    uploadMedia(post, isImagePresent, isVideoPresent)
-                } else {
-                    Pair(null, null)
-                }
-                savePostToDatabase(post, onlineImageUri, onlineVideoUri)
-                AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.PostUploaded, 0)
-                UploadingResponse(true)
-            } catch (e: Exception) {
-                MyLogger.e(tagPost, "Failed to upload media: ${e.message}")
-                AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.PostUploaded, 0)
-                UploadingResponse(false, errorMessage = e.message)
-            }
-        }
-    }
+    suspend fun getDiscoverPost()=PostManager.getDiscoverPost()
 
-    // Upload media (both video and image)
-    private suspend fun uploadMedia(
-        post: Post,
-        isImagePresent: Boolean,
-        isVideoPresent: Boolean
-    ): Pair<Uri?, Uri?> {
-        MyLogger.v(tagPost, isFunctionCall = true)
-        var videoUri: Uri? = null
-        var imageUri: Uri? = null
-
-        if (isVideoPresent) {
-            MyLogger.w(tagPost, msg = "Now video is uploading !")
-            videoUri = uploadVideo(post.videoUrl!!)
-            if (videoUri == null) {
-                MyLogger.e(tagPost, msg = "Failed to upload video !")
-                throw Exception("Failed to upload video")
-            }
-        }
-
-        if (isImagePresent) {
-            MyLogger.w(tagPost, msg = "Now image is uploading !")
-            imageUri = uploadImage(post.imageUrl!!)
-            if (imageUri == null) {
-                MyLogger.e(tagPost, msg = "Failed to upload image !")
-                throw Exception("Failed to upload image")
-            }
-        }
-
-        return Pair(imageUri, videoUri)
-    }
-
-    // Upload video to Firebase Storage
-    private suspend fun uploadVideo(videoUrl: String): Uri? {
-//        MyLogger.v(tagPost, isFunctionCall = true)
-//        val videoUri = videoUrl.convertParseUri()
-//        val storageReferenceChild = storageReference.child(Constants.Table.Post.name)
-//            .child(Constants.FolderName.PostVideo.name)
-//            .child(videoUri.lastPathSegment ?: "video.mp4")
-//
-//        return try {
-//            storageReferenceChild.putFile(videoUri).addOnProgressListener {
-//                val progress = calculateProgress(it)
-//                MyLogger.d(tagPost, msg = "Video uploading in progress .... $progress")
-//                AppBroadcastHelper.setPostUploadState(
-//                    Constants.PostUploadState.VideoUploading,
-//                    progress
-//                )
-//            }.await()
-//            val downloadUrl = storageReferenceChild.downloadUrl.await()
-//            AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.VideoUploaded, 0)
-//            downloadUrl
-//        } catch (e: Exception) {
-//            MyLogger.e(tagPost, msg = "Some error occurred during uploading video:- ${e.message}")
-//            handleUploadException(e)
-//            null
-//        }
-        return null
-    }
-
-
-    // Upload image to Firebase Storage
-    private suspend fun uploadImage(imageUrl: String): Uri? {
-//        MyLogger.v(tagPost, isFunctionCall = true)
-//        val imageUri = imageUrl.convertParseUri()
-//        val storageReferenceChild = storageReference.child(Constants.Table.Post.name)
-//            .child(Constants.FolderName.PostImage.name)
-//            .child(imageUri.lastPathSegment ?: "image.jpg")
-//
-//        return try {
-//            storageReferenceChild.putFile(imageUri).addOnProgressListener {
-//                val progress = calculateProgress(it)
-//                MyLogger.d(tagPost, msg = "Image uploading in progress .... $progress")
-//                AppBroadcastHelper.setPostUploadState(
-//                    Constants.PostUploadState.ImageUploading,
-//                    progress
-//                )
-//            }.await()
-//            val downloadUrl = storageReferenceChild.downloadUrl.await()
-//            AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.ImageUploaded, 0)
-//            downloadUrl
-//        } catch (e: Exception) {
-//            MyLogger.e(tagPost, msg = "Some error occurred during uploading image:- ${e.message}")
-//            handleUploadException(e)
-//            null
-//        }
-        return null
-    }
-
-    private suspend fun savePostToDatabase(post: Post, imageUrl: Uri?, videoUrl: Uri?) {
-//        MyLogger.v(tagPost, isFunctionCall = true)
-//        AppBroadcastHelper.setPostUploadState(Constants.PostUploadState.PostUploading, 0)
-//        val saveDatabaseReference =
-//            firestore.collection(Constants.Table.Post.name).document(post.userId!!)
-//                .collection(Helper.getPostId(post.userId))
-//                .document(post.postId!!)
-//        val updatedPost = post.copy(
-//            imageUrl = imageUrl?.toString(),
-//            videoUrl = videoUrl?.toString(),
-//            postUploadingTimeInTimeStamp = System.currentTimeMillis()
-//        )
-//        try {
-//            saveDatabaseReference.set(updatedPost).await()
-//            MyLogger.i(tagPost, msg = "Post saved successfully.")
-//        } catch (e: Exception) {
-//            MyLogger.e(tagPost, msg = "Failed to save post: ${e.message}")
-//            throw e
-//        }
-    }
-
-    // Handle upload exceptions
-    private fun handleUploadException(e: Exception) {
-        when (e) {
-            is StorageException -> {
-                when (e.errorCode) {
-                    StorageException.ERROR_QUOTA_EXCEEDED -> {
-                        MyLogger.e(tagPost, msg = "Upload failed: Quota exceeded.")
-                    }
-
-                    StorageException.ERROR_NOT_AUTHENTICATED -> {
-                        MyLogger.e(tagPost, msg = "Upload failed: User not authenticated.")
-                    }
-
-                    StorageException.ERROR_NOT_AUTHORIZED -> {
-                        MyLogger.e(tagPost, msg = "Upload failed: User not authorized.")
-                    }
-
-                    else -> {
-                        MyLogger.e(tagPost, msg = "Upload failed: ${e.message}")
-                    }
-                }
-            }
-
-            is IllegalArgumentException -> {
-                MyLogger.e(tagPost, msg = "Upload failed: Invalid argument - ${e.message}")
-            }
-
-            is IOException -> {
-                MyLogger.e(tagPost, msg = "Upload failed: Network error - ${e.message}")
-            }
-
-            else -> {
-                MyLogger.e(tagPost, msg = "Upload failed: ${e.message}")
-            }
-        }
-    }
 
     //endregion
 

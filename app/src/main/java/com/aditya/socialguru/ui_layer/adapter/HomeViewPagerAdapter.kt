@@ -24,4 +24,6 @@ class HomeViewPagerAdapter(
         // Returns the relevant Fragment for a specific position
         return fragmentList[position]
     }
+
+
 }

@@ -3,15 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="@dimen/_150sdp"
     android:background="@color/black"
     tools:context=".ui_layer.fragment.home_tab_layout.HomeFollowingPostFragment">
 
     <TextView
+        android:id="@+id/tvNoPost"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/poppins_bold"
-        android:text="Following Post"
+        android:text="No Post Available."
         android:textColor="@color/white"
         android:textSize="@dimen/_20ssp"
         app:layout_constraintBottom_toBottomOf="parent"

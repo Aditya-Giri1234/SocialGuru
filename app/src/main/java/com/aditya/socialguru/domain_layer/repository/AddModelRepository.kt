@@ -10,9 +10,6 @@ import kotlinx.coroutines.flow.Flow
 class AddModelRepository {
 
 
-    suspend fun uploadPost(post: Post):UploadingResponse{
-        MyLogger.v(Constants.LogTag.Post, isFunctionCall = true)
-        return FirebaseManager.uploadingPost(post)
-    }
+    suspend fun uploadPost(post: Post)=  FirebaseManager.uploadingPost(post)
 
 }

@@ -12,13 +12,12 @@ import android.widget.LinearLayout
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavDirections
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.Post
@@ -35,6 +34,8 @@ import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
+import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.ui_layer.activity.ContainerActivity
@@ -44,7 +45,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -69,8 +69,7 @@ class AddPostFragment : Fragment() {
         SharePref(requireContext())
     }
 
-    private var imageUri: Uri? = null
-    private var videoUri: Uri? = null
+
     private val MAX_VIDEO_SIZE_MB = 50f
 
     private val myLoader = MyLoader()
@@ -85,14 +84,14 @@ class AddPostFragment : Fragment() {
             // photo picker.
             if (uri != null) {
                 MyLogger.v(tagPost, msg = "User select pic now send to server !")
-                imageUri = uri
+                addPostViewModel.setImageUri(uri)
                 binding.apply {
                     Glide.with(requireContext()).asBitmap().load(uri).into(ivImageCreatePost)
                     toggleContentVisibility(linearImage, fabImage, false)
                 }
 
             } else {
-                imageUri = null
+                addPostViewModel.setImageUri(null)
                 MyLogger.v(tagPost, msg = "User revoke image selection !")
             }
         }
@@ -135,7 +134,7 @@ class AddPostFragment : Fragment() {
                             tagPost,
                             msg = "User selected video length is $videoLength and max length :- $MAX_VIDEO_SIZE_MB  which is not exceeded 😁! "
                         )
-                        videoUri = uri
+                        addPostViewModel.setVideoUri(uri)
                         binding.apply {
                             Glide.with(requireContext()).asBitmap().load(uri)
                                 .into(ivVideoCreatePost)
@@ -145,7 +144,7 @@ class AddPostFragment : Fragment() {
                 }
 
             } else {
-                videoUri = null
+                addPostViewModel.setVideoUri(null)
                 MyLogger.w(tagPost, msg = "User revoke video selection !")
             }
         }
@@ -196,16 +195,17 @@ class AddPostFragment : Fragment() {
                     }
                 }.flowOn(Dispatchers.Default).collect {
                     runOnUiThread {
+                        addPostViewModel.setText(it)
                         checkNowPostCanSend()
                     }
                 }
         }
         viewLifecycleOwner.lifecycleScope.launch {
             //buffer with delay use to delay for upcoming event due to when loader.show call it take some in millisecond the time duration between  loader.show and loader show that time duration between if some event come that event go to buffer for some time which i mention it.
-            AppBroadcastHelper.uploadPost.bufferWithDelay(100).collect {
-                MyLogger.i(tagPost, msg = "Post Uploading event come ${it.first}")
-                val progress = it.second ?: 0
-                val message: String? = when (it.first) {
+            AppBroadcastHelper.uploadPost.bufferWithDelay(100).collect { response ->
+                MyLogger.i(tagPost, msg = "Post Uploading event come ${response.state}")
+                val progress = response.progress ?: 0
+                val message: String? = when (response.state) {
                     Constants.PostUploadState.VideoUploading -> {
                         "Video Uploading"
                     }
@@ -227,10 +227,29 @@ class AddPostFragment : Fragment() {
                     }
 
                     Constants.PostUploadState.PostUploaded -> {
+                        resetUiScreen()
+                        Helper.showSuccessSnackBar(
+                            (requireActivity() as ContainerActivity).findViewById(
+                                R.id.coordLayout
+                            ),
+                            "Post uploaded successfully !"
+                        )
+
+                        null
+                    }
+
+                    Constants.PostUploadState.Error -> {
+                        Helper.showSnackBar(
+                            (requireActivity() as ContainerActivity).findViewById(
+                                R.id.coordLayout
+                            ),
+                            response.errorMessage.toString()
+                        )
                         null
                     }
                 }
                 myLoader.updateUiByPostUpload(message, progress, message == null)
+
             }
 
 
@@ -242,22 +261,7 @@ class AddPostFragment : Fragment() {
             when (response) {
                 is Resource.Success -> {
                     response.data?.let {
-                        if (it.isSuccess == true) {
-                            resetUiScreen()
-                            Helper.showSuccessSnackBar(
-                                (requireActivity() as ContainerActivity).findViewById(
-                                    R.id.coordLayout
-                                ),
-                                "Post uploaded successfully !"
-                            )
-                        } else {
-                            Helper.showSnackBar(
-                                (requireActivity() as ContainerActivity).findViewById(
-                                    R.id.coordLayout
-                                ),
-                                response.message.toString()
-                            )
-                        }
+                        //Do nothing here
                     }
 
                 }
@@ -268,7 +272,10 @@ class AddPostFragment : Fragment() {
                 }
 
                 is Resource.Error -> {
-                    MyLogger.e(tagPost , msg = "Some error occurred during post uploading :- ${response.message.toString()}")
+                    MyLogger.e(
+                        tagPost,
+                        msg = "Some error occurred during post uploading :- ${response.message.toString()}"
+                    )
                     myLoader.dismiss()
                     Helper.showSnackBar(
                         (requireActivity() as ContainerActivity).findViewById(
@@ -285,18 +292,27 @@ class AddPostFragment : Fragment() {
 
     private fun initUi() {
         MyLogger.v(tagPost, isFunctionCall = true)
-       /* ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+        /* ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
 
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(
-                0,
-                systemBars.top,
-                0,
-                0
-            )
-            insets
-        }*/
+             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+             v.setPadding(
+                 0,
+                 systemBars.top,
+                 0,
+                 0
+             )
+             insets
+         }*/
         binding.apply {
+            addPostViewModel.imageUri?.let {
+                Glide.with(requireContext()).asBitmap().load(it).into(ivImageCreatePost)
+                toggleContentVisibility(linearImage, fabImage, false)
+            }
+            addPostViewModel.videoUri?.let {
+                Glide.with(requireContext()).asBitmap().load(it).into(ivVideoCreatePost)
+                toggleContentVisibility(linearVideo, fabVideo, false)
+            }
+            etCreatePost.setText(addPostViewModel.text)
             setFab()
             setListener()
         }
@@ -342,12 +358,12 @@ class AddPostFragment : Fragment() {
 
         ivCancleImage.setOnClickListener {
             MyLogger.v(tagPost, msg = "User cancel image selection !")
-            imageUri = null
+            addPostViewModel.setImageUri(null)
             toggleContentVisibility(linearImage, fabImage, true)
         }
         ivCancleVideo.setOnClickListener {
             MyLogger.v(tagPost, msg = "User cancel video selection !")
-            videoUri = null
+            addPostViewModel.setVideoUri(null)
             toggleContentVisibility(linearVideo, fabVideo, true)
         }
 
@@ -355,10 +371,23 @@ class AddPostFragment : Fragment() {
         linearVideo.viewTreeObserver.addOnGlobalLayoutListener {
             MyLogger.v(tagPost, msg = "Video  layout is change !")
             checkNowPostCanSend()
+
         }
         linearImage.viewTreeObserver.addOnGlobalLayoutListener {
             MyLogger.v(tagPost, msg = "Image  layout  is change !")
             checkNowPostCanSend()
+        }
+
+        linearImage.setSafeOnClickListener {
+            addPostViewModel.imageUri?.let {
+                navigateToImageViewFragment(it)
+            }
+        }
+
+        linearVideo.setSafeOnClickListener {
+            addPostViewModel.videoUri?.let {
+                navigateToVideoViewFragment(it)
+            }
         }
 
 
@@ -373,22 +402,38 @@ class AddPostFragment : Fragment() {
 
     }
 
+    private fun navigateToImageViewFragment(it: Uri) {
+        val directions: NavDirections =
+            AddPostFragmentDirections.actionAddPostFragmentToShowImageFragment(it)
+        navController?.safeNavigate(directions, Helper.giveAnimationNavOption())
+
+    }
+
+    private fun navigateToVideoViewFragment(it: Uri) {
+        val directions: NavDirections =
+            AddPostFragmentDirections.actionAddPostFragmentToShowVideoFragment(it)
+        navController?.safeNavigate(directions, Helper.giveAnimationNavOption())
+    }
+
     private fun uploadPost() {
-        MyLogger.d(tagPost, msg = "Image uri := $imageUri  -  Video uri := $videoUri")
+        MyLogger.d(tagPost, msg = "Image uri := ${addPostViewModel.imageUri}  -  Video uri := ${addPostViewModel.videoUri}")
         viewLifecycleOwner.lifecycleScope.launch {
             pref.getPrefUser().first()?.let { user ->
-//                addPostViewModel.uploadPost(
-//                    Post(
-//                        "Post_${user.userId}${Helper.generateUUID()}",
-//                        "Comment_${user.userId}${Helper.generateUUID()}",
-//                        user.userId,
-//                        getPostType(),
-//                        binding.etCreatePost.text.toString(),
-//                        imageUri?.toString(),
-//                        videoUri?.toString(),
-//                        System.currentTimeMillis()
-//                    )
-//                )
+                val timeStamp = System.currentTimeMillis()
+                val postId = Helper.getPostId()
+                addPostViewModel.uploadPost(
+                    Post(
+                        postId = postId,
+                        commentId = Helper.getCommentId(postId),
+                        userId = user.userId,
+                        postType = getPostType(),
+                        text = binding.etCreatePost.text.toString(),
+                        imageUrl = addPostViewModel.imageUri?.toString(),
+                        videoUrl = addPostViewModel.videoUri?.toString(),
+                        postUploadingTimeInText = Helper.formatTimestampToDateAndTime(timeStamp),
+                        postUploadingTimeInTimeStamp = timeStamp
+                    )
+                )
             }
         }
 
@@ -396,8 +441,9 @@ class AddPostFragment : Fragment() {
 
     private fun resetUiScreen() {
         binding.apply {
-            imageUri=null
-            videoUri=null
+            addPostViewModel.setVideoUri(null)
+            addPostViewModel.setImageUri(null)
+            addPostViewModel.setText("")
             etCreatePost.text?.clear()
             closeMenu()  // This help to convert main fab tag value to 0 means close
             toggleContentVisibility(linearImage, fabImage, true)
@@ -427,6 +473,9 @@ class AddPostFragment : Fragment() {
 
     private fun checkNowPostCanSend() {
         MyLogger.v(tagPost, isFunctionCall = true)
+
+        //This condition used because this method can call after onDestroyView called
+        if (_binding == null) return
         binding.apply {
             if (etCreatePost.text?.isNotEmpty() == true || linearImage.isVisible || linearVideo.isVisible) {
                 makeButtonEnable()

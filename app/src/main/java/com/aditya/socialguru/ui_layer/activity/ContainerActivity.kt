@@ -118,6 +118,7 @@ class ContainerActivity : AppCompatActivity() {
     }
 
 
+    @SuppressLint("MissingSuperCall")
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
 
@@ -126,7 +127,7 @@ class ContainerActivity : AppCompatActivity() {
             finish()
             overridePendingTransition(0,R.anim.slide_out_bottom)
         }else{
-            super.onBackPressed()
+            navController?.popBackStack()
         }
     }
 

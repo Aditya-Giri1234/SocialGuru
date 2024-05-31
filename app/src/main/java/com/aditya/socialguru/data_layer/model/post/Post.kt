@@ -12,6 +12,6 @@ data class Post(
     val videoUrl:String?=null ,
     val postUploadingTimeInText:String?=null ,
     val postUploadingTimeInTimeStamp:Long?=null,
-    val commentCount:Int?=null,
-    val likeCount:Int?=null
+    val commentCount:Int?=0,
+    val likeCount:Int?=0
 )

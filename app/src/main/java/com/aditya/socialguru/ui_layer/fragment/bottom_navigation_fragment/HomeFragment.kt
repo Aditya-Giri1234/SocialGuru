@@ -66,7 +66,6 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     private val tagStory = Constants.LogTag.Story
     private val userData: MutableList<UserStories> = mutableListOf<UserStories>()
-    private var isDataLoaded = false
     private val MAX_VIDEO_SIZE_MB = 30f
     private var myLoader: MyLoader? = null
 
@@ -83,6 +82,8 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     // Don't use lazy it lead to memory leak and not leave old view when fragment switching and come back this view that time thi variable if initialize with lazy that not leave old view and crash app
     private lateinit var pagerAdapter: HomeViewPagerAdapter
+
+
 
 
     private val navController get() = (requireActivity() as MainActivity).navController?.value
@@ -211,9 +212,9 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
         initUi()
         subscribeToObserver()
-        if (!isDataLoaded) {
+        if (!homeViewModel.isDataLoaded) {
             getData()
-            isDataLoaded = true
+            homeViewModel.setDataLoadedStatus(true)
         }
 
     }
@@ -366,9 +367,11 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
             }
 
+
             val username = lifecycleScope.async {
                 binding.myToolbar.tvHeaderUserName.text = pref.getPrefUser().first()?.userName
             }
+
 
 
             setUpViewPager()

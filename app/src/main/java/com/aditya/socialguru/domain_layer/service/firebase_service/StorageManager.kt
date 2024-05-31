@@ -25,11 +25,11 @@ object StorageManager {
     private val storageReference = FirebaseStorage.getInstance().reference
 
 
-    fun uploadImageToServer(imageUploadingPath: String, imageUri: Uri) =
+    fun uploadImageToServer(rootFolderName:String,folderName: String, imageUri: Uri) =
         callbackFlow<StorageManagerStatus> {
 
             val storageRef =
-                storageReference.child(imageUploadingPath)
+                storageReference.child(rootFolderName).child(folderName)
 
             storageRef.putFile(imageUri)
                 .addOnProgressListener { taskSnapshot ->
@@ -83,9 +83,62 @@ object StorageManager {
         }
 
 
-    fun uploadVideoToServer(videoUri: String) {
+    fun uploadVideoToServer(rootFolder:String,folderName:String,videoUri: Uri) =
+        callbackFlow<StorageManagerStatus> {
 
-    }
+            val storageRef =
+                storageReference.child(rootFolder).child(folderName)
+
+            storageRef.putFile(videoUri)
+                .addOnProgressListener { taskSnapshot ->
+                    val progress = calculateProgress(taskSnapshot)
+                    trySend(
+                        StorageManagerStatus(
+                            Constants.StorageManagerState.InProgress,
+                            progress = progress
+                        )
+                    )
+                }.addOnCompleteListener { task ->
+
+                    if (task.isSuccessful) {
+                        MyLogger.i(tagStory, msg = "Image uploading successfully !")
+                        downLoadUri(storageRef) { uri: Uri?, error: String ->
+                            if (uri != null) {
+                                MyLogger.i(tagStory, msg = "Uri is not :- $uri")
+                                trySend(
+                                    StorageManagerStatus(
+                                        Constants.StorageManagerState.Success,
+                                        url = uri.toString()
+                                    )
+                                )
+                            } else {
+                                MyLogger.e(tagStory, msg = " Error when get url :- $error")
+                                trySend(
+                                    StorageManagerStatus(
+                                        Constants.StorageManagerState.UrlNotGet,
+                                        error = giveMeErrorMessage("Download url", error.toString())
+                                    )
+                                )
+                            }
+                        }
+                    } else {
+                        MyLogger.i(tagStory, msg = "Image uploading failed !")
+                        trySend(
+                            StorageManagerStatus(
+                                Constants.StorageManagerState.Error,
+                                error = giveMeErrorMessage(
+                                    "Image Uploading ",
+                                    task.exception?.message.toString()
+                                )
+                            )
+                        )
+                    }
+                }.await()
+
+            awaitClose {
+                channel.close()
+            }
+        }
 
     private fun downLoadUri(
         storageReference: StorageReference,

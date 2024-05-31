@@ -40,6 +40,7 @@ object StoryManager {
     private var isFirstTimeStoryListnerCall = true
 
     private val StoryImageUploadingPath = "${Constants.Table.Stories.name}/Image/"
+    private val StoryVideoUploadingPath = "${Constants.Table.Stories.name}/Video/"
 
 
     //region:: Upload Story
@@ -69,7 +70,7 @@ object StoryManager {
     private suspend fun uploadImageStory(uri: Uri?, user: User) {
         uri ?: return
         startUploading()
-        uploadToStorage(uri).collect {
+        uploadToStorage(Constants.FolderName.StoryImage,uri).collect {
             val storyUrl = it.first
             val error = it.second
             if (storyUrl != null) {
@@ -85,7 +86,7 @@ object StoryManager {
     private suspend fun uploadVideoStory(uri: Uri?, user: User) {
         uri ?: return
         startUploading()
-        uploadToStorage(uri).collect {
+        uploadToStorage(Constants.FolderName.StoryVideo,uri).collect {
             val storyUrl = it.first
             val error = it.second
             if (storyUrl != null) {
@@ -111,9 +112,10 @@ object StoryManager {
     }
 
 
-    private suspend fun uploadToStorage(uri: Uri) = callbackFlow<Pair<String?, String?>> {
+    private suspend fun uploadToStorage( folderName: Constants.FolderName,uri: Uri) = callbackFlow<Pair<String?, String?>> {
         StorageManager.uploadImageToServer(
-            "$StoryImageUploadingPath${uri.lastPathSegment}",
+            Table.Stories.name,
+            folderName.name,
             uri
         ).collect { status ->
             when (status.state) {

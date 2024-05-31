@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="@dimen/_10sdp"
+    android:layout_margin="@dimen/_10sdp"
     app:cardCornerRadius="@dimen/_20sdp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -53,104 +53,70 @@
         </LinearLayout>
 
 
-        <HorizontalScrollView
-            android:id="@+id/horiScrollMain"
+        <LinearLayout
+            android:id="@+id/linearMain"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:minHeight="@dimen/_150sdp"
             android:orientation="horizontal"
-            android:scrollbars="horizontal"
+            android:weightSum="3"
             app:layout_constraintEnd_toEndOf="@id/linearHeader"
             app:layout_constraintStart_toStartOf="@id/linearHeader"
             app:layout_constraintTop_toBottomOf="@id/linearHeader">
 
-            <LinearLayout
-                android:id="@+id/linearMain"
-                android:layout_width="0dp"
+
+            <TextView
+                android:id="@+id/tvPost"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:minHeight="@dimen/_150sdp"
-                android:orientation="horizontal"
-                android:scrollbars="horizontal"
-                app:layout_constraintEnd_toEndOf="@id/linearHeader"
-                app:layout_constraintStart_toStartOf="@id/linearHeader"
-                app:layout_constraintTop_toBottomOf="@id/linearHeader">
+                android:layout_marginTop="@dimen/_5sdp"
+                android:ellipsize="end"
+                android:fontFamily="@font/poppins_bold"
+                android:text="This post is about how you increase meditation capacity to 10 min. Meditation is awesome thing in life . It increse productivity."
+                android:textColor="@color/white"
+                android:textSize="@dimen/_12ssp"
+                android:visibility="gone" />
 
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constMedia"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:minHeight="@dimen/_150sdp">
 
-                <TextView
-                    android:id="@+id/tvPost"
+                <androidx.viewpager2.widget.ViewPager2   android:id="@+id/viewPagerPost"
                     android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/lightBlack"
+                    android:layoutDirection="ltr"
+                    android:orientation="horizontal"
+                    android:clickable="true"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"/>
+
+
+                <com.tbuonomo.viewpagerdotsindicator.DotsIndicator
+                    android:id="@+id/dots_indicator"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_5sdp"
-                    android:ellipsize="end"
-                    android:fontFamily="@font/poppins_bold"
-                    android:text="This post is about how you increase meditation capacity to 10 min. Meditation is awesome thing in life . It increse productivity."
-                    android:textColor="@color/white"
-                    android:textSize="@dimen/_12ssp"
-                    android:visibility="gone" />
+                    app:dotsColor="@color/grey"
+                    app:dotsCornerRadius="@dimen/_6sdp"
+                    app:dotsSize="@dimen/_8sdp"
+                    app:dotsSpacing="@dimen/_3sdp"
+                    app:dotsWidthFactor="2.5"
+                    app:layout_constraintEnd_toEndOf="@id/viewPagerPost"
+                    app:layout_constraintStart_toStartOf="@id/viewPagerPost"
+                    app:layout_constraintBottom_toBottomOf="@id/viewPagerPost"
+                    app:progressMode="true"
+                    app:selectedDotColor="@color/white" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-                <ImageView
-                    android:id="@+id/ivPost"
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/_200sdp"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/user1"
-                    android:visibility="visible" />
-
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/videoPost"
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/_200sdp">
-
-                    <ImageView
-                        android:id="@+id/ivVideoPost"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/user1"
-                        android:visibility="visible"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintHorizontal_bias="0.5"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintVertical_bias="0.5" />
-
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="0dp"
-                        android:alpha=".4"
-                        android:background="@color/lightBlack"
-                        app:layout_constraintBottom_toBottomOf="@id/ivVideoPost"
-                        app:layout_constraintEnd_toEndOf="@id/ivVideoPost"
-                        app:layout_constraintStart_toStartOf="@id/ivVideoPost"
-                        app:layout_constraintTop_toTopOf="@id/ivVideoPost" />
-
-                    <ImageView
-                        android:id="@+id/ivVideoPostPlay"
-                        android:layout_width="@dimen/_60sdp"
-                        android:layout_height="@dimen/_60sdp"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/ic_play"
-                        android:visibility="visible"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintHorizontal_bias="0.5"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintVertical_bias="0.5" />
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-                <!--            Need to implement for video view for video type story-->
-
-
-            </LinearLayout>
-
-        </HorizontalScrollView>
+        </LinearLayout>
 
 
         <LinearLayout
@@ -166,9 +132,9 @@
             android:orientation="vertical"
             android:weightSum="2"
             app:layout_constraintBottom_toBottomOf="@id/guideLineBottom"
-            app:layout_constraintEnd_toEndOf="@id/horiScrollMain"
-            app:layout_constraintStart_toStartOf="@id/horiScrollMain"
-            app:layout_constraintTop_toBottomOf="@+id/horiScrollMain">
+            app:layout_constraintEnd_toEndOf="@id/linearMain"
+            app:layout_constraintStart_toStartOf="@id/linearMain"
+            app:layout_constraintTop_toBottomOf="@+id/linearMain">
 
             <LinearLayout
                 android:id="@+id/linearPostOption"
@@ -256,8 +222,8 @@
 
 
             <TextView
-                android:id="@+id/tvCommentBottom"
-                android:layout_width="wrap_content"
+                android:id="@+id/tvPostBottom"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/_5sdp"
                 android:ellipsize="end"

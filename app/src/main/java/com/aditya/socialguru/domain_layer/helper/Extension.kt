@@ -1,6 +1,7 @@
 package com.aditya.socialguru.domain_layer.helper
 
 import android.content.Context
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.Uri
@@ -283,3 +284,26 @@ fun <T> Flow<T>.bufferWithDelay(delay: Long): Flow<T> {
 
 
 fun giveMeErrorMessage(whatProcessRunning:String,reason: String)="Some error occurred during ${whatProcessRunning.lowercase()} :- $reason"
+
+
+
+
+fun Context.shareImage(imageUri: Uri) {
+    val shareIntent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_STREAM, imageUri)
+        type = "image/*"
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    startActivity(Intent.createChooser(shareIntent, "Share Image"))
+}
+
+fun Context.shareVideo(videoUri: Uri) {
+    val shareIntent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_STREAM, videoUri)
+        type = "video/*"
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    startActivity(Intent.createChooser(shareIntent, "Share Video"))
+}

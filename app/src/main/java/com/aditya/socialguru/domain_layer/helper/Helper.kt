@@ -121,7 +121,7 @@ object Helper {
 
     fun getPostId():String="${Constants.Table.Post.name}_${generateUUID()}"
     fun getStoryId():String="${Constants.Table.Stories.name}_${generateUUID()}"
-    fun getCommentId():String="${Constants.Table.Comment.name}_${generateUUID()}"
+    fun getCommentId(post_id:String):String="${Constants.Table.Post.name}_${post_id}"
     fun getUserId():String=UUID.randomUUID().toString()
     fun getPostCommentId(postId:String):String="${Constants.Table.Post.name}_${Constants.Table.Comment.name}_$postId"
 

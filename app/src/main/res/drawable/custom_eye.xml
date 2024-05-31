@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_close_eye"
+        android:state_checked="true"/>
+<!--    Assume it check box which in starting uncheck that time below icon show when it check above icon show (check means user click that icon if user again click that icon means it uncheck so below icon show.-->
+    <item android:drawable="@drawable/iv_open_eye"/>
+</selector>

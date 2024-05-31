@@ -59,13 +59,20 @@ object Constants {
         Removed
     }
 
+    enum  class PostEmitType{
+        Starting,
+        Added,
+        Removed
+    }
+
     enum class PostUploadState {
         VideoUploading,
         VideoUploaded,
         ImageUploading,
         ImageUploaded,
         PostUploading,
-        PostUploaded
+        PostUploaded ,
+        Error
     }
 
     enum class Table {

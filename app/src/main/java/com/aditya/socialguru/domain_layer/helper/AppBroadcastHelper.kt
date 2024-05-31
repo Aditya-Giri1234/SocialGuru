@@ -1,5 +1,6 @@
 package com.aditya.socialguru.domain_layer.helper
 
+import com.aditya.socialguru.data_layer.model.post.PostUploadingResponse
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -15,7 +16,7 @@ object AppBroadcastHelper {
 
     val uploadStories get() = _uploadStories.asSharedFlow()
 
-    private val _uploadPost = MutableSharedFlow<Pair<Constants.PostUploadState, Int?>>(
+    private val _uploadPost = MutableSharedFlow<PostUploadingResponse>(
         0,
         64,
         BufferOverflow.DROP_OLDEST
@@ -27,7 +28,7 @@ object AppBroadcastHelper {
         _uploadStories.tryEmit(Pair(state, percentage))
     }
 
-    fun setPostUploadState(state: Constants.PostUploadState, percentage: Int? = null) {
-        _uploadPost.tryEmit(Pair(state, percentage))
+    fun setPostUploadState(response:PostUploadingResponse) {
+        _uploadPost.tryEmit(response)
     }
 }

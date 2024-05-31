@@ -46,6 +46,11 @@ class HomeFollowingPostFragment : Fragment() {
     private fun FragmentHomeFollowingPostBinding.setListener() {
     }
 
+    override fun onResume() {
+        super.onResume()
+        binding.root.requestLayout()
+    }
+
     override fun onDestroyView() {
         _binding=null
         super.onDestroyView()

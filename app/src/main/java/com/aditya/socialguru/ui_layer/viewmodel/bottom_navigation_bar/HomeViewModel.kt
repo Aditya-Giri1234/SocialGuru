@@ -42,6 +42,8 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
     )
     val userStories: SharedFlow<Resource<List<UserStories>>> get() = _userStories.asSharedFlow()
 
+    private var _isDataLoaded = false
+     val isDataLoaded get() = _isDataLoaded
 
     fun uploadStory(
         storyType: Constants.StoryTpye,
@@ -59,6 +61,10 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
             _uploadStories.tryEmit(Resource.Error(message = "Internet not available ."))
         }
 
+    }
+
+    init {
+        MyLogger.w(msg = "Home ViewModel is initialized !")
     }
 
     //region:: Get all story
@@ -154,5 +160,14 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
 
     //endregion
 
+
+    fun setDataLoadedStatus(status:Boolean){
+        _isDataLoaded=status
+    }
+
+    override fun onCleared() {
+        MyLogger.e(msg = "Home viewmodel is finished !")
+        super.onCleared()
+    }
 
 }
