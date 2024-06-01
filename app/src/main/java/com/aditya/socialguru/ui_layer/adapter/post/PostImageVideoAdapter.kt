@@ -1,7 +1,9 @@
 package com.aditya.socialguru.ui_layer.adapter.post
 
+import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.view.isGone
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.DiffUtil.Callback
@@ -9,8 +11,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.data_layer.model.post.PostImageVideoModel
 import com.aditya.socialguru.databinding.SampleImageVideoPostBinding
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 
 class PostImageVideoAdapter(val onImageClick:()->Unit,val onVideoClick:()->Unit) : RecyclerView.Adapter<PostImageVideoAdapter.ViewHolder>() {
 
@@ -34,16 +41,40 @@ class PostImageVideoAdapter(val onImageClick:()->Unit,val onVideoClick:()->Unit)
 
     inner class ViewHolder(val binding:SampleImageVideoPostBinding):RecyclerView.ViewHolder(binding.root){
         fun bind(data:PostImageVideoModel){
-            if (data.isImage){
-                binding.constVideo.gone()
+            binding.apply {
+                ivVideoPost.setSafeOnClickListener {
+                    onImageClick()
+                }
+                constVideo.setSafeOnClickListener {
+                    onVideoClick()
+                }
+                Glide.with(ivVideoPost).load(data.url ?: "")
+                    .addListener(object : RequestListener<Drawable?> {
+                        override fun onLoadFailed(
+                            e: GlideException?,
+                            model: Any?,
+                            target: Target<Drawable?>,
+                            isFirstResource: Boolean
+                        ): Boolean {
+                            linearNoImage.myShow()
+                            linearloader.gone()
+                            ivVideoPost.gone()
+                            return false
+                        }
+
+                        override fun onResourceReady(
+                            resource: Drawable,
+                            model: Any,
+                            target: Target<Drawable?>?,
+                            dataSource: DataSource,
+                            isFirstResource: Boolean
+                        ): Boolean {
+                            linearloader.gone()
+                            constVideo.isGone=data.isImage
+                            return false
+                        }
+                    }).into(ivVideoPost)
             }
-            binding.ivVideoPost.setSafeOnClickListener {
-                onImageClick()
-            }
-            binding.constVideo.setSafeOnClickListener {
-                onVideoClick()
-            }
-            Glide.with(binding.ivVideoPost).load(data.url).into(binding.ivVideoPost)
         }
     }
 

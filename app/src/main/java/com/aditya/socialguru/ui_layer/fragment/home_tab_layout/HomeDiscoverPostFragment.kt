@@ -36,9 +36,10 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
 
     private val tagPost = Constants.LogTag.Post
 
-    private val discoverPostAdapter by lazy {
-        DiscoverPostAdapter(this@HomeDiscoverPostFragment)
-    }
+
+    private var _discoverPostAdapter:DiscoverPostAdapter?=null
+    private val discoverPostAdapter get() = _discoverPostAdapter!!
+
 
     private val discoverPostViewModel: DiscoverPostViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -114,6 +115,7 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     }
 
     private fun initUi() {
+        _discoverPostAdapter= DiscoverPostAdapter(this@HomeDiscoverPostFragment)
         binding.apply {
             rvDiscoverPost.apply {
                 layoutManager = LinearLayoutManager(requireContext())
@@ -159,6 +161,13 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
         }
     }
 
+    override fun onResume() {
+
+        // This done because when first viewpager have data and height increase then user come this fragment and this fragment data not loaded or not have data but it take previous fragment height so avoid this below line put.
+        binding.root.requestLayout()
+        super.onResume()
+    }
+
 
     //region:: Override Part
     override fun onImageClick(): () -> Unit = {}
@@ -184,6 +193,8 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     //endregion
 
     override fun onDestroyView() {
+        _discoverPostAdapter=null
+        binding.rvDiscoverPost.adapter=null
         _binding = null
         super.onDestroyView()
     }

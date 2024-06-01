@@ -14,8 +14,10 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.get
 import androidx.core.view.isGone
 import androidx.core.view.updatePadding
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import com.aditya.socialguru.databinding.ActivityMainBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
@@ -29,6 +31,8 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -80,7 +84,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun subscribeToObserver() {
         lifecycleScope.launch {
-
+            repeatOnLifecycle(Lifecycle.State.STARTED){
+                AppBroadcastHelper.mainActivityBottomNavHideByScroll.onEach {
+                    if(it){
+                        hideBottomNavigationFotScrollEffect()
+                    }else{
+                        showBottomNavigationFotScrollEffect()
+                    }
+                }.launchIn(this)
+            }
         }
 
     }
@@ -88,27 +100,29 @@ class MainActivity : AppCompatActivity() {
 
     private fun subscribeToDestinationChanges() {
         MyLogger.v(isFunctionCall = true)
-        navController?.observe(this) {
-            MyLogger.v(msg = "Nav Controller is change ${it.currentDestination}")
-            it.addOnDestinationChangedListener { controller, destination, arguments ->
-                val bottomBarDestination = setOf(
-                    R.id.homeFragment,
-                    R.id.recentChatFragment,
-                    R.id.notificationFragment,
-                    R.id.profileFragment
-                )
-                MyLogger.d(msg = "Destination is change occurred :- ${destination.label}")
-                if (bottomBarDestination.contains(destination.id)) {
-                    showBottomNavigation()
+        lifecycleScope.launch {
+            navController?.observe(this@MainActivity) {
+                MyLogger.v(msg = "Nav Controller is change ${it.currentDestination}")
+                it.addOnDestinationChangedListener { controller, destination, arguments ->
+                    val bottomBarDestination = setOf(
+                        R.id.homeFragment,
+                        R.id.recentChatFragment,
+                        R.id.notificationFragment,
+                        R.id.profileFragment
+                    )
+                    MyLogger.d(msg = "Destination is change occurred :- ${destination.label}")
+                    if (bottomBarDestination.contains(destination.id)) {
+                        showBottomNavigation()
 
-                } else {
-                    val param =
-                        (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
-                    param.setMargins(0, 0, 0, 0)
-                    binding.localNavHostFragment.layoutParams = param
-                    hideBottomNavigation()
+                    } else {
+                        val param =
+                            (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
+                        param.setMargins(0, 0, 0, 0)
+                        binding.localNavHostFragment.layoutParams = param
+                        hideBottomNavigation()
+                    }
+
                 }
-
             }
         }
     }
@@ -167,6 +181,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showBottomNavigationFotScrollEffect(){
+        binding.apply {
+            val param =
+                (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
+            param.setMargins(0, 0, 0, actionBar?.height ?: 56)
+            binding.localNavHostFragment.layoutParams = param
+            bottomApp.myShow()
+            fab.show()
+        }
+    }
+    private fun hideBottomNavigationFotScrollEffect(){
+        binding.apply {
+            val param =
+                (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
+            param.setMargins(0, 0, 0, 0)
+            binding.localNavHostFragment.layoutParams = param
+            fab.hide()
+            bottomApp.gone()
+        }
+    }
     private fun hideBottomNavigation() {
         binding.bottomApp.animate().apply {
             duration = 300
@@ -191,7 +225,6 @@ class MainActivity : AppCompatActivity() {
             })
         }
     }
-
 
     private fun showBottomNavigation() {
         binding.bottomApp.animate().apply {

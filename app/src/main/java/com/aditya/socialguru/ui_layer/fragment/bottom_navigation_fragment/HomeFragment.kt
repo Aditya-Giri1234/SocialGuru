@@ -4,18 +4,16 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Point
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.view.Gravity
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.PopupMenu
 import android.widget.PopupWindow
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -39,6 +37,7 @@ import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.bufferWithDelay
+import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -65,25 +64,21 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     private val binding get() = _binding!!
 
     private val tagStory = Constants.LogTag.Story
+    private val tagPost = Constants.LogTag.Post
     private val userData: MutableList<UserStories> = mutableListOf<UserStories>()
     private val MAX_VIDEO_SIZE_MB = 30f
     private var myLoader: MyLoader? = null
+    private var isFragmentSwitchHappen = true
 
-    private val storyAdapter by lazy {
-        StoryAdapter({
-            MyLogger.v(tagStory, msg = "User want upload story !")
-            StoryTypeOptionDialog(this@HomeFragment).show(childFragmentManager, "MyStoryDialogView")
-        }, { stories ->
-            MyLogger.v(tagStory, msg = "User want to show story !")
-            navigateToStoryShow(stories)
-        })
-    }
+    private var _storyAdapter:StoryAdapter?=null
+    private val storyAdapter get()=_storyAdapter!!
+
+
 
 
     // Don't use lazy it lead to memory leak and not leave old view when fragment switching and come back this view that time thi variable if initialize with lazy that not leave old view and crash app
-    private lateinit var pagerAdapter: HomeViewPagerAdapter
-
-
+    private var _pagerAdapter:HomeViewPagerAdapter?=null
+    private val pagerAdapter get()=_pagerAdapter!!
 
 
     private val navController get() = (requireActivity() as MainActivity).navController?.value
@@ -212,6 +207,8 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
         initUi()
         subscribeToObserver()
+        //This flag help me when i navigate to other app and come back to this fragment then fragment state maintain so that if frament scrolled already then fragment go to previous scroll position which trigger to nested scroll listener down scroll logic. So below help me to skip first time down scroll when navigate happen between fragment.
+        isFragmentSwitchHappen = true
         if (!homeViewModel.isDataLoaded) {
             getData()
             homeViewModel.setDataLoadedStatus(true)
@@ -344,16 +341,40 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                         }
                     }
                 }.launchIn(this)
+
+                AppBroadcastHelper.homeFragmentBackToTopShow.onEach {
+                    if (it) {
+                        MyLogger.w(tagPost, msg = "Back To Top show event come!")
+                        showBackToTopView()
+                    } else {
+                        binding.linearBackToTop.gone()
+                    }
+                }.launchIn(this)
+
+                AppBroadcastHelper.homeScrollBackToTopClick.onEach {
+                    if (it) {
+                        MyLogger.i(tagPost, msg = "Back To Top click event come !")
+                        binding.nestedRVHome.smoothScrollTo(0, 0)
+                    }
+                }.launchIn(this)
             }
         }
 
     }
 
+
     //endregion
 
-    //region:: Ui initializaion
+    //region:: Ui initialization
     private fun initUi() {
         MyLogger.v(isFunctionCall = true)
+        _storyAdapter=StoryAdapter({
+            MyLogger.v(tagStory, msg = "User want upload story !")
+            StoryTypeOptionDialog(this@HomeFragment).show(childFragmentManager, "MyStoryDialogView")
+        }, { stories ->
+            MyLogger.v(tagStory, msg = "User want to show story !")
+            navigateToStoryShow(stories)
+        })
 
         binding.apply {
             rvStories.apply {
@@ -372,8 +393,6 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                 binding.myToolbar.tvHeaderUserName.text = pref.getPrefUser().first()?.userName
             }
 
-
-
             setUpViewPager()
             setListener()
         }
@@ -381,7 +400,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
     private fun FragmentHomeBinding.setUpViewPager() {
-        pagerAdapter = HomeViewPagerAdapter(
+        _pagerAdapter = HomeViewPagerAdapter(
             listOf(
                 HomeFollowingPostFragment(),
                 HomeDiscoverPostFragment()
@@ -399,6 +418,41 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     private fun FragmentHomeBinding.setListener() {
         myToolbar.icSetting.setOnClickListener {
             showPopupMenu()
+        }
+        linearBackToTop.setSafeOnClickListener {
+            AppBroadcastHelper.setHomeScrollBackToTopClick(true)
+        }
+
+        nestedRVHome.setOnScrollChangeListener { v, scrollX, scrollY, oldScrollX, oldScrollY ->
+            if (scrollY > oldScrollY) {
+                //Scroll Down
+                if (!isFragmentSwitchHappen) {
+                    MyLogger.v(tagPost, msg = "Down scroll")
+                    AppBroadcastHelper.setHomeFragmentBackToTopShow(false)
+                    AppBroadcastHelper.setMainActivityBottomNavHideByScroll(true)
+                } else {
+                    isFragmentSwitchHappen = false
+                }
+
+            }
+            if (scrollY < oldScrollY) {
+                //Scroll Up
+                MyLogger.v(tagPost, msg = "Up scroll")
+                AppBroadcastHelper.setHomeFragmentBackToTopShow(true)
+                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
+
+            }
+
+            if (scrollY == 0) {
+                //Top Scroll
+                MyLogger.v(tagPost, msg = "Top Scroll")
+                AppBroadcastHelper.setHomeFragmentBackToTopShow(false)
+                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
+            }
+
+//            if (scrollY==v.){
+//                MyLogger.v(tagPost, msg = "Bottom Scroll")
+//            }
         }
     }
 
@@ -439,7 +493,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         popUp.width = LinearLayout.LayoutParams.WRAP_CONTENT
         popUp.height = LinearLayout.LayoutParams.WRAP_CONTENT
         popUp.isFocusable = true
-        popUp.isOutsideTouchable=true
+        popUp.isOutsideTouchable = true
         popUp.setBackgroundDrawable(ColorDrawable())
         popUp.animationStyle = R.style.popup_window_animation
         popUp.showAsDropDown(binding.myToolbar.icSetting)
@@ -448,7 +502,6 @@ class HomeFragment : Fragment(), StoryTypeOptions {
             navigateToShowMyStatus()
             popUp.dismiss()
         }
-
 
 
     }
@@ -463,6 +516,17 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         val directions: NavDirections =
             HomeFragmentDirections.actionHomeFragmentToStoryShowFragment(stories)
         navController?.safeNavigate(directions, Helper.giveAnimationNavOption())
+    }
+
+    private fun showBackToTopView() {
+        binding.linearBackToTop.myShow()
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (this@HomeFragment.isResumed) {
+                binding.linearBackToTop.gone()
+            }
+        }, 2000)
+
     }
 
 
@@ -563,6 +627,10 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     override fun onDestroyView() {
         MyLogger.v(isFunctionCall = true)
+        _storyAdapter=null
+        _pagerAdapter=null
+        binding.rvStories.adapter=null
+        binding.viewPagerHome.adapter = null
         _binding = null
         super.onDestroyView()
     }

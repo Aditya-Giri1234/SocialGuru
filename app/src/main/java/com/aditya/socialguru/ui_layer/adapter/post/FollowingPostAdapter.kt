@@ -1,18 +1,15 @@
 package com.aditya.socialguru.ui_layer.adapter.post
 
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.post.PostImageVideoModel
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.databinding.SamplePostLayoutBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
-import com.aditya.socialguru.domain_layer.helper.Constants.PostType
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -20,8 +17,8 @@ import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.bumptech.glide.Glide
 
-class DiscoverPostAdapter(val onClick: OnPostClick) :
-    RecyclerView.Adapter<DiscoverPostAdapter.ViewHolder>() {
+class FollowingPostAdapter(val onClick: OnPostClick) :
+    RecyclerView.Adapter<FollowingPostAdapter.ViewHolder>() {
 
     companion object {
         private val callback = object : DiffUtil.ItemCallback<UserPostModel>() {
@@ -40,7 +37,6 @@ class DiscoverPostAdapter(val onClick: OnPostClick) :
     }
 
 
-
     private val differ = AsyncListDiffer(this, callback)
 
     fun submitList(list: List<UserPostModel>) {
@@ -55,7 +51,7 @@ class DiscoverPostAdapter(val onClick: OnPostClick) :
                 binding.apply {
                     postType?.let {
                         val postImageVideoModel: List<PostImageVideoModel>? = when (it) {
-                            PostType.OnlyText.name -> {
+                            Constants.PostType.OnlyText.name -> {
                                 tvPost.myShow()
                                 constMedia.gone()
                                 linearBottomHeader.context.apply {
@@ -71,7 +67,7 @@ class DiscoverPostAdapter(val onClick: OnPostClick) :
                                 null
                             }
 
-                            PostType.OnlyImage.name -> {
+                            Constants.PostType.OnlyImage.name -> {
                                 tvPostBottom.gone()
                                 dotsIndicator.gone()
                                 linearBottomHeader.context.apply {
@@ -91,7 +87,7 @@ class DiscoverPostAdapter(val onClick: OnPostClick) :
 
                             }
 
-                            PostType.OnlyVideo.name -> {
+                            Constants.PostType.OnlyVideo.name -> {
                                 tvPostBottom.gone()
                                 dotsIndicator.gone()
                                 linearBottomHeader.context.apply {
@@ -110,7 +106,7 @@ class DiscoverPostAdapter(val onClick: OnPostClick) :
                                 )
                             }
 
-                            PostType.TextAndImage.name -> {
+                            Constants.PostType.TextAndImage.name -> {
                                 tvPostBottom.text = text
                                 dotsIndicator.gone()
                                 listOf(
@@ -120,7 +116,7 @@ class DiscoverPostAdapter(val onClick: OnPostClick) :
                                 )
                             }
 
-                            PostType.TextAndVideo.name -> {
+                            Constants.PostType.TextAndVideo.name -> {
                                 tvPostBottom.text = text
                                 dotsIndicator.gone()
                                 listOf(
@@ -130,7 +126,7 @@ class DiscoverPostAdapter(val onClick: OnPostClick) :
                                 )
                             }
 
-                            PostType.ImageAndVideo.name -> {
+                            Constants.PostType.ImageAndVideo.name -> {
                                 tvPostBottom.gone()
                                 linearBottomHeader.context.apply {
                                     linearBottomHeader.setMargin(
@@ -151,7 +147,7 @@ class DiscoverPostAdapter(val onClick: OnPostClick) :
                                 )
                             }
 
-                            PostType.All.name -> {
+                            Constants.PostType.All.name -> {
                                 tvPostBottom.text = text
                                 listOf(
                                     PostImageVideoModel(
@@ -200,11 +196,14 @@ class DiscoverPostAdapter(val onClick: OnPostClick) :
                         }
 
                         viewPagerClickSupport.setOnClickListener {
-                            MyLogger.i(Constants.LogTag.Post,msg="Click on viewPagerClickSupport  !")
+                            MyLogger.i(
+                                Constants.LogTag.Post,
+                                msg = "Click on viewPagerClickSupport  !"
+                            )
                             onClick.onPostClick()
                         }
                         root.setSafeOnClickListener {
-                            MyLogger.i(Constants.LogTag.Post,msg="Click on root !")
+                            MyLogger.i(Constants.LogTag.Post, msg = "Click on root !")
                             onClick.onPostClick()
                         }
 
@@ -229,6 +228,8 @@ class DiscoverPostAdapter(val onClick: OnPostClick) :
             )
         )
     }
+
+
 
     override fun getItemCount(): Int {
         return differ.currentList.size

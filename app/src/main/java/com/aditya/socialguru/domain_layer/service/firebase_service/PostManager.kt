@@ -36,6 +36,9 @@ object PostManager {
     private var discoverPostListener: ListenerRegistration? = null
     private var isFirstTimeDiscoverPostListnerCall = true
 
+    private var followingPostListener: ListenerRegistration? = null
+    private var isFirstTimeFollowingPostListnerCall = true
+
 
     //region::Get Random Post (Discover)
 
@@ -99,6 +102,83 @@ object PostManager {
                 }
             }
             isFirstTimeDiscoverPostListnerCall = false
+
+        }
+
+
+        awaitClose {
+            discoverPostListener?.remove()
+            channel.close()
+        }
+
+    }
+
+
+    //endregion
+
+
+    //region::Get Following Post (Discover)
+
+
+    suspend fun getFollowingPost() = callbackFlow<DiscoverPostListenerEmissionType> {
+
+        val discoverPostQuery = firestore.collection(Constants.Table.Post.name)
+        val posts = discoverPostQuery.get().await()
+
+
+        val userPostList = posts.mapNotNull {
+            val post=it.toObject<Post>()
+            post.userId?.let { id ->
+                UserManager.getUserById(id)?.let { UserPostModel(it,post) }
+            }
+        }.toMutableList()
+
+
+        MyLogger.i(
+            tagPost,
+            msg = userPostList,
+            isJson = true,
+            jsonTitle = "User Post list !"
+        )
+
+        trySend(
+            DiscoverPostListenerEmissionType(
+                Constants.PostEmitType.Starting,
+                userPostList = userPostList.toList()
+            )
+        )
+        userPostList.clear()
+        followingPostListener?.remove()
+        followingPostListener = discoverPostQuery.addSnapshotListener { value, error ->
+
+            if (error!=null) return@addSnapshotListener
+
+            if (!isFirstTimeFollowingPostListnerCall) {
+                value?.documentChanges?.forEach { document ->
+                    when (document.type) {
+                        DocumentChange.Type.ADDED -> {
+                            trySend(
+                                DiscoverPostListenerEmissionType(
+                                    Constants.PostEmitType.Added,
+                                    userPostModel = document.document.toObject<Post>()
+                                )
+                            )
+                        }
+
+                        DocumentChange.Type.REMOVED -> {
+                            trySend(
+                                DiscoverPostListenerEmissionType(
+                                    Constants.PostEmitType.Removed,
+                                    userPostModel = document.document.toObject<Post>()
+                                )
+                            )
+                        }
+
+                        else -> {}
+                    }
+                }
+            }
+            isFirstTimeFollowingPostListnerCall = false
 
         }
 

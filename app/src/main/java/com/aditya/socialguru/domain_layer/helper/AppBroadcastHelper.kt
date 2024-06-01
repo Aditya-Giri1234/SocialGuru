@@ -24,11 +24,47 @@ object AppBroadcastHelper {
 
     val uploadPost get() = _uploadPost.asSharedFlow()
 
+    private val _mainActivityBottomNavHideByScroll = MutableSharedFlow<Boolean>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+
+    val mainActivityBottomNavHideByScroll get() = _mainActivityBottomNavHideByScroll.asSharedFlow()
+
+    private val _homeFragmentBackToTopShow = MutableSharedFlow<Boolean>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+
+    val homeFragmentBackToTopShow get() = _homeFragmentBackToTopShow.asSharedFlow()
+
+    private val _homeScrollBackToTopClick = MutableSharedFlow<Boolean>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+
+    val homeScrollBackToTopClick get() = _homeScrollBackToTopClick.asSharedFlow()
+
     fun setStoryUploadState(state: Constants.StoryUploadState, percentage: Int? = null) {
         _uploadStories.tryEmit(Pair(state, percentage))
     }
 
     fun setPostUploadState(response:PostUploadingResponse) {
         _uploadPost.tryEmit(response)
+    }
+
+    fun setMainActivityBottomNavHideByScroll(isHide:Boolean){
+        _mainActivityBottomNavHideByScroll.tryEmit(isHide)
+    }
+
+    fun setHomeFragmentBackToTopShow(isShow:Boolean){
+        _homeFragmentBackToTopShow.tryEmit(isShow)
+    }
+
+    fun setHomeScrollBackToTopClick(isClick:Boolean){
+        _homeScrollBackToTopClick.tryEmit(isClick)
     }
 }

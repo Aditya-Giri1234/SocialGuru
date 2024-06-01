@@ -12,6 +12,7 @@
         layout="@layout/custom_toolbar" />
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nestedRVHome"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
@@ -96,7 +97,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                app:layout_constraintGuide_begin="?actionBarSize" />
+                app:layout_constraintGuide_begin="@dimen/_5sdp" />
 
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guideLineBottom"
@@ -106,6 +107,48 @@
                 app:layout_constraintGuide_end="@dimen/_15sdp" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
+
+
+
+    <LinearLayout
+        android:id="@+id/linearBackToTop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="@dimen/_60sdp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:alpha=".8"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:background="@drawable/circle_shape_for_button"
+            android:backgroundTint="@color/blue">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:rotation="90"
+                android:src="@drawable/ic_left_arrow_without_line" />
+
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BACK TO TOP"
+            android:textColor="@color/white"
+            android:includeFontPadding="false"
+            android:fontFamily="@font/poppin_medium"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:textSize="@dimen/_13ssp"/>
+
+
+    </LinearLayout>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

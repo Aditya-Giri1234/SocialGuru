@@ -79,6 +79,7 @@ object FirebaseManager {
     suspend fun uploadingPost(post: Post)= PostManager.uploadPost(post)
 
     suspend fun getDiscoverPost()=PostManager.getDiscoverPost()
+    suspend fun getFollowingPost()=PostManager.getFollowingPost()
 
 
     //endregion
