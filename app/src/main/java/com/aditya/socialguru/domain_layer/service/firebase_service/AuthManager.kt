@@ -66,5 +66,7 @@ object AuthManager {
         }
     }
 
+    fun currentUserId()= auth.currentUser?.uid
+
 
 }

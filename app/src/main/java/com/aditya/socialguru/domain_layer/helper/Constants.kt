@@ -59,7 +59,7 @@ object Constants {
         Removed
     }
 
-    enum  class PostEmitType{
+    enum class PostEmitType {
         Starting,
         Added,
         Removed
@@ -71,7 +71,7 @@ object Constants {
         ImageUploading,
         ImageUploaded,
         PostUploading,
-        PostUploaded ,
+        PostUploaded,
         Error
     }
 
@@ -116,6 +116,21 @@ object Constants {
     }
 
 
+    enum class PostTable(val fieldName: String) {
+        POST_ID("postId"),
+        COMMENT_ID("commentId"),
+        USER_ID("userId"),
+        POST_TYPE("postType"),
+        TEXT("text"),
+        IMAGE_URL("imageUrl"),
+        VIDEO_URL("videoUrl"),
+        POST_UPLOADING_TIME_IN_TEXT("postUploadingTimeInText"),
+        POST_UPLOADING_TIME_IN_TIMESTAMP("postUploadingTimeInTimeStamp"),
+        COMMENT_COUNT("commentCount"),
+        LIKE_COUNT("likeCount")
+    }
+
+
     //Post type
 
     enum class PostType() {
@@ -128,7 +143,7 @@ object Constants {
         All  //Text,Image,Video
     }
 
-    enum class StoryTpye {
+    enum class StoryType {
         Text,
         Image,
         Video

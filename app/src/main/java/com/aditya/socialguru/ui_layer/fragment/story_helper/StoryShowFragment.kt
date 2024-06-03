@@ -3,7 +3,6 @@ package com.aditya.socialguru.ui_layer.fragment.story_helper
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.text.method.Touch
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -14,11 +13,7 @@ import androidx.annotation.OptIn
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isGone
 import androidx.fragment.app.Fragment
-import androidx.media3.common.MediaItem
-import androidx.media3.common.PlaybackException
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.fragment.navArgs
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
@@ -31,7 +26,6 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
-import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MediaManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.OnVideoStateChange
@@ -187,18 +181,18 @@ class StoryShowFragment : Fragment() {
 
     private fun handleStoryChange(story: Stories) {
         when (story.storyType) {
-            Constants.StoryTpye.Text.name -> {
+            Constants.StoryType.Text.name -> {
                 binding.linearHeader.setProgressTime(currentStatusIndex,5000)
                 handleTextStory(story)
                 binding.linearHeader.startProgress()
             }
 
-            Constants.StoryTpye.Image.name -> {
+            Constants.StoryType.Image.name -> {
                 binding.linearHeader.setProgressTime(currentStatusIndex,5000)
                 handleImageStory(story)
             }
 
-            Constants.StoryTpye.Video.name -> {
+            Constants.StoryType.Video.name -> {
                 handleVideoStory(story)
             }
 

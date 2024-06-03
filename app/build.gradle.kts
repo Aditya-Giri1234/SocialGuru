@@ -57,7 +57,7 @@ dependencies {
 
 
     //For Memory Leak
-    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+//    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 
     //For text size
     implementation("com.intuit.sdp:sdp-android:1.1.1")

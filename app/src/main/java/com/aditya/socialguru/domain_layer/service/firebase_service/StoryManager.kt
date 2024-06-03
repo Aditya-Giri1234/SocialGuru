@@ -46,22 +46,22 @@ object StoryManager {
     //region:: Upload Story
 
     suspend fun uploadStory(
-        storyType: Constants.StoryTpye,
+        storyType: Constants.StoryType,
         uri: Uri? = null,
         text: StoryText? = null,
         user: User
     ) {
 
         when (storyType) {
-            Constants.StoryTpye.Text -> {
+            Constants.StoryType.Text -> {
                 uploadTextStory(text, user)
             }
 
-            Constants.StoryTpye.Image -> {
+            Constants.StoryType.Image -> {
                 uploadImageStory(uri, user)
             }
 
-            Constants.StoryTpye.Video -> {
+            Constants.StoryType.Video -> {
                 uploadVideoStory(uri, user)
             }
         }
@@ -76,7 +76,7 @@ object StoryManager {
             if (storyUrl != null) {
                 addStoryToDatabase(
                     storyUrl,
-                    storyType = Constants.StoryTpye.Image.name,
+                    storyType = Constants.StoryType.Image.name,
                     user = user
                 )
             }
@@ -92,7 +92,7 @@ object StoryManager {
             if (storyUrl != null) {
                 addStoryToDatabase(
                     storyUrl,
-                    storyType = Constants.StoryTpye.Video.name,
+                    storyType = Constants.StoryType.Video.name,
                     user = user
                 )
             }
@@ -102,7 +102,7 @@ object StoryManager {
     private fun uploadTextStory(text: StoryText?, user: User) {
         text ?: return
         startUploading()
-        addStoryToDatabase(text = text, storyType = Constants.StoryTpye.Text.name, user = user)
+        addStoryToDatabase(text = text, storyType = Constants.StoryType.Text.name, user = user)
     }
 
     private fun startUploading() {

@@ -2,6 +2,7 @@ package com.aditya.socialguru.domain_layer.helper
 
 import android.app.Activity
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Patterns
@@ -13,6 +14,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.navigation.NavOptions
 import com.aditya.socialguru.R
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
+import com.aditya.socialguru.domain_layer.custom_class.ProfileViewDialog
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSnackBar
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSuccessSnackBar
 import com.google.android.material.snackbar.BaseTransientBottomBar
@@ -153,5 +155,11 @@ object Helper {
             else -> "${duration.toDays()} day(s) ago"
         }
     }
+
+    fun showDialog(activity: Activity, bitmap: Bitmap) {
+        val dialog = ProfileViewDialog(bitmap)
+        dialog.show((activity as AppCompatActivity).supportFragmentManager, "MyDialog")
+    }
+
 
 }

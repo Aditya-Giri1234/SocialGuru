@@ -52,7 +52,7 @@ class MyStoryAdapter(val onItemClick:()->Unit) : RecyclerView.Adapter<MyStoryAda
         RecyclerView.ViewHolder(binding.root) {
         fun bind(stories: Stories) {
             when (stories.storyType){
-                Constants.StoryTpye.Image.name,Constants.StoryTpye.Video.name->{
+                Constants.StoryType.Image.name,Constants.StoryType.Video.name->{
                     binding.ivStory.myShow()
                     binding.tvStory.gone()
                     Glide.with(binding.ivStory).load(stories.storyUri).addListener(object : RequestListener<Drawable?> {

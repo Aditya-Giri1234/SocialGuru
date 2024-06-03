@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.ViewGroup
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -19,6 +20,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
+import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.databinding.ActivityMainBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
@@ -29,7 +31,12 @@ import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.setupWithNavController
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.service.FirebaseManager
+import com.aditya.socialguru.domain_layer.service.SharePref
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.activity.ContainerActivity
+import com.aditya.socialguru.ui_layer.viewmodel.MainViewModel
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -44,6 +51,12 @@ class MainActivity : AppCompatActivity() {
 
     private var bottomMargin: Int = 0
     private val tagStory = Constants.LogTag.Story
+
+    private val mainViewModel by viewModels<MainViewModel>()
+    private val pref by lazy {
+        SharePref(this@MainActivity)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
@@ -79,8 +92,14 @@ class MainActivity : AppCompatActivity() {
         initUi()
         subscribeToObserver()
         subscribeToDestinationChanges()
+        if (!mainViewModel.isDataLoaded){
+            getData()
+            mainViewModel.setDataLoadedStatus(true)
+        }
 
     }
+
+
 
     private fun subscribeToObserver() {
         lifecycleScope.launch {
@@ -91,6 +110,24 @@ class MainActivity : AppCompatActivity() {
                     }else{
                         showBottomNavigationFotScrollEffect()
                     }
+                }.launchIn(this)
+
+                mainViewModel.user.onEach {response->
+
+                    when(response){
+                        is Resource.Success ->{
+                            response.data?.let {
+                                pref.setPrefUser(it)
+                            }
+                        }
+                        is Resource.Loading ->{
+
+                        }
+                        is Resource.Error -> {
+                            Helper.showSnackBar(binding.coordLayout,response.message.toString())
+                        }
+                    }
+
                 }.launchIn(this)
             }
         }
@@ -256,6 +293,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
+    private fun getData() {
+        mainViewModel.getUser()
+    }
 
 
     override fun onResume() {

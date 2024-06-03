@@ -45,15 +45,15 @@ class StoryTypeOptionDialog(private val storySelect:StoryTypeOptions) : DialogFr
 
     private fun DialogStoryTypeViewBinding.setListener() {
         linearText.setOnClickListener {
-            storySelect.onStoryTypeSelect(Constants.StoryTpye.Text)
+            storySelect.onStoryTypeSelect(Constants.StoryType.Text)
             dismiss()
         }
         linearImage.setOnClickListener {
-            storySelect.onStoryTypeSelect(Constants.StoryTpye.Image)
+            storySelect.onStoryTypeSelect(Constants.StoryType.Image)
             dismiss()
         }
         linearVideo.setOnClickListener {
-            storySelect.onStoryTypeSelect(Constants.StoryTpye.Video)
+            storySelect.onStoryTypeSelect(Constants.StoryType.Video)
             dismiss()
         }
     }

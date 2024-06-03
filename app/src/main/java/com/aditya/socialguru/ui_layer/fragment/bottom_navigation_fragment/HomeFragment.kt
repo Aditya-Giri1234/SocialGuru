@@ -95,7 +95,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         // photo picker.
         if (uri != null) {
             MyLogger.v(tagStory, msg = "User select pic now send to server !")
-            handleUserSelectedMedia(Constants.StoryTpye.Image, uri)
+            handleUserSelectedMedia(Constants.StoryType.Image, uri)
 
         } else {
             MyLogger.v(tagStory, msg = "User revoke or cancel upload story !")
@@ -142,7 +142,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                         msg = "User selected video length is $videoLength and max length :- $MAX_VIDEO_SIZE_MB  which is not exceeded 😁! "
                     )
                     MyLogger.v(tagStory, msg = "User select video now send to server !")
-                    handleUserSelectedMedia(Constants.StoryTpye.Video, uri)
+                    handleUserSelectedMedia(Constants.StoryType.Video, uri)
                 }
             }
 
@@ -162,7 +162,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                     } else {
                         intent.getSerializableExtra(Constants.DATA) as StoryText?
                     }
-                    handleUserSelectedMedia(Constants.StoryTpye.Text, text = storyText)
+                    handleUserSelectedMedia(Constants.StoryType.Text, text = storyText)
 
                 }
             }
@@ -533,7 +533,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     //region:: Upload story helper
 
     private fun handleUserSelectedMedia(
-        type: Constants.StoryTpye,
+        type: Constants.StoryType,
         uri: Uri? = null,
         text: StoryText? = null
     ) {
@@ -597,22 +597,22 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         super.onResume()
     }
 
-    override fun onStoryTypeSelect(selectedStoryType: Constants.StoryTpye) {
+    override fun onStoryTypeSelect(selectedStoryType: Constants.StoryType) {
         when (selectedStoryType) {
-            Constants.StoryTpye.Text -> {
+            Constants.StoryType.Text -> {
                 MyLogger.v(tagStory, msg = "User select text story !")
                 val navDirections: NavDirections =
                     HomeFragmentDirections.actionHomeFragmentToWriteTextStoryFragment()
                 navController?.safeNavigate(navDirections, Helper.giveAnimationNavOption())
             }
 
-            Constants.StoryTpye.Image -> {
+            Constants.StoryType.Image -> {
                 MyLogger.v(tagStory, msg = "User select image story !")
                 pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
 
             }
 
-            Constants.StoryTpye.Video -> {
+            Constants.StoryType.Video -> {
                 MyLogger.v(tagStory, msg = "User select video story !")
                 pickVideo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
 

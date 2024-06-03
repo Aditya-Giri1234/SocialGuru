@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_margin="@dimen/_10sdp"
+    android:elevation="@dimen/_4sdp"
+    app:cardCornerRadius="@dimen/_15sdp">
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/_10sdp"
+        android:layout_marginBottom="@dimen/_10sdp"
+        android:elevation="@dimen/_5sdp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:id="@+id/linearItemFriendCircle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="@dimen/_10sdp"
+            android:paddingVertical="@dimen/_5sdp"
+            android:gravity="start|center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="@dimen/_20sdp"
+                android:layout_height="@dimen/_20sdp"
+                app:tint="@color/black"
+                android:src="@drawable/ic_group_person" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/_8sdp"
+                android:fontFamily="@font/poppin_medium"
+                android:gravity="center"
+                android:text="Friend Circle"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_12ssp" />
+
+        </LinearLayout>
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_1sdp"
+            android:alpha=".1"
+            android:layout_marginVertical="@dimen/_5sdp"
+            android:background="@color/black" />
+
+        <LinearLayout
+            android:id="@+id/linearItemActivity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="@dimen/_5sdp"
+            android:paddingHorizontal="@dimen/_10sdp"
+            android:gravity="start|center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="@dimen/_20sdp"
+                android:layout_height="@dimen/_20sdp"
+                android:src="@drawable/activity" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/_8sdp"
+                android:fontFamily="@font/poppin_medium"
+                android:gravity="center"
+                android:text="Your Activity"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_12ssp" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_1sdp"
+            android:alpha=".1"
+            android:layout_marginVertical="@dimen/_5sdp"
+            android:background="@color/black" />
+
+        <LinearLayout
+            android:id="@+id/linearItemEditProfile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="@dimen/_5sdp"
+            android:paddingHorizontal="@dimen/_10sdp"
+            android:gravity="start|center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="@dimen/_20sdp"
+                android:layout_height="@dimen/_20sdp"
+                app:tint="@color/black"
+                android:src="@drawable/ic_edit" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/_8sdp"
+                android:fontFamily="@font/poppin_medium"
+                android:gravity="center"
+                android:text="Edit Profile"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_12ssp" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_1sdp"
+            android:alpha=".1"
+            android:layout_marginVertical="@dimen/_5sdp"
+            android:background="@color/black" />
+
+        <LinearLayout
+            android:id="@+id/linearItemLogOut"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="@dimen/_5sdp"
+            android:paddingHorizontal="@dimen/_10sdp"
+            android:gravity="start|center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="@dimen/_20sdp"
+                android:layout_height="@dimen/_20sdp"
+                app:tint="@color/black"
+                android:src="@drawable/ic_logout" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/_8sdp"
+                android:fontFamily="@font/poppin_medium"
+                android:gravity="center"
+                android:text="Log Out"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_12ssp" />
+
+        </LinearLayout>
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_1sdp"
+            android:alpha=".1"
+            android:layout_marginVertical="@dimen/_5sdp"
+            android:background="@color/black" />
+
+        <LinearLayout
+            android:id="@+id/linearItemSetting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="@dimen/_5sdp"
+            android:paddingHorizontal="@dimen/_10sdp"
+            android:gravity="start|center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="@dimen/_20sdp"
+                android:layout_height="@dimen/_20sdp"
+                app:tint="@color/black"
+                android:src="@drawable/ic_setting" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/_8sdp"
+                android:fontFamily="@font/poppin_medium"
+                android:gravity="center"
+                android:text="Setting"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_12ssp" />
+
+        </LinearLayout>
+
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

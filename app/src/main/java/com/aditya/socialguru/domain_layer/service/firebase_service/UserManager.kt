@@ -2,10 +2,12 @@ package com.aditya.socialguru.domain_layer.service.firebase_service
 
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -23,6 +25,9 @@ object UserManager {
         FirebaseFirestore.getInstance()
     }
 
+    private val userRef by lazy {
+        firestore.collection(Constants.Table.User.name)
+    }
 
     suspend fun saveUser(user: User): Pair<Boolean, String?> {
         MyLogger.v(tagLogin, isFunctionCall = true)
@@ -98,6 +103,88 @@ object UserManager {
             }
         }
     }
+
+
+    //region:: Subscribe to follower count
+
+    suspend fun subscribeToFollowerCount(userId: String) = callbackFlow<Int> {
+        userRef.document(userId).collection(Constants.Table.Follower.name)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    trySend(0)
+                }
+
+                trySend(value?.size() ?: 0)
+
+            }
+
+
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
+
+
+    //region:: Subscribe to following count
+
+    suspend fun subscribeToFollowingCount(userId: String) = callbackFlow<Int> {
+
+        userRef.document(userId).collection(Constants.Table.Following.name)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    trySend(0)
+                }
+
+                trySend(value?.size() ?: 0)
+
+            }
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
+
+    //region:: Subscribe to post count
+    suspend fun subscribeToPostCount(userId: String) = callbackFlow<Int> {
+
+        val postRef = firestore.collection(Constants.Table.Post.name)
+        postRef.whereEqualTo(Constants.PostTable.USER_ID.fieldName, userId)
+            .addSnapshotListener { value, error ->
+                if (error != null) trySend(0)
+
+                trySend(value?.size() ?: 0)
+            }
+
+        awaitClose {
+            close()
+        }
+    }
+
+
+    //endregion
+
+    //region:: Subscribe to like count
+    suspend fun subscribeToLikeCount(userId: String) = callbackFlow<Int> {
+        val postRef = firestore.collection(Constants.Table.Post.name)
+        postRef.whereEqualTo(Constants.PostTable.USER_ID.fieldName, userId)
+            .addSnapshotListener { value, error ->
+                if (error != null) trySend(0)
+
+                trySend(value?.documents?.mapNotNull { doc ->
+                    doc.toObject<Post>()?.likeCount
+                }?.sum() ?: 0)
+
+            }
+
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
 
 
 }

@@ -24,7 +24,6 @@ import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
-import com.google.logging.type.LogSeverity
 
 
 class StoryAdapter(
@@ -67,7 +66,7 @@ class StoryAdapter(
                 tvStoryCount.text = "${data.stories?.size ?: 0} stories"
                 data.stories?.get(0)?.let { story ->
                     when (story.storyType) {
-                        Constants.StoryTpye.Image.name, Constants.StoryTpye.Video.name -> {
+                        Constants.StoryType.Image.name, Constants.StoryType.Video.name -> {
                             MyLogger.d(tagStory , msg = "This is media type story !")
                             ivStory.myShow()
                             Glide.with(binding.ivStory.context).load(story.storyUri).addListener(object :

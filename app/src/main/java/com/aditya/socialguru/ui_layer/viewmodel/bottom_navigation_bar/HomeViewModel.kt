@@ -46,7 +46,7 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
      val isDataLoaded get() = _isDataLoaded
 
     fun uploadStory(
-        storyType: Constants.StoryTpye,
+        storyType: Constants.StoryType,
         uri: Uri? = null,
         text: StoryText? = null,
         user: User

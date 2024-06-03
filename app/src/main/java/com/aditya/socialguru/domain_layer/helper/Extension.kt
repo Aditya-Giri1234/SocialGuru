@@ -2,6 +2,8 @@ package com.aditya.socialguru.domain_layer.helper
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.Uri
@@ -12,6 +14,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.ImageView
 import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isGone
@@ -62,6 +65,17 @@ fun View.enabled() {
 fun View.disabled() {
     isEnabled = false
     alpha = .6f
+}
+
+fun ImageView.getBitmapByDrawable(): Bitmap {
+    val bitmap = Bitmap.createBitmap(
+        drawable.intrinsicWidth,
+        drawable.intrinsicHeight, Bitmap.Config.ARGB_8888
+    )
+    val canvas = Canvas(bitmap)
+    drawable.setBounds(0, 0, canvas.width, canvas.height)
+    drawable.draw(canvas)
+    return bitmap
 }
 
 fun AppCompatActivity.isResumed(): Boolean {
