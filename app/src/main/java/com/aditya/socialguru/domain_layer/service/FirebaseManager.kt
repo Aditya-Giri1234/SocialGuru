@@ -38,6 +38,7 @@ object FirebaseManager {
     //region:: User related work here
     suspend fun saveUserToDatabase(user: User): Pair<Boolean, String?> =UserManager.saveUser(user)
 
+    suspend fun updateUser(user: User,oldImage:String?=null,newImage:String?=null) = UserManager.updateUser(user,oldImage,newImage)
     suspend fun getUser(userId: String): Flow<Resource<User>> = UserManager.getUserByIdAsync(userId)
 
     suspend fun subscribeToFollowerCount(userId: String) = UserManager.subscribeToFollowerCount(userId)

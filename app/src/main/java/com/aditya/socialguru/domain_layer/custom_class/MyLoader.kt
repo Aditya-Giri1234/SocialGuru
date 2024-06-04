@@ -18,13 +18,11 @@ class MyLoader(val message: String? = null) : DialogFragment() {
     private var _binding: CustomLoaderLayoutBinding? = null
     private val binding get() = _binding!!
 
-    private val tagStory = Constants.LogTag.Story
-    private val tagPost = Constants.LogTag.Post
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        MyLogger.v(tagPost, isFunctionCall = true)
+        MyLogger.v(isFunctionCall = true)
     }
 
     override fun onCreateView(
@@ -33,24 +31,24 @@ class MyLoader(val message: String? = null) : DialogFragment() {
         savedInstanceState: Bundle?
     ): View? {
         _binding = CustomLoaderLayoutBinding.inflate(layoutInflater)
-        MyLogger.v(tagPost, isFunctionCall = true)
+        MyLogger.v(isFunctionCall = true)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        MyLogger.v(tagPost, isFunctionCall = true)
+        MyLogger.v(isFunctionCall = true)
         handleInitialization()
     }
 
 
     private fun handleInitialization() {
-        MyLogger.v(tagPost, isFunctionCall = true)
+        MyLogger.v(isFunctionCall = true)
         initUi()
     }
 
     private fun initUi() {
-        MyLogger.v(tagPost, isFunctionCall = true)
+        MyLogger.v(isFunctionCall = true)
         binding.apply {
 
             dialog?.apply {
@@ -59,14 +57,12 @@ class MyLoader(val message: String? = null) : DialogFragment() {
                 window?.setBackgroundDrawableResource(android.R.color.transparent)
             }
 
-            if (message != null) {
-                linearMessageLoader.myShow()
-                circularProgress.gone()
-                tvMessage.text = message
+            tvMessage.text = message
 
+            if (message != null) {
+               hideCircularLoader()
             } else {
-                circularProgress.show()
-                linearMessageLoader.gone()
+               showCircularLoader()
             }
 
             setListener()
@@ -77,51 +73,8 @@ class MyLoader(val message: String? = null) : DialogFragment() {
 
     }
 
-
-    fun updateUiByStory(state: StoryUploadState=StoryUploadState.StartUploading, progress: Int=0) {
-        MyLogger.v(tagStory, isFunctionCall = true)
-        binding.apply {
-            if (circularProgress.isVisible) hideCircularLoader()
-
-            tvPercentage.isGone = progress == 0
-
-            val text = when (state) {
-                StoryUploadState.StartUploading -> {
-                    MyLogger.d(tagStory, msg = "Story uploading starting ....")
-                    "Starting uploading..."
-                }
-
-                StoryUploadState.Uploading -> {
-                    MyLogger.d(tagStory, msg = "Story uploading  ....")
-                    "Uploading"
-                }
-
-
-                StoryUploadState.SavingStory -> {
-                    MyLogger.d(tagStory, msg = "Story saving   ....")
-                    "Saving story..."
-                }
-
-                else-> {
-                    ""
-                }
-
-            }
-
-            tvMessage.text = text
-            tvPercentage.text = progress.toString()
-
-        }
-    }
-
-
-    fun updateUiByPostUpload(
-        message: String? = null,
-        progress: Int = 0,
-        isDismiss: Boolean = false
-    ) {
+    fun setLoadingStatus(message: String?=null,progress: Int=0,isDismiss: Boolean=false){
         MyLogger.v(
-            tagPost,
             msg = "Now loader is dismiss := $isDismiss , message is $message , progress := $progress"
         )
         if (isDismiss) {
@@ -145,8 +98,10 @@ class MyLoader(val message: String? = null) : DialogFragment() {
 
     }
 
+
+
     private fun showCircularLoader() {
-        MyLogger.v(tagPost, isFunctionCall = true)
+        MyLogger.v(isFunctionCall = true)
         binding.apply {
             circularProgress.show()
             linearMessageLoader.gone()
@@ -154,7 +109,7 @@ class MyLoader(val message: String? = null) : DialogFragment() {
     }
 
     private fun hideCircularLoader() {
-        MyLogger.v(tagPost, isFunctionCall = true)
+        MyLogger.v(isFunctionCall = true)
         binding.apply {
             linearMessageLoader.myShow()
             circularProgress.gone()
@@ -165,13 +120,13 @@ class MyLoader(val message: String? = null) : DialogFragment() {
     }
 
     override fun onDestroyView() {
-        MyLogger.v(tagPost, isFunctionCall = true)
+        MyLogger.v(isFunctionCall = true)
         _binding = null
         super.onDestroyView()
     }
 
     override fun onDestroy() {
-        MyLogger.v(tagPost, isFunctionCall = true)
+        MyLogger.v(isFunctionCall = true)
         super.onDestroy()
     }
 }

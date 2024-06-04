@@ -7,7 +7,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
-import com.aditya.socialguru.data_layer.model.UploadingResponse
+import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -27,8 +27,8 @@ class AddPostViewModel (val app:Application) : AndroidViewModel(app) {
     private var _videoUri :Uri?=null
     val videoUri get() = _videoUri
 
-    private val _uploadPost=MutableLiveData<Resource<UploadingResponse>>()
-    val uploadPost:LiveData<Resource<UploadingResponse>> get() = _uploadPost
+    private val _uploadPost=MutableLiveData<Resource<UpdateResponse>>()
+    val uploadPost:LiveData<Resource<UpdateResponse>> get() = _uploadPost
 
     fun uploadPost(post: Post)=viewModelScope.launch {
         _uploadPost.postValue(Resource.Loading())

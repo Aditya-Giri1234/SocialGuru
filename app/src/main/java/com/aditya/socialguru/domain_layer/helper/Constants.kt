@@ -31,7 +31,8 @@ object Constants {
         StoryImage,
         StoryVideo,
         PostImage,
-        PostVideo
+        PostVideo,
+        ProfilePic
     }
 
     enum class IntentTable {
@@ -44,13 +45,13 @@ object Constants {
         StoryUploading
     }
 
-    enum class StoryUploadState {
-        StartUploading,
-        Uploading,
-        UploadingFail,
-        UrlNotGet,
-        SavingStory,
-        StoryUploadedSuccessfully
+    enum class StoryUploadState(val status:String) {
+        StartUploading("Starting Uploading"),
+        Uploading("Uploading"),
+        UploadingFail("Uploading Fail"),
+        UrlNotGet("Url Not Get"),
+        SavingStory("Story Saving"),
+        StoryUploadedSuccessfully("Story Uploaded Successfully !")
     }
 
     enum class StoryEmitType {
@@ -65,14 +66,14 @@ object Constants {
         Removed
     }
 
-    enum class PostUploadState {
-        VideoUploading,
-        VideoUploaded,
-        ImageUploading,
-        ImageUploaded,
-        PostUploading,
-        PostUploaded,
-        Error
+    enum class PostUploadState(val status:String) {
+        VideoUploading("Video Uploading"),
+        VideoUploaded("Video Uploaded"),
+        ImageUploading("Image Uploading"),
+        ImageUploaded("Image Uploaded"),
+        PostUploading("Post Uploading"),
+        PostUploaded("Post Uploaded Successfully!"),
+        Error("Post Uploading Failed!")
     }
 
     enum class Table {

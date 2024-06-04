@@ -277,10 +277,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                     MyLogger.v(tagStory, isFunctionCall = true)
                     when (it.first) {
                         Constants.StoryUploadState.StartUploading, Constants.StoryUploadState.Uploading, Constants.StoryUploadState.SavingStory -> {
-                            updateLoader(
-                                it.first,
-                                it.second ?: 0
-                            )
+                            myLoader?.setLoadingStatus(it.first.status, it.second ?: 0)
                         }
 
                         Constants.StoryUploadState.UploadingFail, Constants.StoryUploadState.UrlNotGet -> {
@@ -571,10 +568,6 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         myLoader?.show(childFragmentManager, "My Loader")
     }
 
-    private fun updateLoader(state: Constants.StoryUploadState, progress: Int = 0) {
-        MyLogger.v(tagStory, isFunctionCall = true)
-        myLoader?.updateUiByStory(state, progress)
-    }
 
     private fun hideLoader() {
         MyLogger.w(tagStory, isFunctionCall = true)

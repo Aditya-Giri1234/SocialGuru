@@ -16,7 +16,7 @@
     </fragment>
     <fragment
         android:id="@+id/updateProfileFragment2"
-        android:name="com.aditya.socialguru.ui_layer.fragment.UpdateProfileFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.EditProfileFragment"
         android:label="fragment_update_profile"
         tools:layout="@layout/fragment_update_profile" />
 </navigation>

@@ -4,17 +4,195 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@color/grey"
-    tools:context=".ui_layer.fragment.UpdateProfileFragment">
+    android:background="@color/black"
+    tools:context=".ui_layer.fragment.profile_part.EditProfileFragment">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="UpdateProfileFragment"
-        android:textColor="@color/white"
-        app:layout_constraintBottom_toBottomOf="parent"
+    <include
+        android:id="@+id/myToolbar"
+        layout="@layout/custom_toolbar"/>
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="?actionBarSize"
+        android:fillViewport="true"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent">
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/ivProfile"
+                android:layout_width="@dimen/_90sdp"
+                android:layout_height="@dimen/_90sdp"
+                android:src="@drawable/ic_user"
+                android:tag="0"
+                app:civ_border_color="@color/white"
+                app:civ_border_overlay="false"
+                app:civ_border_width="@dimen/_1sdp"
+                app:layout_constraintEnd_toStartOf="@+id/guidelineEnd"
+                app:layout_constraintStart_toStartOf="@id/guideLineStart"
+                app:layout_constraintTop_toTopOf="@id/guideLineUp" />
+
+            <ImageView
+                android:id="@+id/icEdit"
+                android:layout_width="@dimen/_30sdp"
+                android:layout_height="@dimen/_30sdp"
+                android:backgroundTint="@color/blue"
+                android:background="@drawable/circular_shape_button"
+                android:padding="@dimen/_5sdp"
+                android:src="@drawable/ic_edit"
+                android:layout_marginEnd="@dimen/_5sdp"
+                android:layout_marginTop="@dimen/_minus20sdp"
+                app:layout_constraintEnd_toEndOf="@id/ivProfile"
+                app:layout_constraintTop_toBottomOf="@id/ivProfile"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilName"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_20sdp"
+                android:textColorHint="@color/grey"
+                android:theme="@style/ThemeOverlay.AppTheme.TextInputEditText.Outlined"
+                app:boxStrokeColor="@color/mtrl_textinput_default_box_stroke_color"
+                app:cursorColor="@color/white"
+                app:cursorErrorColor="@color/error_color"
+                app:errorTextColor="@color/error_color"
+                app:boxStrokeErrorColor="@color/error_color"
+                app:errorIconTint="@color/error_color"
+                app:hintTextColor="@color/blue"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+                app:layout_constraintStart_toStartOf="@id/guideLineStart"
+                app:layout_constraintTop_toBottomOf="@id/icEdit">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/tiEtName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/poppins_regular"
+                    android:hint="Name"
+                    android:inputType="textPersonName"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textSize="@dimen/_14ssp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilProfession"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_10sdp"
+                android:textColorHint="@color/grey"
+                android:theme="@style/ThemeOverlay.AppTheme.TextInputEditText.Outlined"
+                app:boxStrokeColor="@color/mtrl_textinput_default_box_stroke_color"
+                app:cursorColor="@color/white"
+                app:cursorErrorColor="@color/error_color"
+                app:errorTextColor="@color/error_color"
+                app:boxStrokeErrorColor="@color/error_color"
+                app:errorIconTint="@color/error_color"
+                app:hintTextColor="@color/blue"
+                app:layout_constraintEnd_toEndOf="@id/tilName"
+                app:layout_constraintStart_toStartOf="@id/tilName"
+                app:layout_constraintTop_toBottomOf="@id/tilName">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/tiEtProfession"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/poppins_regular"
+                    android:hint="Profession"
+                    android:inputType="textPersonName"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textSize="@dimen/_14ssp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilBio"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_10sdp"
+                android:textColorHint="@color/grey"
+                android:theme="@style/ThemeOverlay.AppTheme.TextInputEditText.Outlined"
+                app:boxStrokeColor="@color/mtrl_textinput_default_box_stroke_color"
+                app:cursorColor="@color/white"
+                app:cursorErrorColor="@color/error_color"
+                app:errorTextColor="@color/error_color"
+                app:boxStrokeErrorColor="@color/error_color"
+                app:errorIconTint="@color/error_color"
+                app:hintTextColor="@color/blue"
+                app:layout_constraintEnd_toEndOf="@id/tilProfession"
+                app:layout_constraintStart_toStartOf="@id/tilProfession"
+                app:layout_constraintTop_toBottomOf="@id/tilProfession">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/tiEtBio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/poppins_regular"
+                    android:hint="Bio"
+                    android:inputType="textPersonName"
+                    android:maxLines="3"
+                    android:textColor="@color/white"
+                    android:textSize="@dimen/_14ssp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/_45sdp"
+                android:layout_marginTop="@dimen/_40sdp"
+                android:backgroundTint="@color/yellow"
+                android:text="Save"
+                android:clickable="true"
+                android:textAllCaps="false"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_16ssp"
+                app:cornerRadius="@dimen/_30sdp"
+                app:layout_constraintEnd_toEndOf="@id/tilBio"
+                app:layout_constraintStart_toStartOf="@id/tilBio"
+                app:layout_constraintTop_toBottomOf="@id/tilBio" />
+
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guideLineUp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                app:layout_constraintGuide_begin="@dimen/_20sdp"/>
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guideLineBottom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                app:layout_constraintGuide_end="@dimen/_20sdp"/>
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guideLineStart"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_begin="@dimen/_20sdp"/>
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineEnd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_end="@dimen/_20sdp"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+
+
 
 
 

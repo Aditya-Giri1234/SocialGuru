@@ -248,7 +248,7 @@ class AddPostFragment : Fragment() {
                         null
                     }
                 }
-                myLoader.updateUiByPostUpload(message, progress, message == null)
+                myLoader.setLoadingStatus(message, progress, message == null)
 
             }
 

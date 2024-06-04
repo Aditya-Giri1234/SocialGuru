@@ -8,12 +8,20 @@
     android:gravity="center">
 
 
+    <ImageView
+        android:id="@id/icBack"
+        android:layout_width="@dimen/_30sdp"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:layout_marginStart="@dimen/_10sdp"
+        android:src="@drawable/ic_left_arrow"/>
+
     <de.hdodenhof.circleimageview.CircleImageView
-        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/profile_image"
         android:layout_width="@dimen/_30sdp"
         android:layout_height="@dimen/_30sdp"
         android:layout_marginStart="@dimen/_5sdp"
+        android:visibility="visible"
         android:src="@drawable/person"/>
 
     <androidx.appcompat.widget.AppCompatTextView

@@ -23,11 +23,9 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
-import kotlin.math.ceil
 
 object Helper {
 
@@ -156,7 +154,7 @@ object Helper {
         }
     }
 
-    fun showDialog(activity: Activity, bitmap: Bitmap) {
+    fun showImageDialog(activity: Activity, bitmap: Bitmap) {
         val dialog = ProfileViewDialog(bitmap)
         dialog.show((activity as AppCompatActivity).supportFragmentManager, "MyDialog")
     }

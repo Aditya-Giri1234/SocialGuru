@@ -3,14 +3,19 @@ package com.aditya.socialguru.domain_layer.service.firebase_service
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.post.Post
+import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.await
+import com.aditya.socialguru.domain_layer.helper.convertParseUri
+import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 
 /**
@@ -19,6 +24,7 @@ import kotlinx.coroutines.flow.callbackFlow
 object UserManager {
 
     private val tagLogin = Constants.LogTag.LogIn
+
 
     //Firebase firestore
     private val firestore: FirebaseFirestore by lazy {
@@ -43,6 +49,61 @@ object UserManager {
         }
     }
 
+
+    suspend fun updateUser(user:User,deleteImage:String?=null,uploadingImage:String?=null)= callbackFlow<UpdateResponse> {
+
+        if (deleteImage!=null){
+            StorageManager.deleteImageFromServer(deleteImage).onEach {
+                if (it.isSuccess){
+                    MyLogger.i(Constants.LogTag.Profile, msg = "Image Delete Successfully !")
+                }else{
+                    MyLogger.e(Constants.LogTag.Profile, msg = giveMeErrorMessage("Delete Profile Pic" , it.errorMessage?.toString() ?: ""))
+                }
+
+            }.launchIn(this)
+        }
+
+        if (uploadingImage!=null){
+            StorageManager.uploadImageToServer(folderName = Constants.FolderName.ProfilePic.name, imageUri = uploadingImage.convertParseUri()).onEach {
+                when(it.state){
+                    Constants.StorageManagerState.InProgress -> {
+
+                    }
+                    Constants.StorageManagerState.Error -> {
+                        trySend(UpdateResponse(false,it.error))
+                    }
+                    Constants.StorageManagerState.UrlNotGet -> {
+                        trySend(UpdateResponse(false,it.error))
+                    }
+                    Constants.StorageManagerState.Success -> {
+                        val onlineImageUri=it.url
+                        val newUser=user.copy(
+                            userProfileImage = onlineImageUri
+                        )
+                        val (isUpdate,error)=saveUser(newUser)
+                        if (isUpdate){
+                            trySend(UpdateResponse(true,""))
+                        }else{
+                            trySend(UpdateResponse(false,error))
+                        }
+                    }
+                }
+
+            }.launchIn(this)
+        }else{
+            val (isUpdate,error)=saveUser(user)
+            if (isUpdate){
+                trySend(UpdateResponse(true,""))
+            }else{
+                trySend(UpdateResponse(false,error))
+            }
+        }
+
+
+        awaitClose{
+            close()
+        }
+    }
 
     suspend fun getUserByIdAsync(userId: String): Flow<Resource<User>> {
         return callbackFlow {

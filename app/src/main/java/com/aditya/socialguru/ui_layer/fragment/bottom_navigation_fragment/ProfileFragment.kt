@@ -111,7 +111,7 @@ class ProfileFragment : Fragment() {
 
                     if (user.userProfileImage != null) {
                         ivProfile.tag=imageAvailable  // help to determine that image available not
-                        Glide.with(ivProfile).load(user.userProfileImage).into(ivProfile)
+                        Glide.with(ivProfile).load(user.userProfileImage).placeholder(R.drawable.ic_user).into(ivProfile)
                     } else {
                         ivProfile.tag=imageUnAvailable
                         Glide.with(ivProfile).load(R.drawable.ic_user).into(ivProfile)
@@ -133,7 +133,7 @@ class ProfileFragment : Fragment() {
 
         ivProfile.setSafeOnClickListener {
             if (ivProfile.tag==imageAvailable){
-                Helper.showDialog(requireActivity(),ivProfile.getBitmapByDrawable())
+                Helper.showImageDialog(requireActivity(),ivProfile.getBitmapByDrawable())
             }else{
                 Helper.showSnackBar((requireActivity() as MainActivity).findViewById<CoordinatorLayout>(R.id.coordLayout) ,"No Image Found !")
 

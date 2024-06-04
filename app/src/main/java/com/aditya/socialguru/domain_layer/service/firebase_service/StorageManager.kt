@@ -2,6 +2,7 @@ package com.aditya.socialguru.domain_layer.service.firebase_service
 
 import android.net.Uri
 import com.aditya.socialguru.data_layer.model.storage_manager.StorageManagerStatus
+import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.await
@@ -25,11 +26,31 @@ object StorageManager {
     private val storageReference = FirebaseStorage.getInstance().reference
 
 
-    fun uploadImageToServer(rootFolderName:String,folderName: String, imageUri: Uri) =
+
+    fun deleteImageFromServer(imageUri: String)= callbackFlow<UpdateResponse> {
+        val deleteUrl= FirebaseStorage.getInstance().getReferenceFromUrl(imageUri)
+        deleteUrl.delete().addOnCompleteListener {
+            if(it.isSuccessful){
+                trySend(UpdateResponse(true,""))
+            }else{
+                trySend(UpdateResponse(false,it.exception?.message.toString()))
+            }
+        }.await()
+
+        awaitClose {
+            close()
+        }
+    }
+    fun uploadImageToServer(rootFolderName:String?=null,folderName: String, imageUri: Uri) =
         callbackFlow<StorageManagerStatus> {
 
-            val storageRef =
-                storageReference.child(rootFolderName).child(folderName)
+            val storageRef = if (rootFolderName==null){
+                storageReference.child(folderName).child(imageUri.lastPathSegment ?: "${System.currentTimeMillis()}.jpeg")
+            }else{
+                storageReference.child(rootFolderName).child(folderName).child(imageUri.lastPathSegment ?: "${System.currentTimeMillis()}.jpeg")
+            }
+
+
 
             storageRef.putFile(imageUri)
                 .addOnProgressListener { taskSnapshot ->
@@ -87,7 +108,7 @@ object StorageManager {
         callbackFlow<StorageManagerStatus> {
 
             val storageRef =
-                storageReference.child(rootFolder).child(folderName)
+                storageReference.child(rootFolder).child(folderName).child(videoUri.lastPathSegment ?: "${System.currentTimeMillis()}.mp4")
 
             storageRef.putFile(videoUri)
                 .addOnProgressListener { taskSnapshot ->
