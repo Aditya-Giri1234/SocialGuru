@@ -118,6 +118,7 @@ class MainActivity : AppCompatActivity() {
                         is Resource.Success ->{
                             response.data?.let {
                                 pref.setPrefUser(it)
+                                MyLogger.i(msg = it, isJson = true)
                             }
                         }
                         is Resource.Loading ->{

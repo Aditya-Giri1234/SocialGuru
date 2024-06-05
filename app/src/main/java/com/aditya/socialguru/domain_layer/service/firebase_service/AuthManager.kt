@@ -1,6 +1,7 @@
 package com.aditya.socialguru.domain_layer.service.firebase_service
 
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -29,7 +30,7 @@ object AuthManager {
             } catch (e: Exception) {
                 e.printStackTrace()
                 MyLogger.e(tagLogin, msg = "Some error occurred during create user :- ${e.message}")
-                 Pair(null, e.message)
+                Pair(null, e.message)
             }
         }
         return Pair(null, "Email and Password must not null !")
@@ -60,13 +61,17 @@ object AuthManager {
         return auth.currentUser != null
     }
 
-    fun signOutUser() {
-        if (auth.currentUser != null) {
+    fun signOutUser(): UpdateResponse {
+        return if (auth.currentUser != null) {
             auth.signOut()
+            UpdateResponse(true, "")
+        } else {
+            UpdateResponse(false, "User not found !")
         }
     }
 
-    fun currentUserId()= auth.currentUser?.uid
+
+    fun currentUserId() = auth.currentUser?.uid
 
 
 }

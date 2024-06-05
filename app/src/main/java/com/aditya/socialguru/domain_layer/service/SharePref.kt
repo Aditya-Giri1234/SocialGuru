@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.map
 class SharePref(val context: Context) {
 
 
-    companion object{
+    companion object {
         private val USER_PREFERENCES_NAME = "user_preferences"
 
         private val Context.dataStore by preferencesDataStore(
@@ -22,11 +22,8 @@ class SharePref(val context: Context) {
     }
 
 
-
-
     private object PreferencesKeys {
-
-        val  USER_KEY= stringPreferencesKey("USER_KEY")
+        val USER_KEY = stringPreferencesKey("USER_KEY")
     }
 
     suspend fun setPrefUser(user: User) {
@@ -48,43 +45,54 @@ class SharePref(val context: Context) {
     }
 
 
-
-    suspend fun setPrefBoolean(key:Preferences.Key<Boolean> ,value:Boolean) {
+    suspend fun setPrefBoolean(key: Preferences.Key<Boolean>, value: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[key] = value
         }
     }
 
-    fun getPrefBoolean(key:Preferences.Key<Boolean>): Flow<Boolean> {
+    fun getPrefBoolean(key: Preferences.Key<Boolean>): Flow<Boolean> {
         return context.dataStore.data.map { preferences ->
             preferences[key] ?: false
         }
     }
 
-    suspend fun setPrefString(key:Preferences.Key<String> ,value:String) {
+
+
+
+    suspend fun setPrefString(key: Preferences.Key<String>, value: String) {
         context.dataStore.edit { preferences ->
             preferences[key] = value
         }
     }
 
-    fun getPrefString(key:Preferences.Key<String>): Flow<String?> {
+    fun getPrefString(key: Preferences.Key<String>): Flow<String?> {
         return context.dataStore.data.map { preferences ->
             preferences[key]
         }
     }
 
-    suspend fun setPrefInt(key:Preferences.Key<Int> ,value:Int) {
+    suspend fun setPrefInt(key: Preferences.Key<Int>, value: Int) {
         context.dataStore.edit { preferences ->
             preferences[key] = value
         }
     }
 
-    fun getPrefInt(key:Preferences.Key<Int>): Flow<Int> {
+    fun getPrefInt(key: Preferences.Key<Int>): Flow<Int> {
         return context.dataStore.data.map { preferences ->
             preferences[key] ?: 0
         }
     }
 
+    suspend fun <T> deleteKey(key:Preferences.Key<T>){
+        context.dataStore.edit { preferences ->
+            preferences.remove(key) //Name of the token you want to delete
+        }
+    }
+
+    suspend fun deleteAllFromDataStore() {
+        context.dataStore.edit { preferences -> preferences.clear() }
+    }
 
 
 }

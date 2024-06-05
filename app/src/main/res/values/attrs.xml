@@ -2,5 +2,7 @@
 <resources>
     <declare-styleable name="CustomTabBar">
         <attr name="android:entries"/>
+        <attr name="android:fontFamily"/>
+        <attr name="android:textSize"/>
     </declare-styleable>
 </resources>

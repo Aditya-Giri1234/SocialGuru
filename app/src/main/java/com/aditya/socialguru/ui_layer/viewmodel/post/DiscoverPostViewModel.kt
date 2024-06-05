@@ -4,14 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
-import com.aditya.socialguru.data_layer.model.post.DiscoverPostListenerEmissionType
+import com.aditya.socialguru.data_layer.model.post.PostListenerEmissionType
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
-import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.post.DiscoverPostRepository
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -56,7 +54,7 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private suspend fun handleGetDiscover(discoverPostHandling: DiscoverPostListenerEmissionType): Resource<List<UserPostModel>> {
+    private suspend fun handleGetDiscover(discoverPostHandling: PostListenerEmissionType): Resource<List<UserPostModel>> {
 
         MyLogger.v(tagPost, isFunctionCall = true)
 
@@ -114,6 +112,10 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
                 }
                 MyLogger.d(tagPost, msg = userPostList, isJson = true)
 
+            }
+
+            Constants.PostEmitType.Modify -> {
+                //There we get updated like and comment count post data
             }
         }
 

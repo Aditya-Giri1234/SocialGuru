@@ -44,7 +44,7 @@ import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.StoryTypeOptions
 import com.aditya.socialguru.domain_layer.service.SharePref
-import com.aditya.socialguru.ui_layer.adapter.HomeViewPagerAdapter
+import com.aditya.socialguru.ui_layer.adapter.NormalPagerAdapter
 import com.aditya.socialguru.ui_layer.adapter.StoryAdapter
 import com.aditya.socialguru.ui_layer.fragment.dialog_fragment.StoryTypeOptionDialog
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeDiscoverPostFragment
@@ -77,7 +77,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
 
     // Don't use lazy it lead to memory leak and not leave old view when fragment switching and come back this view that time thi variable if initialize with lazy that not leave old view and crash app
-    private var _pagerAdapter:HomeViewPagerAdapter?=null
+    private var _pagerAdapter:NormalPagerAdapter?=null
     private val pagerAdapter get()=_pagerAdapter!!
 
 
@@ -397,7 +397,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
     private fun FragmentHomeBinding.setUpViewPager() {
-        _pagerAdapter = HomeViewPagerAdapter(
+        _pagerAdapter = NormalPagerAdapter(
             listOf(
                 HomeFollowingPostFragment(),
                 HomeDiscoverPostFragment()
@@ -447,9 +447,6 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                 AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
             }
 
-//            if (scrollY==v.){
-//                MyLogger.v(tagPost, msg = "Bottom Scroll")
-//            }
         }
     }
 

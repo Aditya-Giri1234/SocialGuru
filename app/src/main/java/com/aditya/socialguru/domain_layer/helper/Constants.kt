@@ -63,7 +63,8 @@ object Constants {
     enum class PostEmitType {
         Starting,
         Added,
-        Removed
+        Removed ,
+        Modify
     }
 
     enum class PostUploadState(val status:String) {

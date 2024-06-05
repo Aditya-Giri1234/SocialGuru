@@ -4,11 +4,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isGone
 import androidx.fragment.app.DialogFragment
 import com.aditya.socialguru.databinding.DeleteAlertDialogBinding
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 
-class AlertDialog(val message: String, val option: AlertDialogOption) : DialogFragment() {
+class AlertDialog(val message: String, val option: AlertDialogOption , val isForShowDelete:Boolean=true) : DialogFragment() {
 
     private var _binding: DeleteAlertDialogBinding? = null
     private val binding get() = _binding!!
@@ -39,6 +40,9 @@ class AlertDialog(val message: String, val option: AlertDialogOption) : DialogFr
                 setCanceledOnTouchOutside(true)
                 window?.setBackgroundDrawableResource(android.R.drawable.screen_background_dark_transparent)
             }
+
+            icDelete.isGone=isForShowDelete==false
+            linearAppName.isGone=isForShowDelete
             setListener()
         }
     }

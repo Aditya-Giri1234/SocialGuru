@@ -1,5 +1,6 @@
 package com.aditya.socialguru.ui_layer.fragment.profile_part
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -26,6 +27,7 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.customError
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.removeErrorOnTextChanged
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -189,10 +191,19 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun FragmentUpdateProfileBinding.setListener() {
 
         myToolbar.icBack.setSafeOnClickListener {
             navController?.value?.navigateUp()
+        }
+
+        root.setOnTouchListener { v, event ->
+            MyLogger.v(tagProfile, msg = "Now touch on const main view !")
+            v.onTouchEvent(event)
+            requireActivity().window.decorView.clearFocus()
+            root.hideKeyboard()
+            true
         }
 
         ivProfile.setSafeOnClickListener {

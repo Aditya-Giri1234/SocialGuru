@@ -21,7 +21,7 @@ import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
-import com.aditya.socialguru.ui_layer.adapter.post.DiscoverPostAdapter
+import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.post.DiscoverPostViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -37,7 +37,7 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     private val tagPost = Constants.LogTag.Post
 
 
-    private var _discoverPostAdapter:DiscoverPostAdapter?=null
+    private var _discoverPostAdapter:PostAdapter?=null
     private val discoverPostAdapter get() = _discoverPostAdapter!!
 
 
@@ -115,7 +115,7 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     }
 
     private fun initUi() {
-        _discoverPostAdapter= DiscoverPostAdapter(this@HomeDiscoverPostFragment)
+        _discoverPostAdapter= PostAdapter(this@HomeDiscoverPostFragment)
         binding.apply {
             rvDiscoverPost.apply {
                 layoutManager = LinearLayoutManager(requireContext())

@@ -321,3 +321,16 @@ fun Context.shareVideo(videoUri: Uri) {
     }
     startActivity(Intent.createChooser(shareIntent, "Share Video"))
 }
+
+
+/**
+ * Extension function to convert SSP (scaled size pixels) to pixels.
+ * @param ssp A value in ssp (scaled size pixels) which we need to convert into pixels.
+ * @return A float value representing pixels equivalent to the ssp value.
+ */
+fun Context.sspToPx(ssp: Float): Float {
+    // Get the scaled density from the DisplayMetrics
+    val scaledDensity = resources.displayMetrics.scaledDensity
+    // Convert ssp to pixels
+    return ssp * scaledDensity
+}

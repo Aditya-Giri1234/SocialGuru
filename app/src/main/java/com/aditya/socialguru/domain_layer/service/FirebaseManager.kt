@@ -16,24 +16,18 @@ import kotlinx.coroutines.flow.Flow
 object FirebaseManager {
 
 
-    private val tagPost = Constants.LogTag.Post
-
-
     //region:: Auth related work here
 
     suspend fun login(email: String, password: String): Pair<String?,String?> = AuthManager.loginUser(email,password)
 
-
     suspend fun signUp(user: User): Pair<FirebaseUser?,String?> = AuthManager.createUser(user)
 
-
-
+    suspend fun signOut()=AuthManager.signOutUser()
 
     fun isUserLogin():Boolean=AuthManager.isUserLogin()
 
 
     //endregion
-
 
     //region:: User related work here
     suspend fun saveUserToDatabase(user: User): Pair<Boolean, String?> =UserManager.saveUser(user)
@@ -60,7 +54,6 @@ object FirebaseManager {
 
     //endregion
 
-
     //region::  Post Related Work Here
 
     suspend fun uploadingPost(post: Post)= PostManager.uploadPost(post)
@@ -68,12 +61,12 @@ object FirebaseManager {
     suspend fun getDiscoverPost()=PostManager.getDiscoverPost()
     suspend fun getFollowingPost()=PostManager.getFollowingPost()
 
+    suspend fun getMyPost(userId: String)=PostManager.getMyPost(userId)
+
     suspend fun subscribeToPostCount(userId: String) = UserManager.subscribeToPostCount(userId)
 
     suspend fun subscribeToLikeCount(userId: String) = UserManager.subscribeToLikeCount(userId)
 
     //endregion
-
-
 
 }

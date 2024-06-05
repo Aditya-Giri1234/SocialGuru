@@ -4,4 +4,9 @@
         <item>Following</item>
         <item>Discover</item>
     </array>
+    <array name="activity_tabs">
+        <item>All</item>
+        <item>Comment</item>
+        <item>Like</item>
+    </array>
 </resources>

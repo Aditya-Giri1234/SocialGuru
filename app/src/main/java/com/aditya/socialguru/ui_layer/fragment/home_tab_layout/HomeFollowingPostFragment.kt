@@ -10,24 +10,18 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.databinding.FragmentHomeFollowingPostBinding
-import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
-import com.aditya.socialguru.domain_layer.helper.hide
 import com.aditya.socialguru.domain_layer.helper.myShow
-import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
-import com.aditya.socialguru.ui_layer.adapter.post.DiscoverPostAdapter
-import com.aditya.socialguru.ui_layer.adapter.post.FollowingPostAdapter
-import com.aditya.socialguru.ui_layer.viewmodel.post.DiscoverPostViewModel
+import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.post.FollowingPostViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -40,7 +34,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
 
     private val tagPost = Constants.LogTag.Post
 
-    private var _followingPostAdapter:FollowingPostAdapter?=null
+    private var _followingPostAdapter:PostAdapter?=null
     private val followingPostAdapter get() = _followingPostAdapter!!
 
 
@@ -117,7 +111,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
     }
 
     private fun initUi() {
-        _followingPostAdapter=FollowingPostAdapter(this@HomeFollowingPostFragment)
+        _followingPostAdapter=PostAdapter(this@HomeFollowingPostFragment)
         binding.apply {
             rvFollowingPost.apply {
                 layoutManager = LinearLayoutManager(requireContext())

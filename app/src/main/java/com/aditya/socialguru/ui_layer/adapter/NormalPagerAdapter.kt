@@ -1,14 +1,13 @@
 package com.aditya.socialguru.ui_layer.adapter
 
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 import androidx.viewpager2.adapter.FragmentStateAdapter
 
 
 
-class HomeViewPagerAdapter(
+class NormalPagerAdapter(
     list: List<Fragment>, fm: FragmentManager, lifecycle: Lifecycle
 ) : FragmentStateAdapter(fm, lifecycle) {
     // A custom ArrayList to hold the list of Fragments

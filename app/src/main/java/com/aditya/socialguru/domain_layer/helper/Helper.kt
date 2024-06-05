@@ -17,6 +17,7 @@ import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.ProfileViewDialog
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSnackBar
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSuccessSnackBar
+import com.aditya.socialguru.domain_layer.service.SharePref
 import com.google.android.material.snackbar.BaseTransientBottomBar
 import java.text.SimpleDateFormat
 import java.time.Duration
@@ -159,5 +160,9 @@ object Helper {
         dialog.show((activity as AppCompatActivity).supportFragmentManager, "MyDialog")
     }
 
+    suspend fun setLogout(context: Context){
+        val pref=SharePref(context)
+        pref.deleteAllFromDataStore()
+    }
 
 }

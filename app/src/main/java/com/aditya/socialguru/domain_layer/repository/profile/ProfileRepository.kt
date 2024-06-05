@@ -13,4 +13,6 @@ class ProfileRepository {
     suspend fun subscribeToPostCount(userId: String) = FirebaseManager.subscribeToPostCount(userId)
 
     suspend fun subscribeToLikeCount(userId: String) = FirebaseManager.subscribeToLikeCount(userId)
+
+    suspend fun signOut()=FirebaseManager.signOut()
 }

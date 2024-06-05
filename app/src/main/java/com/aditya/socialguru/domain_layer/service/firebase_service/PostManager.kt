@@ -1,12 +1,9 @@
 package com.aditya.socialguru.domain_layer.service.firebase_service
 
-import com.aditya.socialguru.data_layer.model.post.DiscoverPostListenerEmissionType
+import com.aditya.socialguru.data_layer.model.post.PostListenerEmissionType
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.PostUploadingResponse
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
-import com.aditya.socialguru.data_layer.model.story.Stories
-import com.aditya.socialguru.data_layer.model.story.StoryListenerEmissionType
-import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.await
@@ -39,11 +36,14 @@ object PostManager {
     private var followingPostListener: ListenerRegistration? = null
     private var isFirstTimeFollowingPostListnerCall = true
 
+    private var myPostListener: ListenerRegistration? = null
+    private var isFirstTimeMyPostListenerCall = true
+
 
     //region::Get Random Post (Discover)
 
 
-    suspend fun getDiscoverPost() = callbackFlow<DiscoverPostListenerEmissionType> {
+    suspend fun getDiscoverPost() = callbackFlow<PostListenerEmissionType> {
 
         val discoverPostQuery = firestore.collection(Constants.Table.Post.name)
         val posts = discoverPostQuery.get().await()
@@ -65,7 +65,7 @@ object PostManager {
         )
 
         trySend(
-            DiscoverPostListenerEmissionType(
+            PostListenerEmissionType(
                 Constants.PostEmitType.Starting,
                 userPostList = userPostList.toList()
             )
@@ -81,7 +81,7 @@ object PostManager {
                     when (document.type) {
                         DocumentChange.Type.ADDED -> {
                             trySend(
-                                DiscoverPostListenerEmissionType(
+                                PostListenerEmissionType(
                                     Constants.PostEmitType.Added,
                                     userPostModel = document.document.toObject<Post>()
                                 )
@@ -90,7 +90,7 @@ object PostManager {
 
                         DocumentChange.Type.REMOVED -> {
                             trySend(
-                                DiscoverPostListenerEmissionType(
+                                PostListenerEmissionType(
                                     Constants.PostEmitType.Removed,
                                     userPostModel = document.document.toObject<Post>()
                                 )
@@ -119,8 +119,7 @@ object PostManager {
 
     //region::Get Following Post (Discover)
 
-
-    suspend fun getFollowingPost() = callbackFlow<DiscoverPostListenerEmissionType> {
+    suspend fun getFollowingPost() = callbackFlow<PostListenerEmissionType> {
 
         val discoverPostQuery = firestore.collection(Constants.Table.Post.name)
         val posts = discoverPostQuery.get().await()
@@ -142,7 +141,7 @@ object PostManager {
         )
 
         trySend(
-            DiscoverPostListenerEmissionType(
+            PostListenerEmissionType(
                 Constants.PostEmitType.Starting,
                 userPostList = userPostList.toList()
             )
@@ -158,7 +157,7 @@ object PostManager {
                     when (document.type) {
                         DocumentChange.Type.ADDED -> {
                             trySend(
-                                DiscoverPostListenerEmissionType(
+                                PostListenerEmissionType(
                                     Constants.PostEmitType.Added,
                                     userPostModel = document.document.toObject<Post>()
                                 )
@@ -167,7 +166,7 @@ object PostManager {
 
                         DocumentChange.Type.REMOVED -> {
                             trySend(
-                                DiscoverPostListenerEmissionType(
+                                PostListenerEmissionType(
                                     Constants.PostEmitType.Removed,
                                     userPostModel = document.document.toObject<Post>()
                                 )
@@ -190,6 +189,72 @@ object PostManager {
 
     }
 
+
+    //endregion
+
+    //region:: Get My Post
+
+    suspend fun getMyPost(userId:String) = callbackFlow<PostListenerEmissionType> {
+
+        val discoverPostQuery = firestore.collection(Constants.Table.Post.name).whereEqualTo(Constants.PostTable.USER_ID.fieldName,userId)
+        val posts = discoverPostQuery.get().await()
+
+
+        val userPostList = posts.mapNotNull {
+            val post=it.toObject<Post>()
+            post.userId?.let { id ->
+                UserManager.getUserById(id)?.let { UserPostModel(it,post) }
+            }
+        }.toMutableList()
+
+
+        MyLogger.i(
+            tagPost,
+            msg = userPostList,
+            isJson = true,
+            jsonTitle = "User Post list !"
+        )
+
+        trySend(
+            PostListenerEmissionType(
+                Constants.PostEmitType.Starting,
+                userPostList = userPostList.toList()
+            )
+        )
+        userPostList.clear()
+        myPostListener?.remove()
+        myPostListener = discoverPostQuery.addSnapshotListener { value, error ->
+
+            if (error!=null) return@addSnapshotListener
+
+            if (!isFirstTimeMyPostListenerCall) {
+                value?.documentChanges?.forEach { document ->
+                    when (document.type) {
+                        DocumentChange.Type.MODIFIED -> {
+                            trySend(
+                                PostListenerEmissionType(
+                                    Constants.PostEmitType.Modify,
+                                    userPostModel = document.document.toObject<Post>()
+                                )
+                            )
+                        }
+
+
+                        else -> {}
+                    }
+                }
+            }
+            isFirstTimeMyPostListenerCall = false
+
+        }
+
+
+        awaitClose {
+            discoverPostListener?.remove()
+            channel.close()
+        }
+
+    }
 
     //endregion
 

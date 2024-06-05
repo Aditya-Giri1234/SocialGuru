@@ -1,6 +1,7 @@
 package com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.ColorDrawable
@@ -19,30 +20,37 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
+import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.databinding.FragmentProfileBinding
 import com.aditya.socialguru.databinding.PopUpProfileSettingBinding
+import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
+import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
+import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.SharePref
+import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import com.aditya.socialguru.ui_layer.viewmodel.profile.ProfileViewModel
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 
-class ProfileFragment : Fragment() {
+class ProfileFragment : Fragment(), AlertDialogOption {
 
 
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
 
-    private val imageAvailable="0"
-    private val imageUnAvailable="1"
-
+    private val imageAvailable = "0"
+    private val imageUnAvailable = "1"
+    private var myLoader: MyLoader? = null
 
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
@@ -100,9 +108,38 @@ class ProfileFragment : Fragment() {
                 profileViewModel.likeCount.onEach {
                     binding.tvLike.text = it.toString()
                 }.launchIn(this)
+
+                profileViewModel.userSignOut.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            hideDialog()
+                            Helper.showSuccessSnackBar(
+                                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                                    R.id.coordLayout
+                                ), "LogOut Successfully!"
+                            )
+                            Helper.setLogout(requireContext())
+                            navigateToOnboardingScreen()
+                        }
+
+                        is Resource.Loading -> {
+                            showDialog()
+                        }
+
+                        is Resource.Error -> {
+                            hideDialog()
+                            Helper.showSnackBar(
+                                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                                    R.id.coordLayout
+                                ), response.message.toString()
+                            )
+                        }
+                    }
+                }.launchIn(this)
             }
         }
     }
+
 
     private fun initUI() {
         binding.apply {
@@ -110,10 +147,12 @@ class ProfileFragment : Fragment() {
                 pref.getPrefUser().first()?.let { user ->
 
                     if (user.userProfileImage != null) {
-                        ivProfile.tag=imageAvailable  // help to determine that image available not
-                        Glide.with(ivProfile).load(user.userProfileImage).placeholder(R.drawable.ic_user).into(ivProfile)
+                        ivProfile.tag =
+                            imageAvailable  // help to determine that image available not
+                        Glide.with(ivProfile).load(user.userProfileImage)
+                            .placeholder(R.drawable.ic_user).into(ivProfile)
                     } else {
-                        ivProfile.tag=imageUnAvailable
+                        ivProfile.tag = imageUnAvailable
                         Glide.with(ivProfile).load(R.drawable.ic_user).into(ivProfile)
                         ivProfile.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
                     }
@@ -132,10 +171,14 @@ class ProfileFragment : Fragment() {
     private fun FragmentProfileBinding.setListener() {
 
         ivProfile.setSafeOnClickListener {
-            if (ivProfile.tag==imageAvailable){
-                Helper.showImageDialog(requireActivity(),ivProfile.getBitmapByDrawable())
-            }else{
-                Helper.showSnackBar((requireActivity() as MainActivity).findViewById<CoordinatorLayout>(R.id.coordLayout) ,"No Image Found !")
+            if (ivProfile.tag == imageAvailable) {
+                Helper.showImageDialog(requireActivity(), ivProfile.getBitmapByDrawable())
+            } else {
+                Helper.showSnackBar(
+                    (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                        R.id.coordLayout
+                    ), "No Image Found !"
+                )
 
             }
 
@@ -171,6 +214,10 @@ class ProfileFragment : Fragment() {
             linearItemActivity.setSafeOnClickListener {
                 popUp.dismiss()
 
+                val directions: NavDirections =
+                    ProfileFragmentDirections.actionProfileFragmentToMyActivityFragment()
+                navController?.value?.safeNavigate(directions, Helper.giveAnimationNavOption())
+
             }
             linearItemEditProfile.setSafeOnClickListener {
                 popUp.dismiss()
@@ -181,7 +228,14 @@ class ProfileFragment : Fragment() {
             }
             linearItemLogOut.setSafeOnClickListener {
                 popUp.dismiss()
-
+                AlertDialog(
+                    "Are you sure log out ?",
+                    this@ProfileFragment,
+                    isForShowDelete = false
+                ).show(
+                    childFragmentManager,
+                    "MyAlertDialog"
+                )
             }
             linearItemSetting.setSafeOnClickListener {
                 popUp.dismiss()
@@ -204,6 +258,35 @@ class ProfileFragment : Fragment() {
                     profileViewModel.subscribeToLikeCount(this)
                 }
             }
+        }
+    }
+
+    private fun navigateToOnboardingScreen() {
+        lifecycleScope.launch {
+            delay(100)
+            startActivity(Intent(requireActivity(), ContainerActivity::class.java))
+            requireActivity().overridePendingTransition(
+                R.anim.slide_in_right,
+                R.anim.slide_out_left
+            )
+            requireActivity().finish()
+        }
+    }
+
+    private fun showDialog() {
+        myLoader?.dismiss()
+        myLoader = MyLoader()
+        myLoader?.show(childFragmentManager, "My_Loader")
+    }
+
+    private fun hideDialog() {
+        myLoader?.dismiss()
+        myLoader = null
+    }
+
+    override fun onResult(isYes: Boolean) {
+        if (isYes) {
+            profileViewModel.singOutUser()
         }
     }
 
