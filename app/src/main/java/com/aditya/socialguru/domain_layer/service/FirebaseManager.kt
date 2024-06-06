@@ -39,7 +39,7 @@ object FirebaseManager {
 
     suspend fun subscribeToFollowingCount(userId: String) = UserManager.subscribeToFollowingCount(userId)
 
-
+    suspend fun subscribeToCurrentUser(userId:String) = UserManager.subscribeToCurrentUserData(userId)
 
     //endregion
 

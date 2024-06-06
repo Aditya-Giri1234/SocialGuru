@@ -74,7 +74,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 followingPostViewModel.userPost.onEach { response ->
                     response.let {
-                        MyLogger.d(msg = "Response coming and it was $response")
+                        MyLogger.d(tagPost , msg = response , isJson = true, jsonTitle = "Response coming in fragment")
                         when (response) {
                             is Resource.Success -> {
                                 response.hasBeenMessagedToUser = true

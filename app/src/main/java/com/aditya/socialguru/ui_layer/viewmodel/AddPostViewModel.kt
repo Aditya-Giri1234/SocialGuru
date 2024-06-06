@@ -24,6 +24,7 @@ class AddPostViewModel (val app:Application) : AndroidViewModel(app) {
     val text get() = _text
     private var _imageUri: Uri? = null
     val imageUri get() = _imageUri
+
     private var _videoUri :Uri?=null
     val videoUri get() = _videoUri
 

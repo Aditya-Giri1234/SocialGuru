@@ -165,15 +165,12 @@ object StorageManager {
         storageReference: StorageReference,
         onResult: (uri: Uri?, error: String) -> Unit
     ) {
-        storageReference.downloadUrl.addOnCompleteListener { urlResult ->
-            if (urlResult.isSuccessful) {
-                MyLogger.i(msg = "Story url download successfully ...")
-                onResult(urlResult.result ,"")
-
-            } else {
-                MyLogger.e(msg = "Story url download failed  ...")
-                AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.UrlNotGet)
-            }
+        storageReference.downloadUrl.addOnSuccessListener {
+            MyLogger.i(msg = "Story url download successfully ...")
+            onResult(it,"")
+        }.addOnFailureListener {
+            MyLogger.e(msg = "Story url download failed  ...")
+            AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.UrlNotGet)
         }
     }
 

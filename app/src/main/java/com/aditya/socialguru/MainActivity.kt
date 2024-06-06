@@ -112,7 +112,8 @@ class MainActivity : AppCompatActivity() {
                     }
                 }.launchIn(this)
 
-                mainViewModel.user.onEach {response->
+                mainViewModel.
+                user.onEach {response->
 
                     when(response){
                         is Resource.Success ->{

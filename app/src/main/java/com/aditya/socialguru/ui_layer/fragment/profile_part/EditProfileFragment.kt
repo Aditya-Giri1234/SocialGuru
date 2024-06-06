@@ -1,6 +1,7 @@
 package com.aditya.socialguru.ui_layer.fragment.profile_part
 
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -63,8 +64,8 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
         // photo picker.
         if (uri != null) {
             MyLogger.v(tagProfile, msg = "User select pic now set to profile :- $uri")
-            newImage = uri.toString()
-            Glide.with(binding.ivProfile).load(uri).into(binding.ivProfile)
+
+            setImageOnProfileView(uri)
 
         } else {
             MyLogger.v(tagProfile, msg = "User revoke or cancel upload story !")
@@ -120,7 +121,7 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
                                 ), "Profile Updated !"
                             )
 
-                            editProfileViewModel.getUser()
+                            navController?.value?.navigateUp()
                         }
 
                         is Resource.Loading -> {
@@ -130,30 +131,6 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
                         is Resource.Error -> {
                             hideDialog()
                             showSnackBar(response.message.toString())
-                        }
-                    }
-
-                }.launchIn(this)
-
-                editProfileViewModel.user.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.data?.let {
-                                MyLogger.v(tagProfile, msg = it, isJson = true, jsonTitle = "User")
-                                pref.setPrefUser(it)
-                            }
-                            navController?.value?.navigateUp()
-                        }
-
-                        is Resource.Loading -> {
-
-                        }
-
-                        is Resource.Error -> {
-                            MyLogger.e(
-                                tagProfile,
-                                msg = "Some error occurred :- ${response.message}"
-                            )
                         }
                     }
 
@@ -321,6 +298,20 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
 
     }
 
+    private fun setImageOnProfileView(uri: Uri) {
+        newImage = uri.toString()
+        Glide.with(binding.ivProfile).load(newImage).into(binding.ivProfile)
+        binding.ivProfile.tag=imageAvailable
+    }
+
+    private fun removeImageFromProfileView(){
+        binding.apply {
+            newImage = null  //Assure newImage should null and currentImage not change
+            ivProfile.setImageResource(R.drawable.ic_user)
+            ivProfile.tag = imageUnAvailable
+        }
+    }
+
     private fun showSnackBar(message: String) {
         Helper.showSnackBar(
             (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
@@ -349,9 +340,7 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
     }
 
     override fun onDelete() {
-        newImage = null  //Assure newImage should null and currentImage not change
-        binding.ivProfile.setImageResource(R.drawable.ic_user)
-        binding.ivProfile.tag = imageUnAvailable
+        removeImageFromProfileView()
     }
 
     override fun onUpload() {

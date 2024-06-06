@@ -37,13 +37,6 @@ class EditProfileViewModel(val app: Application) : AndroidViewModel(app) {
     val userUpdateStatus: SharedFlow<Resource<UpdateResponse>> = _userUpdateStatus
 
 
-    private val _user = MutableSharedFlow<Resource<User>>(
-        1,
-        64,
-        BufferOverflow.DROP_OLDEST
-    )
-    val user: SharedFlow<Resource<User>> get() = _user.asSharedFlow()
-
     fun updateProfile(user: User,oldImage:String?=null,newImage:String?=null) = viewModelScope.launch {
         _userUpdateStatus.tryEmit(Resource.Loading())
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -61,27 +54,4 @@ class EditProfileViewModel(val app: Application) : AndroidViewModel(app) {
             _userUpdateStatus.tryEmit(Resource.Error("No Internet Available !"))
         }
     }
-
-
-    fun getUser()=viewModelScope.launch {
-        _user.tryEmit(Resource.Loading())
-
-        if (SoftwareManager.isNetworkAvailable(app)){
-
-            AuthManager.currentUserId()?.let {
-                repository.getUser(it).onEach {
-                    MyLogger.i(Constants.LogTag.Profile, msg = "User details get ! - ${it.data}")
-                    _user.tryEmit(it)
-                }.launchIn(this)
-            } ?: run {
-                _user.tryEmit(Resource.Error("User Not found !"))
-            }
-
-
-        }else{
-            _user.tryEmit(Resource.Error("Network Not Available !"))
-        }
-    }
-
-
 }

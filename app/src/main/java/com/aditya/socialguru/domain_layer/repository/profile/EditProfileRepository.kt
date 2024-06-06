@@ -7,6 +7,4 @@ class EditProfileRepository {
 
     suspend fun updateUser(user: User,oldImage:String?=null,newImage:String?=null)=FirebaseManager.updateUser(user,oldImage,newImage)
 
-    suspend fun getUser(userId: String)= FirebaseManager.getUser(userId)
-
 }

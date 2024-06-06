@@ -10,6 +10,7 @@ import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +36,9 @@ object UserManager {
         firestore.collection(Constants.Table.User.name)
     }
 
+    private var currentUserListener: ListenerRegistration? = null
+
+
     suspend fun saveUser(user: User): Pair<Boolean, String?> {
         MyLogger.v(tagLogin, isFunctionCall = true)
         return try {
@@ -50,57 +54,73 @@ object UserManager {
     }
 
 
-    suspend fun updateUser(user:User,deleteImage:String?=null,uploadingImage:String?=null)= callbackFlow<UpdateResponse> {
+    suspend fun updateUser(
+        user: User,
+        deleteImage: String? = null,
+        uploadingImage: String? = null
+    ) = callbackFlow<UpdateResponse> {
 
-        if (deleteImage!=null){
+        if (deleteImage != null) {
             StorageManager.deleteImageFromServer(deleteImage).onEach {
-                if (it.isSuccess){
+                if (it.isSuccess) {
                     MyLogger.i(Constants.LogTag.Profile, msg = "Image Delete Successfully !")
-                }else{
-                    MyLogger.e(Constants.LogTag.Profile, msg = giveMeErrorMessage("Delete Profile Pic" , it.errorMessage?.toString() ?: ""))
+                } else {
+                    MyLogger.e(
+                        Constants.LogTag.Profile,
+                        msg = giveMeErrorMessage(
+                            "Delete Profile Pic",
+                            it.errorMessage?.toString() ?: ""
+                        )
+                    )
                 }
 
             }.launchIn(this)
         }
 
-        if (uploadingImage!=null){
-            StorageManager.uploadImageToServer(folderName = Constants.FolderName.ProfilePic.name, imageUri = uploadingImage.convertParseUri()).onEach {
-                when(it.state){
+        if (uploadingImage != null) {
+            StorageManager.uploadImageToServer(
+                folderName = Constants.FolderName.ProfilePic.name,
+                imageUri = uploadingImage.convertParseUri()
+            ).onEach {
+                when (it.state) {
                     Constants.StorageManagerState.InProgress -> {
 
                     }
+
                     Constants.StorageManagerState.Error -> {
-                        trySend(UpdateResponse(false,it.error))
+                        trySend(UpdateResponse(false, it.error))
                     }
+
                     Constants.StorageManagerState.UrlNotGet -> {
-                        trySend(UpdateResponse(false,it.error))
+                        trySend(UpdateResponse(false, it.error))
                     }
+
                     Constants.StorageManagerState.Success -> {
-                        val onlineImageUri=it.url
-                        val newUser=user.copy(
+                        val onlineImageUri = it.url
+                        val newUser = user.copy(
                             userProfileImage = onlineImageUri
                         )
-                        val (isUpdate,error)=saveUser(newUser)
-                        if (isUpdate){
-                            trySend(UpdateResponse(true,""))
-                        }else{
-                            trySend(UpdateResponse(false,error))
+                        val (isUpdate, error) = saveUser(newUser)
+                        if (isUpdate) {
+                            trySend(UpdateResponse(true, ""))
+                        } else {
+                            trySend(UpdateResponse(false, error))
                         }
                     }
                 }
 
             }.launchIn(this)
-        }else{
-            val (isUpdate,error)=saveUser(user)
-            if (isUpdate){
-                trySend(UpdateResponse(true,""))
-            }else{
-                trySend(UpdateResponse(false,error))
+        } else {
+            val (isUpdate, error) = saveUser(user)
+            if (isUpdate) {
+                trySend(UpdateResponse(true, ""))
+            } else {
+                trySend(UpdateResponse(false, error))
             }
         }
 
 
-        awaitClose{
+        awaitClose {
             close()
         }
     }
@@ -165,6 +185,22 @@ object UserManager {
         }
     }
 
+    suspend fun subscribeToCurrentUserData(userId: String) = callbackFlow<User?> {
+
+        currentUserListener?.remove()
+
+        currentUserListener = userRef.document(userId).addSnapshotListener { value, error ->
+
+            if (error != null) trySend(null)
+
+            trySend(value?.toObject<User>())
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
 
     //region:: Subscribe to follower count
 
@@ -186,7 +222,6 @@ object UserManager {
     }
 
     //endregion
-
 
     //region:: Subscribe to following count
 

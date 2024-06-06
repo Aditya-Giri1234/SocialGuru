@@ -229,8 +229,13 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
     private fun setData() {
         binding.apply {
-            hideNoStatusView()
-            myStoryAdapter.submitList(stories)
+            if (stories.isNotEmpty()){
+                hideNoStatusView()
+                myStoryAdapter.submitList(stories)
+            }else{
+                showNoStatusView()
+            }
+
         }
     }
 

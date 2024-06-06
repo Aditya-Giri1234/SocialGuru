@@ -351,7 +351,7 @@ object PostManager {
         val imageUri = post.imageUrl!!.convertParseUri()
         StorageManager.uploadImageToServer(
             Constants.Table.Post.name,
-            Constants.FolderName.PostVideo.name,
+            Constants.FolderName.PostImage.name,
             imageUri
         ).collect {
             when (it.state) {

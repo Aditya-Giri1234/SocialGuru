@@ -17,9 +17,14 @@ import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 /**
@@ -38,6 +43,7 @@ object StoryManager {
 
     private var storyListener: ListenerRegistration? = null
     private var isFirstTimeStoryListnerCall = true
+    private var top30FriendListener: ListenerRegistration? = null
 
     private val StoryImageUploadingPath = "${Constants.Table.Stories.name}/Image/"
     private val StoryVideoUploadingPath = "${Constants.Table.Stories.name}/Video/"
@@ -70,7 +76,7 @@ object StoryManager {
     private suspend fun uploadImageStory(uri: Uri?, user: User) {
         uri ?: return
         startUploading()
-        uploadToStorage(Constants.FolderName.StoryImage,uri).collect {
+        uploadToStorage(Constants.FolderName.StoryImage, uri).collect {
             val storyUrl = it.first
             val error = it.second
             if (storyUrl != null) {
@@ -86,7 +92,7 @@ object StoryManager {
     private suspend fun uploadVideoStory(uri: Uri?, user: User) {
         uri ?: return
         startUploading()
-        uploadToStorage(Constants.FolderName.StoryVideo,uri).collect {
+        uploadToStorage(Constants.FolderName.StoryVideo, uri).collect {
             val storyUrl = it.first
             val error = it.second
             if (storyUrl != null) {
@@ -112,43 +118,47 @@ object StoryManager {
     }
 
 
-    private suspend fun uploadToStorage( folderName: Constants.FolderName,uri: Uri) = callbackFlow<Pair<String?, String?>> {
-        StorageManager.uploadImageToServer(
-            Table.Stories.name,
-            folderName.name,
-            uri
-        ).collect { status ->
-            when (status.state) {
-                Constants.StorageManagerState.InProgress -> {
-                    MyLogger.v(tagStory, msg = "Story uploading in progress ... ${status.progress}")
-                    AppBroadcastHelper.setStoryUploadState(
-                        Constants.StoryUploadState.Uploading,
-                        status.progress
-                    )
-                }
+    private suspend fun uploadToStorage(folderName: Constants.FolderName, uri: Uri) =
+        callbackFlow<Pair<String?, String?>> {
+            StorageManager.uploadImageToServer(
+                Table.Stories.name,
+                folderName.name,
+                uri
+            ).collect { status ->
+                when (status.state) {
+                    Constants.StorageManagerState.InProgress -> {
+                        MyLogger.v(
+                            tagStory,
+                            msg = "Story uploading in progress ... ${status.progress}"
+                        )
+                        AppBroadcastHelper.setStoryUploadState(
+                            Constants.StoryUploadState.Uploading,
+                            status.progress
+                        )
+                    }
 
-                Constants.StorageManagerState.Error -> {
-                    MyLogger.e(tagStory, msg = "Story uploaded failed ...")
-                    AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.UploadingFail)
-                    trySend(Pair(null, status.error))
-                }
+                    Constants.StorageManagerState.Error -> {
+                        MyLogger.e(tagStory, msg = "Story uploaded failed ...")
+                        AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.UploadingFail)
+                        trySend(Pair(null, status.error))
+                    }
 
-                Constants.StorageManagerState.UrlNotGet -> {
-                    MyLogger.e(tagStory, msg = "Story url download failed  ...")
-                    AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.UrlNotGet)
-                    trySend(Pair(null, status.error))
-                }
+                    Constants.StorageManagerState.UrlNotGet -> {
+                        MyLogger.e(tagStory, msg = "Story url download failed  ...")
+                        AppBroadcastHelper.setStoryUploadState(Constants.StoryUploadState.UrlNotGet)
+                        trySend(Pair(null, status.error))
+                    }
 
-                Constants.StorageManagerState.Success -> {
-                    //Success means file stored in storage and url get successfully.
-                    trySend(Pair(status.url, null))
+                    Constants.StorageManagerState.Success -> {
+                        //Success means file stored in storage and url get successfully.
+                        trySend(Pair(status.url, null))
+                    }
                 }
             }
+            awaitClose {
+                channel.close()
+            }
         }
-        awaitClose {
-            channel.close()
-        }
-    }
 
 
     private fun addStoryToDatabase(
@@ -196,83 +206,95 @@ object StoryManager {
     //region:: Get All Story
 
     suspend fun getAndListenTop30Friend(userId: String) = callbackFlow<StoryListenerEmissionType> {
-        val listOfFriend = getTop30Friend(userId)
-
-        // In this way handle because if try return@callBackFlow it give error because you don't use awaitClose and return it 😁😁.
-        if (listOfFriend.isNotEmpty()) {
-            MyLogger.v(
-                tagStory,
-                msg = "List of friend is not empty :- $listOfFriend and  ${listOf("5z3GqeOT8ZZxr7nE4Ny231cP68J3")}"
-            )
-            val storiesQuery = firestore.collection(Constants.Table.Stories.name)
-                .whereIn(UserTable.USERID.fieldName, listOfFriend.toList())
-            val stories = storiesQuery.get().await()
-
-
-            //asSequence help to iterate original list and return when iteration over.
-            val userStoriesMap = stories.asSequence()
-                .mapNotNull {
-                    it.toObject<Stories>().userId?.let { id ->
-                        id to it
-                    }
-                }
-                .groupBy({ it.first }, { it.second.toObject<Stories>() })
-
-            MyLogger.d(tagStory, msg = userStoriesMap, isJson = true, jsonTitle = "user story map ")
-
-            val userStoriesList = userStoriesMap.mapNotNull { (userId, stories) ->
-                UserManager.getUserById(userId)?.let { UserStories(it, stories.toMutableList()) }
-            }.toMutableList()
-
-
-            MyLogger.i(
-                tagStory,
-                msg = userStoriesList,
-                isJson = true,
-                jsonTitle = "User Story list !"
-            )
-
-            trySend(
-                StoryListenerEmissionType(
-                    Constants.StoryEmitType.Starting,
-                    userStoryList = userStoriesList.toList()
+        getTop30Friend(userId).onEach { listOfFriend ->
+            // In this way handle because if try return@callBackFlow it give error because you don't use awaitClose and return it 😁😁.
+            if (listOfFriend.isNotEmpty()) {
+                MyLogger.v(
+                    tagStory,
+                    msg = "List of friend is not empty :- $listOfFriend and  ${listOf("5z3GqeOT8ZZxr7nE4Ny231cP68J3")}"
                 )
-            )
-            userStoriesList.clear()
-            storyListener?.remove()
-            storyListener = storiesQuery.addSnapshotListener { value, error ->
+                isFirstTimeStoryListnerCall = true // Reset this because friend list change all process start with fresh .
+                val storiesQuery = firestore.collection(Constants.Table.Stories.name)
+                    .whereIn(UserTable.USERID.fieldName, listOfFriend.toList())
+                val stories = storiesQuery.get().await()
 
-                if (error != null) return@addSnapshotListener
 
-                if (!isFirstTimeStoryListnerCall) {
-                    value?.documentChanges?.forEach { document ->
-                        when (document.type) {
-                            DocumentChange.Type.ADDED -> {
-                                trySend(
-                                    StoryListenerEmissionType(
-                                        Constants.StoryEmitType.Added,
-                                        story = document.document.toObject<Stories>()
-                                    )
-                                )
-                            }
-
-                            DocumentChange.Type.REMOVED -> {
-                                trySend(
-                                    StoryListenerEmissionType(
-                                        Constants.StoryEmitType.Removed,
-                                        story = document.document.toObject<Stories>()
-                                    )
-                                )
-                            }
-
-                            else -> {}
+                //asSequence help to iterate original list and return when iteration over.
+                val userStoriesMap = stories.asSequence()
+                    .mapNotNull {
+                        it.toObject<Stories>().userId?.let { id ->
+                            id to it
                         }
                     }
-                }
-                isFirstTimeStoryListnerCall = false
+                    .groupBy({ it.first }, { it.second.toObject<Stories>() })
 
+                MyLogger.d(
+                    tagStory,
+                    msg = userStoriesMap,
+                    isJson = true,
+                    jsonTitle = "user story map "
+                )
+
+                val userStoriesList = userStoriesMap.mapNotNull { (userId, stories) ->
+                    UserManager.getUserById(userId)
+                        ?.let { UserStories(it, stories.toMutableList()) }
+                }.toMutableList()
+
+
+                MyLogger.i(
+                    tagStory,
+                    msg = userStoriesList,
+                    isJson = true,
+                    jsonTitle = "User Story list !"
+                )
+
+                trySend(
+                    StoryListenerEmissionType(
+                        Constants.StoryEmitType.Starting,
+                        userStoryList = userStoriesList.toList()
+                    )
+                )
+                userStoriesList.clear()
+                storyListener?.remove()
+                storyListener = storiesQuery.addSnapshotListener { value, error ->
+
+                    if (error != null) return@addSnapshotListener
+
+                    if (!isFirstTimeStoryListnerCall) {
+                        value?.documentChanges?.forEach { document ->
+                            when (document.type) {
+                                DocumentChange.Type.ADDED -> {
+                                    trySend(
+                                        StoryListenerEmissionType(
+                                            Constants.StoryEmitType.Added,
+                                            story = document.document.toObject<Stories>()
+                                        )
+                                    )
+                                }
+
+                                DocumentChange.Type.REMOVED -> {
+                                    trySend(
+                                        StoryListenerEmissionType(
+                                            Constants.StoryEmitType.Removed,
+                                            story = document.document.toObject<Stories>()
+                                        )
+                                    )
+                                }
+
+                                else -> {}
+                            }
+                        }
+                    }
+                    isFirstTimeStoryListnerCall = false
+
+                }
             }
-        }
+            else{
+                trySend(StoryListenerEmissionType(Constants.StoryEmitType.Starting,null))
+            }
+        }.launchIn(this)
+
+
 
 
         awaitClose {
@@ -282,16 +304,36 @@ object StoryManager {
 
     }
 
-    private suspend fun getTop30Friend(userId: String): List<String> {
-        return firestore.collection(Constants.Table.User.name).document(userId)
-            .collection(Constants.Table.Friend.name).get().await().documents.map {
-                it.id to firestore.collection(Table.User.name).document(it.id)
-                    .collection(Constants.Table.Follower.name).get().await().documents.size
-            }.sortedByDescending {
-                it.second
-            }.take(30).map {
-                it.first
+
+    private suspend fun getTop30Friend(userId: String) = callbackFlow<List<String>> {
+        top30FriendListener?.remove()
+        top30FriendListener = firestore.collection(Constants.Table.User.name).document(userId)
+            .collection(Constants.Table.Friend.name).addSnapshotListener { value, error ->
+                if (error != null) trySend(emptyList())
+
+                val friendIds = value?.documents?.map { it.id } ?: emptyList()
+
+                launch { // Launch a new coroutine for the asynchronous operation
+                    val followerCounts = withContext(Dispatchers.IO) {
+                        friendIds.map { friendId ->
+                            firestore.collection(Table.User.name).document(friendId)
+                                .collection(Constants.Table.Follower.name).get()
+                                .await().documents.size
+                        }
+                    }
+                    val sortedFriends = friendIds.zip(followerCounts)
+                        .sortedByDescending { it.second }
+                        .take(30)
+                        .map { it.first }
+
+                    trySend(sortedFriends) // Send the processed data to the callbackFlow
+                }
             }
+
+        awaitClose {
+            top30FriendListener?.remove()
+            close()
+        }
     }
 
 

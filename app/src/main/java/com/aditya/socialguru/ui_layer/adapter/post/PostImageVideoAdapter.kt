@@ -10,9 +10,11 @@ import androidx.recyclerview.widget.DiffUtil.Callback
 import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.data_layer.model.post.PostImageVideoModel
 import com.aditya.socialguru.databinding.SampleImageVideoPostBinding
+import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
@@ -56,6 +58,7 @@ class PostImageVideoAdapter(val onImageClick:()->Unit,val onVideoClick:()->Unit)
                             target: Target<Drawable?>,
                             isFirstResource: Boolean
                         ): Boolean {
+                            MyLogger.e(Constants.LogTag.Post , msg = "${e?.message}")
                             linearNoImage.myShow()
                             linearloader.gone()
                             ivVideoPost.gone()

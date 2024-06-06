@@ -98,6 +98,7 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
                     tagStory,
                     msg = "This is starting story type :- ${storyHandling.userStoryList}"
                 )
+                userStoryList.clear()
                 storyHandling.userStoryList?.let {
                     userStoryList.addAll(it.toMutableList() as ArrayList<UserStories>)
                 }
