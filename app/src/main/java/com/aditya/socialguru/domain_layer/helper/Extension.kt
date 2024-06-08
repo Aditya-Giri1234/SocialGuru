@@ -93,6 +93,8 @@ fun EditText.getStringText(): String {
     return text.toString()
 }
 
+fun Context.giveMeColor(colorId:Int) = resources.getColor(colorId,null)
+
 fun View.setSafeOnClickListener(onSafeClick: (View) -> Unit) {
     val safeClickListener = SafeClickListener {
         onSafeClick(it)

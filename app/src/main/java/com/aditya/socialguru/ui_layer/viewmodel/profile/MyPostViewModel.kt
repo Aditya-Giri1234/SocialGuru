@@ -14,7 +14,6 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -62,7 +61,7 @@ class MyPostViewModel(val app:Application) : AndroidViewModel(app) {
         val userPostList = myPost.replayCache[0].data?.toMutableList() ?: mutableListOf<UserPostModel>()
 
         when (postHandling.emitChangeType) {
-            Constants.PostEmitType.Starting -> {
+            Constants.ListenerEmitType.Starting -> {
                 MyLogger.v(
                     tagProfile,
                     msg = "This is starting story type :- ${postHandling.userPostList}"
@@ -73,7 +72,7 @@ class MyPostViewModel(val app:Application) : AndroidViewModel(app) {
                 }
             }
 
-            Constants.PostEmitType.Modify -> {
+            Constants.ListenerEmitType.Modify -> {
                 MyLogger.v(tagProfile, msg = "Post Modify event come !")
 
                 postHandling.userPostModel?.let { post ->

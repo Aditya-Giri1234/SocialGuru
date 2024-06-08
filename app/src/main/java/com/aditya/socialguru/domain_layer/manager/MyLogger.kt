@@ -30,6 +30,7 @@ object MyLogger {
 
 
     //region:: Log use case with different scenario
+
     /*
      1) Log.e: This is for when bad stuff happens. Use this tag in places like inside a catch statement. You know that an error has occurred and therefore you're logging an error.
 
@@ -398,3 +399,58 @@ object MyLogger {
         }
     }
 }
+
+
+
+
+/*
+enum class LogLevel {
+    Error,
+    Warning,
+    Debug,
+    Info,
+    Verbose
+}
+
+enum class LogTag(val icon: String) {
+    Error("❌"),
+    Warning("⚠️"),
+    Debug("🐞"),
+    Info("ℹ️"),
+    Verbose("🔊"),
+    AppFlow("🌀"),
+    Incoming("📥"),
+    Outgoing("📤"),
+    Calling("📞"),
+    CdrFetching("📑"),
+    NumberPurchase("☎️"),
+    InsertDataInDB("💾"),
+    Switching("🔄"),
+    FCMToken("🔑"),
+    Realm("🌍"),
+    BlockUnblock("🚫"),
+    Setting("⚙️"),
+    DialCall("📞"),
+    DeleteVoiceMailApi("🗑️"),
+    DeleteCallRecordingApi("🗑️"),
+    DeleteRecentCallCdrApi("🗑️"),
+    DeleteMissedCallCdrApi("🗑️"),
+    SipRegistration("📝"),
+    Profile("👤"),
+    ActivityLifeCycle("♾️"),
+    Socket("🔌"),
+    ContactSync("🔄"),
+    Network("🌐"),
+    LogIn("🔓"), // Unicode for open lock
+    Logout("🔒"), // Unicode for closed lock
+    ForceLogout("⛔"), // Unicode for no entry sign
+    Pagination("🔢"),
+    ButtonSwipe("👆"), // Unicode for upward pointing hand
+    ForceUpdate("🔥"),
+    AudioPlayer("🎵"),
+    JobManager("🚀"),
+    Story("📸"),
+    Post("✍️"),
+    Chats("💬"),
+    Notification("🔔")
+}*/

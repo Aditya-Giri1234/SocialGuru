@@ -210,6 +210,9 @@ class ProfileFragment : Fragment(), AlertDialogOption {
 
             linearItemFriendCircle.setSafeOnClickListener {
                 popUp.dismiss()
+                val directions: NavDirections =
+                    ProfileFragmentDirections.actionProfileFragmentToFriendCircleFragment()
+                navController?.value?.safeNavigate(directions, Helper.giveAnimationNavOption())
             }
             linearItemActivity.setSafeOnClickListener {
                 popUp.dismiss()
@@ -240,7 +243,9 @@ class ProfileFragment : Fragment(), AlertDialogOption {
             linearItemSetting.setSafeOnClickListener {
                 popUp.dismiss()
 
-
+                val directions: NavDirections =
+                    ProfileFragmentDirections.actionProfileFragmentToSettingFragment()
+                navController?.value?.navigate(directions, Helper.giveAnimationNavOption())
             }
 
         }

@@ -41,6 +41,12 @@ object FirebaseManager {
 
     suspend fun subscribeToCurrentUser(userId:String) = UserManager.subscribeToCurrentUserData(userId)
 
+    suspend fun getFollowerListAndListenChange()=UserManager.getFollowerListAndListenChange(AuthManager.currentUserId() ?: "")
+    suspend fun getFollowingListAndListenChange()=UserManager.getFollowingListAndListenChange(AuthManager.currentUserId() ?: "")
+    suspend fun getFriendListAndListenChange()=UserManager.getFriendListAndListenChange(AuthManager.currentUserId() ?: "")
+
+    suspend fun removeFollower(userId: String)=UserManager.removeFollower(userId)
+
     //endregion
 
     //region:: Story Related work here

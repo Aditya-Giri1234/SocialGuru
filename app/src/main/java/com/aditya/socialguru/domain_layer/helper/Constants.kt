@@ -60,7 +60,7 @@ object Constants {
         Removed
     }
 
-    enum class PostEmitType {
+    enum class ListenerEmitType {
         Starting,
         Added,
         Removed ,

@@ -61,7 +61,7 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
         val userPostList = userPost.replayCache[0].data?.toMutableList() ?: mutableListOf<UserPostModel>()
 
         when (discoverPostHandling.emitChangeType) {
-            Constants.PostEmitType.Starting -> {
+            Constants.ListenerEmitType.Starting -> {
                 MyLogger.v(
                     tagPost,
                     msg = "This is starting story type :- ${discoverPostHandling.userPostList}"
@@ -72,7 +72,7 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
                 }
             }
 
-            Constants.PostEmitType.Added -> {
+            Constants.ListenerEmitType.Added -> {
                 MyLogger.v(
                     tagPost,
                     msg = "This is added post type :- ${discoverPostHandling.userPostModel}"
@@ -95,7 +95,7 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
 
             }
 
-            Constants.PostEmitType.Removed -> {
+            Constants.ListenerEmitType.Removed -> {
                 MyLogger.v(tagPost, msg = "This is removed post type")
 
                 discoverPostHandling.userPostModel?.let { post ->
@@ -114,7 +114,7 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
 
             }
 
-            Constants.PostEmitType.Modify -> {
+            Constants.ListenerEmitType.Modify -> {
                 //There we get updated like and comment count post data
             }
         }

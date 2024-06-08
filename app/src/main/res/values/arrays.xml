@@ -9,4 +9,9 @@
         <item>Comment</item>
         <item>Like</item>
     </array>
+    <array name="friend_circle">
+        <item>Follower</item>
+        <item>Following</item>
+        <item>Friend</item>
+    </array>
 </resources>

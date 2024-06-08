@@ -4,8 +4,11 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
+import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.profile.ProfileRepository
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
@@ -19,7 +22,7 @@ import kotlinx.coroutines.launch
 
 class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
 
-    val repository=ProfileRepository()
+    val repository = ProfileRepository()
 
     private var _isDataLoaded = false
     val isDataLoaded get() = _isDataLoaded
@@ -61,46 +64,66 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
     )
     val userSignOut: SharedFlow<Resource<UpdateResponse>> get() = _userSignOut.asSharedFlow()
 
-
-     fun subscribeToFollowerCount(userId: String) = viewModelScope.launch {
-         repository.subscribeToFollowerCount(userId).onEach {
-             _followerCount.tryEmit(it)
-         }.launchIn(this)
-     }
-
-     fun subscribeToFollowingCount(userId: String) = viewModelScope.launch {
-         repository.subscribeToFollowingCount(userId).onEach {
-             _followingCount.tryEmit(it)
-         }.launchIn(this)
-     }
-
-     fun subscribeToPostCount(userId: String) = viewModelScope.launch {
-         repository.subscribeToPostCount(userId).onEach {
-             _postCount.tryEmit(it)
-         }.launchIn(this)
-     }
-
-     fun subscribeToLikeCount(userId: String) = viewModelScope.launch {
-         repository.subscribeToLikeCount(userId).onEach {
-             _likeCount.tryEmit(it)
-         }.launchIn(this)
-     }
+    private val _userDetails = MutableSharedFlow<Resource<User>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val userDetails: SharedFlow<Resource<User>> get() = _userDetails.asSharedFlow()
 
 
-    fun singOutUser()=viewModelScope.launch {
+    fun subscribeToFollowerCount(userId: String) = viewModelScope.launch {
+        repository.subscribeToFollowerCount(userId).onEach {
+            _followerCount.tryEmit(it)
+        }.launchIn(this)
+    }
+
+    fun subscribeToFollowingCount(userId: String) = viewModelScope.launch {
+        repository.subscribeToFollowingCount(userId).onEach {
+            _followingCount.tryEmit(it)
+        }.launchIn(this)
+    }
+
+    fun subscribeToPostCount(userId: String) = viewModelScope.launch {
+        repository.subscribeToPostCount(userId).onEach {
+            _postCount.tryEmit(it)
+        }.launchIn(this)
+    }
+
+    fun subscribeToLikeCount(userId: String) = viewModelScope.launch {
+        repository.subscribeToLikeCount(userId).onEach {
+            _likeCount.tryEmit(it)
+        }.launchIn(this)
+    }
+
+
+    fun singOutUser() = viewModelScope.launch {
         _userSignOut.tryEmit(Resource.Loading())
 
-        if (SoftwareManager.isNetworkAvailable(app)){
+        if (SoftwareManager.isNetworkAvailable(app)) {
             _userSignOut.tryEmit(Resource.Success(repository.signOut()))
-        }else{
+        } else {
             _userSignOut.tryEmit(Resource.Error("No Internet Available !"))
         }
     }
 
+    fun getUser(userId: String) = viewModelScope.launch {
+        _userDetails.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.getUser(userId).onEach {
+                MyLogger.v(Constants.LogTag.Profile, msg = it.data , isJson = true)
+                _userDetails.tryEmit(it)
+            }.launchIn(this)
+        }else{
+            _userDetails.tryEmit(Resource.Error("No Internet Available !"))
+        }
+
+    }
 
 
-    fun setDataLoadedStatus(status:Boolean){
-        _isDataLoaded=status
+    fun setDataLoadedStatus(status: Boolean) {
+        _isDataLoaded = status
     }
 
 }

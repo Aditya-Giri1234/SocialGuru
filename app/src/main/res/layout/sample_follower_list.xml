@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:cardUseCompatPadding="true"
+    android:background="@color/lightBlack"
+    app:cardCornerRadius="@dimen/_15sdp"
+    app:cardBackgroundColor="@android:color/transparent"
+    android:elevation="@dimen/_4sdp"
+    app:cardElevation="@dimen/_4sdp"
+    android:layout_marginVertical="@dimen/_10sdp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/lightBlack"
+        android:paddingHorizontal="@dimen/_10sdp"
+        android:paddingVertical="@dimen/_5sdp"
+        android:orientation="horizontal"
+        android:gravity="center">
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/ivFollowerProfilePic"
+            android:layout_width="@dimen/_40sdp"
+            android:layout_height="@dimen/_40sdp"
+            android:src="@drawable/person"
+            app:civ_border_width="@dimen/_1sdp"
+            app:civ_border_color="@color/blue"
+            app:civ_border_overlay="true"/>
+        <TextView
+            android:id="@+id/tvFollowerName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Aditya Giri"
+            android:textSize="@dimen/_14ssp"
+            android:textColor="@color/white"
+            android:layout_weight="1"
+            android:layout_marginStart="@dimen/_10sdp"
+            android:fontFamily="@font/poppin_medium"/>
+
+        <Button
+            android:id="@+id/btnFollow"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="Remove"
+            android:textColor="@color/white"
+            android:textAllCaps="false"
+            app:cornerRadius="@dimen/_30sdp"
+            android:backgroundTint="@color/deep_dark_orange"
+            android:fontFamily="@font/poppins_regular"
+            android:textSize="@dimen/_12ssp"
+            android:visibility="visible"
+            android:layout_marginEnd="@dimen/_5sdp"
+            android:layout_marginStart="@dimen/_5sdp"
+            app:layout_constraintStart_toStartOf="@id/linearProfile"
+            app:layout_constraintTop_toBottomOf="@id/linearProfile"
+            app:layout_constraintEnd_toEndOf="@id/linearProfile"/>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView >

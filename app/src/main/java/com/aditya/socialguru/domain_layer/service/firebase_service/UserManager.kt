@@ -3,12 +3,19 @@ package com.aditya.socialguru.domain_layer.service.firebase_service
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.post.Post
+import com.aditya.socialguru.data_layer.model.user_action.FollowerData
+import com.aditya.socialguru.data_layer.model.user_action.FollowingData
+import com.aditya.socialguru.data_layer.model.user_action.FriendData
+import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.google.android.material.tabs.TabLayout.Tab
+import com.google.common.collect.Table
+import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
@@ -17,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 
 /**
@@ -37,6 +45,15 @@ object UserManager {
     }
 
     private var currentUserListener: ListenerRegistration? = null
+
+    private var followerListListener: ListenerRegistration? = null
+    private var isFirstTimeFollowerListListener = true
+
+    private var followingListListener: ListenerRegistration? = null
+    private var isFirstTimeFollowingListListener = true
+
+    private var friendListListener: ListenerRegistration? = null
+    private var isFirstTimeFriendListListener = true
 
 
     suspend fun saveUser(user: User): Pair<Boolean, String?> {
@@ -197,6 +214,231 @@ object UserManager {
         }
 
         awaitClose {
+            close()
+        }
+    }
+
+    suspend fun getFollowerListAndListenChange(userId: String) =
+        callbackFlow<ListenerEmissionType<FollowerData, FollowerData>> {
+
+            val followerRef = userRef.document(userId).collection(Constants.Table.Follower.name)
+
+            var followerList =
+                followerRef.get().await().toObjects(FollowerData::class.java)
+            followerList = followerList.map {
+                it.copy(
+                    user = it.userId?.let { it1 -> getUserById(it1) }
+                )
+            }.toMutableList()
+
+            followerList.sortBy {
+                it.timeStamp
+            }
+
+            MyLogger.v(Constants.LogTag.Profile , msg = followerList)
+
+            trySend(
+                ListenerEmissionType(
+                    Constants.ListenerEmitType.Starting,
+                    responseList = followerList.toList()
+                )
+            )
+
+            followerList.clear()
+            followerListListener?.remove()
+            followerListListener = followerRef.addSnapshotListener { value, error ->
+
+                if (error != null) return@addSnapshotListener
+
+                if (value != null) {
+                    if (isFirstTimeFollowerListListener) {
+                        isFirstTimeFollowerListListener = false
+                        return@addSnapshotListener
+                    }
+
+                    value.documentChanges.forEach {
+                        when (it.type) {
+                            DocumentChange.Type.ADDED -> {
+                                launch {
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Added,
+                                            singleResponse = it.document.toObject<FollowerData>().apply {
+                                                user= getUserById(it.document.id)
+                                            }
+                                        )
+                                    )
+                                }
+                            }
+
+                            DocumentChange.Type.REMOVED -> {
+                                trySend(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Removed,
+                                        singleResponse = it.document.toObject<FollowerData>()
+                                    )
+                                )
+                            }
+
+                            DocumentChange.Type.MODIFIED -> {}
+                        }
+                    }
+                }
+
+            }
+
+
+
+
+            awaitClose {
+                isFirstTimeFollowerListListener = true// This is singleton variable if function again call then this variable contain old value so that reset here
+                followerListListener?.remove()
+                close()
+            }
+        }
+
+    suspend fun getFollowingListAndListenChange(userId: String) =
+        callbackFlow<ListenerEmissionType<FollowingData, FollowingData>> {
+
+            val followingRef = userRef.document(userId).collection(Constants.Table.Following.name)
+
+            val followingList =
+                followingRef.get().await().toObjects(FollowingData::class.java)
+            followingList.sortBy {
+                it.timeStamp
+            }
+
+            trySend(
+                ListenerEmissionType(
+                    Constants.ListenerEmitType.Starting,
+                    followingList
+                )
+            )
+
+            followingList.clear()
+            followingListListener?.remove()
+            followingListListener = followingRef.addSnapshotListener { value, error ->
+
+                if (error != null) return@addSnapshotListener
+
+                if (value != null) {
+                    if (isFirstTimeFollowerListListener) {
+                        isFirstTimeFollowerListListener = false
+                        return@addSnapshotListener
+                    }
+
+                    value.documentChanges.forEach {
+                        when (it.type) {
+                            DocumentChange.Type.ADDED -> {
+                                trySend(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Added,
+                                        singleResponse = it.document.toObject<FollowingData>()
+                                    )
+                                )
+                            }
+
+                            DocumentChange.Type.REMOVED -> {
+                                trySend(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Removed,
+                                        singleResponse = it.document.toObject<FollowingData>()
+                                    )
+                                )
+                            }
+
+                            DocumentChange.Type.MODIFIED -> {}
+                        }
+                    }
+                }
+
+            }
+
+
+
+
+            awaitClose {
+                followingListListener?.remove()
+                close()
+            }
+        }
+
+    suspend fun getFriendListAndListenChange(userId: String) =
+        callbackFlow<ListenerEmissionType<FriendData, FriendData>> {
+
+            val friendRef = userRef.document(userId).collection(Constants.Table.Friend.name)
+
+            val friendList =
+                friendRef.get().await().toObjects(FriendData::class.java)
+            friendList.sortBy {
+                it.timeStamp
+            }
+
+            trySend(
+                ListenerEmissionType(
+                    Constants.ListenerEmitType.Starting,
+                    friendList
+                )
+            )
+
+            friendList.clear()
+            friendListListener?.remove()
+            friendListListener = friendRef.addSnapshotListener { value, error ->
+
+                if (error != null) return@addSnapshotListener
+
+                if (value != null) {
+                    if (isFirstTimeFriendListListener) {
+                        isFirstTimeFriendListListener = false
+                        return@addSnapshotListener
+                    }
+
+                    value.documentChanges.forEach {
+                        when (it.type) {
+                            DocumentChange.Type.ADDED -> {
+                                trySend(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Added,
+                                        singleResponse = it.document.toObject<FriendData>()
+                                    )
+                                )
+                            }
+
+                            DocumentChange.Type.REMOVED -> {
+                                trySend(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Removed,
+                                        singleResponse = it.document.toObject<FriendData>()
+                                    )
+                                )
+                            }
+
+                            DocumentChange.Type.MODIFIED -> {}
+                        }
+                    }
+                }
+
+            }
+
+
+
+
+            awaitClose {
+                friendListListener?.remove()
+                close()
+            }
+        }
+
+    suspend fun removeFollower(userId: String)= callbackFlow<UpdateResponse> {
+        val followerRef= userRef.document(AuthManager.currentUserId()!!).collection(Constants.Table.Follower.name).document(userId)
+
+        followerRef.delete().addOnSuccessListener {
+            trySend(UpdateResponse(true,""))
+        }.addOnFailureListener {
+            trySend(UpdateResponse(false,it.message.toString()))
+        }.await()
+
+        awaitClose{
             close()
         }
     }

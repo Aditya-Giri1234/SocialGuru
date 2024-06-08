@@ -66,7 +66,7 @@ object PostManager {
 
         trySend(
             PostListenerEmissionType(
-                Constants.PostEmitType.Starting,
+                Constants.ListenerEmitType.Starting,
                 userPostList = userPostList.toList()
             )
         )
@@ -82,7 +82,7 @@ object PostManager {
                         DocumentChange.Type.ADDED -> {
                             trySend(
                                 PostListenerEmissionType(
-                                    Constants.PostEmitType.Added,
+                                    Constants.ListenerEmitType.Added,
                                     userPostModel = document.document.toObject<Post>()
                                 )
                             )
@@ -91,7 +91,7 @@ object PostManager {
                         DocumentChange.Type.REMOVED -> {
                             trySend(
                                 PostListenerEmissionType(
-                                    Constants.PostEmitType.Removed,
+                                    Constants.ListenerEmitType.Removed,
                                     userPostModel = document.document.toObject<Post>()
                                 )
                             )
@@ -107,6 +107,7 @@ object PostManager {
 
 
         awaitClose {
+            isFirstTimeDiscoverPostListnerCall = true  // This is singleton variable if function again call then this variable contain old value so that reset here
             discoverPostListener?.remove()
             channel.close()
         }
@@ -142,7 +143,7 @@ object PostManager {
 
         trySend(
             PostListenerEmissionType(
-                Constants.PostEmitType.Starting,
+                Constants.ListenerEmitType.Starting,
                 userPostList = userPostList.toList()
             )
         )
@@ -158,7 +159,7 @@ object PostManager {
                         DocumentChange.Type.ADDED -> {
                             trySend(
                                 PostListenerEmissionType(
-                                    Constants.PostEmitType.Added,
+                                    Constants.ListenerEmitType.Added,
                                     userPostModel = document.document.toObject<Post>()
                                 )
                             )
@@ -167,7 +168,7 @@ object PostManager {
                         DocumentChange.Type.REMOVED -> {
                             trySend(
                                 PostListenerEmissionType(
-                                    Constants.PostEmitType.Removed,
+                                    Constants.ListenerEmitType.Removed,
                                     userPostModel = document.document.toObject<Post>()
                                 )
                             )
@@ -183,6 +184,7 @@ object PostManager {
 
 
         awaitClose {
+            isFirstTimeFollowingPostListnerCall = true// This is singleton variable if function again call then this variable contain old value so that reset here
             discoverPostListener?.remove()
             channel.close()
         }
@@ -217,7 +219,7 @@ object PostManager {
 
         trySend(
             PostListenerEmissionType(
-                Constants.PostEmitType.Starting,
+                Constants.ListenerEmitType.Starting,
                 userPostList = userPostList.toList()
             )
         )
@@ -233,7 +235,7 @@ object PostManager {
                         DocumentChange.Type.MODIFIED -> {
                             trySend(
                                 PostListenerEmissionType(
-                                    Constants.PostEmitType.Modify,
+                                    Constants.ListenerEmitType.Modify,
                                     userPostModel = document.document.toObject<Post>()
                                 )
                             )

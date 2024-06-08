@@ -16,6 +16,12 @@
         <action
             android:id="@+id/action_profileFragment_to_myActivityFragment"
             app:destination="@id/myActivityFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_friendCircleFragment"
+            app:destination="@id/friendCircleFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_settingFragment"
+            app:destination="@id/settingFragment" />
     </fragment>
     <fragment
         android:id="@+id/updateProfileFragment2"
@@ -27,4 +33,27 @@
         android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.MyActivityFragment"
         android:label="fragment_my_activity"
         tools:layout="@layout/fragment_my_activity" />
+    <fragment
+        android:id="@+id/friendCircleFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.FriendCircleFragment"
+        android:label="fragment_friend_circle"
+        tools:layout="@layout/fragment_friend_circle" >
+        <action
+            android:id="@+id/action_friendCircleFragment_to_profileViewFragment"
+            app:destination="@id/profileViewFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/settingFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.SettingFragment"
+        android:label="fragment_setting"
+        tools:layout="@layout/fragment_setting" />
+    <fragment
+        android:id="@+id/profileViewFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragment"
+        android:label="fragment_profile_view"
+        tools:layout="@layout/fragment_profile_view" >
+        <argument
+            android:name="userId"
+            app:argType="string" />
+    </fragment>
 </navigation>
