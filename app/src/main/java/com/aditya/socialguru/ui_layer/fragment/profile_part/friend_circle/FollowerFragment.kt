@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
-import com.aditya.socialguru.data_layer.model.user_action.FollowerData
+import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.FragmentFollowerBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
@@ -31,9 +31,9 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
-import com.aditya.socialguru.ui_layer.adapter.profile.friend_circle.FollowerAdapter
+import com.aditya.socialguru.ui_layer.adapter.profile.friend_circle.FriendAdapter
 import com.aditya.socialguru.ui_layer.fragment.profile_part.FriendCircleFragmentDirections
-import com.aditya.socialguru.ui_layer.viewmodel.profile.friend_circle.FollowerViewModel
+import com.aditya.socialguru.ui_layer.viewmodel.profile.friend_circle.FriendViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -46,12 +46,10 @@ class FollowerFragment : Fragment(), AlertDialogOption {
 
     private val tagProfile = Constants.LogTag.Profile
 
-    private val followerViewModel by viewModels<FollowerViewModel>()
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
+    private val followerViewModel by viewModels<FriendViewModel>()
 
-    private var _followerAdapter: FollowerAdapter? = null
+
+    private var _followerAdapter: FriendAdapter? = null
     private val followerAdapter get() = _followerAdapter!!
 
     private var myLoader: MyLoader? = null
@@ -59,6 +57,11 @@ class FollowerFragment : Fragment(), AlertDialogOption {
 
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
+    }
+
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
     }
 
     override fun onCreateView(
@@ -77,7 +80,7 @@ class FollowerFragment : Fragment(), AlertDialogOption {
     }
 
     private fun handleInitialization() {
-        _followerAdapter = FollowerAdapter({
+        _followerAdapter = FriendAdapter(false,{
             navigateToUserDetailsScreen(it)
         }) {
             AlertDialog(
@@ -97,11 +100,6 @@ class FollowerFragment : Fragment(), AlertDialogOption {
             getData()
             followerViewModel.setDataLoadedStatus(true)
         }
-    }
-
-    private fun navigateToUserDetailsScreen(userId: String) {
-        val direction: NavDirections = FriendCircleFragmentDirections.actionFriendCircleFragmentToProfileViewFragment(userId)
-         navController?.value?.safeNavigate(direction,Helper.giveAnimationNavOption())
     }
 
 
@@ -225,7 +223,7 @@ class FollowerFragment : Fragment(), AlertDialogOption {
 
     }
 
-    private fun setData(list: List<FollowerData> = emptyList()) {
+    private fun setData(list: List<FriendCircleData> = emptyList()) {
         if (list.isEmpty()) {
             showNoDataView()
         } else {
@@ -283,6 +281,11 @@ class FollowerFragment : Fragment(), AlertDialogOption {
     private fun hideDialog() {
         myLoader?.dismiss()
         myLoader = null
+    }
+
+    private fun navigateToUserDetailsScreen(userId: String) {
+        val direction: NavDirections = FriendCircleFragmentDirections.actionFriendCircleFragmentToProfileViewFragment(userId)
+        navController?.value?.safeNavigate(direction,Helper.giveAnimationNavOption())
     }
 
     override fun onResult(isYes: Boolean) {

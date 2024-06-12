@@ -1,5 +1,6 @@
 package com.aditya.socialguru.ui_layer.fragment.profile_part.my_activity
 
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -11,6 +12,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.MainActivity
@@ -25,12 +27,14 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.ui_layer.adapter.NormalPagerAdapter
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
+import com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.HomeFragmentDirections
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeDiscoverPostFragment
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeFollowingPostFragment
 import com.aditya.socialguru.ui_layer.viewmodel.profile.MyPostViewModel
@@ -54,6 +58,10 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
 
     private val pref by lazy {
         SharePref(requireContext())
+    }
+
+    private val navController by lazy {
+        (requireActivity() as MainActivity).navController
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -219,14 +227,15 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
     }
 
     //region:: Override Function
-    override fun onImageClick(): () -> Unit = {}
+    override fun onImageClick(): (Uri) -> Unit = {}
 
-    override fun onVideoClick(): () -> Unit = {}
+    override fun onVideoClick(): (Uri) -> Unit = {}
 
     override fun onLikeClick() {
     }
 
-    override fun onCommentClick() {
+    override fun onCommentClick(postId: String) {
+        navigateToDetailPostScreen(postId)
     }
 
     override fun onSettingClick() {
@@ -235,10 +244,19 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
     override fun onSendClick() {
     }
 
-    override fun onPostClick() {
+    override fun onPostClick(postId: String) {
+        navigateToDetailPostScreen(postId)
     }
 
+
+
     //endregion
+
+    private fun navigateToDetailPostScreen(postId: String) {
+        val directions: NavDirections =
+            HomeFragmentDirections.actionHomeFragmentToDetailPostFragment(postId)
+        navController?.value?.safeNavigate(directions, Helper.giveAnimationNavOption())
+    }
 
 
     override fun onDestroyView() {

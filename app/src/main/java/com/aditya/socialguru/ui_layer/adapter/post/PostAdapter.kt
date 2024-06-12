@@ -185,7 +185,7 @@ class PostAdapter(val onClick: OnPostClick) :
                         }
 
                         ivComment.setSafeOnClickListener {
-                            onClick.onCommentClick()
+                            onClick.onCommentClick(postId!!)
                         }
 
                         ivSend.setSafeOnClickListener {
@@ -201,11 +201,11 @@ class PostAdapter(val onClick: OnPostClick) :
                                 Constants.LogTag.Post,
                                 msg = "Click on viewPagerClickSupport  !"
                             )
-                            onClick.onPostClick()
+                            onClick.onPostClick(postId!!)
                         }
                         root.setSafeOnClickListener {
                             MyLogger.i(Constants.LogTag.Post, msg = "Click on root !")
-                            onClick.onPostClick()
+                            onClick.onPostClick(postId!!)
                         }
 
                     }

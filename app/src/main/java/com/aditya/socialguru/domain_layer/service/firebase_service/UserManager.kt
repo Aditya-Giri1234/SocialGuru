@@ -3,9 +3,8 @@ package com.aditya.socialguru.domain_layer.service.firebase_service
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.post.Post
-import com.aditya.socialguru.data_layer.model.user_action.FollowerData
-import com.aditya.socialguru.data_layer.model.user_action.FollowingData
-import com.aditya.socialguru.data_layer.model.user_action.FriendData
+import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
+import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
@@ -13,11 +12,11 @@ import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.google.android.material.tabs.TabLayout.Tab
-import com.google.common.collect.Table
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +32,7 @@ import kotlinx.coroutines.launch
 object UserManager {
 
     private val tagLogin = Constants.LogTag.LogIn
+    private val tagProfile = Constants.LogTag.Profile
 
 
     //Firebase firestore
@@ -202,6 +202,8 @@ object UserManager {
         }
     }
 
+
+    //region:: User  Action (Follow, Following, Friend)
     suspend fun subscribeToCurrentUserData(userId: String) = callbackFlow<User?> {
 
         currentUserListener?.remove()
@@ -219,12 +221,12 @@ object UserManager {
     }
 
     suspend fun getFollowerListAndListenChange(userId: String) =
-        callbackFlow<ListenerEmissionType<FollowerData, FollowerData>> {
+        callbackFlow<ListenerEmissionType<FriendCircleData, FriendCircleData>> {
 
             val followerRef = userRef.document(userId).collection(Constants.Table.Follower.name)
 
             var followerList =
-                followerRef.get().await().toObjects(FollowerData::class.java)
+                followerRef.get().await().toObjects(FriendCircleData::class.java)
             followerList = followerList.map {
                 it.copy(
                     user = it.userId?.let { it1 -> getUserById(it1) }
@@ -235,7 +237,7 @@ object UserManager {
                 it.timeStamp
             }
 
-            MyLogger.v(Constants.LogTag.Profile , msg = followerList)
+            MyLogger.v(Constants.LogTag.Profile, msg = followerList)
 
             trySend(
                 ListenerEmissionType(
@@ -263,9 +265,10 @@ object UserManager {
                                     trySend(
                                         ListenerEmissionType(
                                             Constants.ListenerEmitType.Added,
-                                            singleResponse = it.document.toObject<FollowerData>().apply {
-                                                user= getUserById(it.document.id)
-                                            }
+                                            singleResponse = it.document.toObject<FriendCircleData>()
+                                                .apply {
+                                                    user = getUserById(it.document.id)
+                                                }
                                         )
                                     )
                                 }
@@ -275,7 +278,7 @@ object UserManager {
                                 trySend(
                                     ListenerEmissionType(
                                         Constants.ListenerEmitType.Removed,
-                                        singleResponse = it.document.toObject<FollowerData>()
+                                        singleResponse = it.document.toObject<FriendCircleData>()
                                     )
                                 )
                             }
@@ -291,27 +294,42 @@ object UserManager {
 
 
             awaitClose {
-                isFirstTimeFollowerListListener = true// This is singleton variable if function again call then this variable contain old value so that reset here
+                isFirstTimeFollowerListListener =
+                    true// This is singleton variable if function again call then this variable contain old value so that reset here
                 followerListListener?.remove()
                 close()
             }
         }
 
     suspend fun getFollowingListAndListenChange(userId: String) =
-        callbackFlow<ListenerEmissionType<FollowingData, FollowingData>> {
+        callbackFlow<ListenerEmissionType<FriendCircleData, FriendCircleData>> {
 
+            MyLogger.d(tagProfile, msg = "User id :- $userId")
             val followingRef = userRef.document(userId).collection(Constants.Table.Following.name)
 
-            val followingList =
-                followingRef.get().await().toObjects(FollowingData::class.java)
+            var followingList = followingRef.get().await().map {
+                MyLogger.v(tagProfile, msg = it.toObject<FriendCircleData>(), isJson = true)
+                it.toObject<FriendCircleData>()
+            }
+
+            MyLogger.v(tagProfile, msg = followingList, isJson = true)
+            followingList = followingList.map {
+                MyLogger.v(tagProfile, msg = it, isJson = true)
+                it.copy(
+                    user = it.userId?.let { it1 -> getUserById(it1) }
+                )
+
+            }.toMutableList()
+
             followingList.sortBy {
                 it.timeStamp
             }
+            MyLogger.v(tagProfile, msg = followingList, isJson = true)
 
             trySend(
                 ListenerEmissionType(
                     Constants.ListenerEmitType.Starting,
-                    followingList
+                    responseList = followingList.toList()
                 )
             )
 
@@ -322,8 +340,8 @@ object UserManager {
                 if (error != null) return@addSnapshotListener
 
                 if (value != null) {
-                    if (isFirstTimeFollowerListListener) {
-                        isFirstTimeFollowerListListener = false
+                    if (isFirstTimeFollowingListListener) {
+                        isFirstTimeFollowingListListener = false
                         return@addSnapshotListener
                     }
 
@@ -333,7 +351,7 @@ object UserManager {
                                 trySend(
                                     ListenerEmissionType(
                                         Constants.ListenerEmitType.Added,
-                                        singleResponse = it.document.toObject<FollowingData>()
+                                        singleResponse = it.document.toObject<FriendCircleData>()
                                     )
                                 )
                             }
@@ -342,7 +360,7 @@ object UserManager {
                                 trySend(
                                     ListenerEmissionType(
                                         Constants.ListenerEmitType.Removed,
-                                        singleResponse = it.document.toObject<FollowingData>()
+                                        singleResponse = it.document.toObject<FriendCircleData>()
                                     )
                                 )
                             }
@@ -358,26 +376,36 @@ object UserManager {
 
 
             awaitClose {
+                isFirstTimeFollowingListListener =
+                    true// This is singleton variable if function again call then this variable contain old value so that reset here
                 followingListListener?.remove()
                 close()
             }
         }
 
     suspend fun getFriendListAndListenChange(userId: String) =
-        callbackFlow<ListenerEmissionType<FriendData, FriendData>> {
+        callbackFlow<ListenerEmissionType<FriendCircleData, FriendCircleData>> {
 
             val friendRef = userRef.document(userId).collection(Constants.Table.Friend.name)
 
-            val friendList =
-                friendRef.get().await().toObjects(FriendData::class.java)
+            var friendList =
+                friendRef.get().await().toObjects(FriendCircleData::class.java)
+            friendList = friendList.map {
+                it.copy(
+                    user = it.userId?.let { it1 -> getUserById(it1) }
+                )
+            }.toMutableList()
+
             friendList.sortBy {
                 it.timeStamp
             }
 
+            MyLogger.v(Constants.LogTag.Profile, msg = friendList)
+
             trySend(
                 ListenerEmissionType(
                     Constants.ListenerEmitType.Starting,
-                    friendList
+                    responseList = friendList.toList()
                 )
             )
 
@@ -399,7 +427,7 @@ object UserManager {
                                 trySend(
                                     ListenerEmissionType(
                                         Constants.ListenerEmitType.Added,
-                                        singleResponse = it.document.toObject<FriendData>()
+                                        singleResponse = it.document.toObject<FriendCircleData>()
                                     )
                                 )
                             }
@@ -408,7 +436,7 @@ object UserManager {
                                 trySend(
                                     ListenerEmissionType(
                                         Constants.ListenerEmitType.Removed,
-                                        singleResponse = it.document.toObject<FriendData>()
+                                        singleResponse = it.document.toObject<FriendCircleData>()
                                     )
                                 )
                             }
@@ -424,25 +452,229 @@ object UserManager {
 
 
             awaitClose {
+                isFirstTimeFriendListListener =
+                    true// This is singleton variable if function again call then this variable contain old value so that reset here
                 friendListListener?.remove()
                 close()
             }
         }
 
-    suspend fun removeFollower(userId: String)= callbackFlow<UpdateResponse> {
-        val followerRef= userRef.document(AuthManager.currentUserId()!!).collection(Constants.Table.Follower.name).document(userId)
+    suspend fun removeFollower(userId: String) = callbackFlow<UpdateResponse> {
+        val followerRef = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.Follower.name).document(userId)
+        val followingRef = userRef.document(userId).collection(Constants.Table.Following.name)
+            .document(AuthManager.currentUserId()!!)
 
-        followerRef.delete().addOnSuccessListener {
-            trySend(UpdateResponse(true,""))
+        firestore.runBatch { batch ->
+            batch.delete(followingRef)
+            batch.delete(followerRef)
+        }.addOnSuccessListener {
+            trySend(UpdateResponse(true, ""))
         }.addOnFailureListener {
-            trySend(UpdateResponse(false,it.message.toString()))
+            trySend(UpdateResponse(false, it.message.toString()))
         }.await()
 
-        awaitClose{
+
+
+        awaitClose {
             close()
         }
     }
 
+    suspend fun unFollow(userId: String) = callbackFlow<UpdateResponse> {
+        val followingRef = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.Following.name).document(userId)
+        val followerRef = userRef.document(userId).collection(Constants.Table.Follower.name)
+            .document(AuthManager.currentUserId()!!)
+
+        firestore.runBatch { batch ->
+            batch.delete(followingRef)
+            batch.delete(followerRef)
+        }.addOnSuccessListener {
+            trySend(UpdateResponse(true, ""))
+        }.addOnFailureListener {
+            trySend(UpdateResponse(false, it.message.toString()))
+        }.await()
+
+
+
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun removeFriend(userId: String) = callbackFlow<UpdateResponse> {
+        val currentUserFriendRef =
+            userRef.document(AuthManager.currentUserId()!!).collection(Constants.Table.Friend.name)
+                .document(userId)
+        val removeFriendCurrentRef =
+            userRef.document(userId).collection(Constants.Table.Friend.name)
+                .document(AuthManager.currentUserId()!!)
+
+        firestore.runBatch { batch ->
+            batch.delete(currentUserFriendRef)
+            batch.delete(removeFriendCurrentRef)
+        }.addOnSuccessListener {
+            trySend(UpdateResponse(true, ""))
+        }.addOnFailureListener {
+            trySend(UpdateResponse(false, it.message.toString()))
+        }.await()
+
+
+
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun followUser(userId: String, followedId: String) = callbackFlow<UpdateResponse> {
+        val timeStamp = System.currentTimeMillis()
+        val followedData = FriendCircleData(followedId, timeStamp)
+        val myData = FriendCircleData(userId, timeStamp)
+
+        val myUserRef =
+            userRef.document(userId).collection(Constants.Table.Following.name).document(followedId)
+        val followedRef =
+            userRef.document(followedId).collection(Constants.Table.Follower.name).document(userId)
+
+        firestore.runBatch { batch ->
+            batch.set(myUserRef, followedData)
+            batch.set(followedRef, myData)
+        }.addOnSuccessListener {
+            trySend(UpdateResponse(true, ""))
+        }.addOnFailureListener {
+            trySend(UpdateResponse(false, it.message))
+        }.await()
+
+
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun sendFriendRequest(userId: String, friendId: String) = callbackFlow<UpdateResponse> {
+        val timeStamp = System.currentTimeMillis()
+        val friendData = FriendCircleData(friendId, timeStamp)
+        val myData = FriendCircleData(userId, timeStamp)
+
+        val myUserRef =
+            userRef.document(userId).collection(Constants.Table.PendingRequest.name)
+                .document(friendId)
+        val friendRef =
+            userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
+                .document(userId)
+
+        firestore.runBatch { batch ->
+            batch.set(myUserRef, friendData)
+            batch.set(friendRef, myData)
+        }.addOnSuccessListener {
+            trySend(UpdateResponse(true, ""))
+        }.addOnFailureListener {
+            trySend(UpdateResponse(false, it.message))
+        }.await()
+
+
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun deleteFriendRequest(userId: String, friendId: String) = callbackFlow<UpdateResponse> {
+
+        val myUserRef =
+            userRef.document(userId).collection(Constants.Table.PendingRequest.name)
+                .document(friendId)
+        val friendRef =
+            userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
+                .document(userId)
+
+        firestore.runBatch { batch ->
+            batch.delete(myUserRef)
+            batch.delete(friendRef)
+        }.addOnSuccessListener {
+            trySend(UpdateResponse(true, ""))
+        }.addOnFailureListener {
+            trySend(UpdateResponse(false, it.message))
+        }.await()
+
+
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun acceptFriendRequest(userId: String, friendId: String) =
+        callbackFlow<UpdateResponse> {
+            val timeStamp = System.currentTimeMillis()
+            val friendData = FriendCircleData(friendId, timeStamp)
+            val myData = FriendCircleData(userId, timeStamp)
+
+            val myPendingRef =
+                userRef.document(userId).collection(Constants.Table.PendingRequest.name)
+                    .document(friendId)
+            val friendRequestRef =
+                userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
+                    .document(userId)
+            val myUserFriendRef =
+                userRef.document(userId).collection(Constants.Table.Friend.name).document(friendId)
+            val friendFriendRef =
+                userRef.document(friendId).collection(Constants.Table.Friend.name).document(userId)
+
+            firestore.runBatch { batch ->
+                batch.delete(myPendingRef)
+                batch.delete(friendRequestRef)
+                batch.set(myUserFriendRef, friendData)
+                batch.set(friendFriendRef, myData)
+            }.addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+
+
+            awaitClose {
+                close()
+            }
+        }
+
+    suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String) =
+        callbackFlow<UserRelationshipStatus> {
+            val isFollowing = isUserInCollection(currentUserId, targetUserId, "Following")
+            val friendStatus = getFriendStatus(currentUserId, targetUserId)
+            trySend(UserRelationshipStatus(isFollowing, friendStatus))
+            awaitClose {
+                close()
+            }
+        }
+
+    private suspend fun getFriendStatus(currentUserId: String, targetUserId: String): Constants.FriendStatus {
+        return when {
+            isUserInCollection(currentUserId, targetUserId, Constants.Table.Friend.name) -> Constants.FriendStatus.FRIEND
+            isUserInCollection(currentUserId, targetUserId, Constants.Table.PendingRequest.name) -> Constants.FriendStatus.PENDING_REQUEST
+            else -> Constants.FriendStatus.NOT_FRIEND
+        }
+    }
+
+    private suspend fun isUserInCollection(
+        currentUserId: String,
+        targetUserId: String,
+        collectionName: String
+    ): Boolean {
+        return try {
+            val documentSnapshot = userRef.document(currentUserId)
+                .collection(collectionName)
+                .document(targetUserId)
+                .get()
+                .await()
+            documentSnapshot.exists()
+        } catch (e: FirebaseFirestoreException) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+
+    //endregion
 
     //region:: Subscribe to follower count
 

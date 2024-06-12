@@ -18,14 +18,18 @@ import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
 import com.aditya.socialguru.databinding.FragmentProfileViewBinding
+import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
+import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
+import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.ui_layer.viewmodel.profile.ProfileViewModel
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.flow.launchIn
@@ -33,7 +37,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 
-class ProfileViewFragment : Fragment() {
+class ProfileViewFragment : Fragment()  , AlertDialogOption{
 
 
     private var _binding: FragmentProfileViewBinding? = null
@@ -101,6 +105,127 @@ class ProfileViewFragment : Fragment() {
                     binding.tvLike.text = it.toString()
                 }.launchIn(this)
 
+                profileViewModel.followUser.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            hideDialog()
+                            binding.btnFollow.setFollowingBackground()
+                            showSnackBar("Successfully Following !" ,true)
+                        }
+
+                        is Resource.Loading -> {
+                            showDialog()
+                        }
+
+                        is Resource.Error -> {
+                            hideDialog()
+                            showSnackBar(response.message)
+                        }
+                    }
+
+                }.launchIn(this)
+                profileViewModel.unFollow.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            hideDialog()
+                            binding.btnFollow.setFollowBackground()
+                            showSnackBar("UnFollow Successfully!" ,true)
+                        }
+
+                        is Resource.Loading -> {
+                            showDialog()
+                        }
+
+                        is Resource.Error -> {
+                            hideDialog()
+                            showSnackBar(response.message)
+                        }
+                    }
+
+                }.launchIn(this)
+
+                profileViewModel.sendFriendRequest.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            hideDialog()
+                            binding.btnFriend.setFriendRequestPendingBackground()
+                            showSnackBar("Successfully  Friend Request Sent !" ,true)
+
+                        }
+
+                        is Resource.Loading -> {
+                            showDialog()
+                        }
+
+                        is Resource.Error -> {
+                            hideDialog()
+                            showSnackBar(response.message)
+                        }
+                    }
+
+                }.launchIn(this)
+
+                profileViewModel.deleteFriendRequest.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            hideDialog()
+                            binding.btnFriend.setSendFriendRequestBackground()
+                            showSnackBar(" Friend Request deleted  successfully !" ,true)
+                        }
+
+                        is Resource.Loading -> {
+                            showDialog()
+                        }
+
+                        is Resource.Error -> {
+                            hideDialog()
+                            showSnackBar(response.message)
+                        }
+                    }
+
+                }.launchIn(this)
+
+                profileViewModel.userRelationshipStatus.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            hideDialog()
+                            response.data?.let {
+                                setUserRelational(it)
+                            }
+                        }
+
+                        is Resource.Loading -> {
+                            showDialog()
+                        }
+
+                        is Resource.Error -> {
+                            hideDialog()
+                            showSnackBar(response.message)
+                        }
+                    }
+
+                }.launchIn(this)
+
+                profileViewModel.removeFriend.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            hideDialog()
+                            showSnackBar("Removed Successfully !" ,true)
+                            binding.btnFriend.setSendFriendRequestBackground()
+                        }
+
+                        is Resource.Loading -> {
+                            showDialog()
+                        }
+
+                        is Resource.Error -> {
+                            hideDialog()
+                            showSnackBar(response.message)
+                        }
+                    }
+
+                }.launchIn(this)
+
                 profileViewModel.userDetails.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
@@ -109,6 +234,7 @@ class ProfileViewFragment : Fragment() {
                                 setData(it)
                                 userId?.let {
                                     lifecycleScope.launch {
+                                        profileViewModel.getUserRelationshipStatus(it)
                                         it.apply {
                                             profileViewModel.subscribeToFollowerCount(this)
                                             profileViewModel.subscribeToFollowingCount(this)
@@ -135,6 +261,7 @@ class ProfileViewFragment : Fragment() {
             }
         }
     }
+
 
     private fun initUI() {
         binding.apply {
@@ -171,9 +298,27 @@ class ProfileViewFragment : Fragment() {
 
         btnFollow.setSafeOnClickListener {
 
+            if (btnFollow.text.toString().equals(getString(R.string.following))){
+                profileViewModel.unFollow(userId!!)
+            }else{
+                profileViewModel.followUser(userId!!)
+
+            }
+
         }
         btnFriend.setSafeOnClickListener {
+            when(btnFriend.text.toString()){
+                getString(R.string.send_friend_request)->{
+                    profileViewModel.sendFriendRequest(userId!!)
+                }
+                getString(R.string.pending_request)->{
+                    AlertDialog("Are you sure delete friend request ?" , this@ProfileViewFragment,false).show(childFragmentManager,"My_Dialog")
+                }
+                getString(R.string.already_friend)->{
+                    profileViewModel.removeFriend(userId!!)
+                }
 
+            }
         }
 
     }
@@ -202,6 +347,31 @@ class ProfileViewFragment : Fragment() {
             tvBio.text = user.userBio
 
         }
+    }
+
+    private fun setUserRelational(relation: UserRelationshipStatus) {
+        binding.apply {
+            if (relation.isFollowing) {
+                btnFollow.setFollowingBackground()
+            } else {
+                btnFollow.setFollowBackground()
+            }
+
+            when (relation.friendStatus) {
+                Constants.FriendStatus.FRIEND -> {
+                    btnFriend.setAlreadyFriendBackground()
+                }
+
+                Constants.FriendStatus.PENDING_REQUEST -> {
+                    btnFriend.setFriendRequestPendingBackground()
+                }
+
+                Constants.FriendStatus.NOT_FRIEND -> {
+                    btnFriend.setSendFriendRequestBackground()
+                }
+            }
+        }
+
     }
 
     private fun Button.setFollowBackground() {
@@ -263,6 +433,12 @@ class ProfileViewFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+    }
+
+    override fun onResult(isYes: Boolean) {
+        if (isYes){
+            profileViewModel.deleteFriendRequest(userId!!)
+        }
     }
 
 }

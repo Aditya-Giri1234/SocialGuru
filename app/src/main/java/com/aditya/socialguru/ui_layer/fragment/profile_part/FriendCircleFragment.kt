@@ -94,6 +94,9 @@ class FriendCircleFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        binding.viewPagerHome.adapter=null
+        _pagerAdapter=null
+        _binding=null
         super.onDestroyView()
     }
 

@@ -16,6 +16,12 @@
         <action
             android:id="@+id/action_onboardingScreenFragment_to_addPostFragment"
             app:destination="@id/addPostFragment" />
+        <action
+            android:id="@+id/action_onboardingScreenFragment_to_showImageFragment"
+            app:destination="@id/showImageFragment" />
+        <action
+            android:id="@+id/action_onboardingScreenFragment_to_showVideoFragment"
+            app:destination="@id/showVideoFragment" />
     </fragment>
     <fragment
         android:id="@+id/signInFragment"
@@ -65,4 +71,9 @@
             android:name="videoUri"
             app:argType="android.net.Uri" />
     </fragment>
+    <fragment
+        android:id="@+id/profileViewFragment2"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragment"
+        android:label="fragment_profile_view"
+        tools:layout="@layout/fragment_profile_view" />
 </navigation>

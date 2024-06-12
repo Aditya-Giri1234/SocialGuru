@@ -139,7 +139,7 @@ class ShowVideoFragment : Fragment() {
 
         icBack.setSafeOnClickListener {
             exitFromFullScreen()
-            navController?.navigateUp()
+            requireActivity().onBackPressed()
         }
 
         //This null check come because i remove this view from landscape mode

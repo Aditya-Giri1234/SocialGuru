@@ -1,5 +1,6 @@
 package com.aditya.socialguru.ui_layer.fragment.helper
 
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -9,9 +10,15 @@ import android.view.ViewGroup
 import androidx.navigation.fragment.navArgs
 import com.aditya.socialguru.R
 import com.aditya.socialguru.databinding.FragmentImageShowBinding
+import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.helper.shareImage
 import com.aditya.socialguru.ui_layer.activity.ContainerActivity
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 
 
 class ShowImageFragment : Fragment() {
@@ -47,7 +54,28 @@ class ShowImageFragment : Fragment() {
 
     private fun initUi() {
         binding.apply {
-            ivImage.setImageURI(imageUri)
+            Glide.with(ivImage).load(imageUri).error(R.drawable.no_image_found).addListener(object : RequestListener<Drawable?> {
+                override fun onLoadFailed(
+                    e: GlideException?,
+                    model: Any?,
+                    target: Target<Drawable?>,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    linearloader.gone()
+                    return false
+                }
+
+                override fun onResourceReady(
+                    resource: Drawable,
+                    model: Any,
+                    target: Target<Drawable?>?,
+                    dataSource: DataSource,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    linearloader.gone()
+                    return false
+                }
+            }).into(ivImage)
             setListener()
         }
     }
@@ -55,7 +83,7 @@ class ShowImageFragment : Fragment() {
 
     private fun FragmentImageShowBinding.setListener() {
         icBack.setSafeOnClickListener {
-            navController?.navigateUp()
+            requireActivity().onBackPressed()
         }
 
         icShare.setSafeOnClickListener {
@@ -63,7 +91,7 @@ class ShowImageFragment : Fragment() {
         }
 
     }
-
+    
 
     override fun onDestroyView() {
         _binding=null

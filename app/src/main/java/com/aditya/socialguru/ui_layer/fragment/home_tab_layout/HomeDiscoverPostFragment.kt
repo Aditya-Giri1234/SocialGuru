@@ -1,5 +1,6 @@
 package com.aditya.socialguru.ui_layer.fragment.home_tab_layout
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,6 +10,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
@@ -19,9 +21,11 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
+import com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.HomeFragmentDirections
 import com.aditya.socialguru.ui_layer.viewmodel.post.DiscoverPostViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -42,6 +46,11 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
 
 
     private val discoverPostViewModel: DiscoverPostViewModel by viewModels()
+
+    private val navController by lazy {
+        (requireActivity() as MainActivity).navController
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
@@ -170,15 +179,16 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
 
 
     //region:: Override Part
-    override fun onImageClick(): () -> Unit = {}
+    override fun onImageClick(): (Uri) -> Unit = {}
 
-    override fun onVideoClick(): () -> Unit = {}
+    override fun onVideoClick(): (Uri) -> Unit = {}
 
     override fun onLikeClick() {
 
     }
 
-    override fun onCommentClick() {
+    override fun onCommentClick(postId: String) {
+        navigateToDetailPostScreen(postId)
     }
 
     override fun onSettingClick() {
@@ -187,10 +197,17 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     override fun onSendClick() {
     }
 
-    override fun onPostClick() {
+    override fun onPostClick(postId: String) {
+        navigateToDetailPostScreen(postId)
     }
 
     //endregion
+
+    private fun navigateToDetailPostScreen(postId: String) {
+        val directions: NavDirections =
+            HomeFragmentDirections.actionHomeFragmentToDetailPostFragment(postId)
+        navController?.value?.safeNavigate(directions, Helper.giveAnimationNavOption())
+    }
 
     override fun onDestroyView() {
         _discoverPostAdapter=null

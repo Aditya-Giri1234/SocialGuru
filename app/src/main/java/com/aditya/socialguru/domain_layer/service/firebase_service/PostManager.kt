@@ -4,6 +4,7 @@ import com.aditya.socialguru.data_layer.model.post.PostListenerEmissionType
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.PostUploadingResponse
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
+import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.await
@@ -16,6 +17,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 
 
 /**
@@ -38,6 +40,9 @@ object PostManager {
 
     private var myPostListener: ListenerRegistration? = null
     private var isFirstTimeMyPostListenerCall = true
+
+    private var idPostListener: ListenerRegistration? = null
+    private var isFirstTimeIdPostListenerCall = true
 
 
     //region::Get Random Post (Discover)
@@ -116,7 +121,6 @@ object PostManager {
 
 
     //endregion
-
 
     //region::Get Following Post (Discover)
 
@@ -260,7 +264,70 @@ object PostManager {
 
     //endregion
 
+    //region:: Get Post By Id
 
+    suspend fun getPostById(postId:String) = callbackFlow<ListenerEmissionType<UserPostModel,UserPostModel>> {
+
+        val postQuery = firestore.collection(Constants.Table.Post.name).document(postId)
+        var post = postQuery.get().await().toObject<Post>()?.run {
+            userId?.let { id ->
+                UserManager.getUserById(id)?.let { UserPostModel(it,this) }
+            }
+        }
+
+
+
+
+        MyLogger.i(
+            tagPost,
+            msg = post,
+            isJson = true,
+            jsonTitle = "User Post Get !"
+        )
+
+        trySend(
+            ListenerEmissionType(
+                Constants.ListenerEmitType.Starting,
+                singleResponse = post
+            )
+        )
+        idPostListener?.remove()
+        idPostListener = postQuery.addSnapshotListener { value, error ->
+
+            if (error!=null) return@addSnapshotListener
+
+            if (!isFirstTimeIdPostListenerCall) {
+                value?.let {
+                    launch {
+                        post = it.toObject<Post>()?.run {
+                            userId?.let { id ->
+                                UserManager.getUserById(id)?.let { UserPostModel(it,this) }
+                            }
+                        }
+                        MyLogger.v(tagPost, msg = "Post id $postId is modify !")
+                        trySend(
+                            ListenerEmissionType(
+                                Constants.ListenerEmitType.Modify,
+                                singleResponse = post
+                            )
+                        )
+                    }
+                }
+            }
+            isFirstTimeMyPostListenerCall = false
+
+        }
+
+
+        awaitClose {
+            isFirstTimeIdPostListenerCall=true
+            idPostListener?.remove()
+            channel.close()
+        }
+
+    }
+
+    //endregion
     //region:: Post Uploading
 
 

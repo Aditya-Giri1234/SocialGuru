@@ -1,11 +1,13 @@
 package com.aditya.socialguru.domain_layer.remote_service.post
 
+import android.net.Uri
+
 interface OnPostClick {
-    fun onImageClick() : ()->Unit
-    fun onVideoClick():()->Unit
+    fun onImageClick() : (Uri)->Unit
+    fun onVideoClick():(Uri)->Unit
     fun onLikeClick()
-    fun onCommentClick()
+    fun onCommentClick(postId: String)
     fun onSettingClick()
     fun onSendClick()
-    fun onPostClick()
+    fun onPostClick(postId:String)
 }

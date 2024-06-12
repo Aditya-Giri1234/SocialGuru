@@ -35,6 +35,7 @@ class CustomSnackBar(parent: ViewGroup, content: CustomSnackBarView, message: St
     }
 
     companion object {
+        //viewGroup is nothing but coordinateLayout
         fun make(viewGroup: ViewGroup, message: String): CustomSnackBar {
             val customView = LayoutInflater.from(viewGroup.context).inflate(
                 R.layout.custom_snackbar_error, viewGroup, false

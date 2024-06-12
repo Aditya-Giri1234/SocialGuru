@@ -208,7 +208,7 @@ class MainActivity : AppCompatActivity() {
 
             Intent(this@MainActivity, ContainerActivity::class.java).apply {
                 putExtra(
-                    Constants.FRAGMENT_NAVIGATION,
+                    IntentTable.FragmentNavigation.name,
                     Constants.FragmentNavigation.AddPostFragment.name
                 )
                 startActivity(this)

@@ -46,6 +46,17 @@ object FirebaseManager {
     suspend fun getFriendListAndListenChange()=UserManager.getFriendListAndListenChange(AuthManager.currentUserId() ?: "")
 
     suspend fun removeFollower(userId: String)=UserManager.removeFollower(userId)
+    suspend fun unFollow(userId: String)=UserManager.unFollow(userId)
+    suspend fun removeFriend(userId: String)=UserManager.removeFriend(userId)
+
+    suspend fun followUser(userId: String, followedId: String)=UserManager.followUser(userId,followedId)
+    suspend fun sendFriendRequest(userId: String, friendId: String)=UserManager.sendFriendRequest(userId,friendId)
+    suspend fun deleteFriendRequest(userId: String, friendId: String)=UserManager.deleteFriendRequest(userId,friendId)
+    suspend fun acceptFriendRequest(userId: String, friendId: String) = UserManager.acceptFriendRequest(userId,friendId)
+
+    suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String)=UserManager.getUserRelationshipStatus(currentUserId, targetUserId)
+
+
 
     //endregion
 
@@ -68,6 +79,8 @@ object FirebaseManager {
     suspend fun getFollowingPost()=PostManager.getFollowingPost()
 
     suspend fun getMyPost(userId: String)=PostManager.getMyPost(userId)
+
+    suspend fun getPostById(postId:String)= PostManager.getPostById(postId)
 
     suspend fun subscribeToPostCount(userId: String) = UserManager.subscribeToPostCount(userId)
 

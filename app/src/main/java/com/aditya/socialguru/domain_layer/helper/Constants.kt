@@ -5,7 +5,6 @@ object Constants {
 
     const val TYPE = "TYPE"
     const val DATA = "DATA"
-    const val FRAGMENT_NAVIGATION = "Fragment Navigation"
 
     //User Table Constant
 
@@ -23,7 +22,9 @@ object Constants {
     enum class FragmentNavigation {
         OnBoardingFragment,
         SignInFragment,
-        AddPostFragment
+        AddPostFragment ,
+        ImageFragment,
+        VideoFragment
     }
 
 
@@ -35,10 +36,11 @@ object Constants {
         ProfilePic
     }
 
+
+
     enum class IntentTable {
-        UploadProgress,
-        UploadMessage,
-        UploadState
+        MediaUri,
+        FragmentNavigation
     }
 
     enum class BroadcastType {
@@ -85,7 +87,12 @@ object Constants {
         Follower,
         Following,
         Friend,
-        RequestFriend
+        FriendRequest ,
+        PendingRequest
+    }
+
+    enum class FriendStatus {
+        FRIEND, PENDING_REQUEST, NOT_FRIEND
     }
 
 

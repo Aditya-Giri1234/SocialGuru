@@ -29,6 +29,43 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <LinearLayout
+        android:id="@+id/linearloader"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        android:background="@color/black"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="@id/ivImage"
+        app:layout_constraintEnd_toEndOf="@id/ivImage"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="@id/ivImage"
+        app:layout_constraintTop_toTopOf="@id/ivImage"
+        app:layout_constraintVertical_bias="0.5">
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/tvMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/poppin_medium"
+            android:gravity="center"
+            android:text="Downloading"
+            android:textColor="@color/white"
+            android:textSize="@dimen/_14ssp" />
+
+        <com.github.ybq.android.spinkit.SpinKitView
+            android:id="@+id/callStatusLoader"
+            style="@style/SpinKitView.Small.ThreeBounce"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/_4sdp"
+            android:layout_marginTop="@dimen/_5sdp"
+            android:alpha="0.8"
+            android:layout_gravity="center_vertical"
+            app:SpinKit_Color="@color/white" />
+
+    </LinearLayout>
+
 
     <ImageView
         android:id="@+id/ic_share"

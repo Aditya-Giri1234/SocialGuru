@@ -1,6 +1,7 @@
 package com.aditya.socialguru.domain_layer.repository.profile
 
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
+import com.aditya.socialguru.domain_layer.service.firebase_service.UserManager
 
 class ProfileRepository {
     suspend fun subscribeToFollowerCount(userId: String) =
@@ -17,4 +18,19 @@ class ProfileRepository {
     suspend fun signOut()=FirebaseManager.signOut()
 
     suspend fun getUser(userId: String) = FirebaseManager.getUser(userId)
+
+    suspend fun unFollow(userId: String)=FirebaseManager.unFollow(userId)
+    suspend fun removeFriend(userId: String)=FirebaseManager.removeFriend(userId)
+
+    suspend fun followUser(userId: String, followedId: String)=
+        FirebaseManager.followUser(userId,followedId)
+    suspend fun sendFriendRequest(userId: String, friendId: String)=
+        FirebaseManager.sendFriendRequest(userId,friendId)
+    suspend fun deleteFriendRequest(userId: String, friendId: String)=
+        FirebaseManager.deleteFriendRequest(userId,friendId)
+
+
+    suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String)=
+        FirebaseManager.getUserRelationshipStatus(currentUserId, targetUserId)
+
 }

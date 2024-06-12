@@ -2,6 +2,7 @@ package com.aditya.socialguru.ui_layer.activity
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -15,6 +16,7 @@ import com.aditya.socialguru.R
 import com.aditya.socialguru.databinding.ActivityContainerBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.ui_layer.fragment.intro_part.OnboardingScreenFragmentDirections
@@ -77,6 +79,7 @@ class ContainerActivity : AppCompatActivity() {
             navController=(supportFragmentManager.findFragmentById(R.id.introNavHostFragment) as NavHostFragment).navController
 
 
+
             setListener()
         }
     }
@@ -90,12 +93,20 @@ class ContainerActivity : AppCompatActivity() {
     }
 
     private fun checkIntent() {
-        when(intent.getStringExtra(Constants.FRAGMENT_NAVIGATION)){
+        when(intent.getStringExtra(Constants.IntentTable.FragmentNavigation.name)){
             Constants.FragmentNavigation.SignInFragment.name->{
                 handleSignInNavigation()
             }
             Constants.FragmentNavigation.AddPostFragment.name->{
                 handleAddPostNavigation()
+            }
+            Constants.FragmentNavigation.ImageFragment.name->{
+                val uri=intent.getStringExtra(Constants.IntentTable.MediaUri.name)
+                handleImageNavigation(uri!!.convertParseUri())
+            }
+            Constants.FragmentNavigation.VideoFragment.name->{
+                val uri=intent.getStringExtra(Constants.IntentTable.MediaUri.name)
+                handleVideoNavigation(uri!!.convertParseUri())
             }
             else->{
                 // Do nothing default onBoarding fragment show
@@ -104,8 +115,23 @@ class ContainerActivity : AppCompatActivity() {
     }
 
     private fun handleSignInNavigation() {
+        isTopAndBottomAnimation=false
         navController?.safeNavigate(
             OnboardingScreenFragmentDirections.actionOnboardingScreenFragmentToSignInFragment(),
+            Helper.giveAnimationNavOption(R.id.onboardingScreenFragment,true)
+        )
+    }
+    private fun handleImageNavigation(uri:Uri) {
+        isTopAndBottomAnimation=false
+        navController?.safeNavigate(
+            OnboardingScreenFragmentDirections.actionOnboardingScreenFragmentToShowImageFragment(uri),
+            Helper.giveAnimationNavOption(R.id.onboardingScreenFragment,true)
+        )
+    }
+    private fun handleVideoNavigation(uri:Uri) {
+        isTopAndBottomAnimation=false
+        navController?.safeNavigate(
+            OnboardingScreenFragmentDirections.actionOnboardingScreenFragmentToShowVideoFragment(uri),
             Helper.giveAnimationNavOption(R.id.onboardingScreenFragment,true)
         )
     }
@@ -123,11 +149,26 @@ class ContainerActivity : AppCompatActivity() {
     override fun onBackPressed() {
 
         //These is for when add post fragment show bottom to up that time when it end need show top to bottom animation
-        if(supportFragmentManager.backStackEntryCount==0&&isTopAndBottomAnimation){
-            finish()
-            overridePendingTransition(0,R.anim.slide_out_bottom)
-        }else{
-            navController?.popBackStack()
+
+        //For getting exact back stack entry count we need child fragment manager not supportFragment manager
+        //Reason our fragment switch under nav host fragment , so we need nav host fragment means we need childFragment manager
+        val navHostFragment=supportFragmentManager.fragments.first()
+        MyLogger.w(msg = "Back pressed , current entry is ${navHostFragment.childFragmentManager.backStackEntryCount}")
+        when{
+            navHostFragment.childFragmentManager.backStackEntryCount==0&&isTopAndBottomAnimation->{
+                MyLogger.w(msg = "back stack entry is 0 and this is  top bottom animation fragment !")
+                finish()
+                overridePendingTransition(0,R.anim.slide_out_bottom)
+            }
+            navHostFragment.childFragmentManager.backStackEntryCount==0->{
+                MyLogger.w(msg = "back stack entry is 0 but this is not top bottom animation fragment !")
+                finish()
+                overridePendingTransition(0,R.anim.slide_out_right)
+            }
+            else->{
+                MyLogger.w(msg = "Normal back stack removal !")
+                navController?.popBackStack()
+            }
         }
     }
 

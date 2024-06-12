@@ -5,23 +5,22 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.RecyclerView.Recycler
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.User
-import com.aditya.socialguru.data_layer.model.user_action.FollowerData
+import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.SampleFollowerListBinding
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.bumptech.glide.Glide
 
-class FollowerAdapter(val itemClick:(userId:String)->Unit,val onRemoveClick:(userId:String)->Unit) : RecyclerView.Adapter<FollowerAdapter.ViewHolder>(){
+class FriendAdapter(val isFollowing :Boolean,val itemClick:(userId:String)->Unit, val onRemoveClick:(userId:String)->Unit) : RecyclerView.Adapter<FriendAdapter.ViewHolder>(){
 
     companion object{
-        val callback=object : DiffUtil.ItemCallback<FollowerData>(){
-            override fun areItemsTheSame(oldItem: FollowerData, newItem: FollowerData): Boolean {
+        val callback=object : DiffUtil.ItemCallback<FriendCircleData>(){
+            override fun areItemsTheSame(oldItem: FriendCircleData, newItem: FriendCircleData): Boolean {
                 return oldItem.userId==newItem.userId
             }
 
-            override fun areContentsTheSame(oldItem: FollowerData, newItem: FollowerData): Boolean {
+            override fun areContentsTheSame(oldItem: FriendCircleData, newItem: FriendCircleData): Boolean {
                 return oldItem==newItem
             }
 
@@ -30,7 +29,7 @@ class FollowerAdapter(val itemClick:(userId:String)->Unit,val onRemoveClick:(use
 
     private val differ=AsyncListDiffer(this, callback)
 
-    fun submitList(list: List<FollowerData>){
+    fun submitList(list: List<FriendCircleData>){
         differ.submitList(list)
         notifyDataSetChanged()
     }
@@ -43,6 +42,10 @@ class FollowerAdapter(val itemClick:(userId:String)->Unit,val onRemoveClick:(use
                         Glide.with(ivFollowerProfilePic).load(it).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivFollowerProfilePic)
                     }
                     tvFollowerName.text=userName
+
+                    if(isFollowing){
+                        btnFollow.text="UnFollow"
+                    }
 
                     btnFollow.setSafeOnClickListener {
                         onRemoveClick(user.userId!!)
