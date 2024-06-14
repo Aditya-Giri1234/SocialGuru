@@ -85,6 +85,7 @@
                 android:textSize="@dimen/_16ssp" />
 
             <View
+                android:id="@+id/btnView"
                 android:layout_width="@dimen/_1sdp"
                 android:layout_height="match_parent"
                 android:background="@color/lightWhite" />

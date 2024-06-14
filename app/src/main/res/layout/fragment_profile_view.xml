@@ -139,6 +139,7 @@
                     android:id="@+id/btnFriend"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="?actionBarSize"
                     android:text="@string/send_friend_request"
                     android:textColor="@color/white"
                     android:textAllCaps="false"

@@ -5,9 +5,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
+import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
+import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.MainRepository
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
+import com.aditya.socialguru.domain_layer.service.firebase_service.UserManager
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,6 +32,15 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
         BufferOverflow.DROP_OLDEST
     )
     val user: SharedFlow<Resource<User>> get() = _user.asSharedFlow()
+
+    private val _fcmToken= MutableSharedFlow<Resource<UpdateResponse>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val fcmToken: SharedFlow<Resource<UpdateResponse>> get() = _fcmToken.asSharedFlow()
+
+
 
     fun getUser() = viewModelScope.launch {
         _user.tryEmit(Resource.Loading())
@@ -56,6 +69,23 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
             _user.tryEmit(Resource.Error("Network Not Available !"))
         }
     }
+
+      fun setFcmToken(token: String) = viewModelScope.launch {
+          _fcmToken.tryEmit(Resource.Loading())
+
+          if (SoftwareManager.isNetworkAvailable(app)) {
+
+              repository.setFcmToken(token).onEach {
+                  if (it.isSuccess){
+                      _fcmToken.tryEmit(Resource.Success(it))
+                  }else{
+                      _fcmToken.tryEmit(Resource.Error(it.errorMessage))
+                  }
+              }.launchIn(this)
+          } else {
+              _fcmToken.tryEmit(Resource.Error("Network Not Available !"))
+          }
+      }
 
     fun setDataLoadedStatus(status: Boolean) {
         _isDataLoaded = status

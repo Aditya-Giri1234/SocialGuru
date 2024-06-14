@@ -8,6 +8,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.aditya.socialguru.data_layer.model.User
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class SharePref(val context: Context) {
@@ -24,7 +25,20 @@ class SharePref(val context: Context) {
 
     private object PreferencesKeys {
         val USER_KEY = stringPreferencesKey("USER_KEY")
+        val FCM_TOKEN= stringPreferencesKey("FCM_TOKEN")
     }
+
+    suspend fun setFcmToken(fcmToken:String){
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.FCM_TOKEN] = fcmToken
+        }
+    }
+
+     suspend fun getFcmToken():String?{
+         return context.dataStore.data.map { preferences ->
+             preferences[PreferencesKeys.FCM_TOKEN]
+         }.first()
+     }
 
     suspend fun setPrefUser(user: User) {
         val json = Gson().toJson(user)

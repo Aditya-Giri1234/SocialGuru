@@ -6,6 +6,13 @@ object Constants {
     const val TYPE = "TYPE"
     const val DATA = "DATA"
 
+    //Notification  Constant
+
+    const val BASE_URL="https://fcm.googleapis.com/"
+    const val FIREBASE_MESSAGING_SCOPE="https://www.googleapis.com/auth/firebase.messaging"
+    const val CONTENT_TYPE="application/json"
+    const val FCM_ACCESS_TOKEN="fa5759d13c4d96797883ba02d1e0053c9193d0bc"
+
     //User Table Constant
 
     /*Use ctrl + shift + u to make lowercase to uppercase or vice-versa */
@@ -88,11 +95,12 @@ object Constants {
         Following,
         Friend,
         FriendRequest ,
-        PendingRequest
+        PendingRequest,
+        Notification
     }
 
     enum class FriendStatus {
-        FRIEND, PENDING_REQUEST, NOT_FRIEND
+        FRIEND ,FRIEND_REQUEST, PENDING_REQUEST, NOT_FRIEND
     }
 
 
@@ -164,6 +172,22 @@ object Constants {
         Error,
         UrlNotGet,
         Success
+    }
+
+    // Notification Type
+
+    enum class NotificationType{
+        NEW_FOLLOWER,
+        ACCEPT_FRIEND_REQUEST,
+        FRIEND_REQUEST_COME,
+        LIKE_IN_POST,
+        COMMENT_IN_POST
+    }
+
+    // NotificationPriority
+    enum class NotificationPriority(val priority:String){
+        Normal("normal"),
+        High("high")
     }
 
     // LogLevel

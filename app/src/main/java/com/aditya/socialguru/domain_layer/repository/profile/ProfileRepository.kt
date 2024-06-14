@@ -29,6 +29,7 @@ class ProfileRepository {
     suspend fun deleteFriendRequest(userId: String, friendId: String)=
         FirebaseManager.deleteFriendRequest(userId,friendId)
 
+    suspend fun acceptFriendRequest(userId: String, friendId: String) = FirebaseManager.acceptFriendRequest(userId,friendId)
 
     suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String)=
         FirebaseManager.getUserRelationshipStatus(currentUserId, targetUserId)

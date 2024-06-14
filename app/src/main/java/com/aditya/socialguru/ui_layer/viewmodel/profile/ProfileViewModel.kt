@@ -92,6 +92,13 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
     )
     val sendFriendRequest get() = _sendFriendRequest.asSharedFlow()
 
+    private val _acceptFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val acceptFriendRequest get() = _acceptFriendRequest.asSharedFlow()
+
     private val _deleteFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
         1,
         64,
@@ -197,6 +204,23 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
 
         } else {
             _sendFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+    fun acceptFriendRequest(followedId: String) = viewModelScope.launch {
+        _acceptFriendRequest.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.acceptFriendRequest(
+                AuthManager.currentUserId()!!, followedId).onEach{
+                if (it.isSuccess){
+                    _acceptFriendRequest.tryEmit(Resource.Success(it))
+                }else{
+                    _acceptFriendRequest.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+
+        } else {
+            _acceptFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
         }
     }
     fun deleteFriendRequest(followedId: String) = viewModelScope.launch {

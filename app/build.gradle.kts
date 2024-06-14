@@ -5,11 +5,22 @@ plugins {
     id("androidx.navigation.safeargs.kotlin")
     id("kotlin-kapt")
     id("com.google.devtools.ksp")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
     namespace = "com.aditya.socialguru"
     compileSdk = 34
+
+
+
+    // Index.List and dependencies have duplicate file so remove one during gradle build
+    packaging {
+        resources {
+            excludes += "META-INF/INDEX.LIST"
+            excludes +="META-INF/DEPENDENCIES"
+        }
+    }
 
     defaultConfig {
         applicationId = "com.aditya.socialguru"
@@ -39,7 +50,7 @@ android {
     }
 
     buildFeatures {
-        viewBinding=true
+        viewBinding = true
     }
 }
 
@@ -86,6 +97,9 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-crashlytics")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
 
 
     //For Viewmodel
@@ -98,6 +112,11 @@ dependencies {
 
     //gson
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.9.0")
 
     //Three dot
     implementation("com.github.ybq:Android-SpinKit:1.4.0")
@@ -119,5 +138,9 @@ dependencies {
 
 
     // Swipe behaviour
-    implementation ("it.xabaras.android:recyclerview-swipedecorator:1.4")
+    implementation("it.xabaras.android:recyclerview-swipedecorator:1.4")
+
+
+    //Google Auth
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.23.0")
 }

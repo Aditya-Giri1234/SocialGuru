@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Message
 import android.provider.OpenableColumns
 import android.util.Patterns
 import android.view.View
@@ -13,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.navigation.NavOptions
 import com.aditya.socialguru.R
+import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.ProfileViewDialog
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSnackBar
@@ -123,6 +125,8 @@ object Helper {
     fun getPostId():String="${Constants.Table.Post.name}_${generateUUID()}"
     fun getStoryId():String="${Constants.Table.Stories.name}_${generateUUID()}"
     fun getCommentId(post_id:String):String="${Constants.Table.Post.name}_${post_id}"
+
+    fun getNotificationId():String="${Constants.Table.Notification.name}_${generateUUID()}"
     fun getUserId():String=UUID.randomUUID().toString()
     fun getPostCommentId(postId:String):String="${Constants.Table.Post.name}_${Constants.Table.Comment.name}_$postId"
 
@@ -163,6 +167,10 @@ object Helper {
     suspend fun setLogout(context: Context){
         val pref=SharePref(context)
         pref.deleteAllFromDataStore()
+    }
+
+    fun showFcmNotSendDialog(activity: Activity,message: String){
+        AlertDialog(message,null,false).show((activity as AppCompatActivity).supportFragmentManager ,"My_Fcm_Token_Not_Send")
     }
 
 }

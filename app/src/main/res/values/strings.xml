@@ -10,5 +10,6 @@
     <string name="following">Following</string>
     <string name="send_friend_request">Send Friend Request</string>
     <string name="pending_request">Pending Request</string>
+    <string name="accept">Accept</string>
     <string name="already_friend">Already Friend</string>
 </resources>

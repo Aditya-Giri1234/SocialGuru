@@ -7,9 +7,10 @@ import android.view.ViewGroup
 import androidx.core.view.isGone
 import androidx.fragment.app.DialogFragment
 import com.aditya.socialguru.databinding.DeleteAlertDialogBinding
+import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 
-class AlertDialog(val message: String, val option: AlertDialogOption , val isForShowDelete:Boolean=true) : DialogFragment() {
+class AlertDialog(val message: String, val option: AlertDialogOption? , val isForShowDelete:Boolean=true) : DialogFragment() {
 
     private var _binding: DeleteAlertDialogBinding? = null
     private val binding get() = _binding!!
@@ -43,22 +44,26 @@ class AlertDialog(val message: String, val option: AlertDialogOption , val isFor
 
             icDelete.isGone=isForShowDelete==false
             linearAppName.isGone=isForShowDelete
+            if (option==null){
+                btnView.gone()
+                btnYes.gone()
+            }
             setListener()
         }
     }
 
     private fun DeleteAlertDialogBinding.setListener() {
         btnCancel.setOnClickListener {
-            option.onResult(false)
+            option?.onResult(false)
             dismiss()
         }
         btnYes.setOnClickListener {
-            option.onResult(true)
+            option?.onResult(true)
             dismiss()
         }
 
         dialog?.setOnDismissListener {
-            option.onResult(false)
+            option?.onResult(false)
         }
     }
 

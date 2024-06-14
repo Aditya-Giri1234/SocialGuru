@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -30,6 +31,7 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.setupWithNavController
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import com.aditya.socialguru.domain_layer.service.SharePref
@@ -37,7 +39,9 @@ import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import com.aditya.socialguru.ui_layer.viewmodel.MainViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -93,13 +97,11 @@ class MainActivity : AppCompatActivity() {
         subscribeToObserver()
         subscribeToDestinationChanges()
         if (!mainViewModel.isDataLoaded){
+            getFCMToken()
             getData()
             mainViewModel.setDataLoadedStatus(true)
         }
-
     }
-
-
 
     private fun subscribeToObserver() {
         lifecycleScope.launch {
@@ -111,14 +113,12 @@ class MainActivity : AppCompatActivity() {
                         showBottomNavigationFotScrollEffect()
                     }
                 }.launchIn(this)
-
-                mainViewModel.
-                user.onEach {response->
-
+                mainViewModel.user.onEach {response->
                     when(response){
                         is Resource.Success ->{
                             response.data?.let {
                                 pref.setPrefUser(it)
+                                setUpFirebaseCrashlytics()
                                 MyLogger.i(msg = it, isJson = true)
                             }
                         }
@@ -129,13 +129,26 @@ class MainActivity : AppCompatActivity() {
                             Helper.showSnackBar(binding.coordLayout,response.message.toString())
                         }
                     }
+                }.launchIn(this)
 
+                mainViewModel.fcmToken.onEach {response->
+                    when(response){
+                        is Resource.Success ->{
+                           Helper.customToast(this@MainActivity ,"Fcm Token Send Successfully !" ,
+                               Toast.LENGTH_SHORT)
+                        }
+                        is Resource.Loading ->{
+
+                        }
+                        is Resource.Error -> {
+                            Helper.showSnackBar(binding.coordLayout,response.message.toString())
+                        }
+                    }
                 }.launchIn(this)
             }
         }
 
     }
-
 
     private fun subscribeToDestinationChanges() {
         MyLogger.v(isFunctionCall = true)
@@ -170,11 +183,12 @@ class MainActivity : AppCompatActivity() {
         MyLogger.v(isFunctionCall = true)
         binding.apply {
             bottomNavigationView.menu[2].isEnabled = false
-
             setListener()
         }
         setUpBottomNav()
     }
+
+
 
     private fun setUpBottomNav() {
         MyLogger.v(isFunctionCall = true)
@@ -295,9 +309,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setUpFirebaseCrashlytics() {
+        lifecycleScope.launch {
+            FirebaseCrashlytics.getInstance().apply {
+                pref.getPrefUser().first()?.let {
+                    setCustomKey("NAME", it.userName.toString())
+                    setCustomKey("EMAIL", it.userEmailId.toString())
+                }
 
+            }
+        }
+    }
     private fun getData() {
         mainViewModel.getUser()
+    }
+
+    private fun getFCMToken() {
+        MyLogger.v(Constants.LogTag.FCMToken, isFunctionCall = true)
+        lifecycleScope.launch {
+            FCMTokenManager.generateFcmTokenByBackOfAlgo(this@MainActivity, 1) { token ->
+                mainViewModel.setFcmToken(token)
+            }
+        }
     }
 
 

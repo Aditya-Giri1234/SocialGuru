@@ -12,3 +12,15 @@ package com.aditya.socialguru
 
 
 //endregion
+
+
+
+//region:: Follower , Friend, Following
+
+
+/*
+* Pending Request :-> When user send friend request then this request store user pending request collection.
+* Friend Request :-> When user receive friend request then this request store user friend request collection.
+* */
+
+//endregion

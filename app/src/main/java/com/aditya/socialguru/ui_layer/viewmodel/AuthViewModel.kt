@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.AuthRepositoryImpl
@@ -13,7 +14,6 @@ import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.launch
 
 class AuthViewModel(val app: Application) : AndroidViewModel(app) {
@@ -49,13 +49,14 @@ class AuthViewModel(val app: Application) : AndroidViewModel(app) {
         return if (result.first == null) {
             Resource.Error(result.second ?: "Some error occurred during signUp !")
         } else {
+            val fcmToken: String? = FCMTokenManager.generateToken().first()
             val saveUser = User(
                 result.first!!.uid,
                 user.userName,
                 user.userBio,
                 user.userProfession,
                 user.userEmailId,
-                user.userPassword
+                user.userPassword, fcmToken = fcmToken
             )
             val saveResult = repositoryImpl.saveUserToDatabase(saveUser)
             if (saveResult.first) {
@@ -79,13 +80,15 @@ class AuthViewModel(val app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun handleLoginResponse(result: Pair<String?, String?>): Resource<User>? {
-MyLogger.v(tagLogin, isFunctionCall = true)
+        MyLogger.v(tagLogin, isFunctionCall = true)
         return if (result.first == null) {
             Resource.Error(result.second ?: "Some error occurred during signUp !")
         } else {
-           val user= repositoryImpl.getUser(result.first!!).first()
+            val fcmToken: String? = FCMTokenManager.generateToken().first()
+            repositoryImpl.setFcmToken(fcmToken)
+            val user = repositoryImpl.getUser(result.first!!).first()
             MyLogger.d(tagLogin, msg = "User := $user && Data := ${user.data}")
-           user
+            user
         }
 
     }

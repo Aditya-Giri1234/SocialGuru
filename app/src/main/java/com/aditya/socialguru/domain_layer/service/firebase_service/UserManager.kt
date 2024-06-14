@@ -2,21 +2,23 @@ package com.aditya.socialguru.domain_layer.service.firebase_service
 
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.NotificationSendingManager
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -69,7 +71,6 @@ object UserManager {
             Pair(false, e.message)
         }
     }
-
 
     suspend fun updateUser(
         user: User,
@@ -199,6 +200,22 @@ object UserManager {
             awaitClose {
                 channel.close()
             }
+        }
+    }
+
+    suspend fun setFcmToken(token: String?) = callbackFlow<UpdateResponse> {
+
+        userRef.document(AuthManager.currentUserId()!!)
+            .update(Constants.UserTable.FCM_TOKEN.fieldName, token).addOnSuccessListener {
+            trySend(UpdateResponse(true, ""))
+
+        }.addOnFailureListener {
+            trySend(UpdateResponse(false, it.message))
+        }.await()
+
+
+        awaitClose {
+            close()
         }
     }
 
@@ -532,15 +549,33 @@ object UserManager {
         val followedData = FriendCircleData(followedId, timeStamp)
         val myData = FriendCircleData(userId, timeStamp)
 
+        val notificationId=Helper.getNotificationId()
+        val timeInText=Helper.formatTimestampToDateAndTime(timeStamp)
+        val notificationData=NotificationData(
+            notificationId = notificationId,
+            friendOrFollowerId = userId,
+            notificationTimeInText = timeInText,
+            notificationTimeInTimeStamp = timeStamp.toString(),
+            type = Constants.NotificationType.NEW_FOLLOWER
+        )
+
         val myUserRef =
             userRef.document(userId).collection(Constants.Table.Following.name).document(followedId)
         val followedRef =
             userRef.document(followedId).collection(Constants.Table.Follower.name).document(userId)
+        val notificationRef= userRef.document(followedId).collection(Constants.Table.Notification.name).document(notificationId)
 
         firestore.runBatch { batch ->
             batch.set(myUserRef, followedData)
             batch.set(followedRef, myData)
+            batch.set(notificationRef,notificationData)
         }.addOnSuccessListener {
+            launch {
+                userRef.document(followedId).get().await().toObject<User>()?.fcmToken?.let {
+                    NotificationSendingManager.sendNewFollowerNotification(it,notificationData)
+                }
+            }
+
             trySend(UpdateResponse(true, ""))
         }.addOnFailureListener {
             trySend(UpdateResponse(false, it.message))
@@ -557,16 +592,28 @@ object UserManager {
         val friendData = FriendCircleData(friendId, timeStamp)
         val myData = FriendCircleData(userId, timeStamp)
 
+        val notificationId=Helper.getNotificationId()
+        val timeInText=Helper.formatTimestampToDateAndTime(timeStamp)
+        val notificationData=NotificationData(
+            notificationId = notificationId,
+            friendOrFollowerId = userId,
+            notificationTimeInText = timeInText,
+            notificationTimeInTimeStamp = timeStamp.toString(),
+            type = Constants.NotificationType.FRIEND_REQUEST_COME
+        )
+
         val myUserRef =
             userRef.document(userId).collection(Constants.Table.PendingRequest.name)
                 .document(friendId)
         val friendRef =
             userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
                 .document(userId)
+        val notificationRef= userRef.document(friendId).collection(Constants.Table.Notification.name).document(notificationId)
 
         firestore.runBatch { batch ->
             batch.set(myUserRef, friendData)
             batch.set(friendRef, myData)
+            batch.set(notificationRef,notificationData)
         }.addOnSuccessListener {
             trySend(UpdateResponse(true, ""))
         }.addOnFailureListener {
@@ -579,52 +626,64 @@ object UserManager {
         }
     }
 
-    suspend fun deleteFriendRequest(userId: String, friendId: String) = callbackFlow<UpdateResponse> {
+    suspend fun deleteFriendRequest(userId: String, friendId: String) =
+        callbackFlow<UpdateResponse> {
 
-        val myUserRef =
-            userRef.document(userId).collection(Constants.Table.PendingRequest.name)
-                .document(friendId)
-        val friendRef =
-            userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
-                .document(userId)
+            val myUserRef =
+                userRef.document(userId).collection(Constants.Table.PendingRequest.name)
+                    .document(friendId)
+            val friendRef =
+                userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
+                    .document(userId)
 
-        firestore.runBatch { batch ->
-            batch.delete(myUserRef)
-            batch.delete(friendRef)
-        }.addOnSuccessListener {
-            trySend(UpdateResponse(true, ""))
-        }.addOnFailureListener {
-            trySend(UpdateResponse(false, it.message))
-        }.await()
+            firestore.runBatch { batch ->
+                batch.delete(myUserRef)
+                batch.delete(friendRef)
+            }.addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
 
 
-        awaitClose {
-            close()
+            awaitClose {
+                close()
+            }
         }
-    }
 
     suspend fun acceptFriendRequest(userId: String, friendId: String) =
         callbackFlow<UpdateResponse> {
             val timeStamp = System.currentTimeMillis()
             val friendData = FriendCircleData(friendId, timeStamp)
             val myData = FriendCircleData(userId, timeStamp)
+            val notificationId=Helper.getNotificationId()
+            val timeInText=Helper.formatTimestampToDateAndTime(timeStamp)
+            val notificationData=NotificationData(
+                notificationId = notificationId,
+                friendOrFollowerId = userId,
+                notificationTimeInText = timeInText,
+                notificationTimeInTimeStamp = timeStamp.toString(),
+                type = Constants.NotificationType.ACCEPT_FRIEND_REQUEST
+            )
 
             val myPendingRef =
-                userRef.document(userId).collection(Constants.Table.PendingRequest.name)
-                    .document(friendId)
-            val friendRequestRef =
-                userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
+                userRef.document(friendId).collection(Constants.Table.PendingRequest.name)
                     .document(userId)
+            val friendRequestRef =
+                userRef.document(userId).collection(Constants.Table.FriendRequest.name)
+                    .document(friendId)
             val myUserFriendRef =
                 userRef.document(userId).collection(Constants.Table.Friend.name).document(friendId)
             val friendFriendRef =
                 userRef.document(friendId).collection(Constants.Table.Friend.name).document(userId)
+            val notificationRef= userRef.document(friendId).collection(Constants.Table.Notification.name).document(notificationId)
 
             firestore.runBatch { batch ->
                 batch.delete(myPendingRef)
                 batch.delete(friendRequestRef)
                 batch.set(myUserFriendRef, friendData)
                 batch.set(friendFriendRef, myData)
+                batch.set(notificationRef,notificationData)
             }.addOnSuccessListener {
                 trySend(UpdateResponse(true, ""))
             }.addOnFailureListener {
@@ -647,10 +706,29 @@ object UserManager {
             }
         }
 
-    private suspend fun getFriendStatus(currentUserId: String, targetUserId: String): Constants.FriendStatus {
+    private suspend fun getFriendStatus(
+        currentUserId: String,
+        targetUserId: String
+    ): Constants.FriendStatus {
         return when {
-            isUserInCollection(currentUserId, targetUserId, Constants.Table.Friend.name) -> Constants.FriendStatus.FRIEND
-            isUserInCollection(currentUserId, targetUserId, Constants.Table.PendingRequest.name) -> Constants.FriendStatus.PENDING_REQUEST
+            isUserInCollection(
+                currentUserId,
+                targetUserId,
+                Constants.Table.Friend.name
+            ) -> Constants.FriendStatus.FRIEND
+
+            isUserInCollection(
+                currentUserId,
+                targetUserId,
+                Constants.Table.FriendRequest.name
+            ) -> Constants.FriendStatus.FRIEND_REQUEST
+
+            isUserInCollection(
+                currentUserId,
+                targetUserId,
+                Constants.Table.PendingRequest.name
+            ) -> Constants.FriendStatus.PENDING_REQUEST
+
             else -> Constants.FriendStatus.NOT_FRIEND
         }
     }

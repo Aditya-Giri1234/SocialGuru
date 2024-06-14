@@ -18,69 +18,96 @@ object FirebaseManager {
 
     //region:: Auth related work here
 
-    suspend fun login(email: String, password: String): Pair<String?,String?> = AuthManager.loginUser(email,password)
+    suspend fun login(email: String, password: String): Pair<String?, String?> =
+        AuthManager.loginUser(email, password)
 
-    suspend fun signUp(user: User): Pair<FirebaseUser?,String?> = AuthManager.createUser(user)
+    suspend fun signUp(user: User): Pair<FirebaseUser?, String?> = AuthManager.createUser(user)
 
-    suspend fun signOut()=AuthManager.signOutUser()
+    suspend fun signOut() = AuthManager.signOutUser()
 
-    fun isUserLogin():Boolean=AuthManager.isUserLogin()
+    fun isUserLogin(): Boolean = AuthManager.isUserLogin()
 
 
     //endregion
 
     //region:: User related work here
-    suspend fun saveUserToDatabase(user: User): Pair<Boolean, String?> =UserManager.saveUser(user)
+    suspend fun saveUserToDatabase(user: User): Pair<Boolean, String?> = UserManager.saveUser(user)
 
-    suspend fun updateUser(user: User,oldImage:String?=null,newImage:String?=null) = UserManager.updateUser(user,oldImage,newImage)
+    suspend fun updateUser(user: User, oldImage: String? = null, newImage: String? = null) =
+        UserManager.updateUser(user, oldImage, newImage)
+
     suspend fun getUser(userId: String): Flow<Resource<User>> = UserManager.getUserByIdAsync(userId)
 
-    suspend fun subscribeToFollowerCount(userId: String) = UserManager.subscribeToFollowerCount(userId)
+    suspend fun subscribeToFollowerCount(userId: String) =
+        UserManager.subscribeToFollowerCount(userId)
 
-    suspend fun subscribeToFollowingCount(userId: String) = UserManager.subscribeToFollowingCount(userId)
+    suspend fun subscribeToFollowingCount(userId: String) =
+        UserManager.subscribeToFollowingCount(userId)
 
-    suspend fun subscribeToCurrentUser(userId:String) = UserManager.subscribeToCurrentUserData(userId)
+    suspend fun subscribeToCurrentUser(userId: String) =
+        UserManager.subscribeToCurrentUserData(userId)
 
-    suspend fun getFollowerListAndListenChange()=UserManager.getFollowerListAndListenChange(AuthManager.currentUserId() ?: "")
-    suspend fun getFollowingListAndListenChange()=UserManager.getFollowingListAndListenChange(AuthManager.currentUserId() ?: "")
-    suspend fun getFriendListAndListenChange()=UserManager.getFriendListAndListenChange(AuthManager.currentUserId() ?: "")
+    suspend fun getFollowerListAndListenChange() =
+        UserManager.getFollowerListAndListenChange(AuthManager.currentUserId() ?: "")
 
-    suspend fun removeFollower(userId: String)=UserManager.removeFollower(userId)
-    suspend fun unFollow(userId: String)=UserManager.unFollow(userId)
-    suspend fun removeFriend(userId: String)=UserManager.removeFriend(userId)
+    suspend fun getFollowingListAndListenChange() =
+        UserManager.getFollowingListAndListenChange(AuthManager.currentUserId() ?: "")
 
-    suspend fun followUser(userId: String, followedId: String)=UserManager.followUser(userId,followedId)
-    suspend fun sendFriendRequest(userId: String, friendId: String)=UserManager.sendFriendRequest(userId,friendId)
-    suspend fun deleteFriendRequest(userId: String, friendId: String)=UserManager.deleteFriendRequest(userId,friendId)
-    suspend fun acceptFriendRequest(userId: String, friendId: String) = UserManager.acceptFriendRequest(userId,friendId)
+    suspend fun getFriendListAndListenChange() =
+        UserManager.getFriendListAndListenChange(AuthManager.currentUserId() ?: "")
 
-    suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String)=UserManager.getUserRelationshipStatus(currentUserId, targetUserId)
+    suspend fun removeFollower(userId: String) = UserManager.removeFollower(userId)
+    suspend fun unFollow(userId: String) = UserManager.unFollow(userId)
+    suspend fun removeFriend(userId: String) = UserManager.removeFriend(userId)
 
+    suspend fun followUser(userId: String, followedId: String) =
+        UserManager.followUser(userId, followedId)
+
+    suspend fun sendFriendRequest(userId: String, friendId: String) =
+        UserManager.sendFriendRequest(userId, friendId)
+
+    suspend fun deleteFriendRequest(userId: String, friendId: String) =
+        UserManager.deleteFriendRequest(userId, friendId)
+
+    suspend fun acceptFriendRequest(userId: String, friendId: String) =
+        UserManager.acceptFriendRequest(userId, friendId)
+
+    suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String) =
+        UserManager.getUserRelationshipStatus(currentUserId, targetUserId)
+
+
+     suspend fun setFcmToken(token: String?) = UserManager.setFcmToken(token)
 
 
     //endregion
 
     //region:: Story Related work here
-    suspend fun uploadStory(storyType: Constants.StoryType, uri:Uri?=null, text: StoryText?=null, user: User) = StoryManager.uploadStory(storyType,uri,text,user)
+    suspend fun uploadStory(
+        storyType: Constants.StoryType,
+        uri: Uri? = null,
+        text: StoryText? = null,
+        user: User
+    ) = StoryManager.uploadStory(storyType, uri, text, user)
 
-    suspend fun getAllStories(userId:String) = StoryManager.getAndListenTop30Friend(userId = userId)
+    suspend fun getAllStories(userId: String) =
+        StoryManager.getAndListenTop30Friend(userId = userId)
 
-    suspend fun getMyStory(userId: String)=StoryManager.getMyStory(userId)
+    suspend fun getMyStory(userId: String) = StoryManager.getMyStory(userId)
 
-    suspend fun deleteStoryById(storyId: String)=StoryManager.deleteStoryById(storyId)
+    suspend fun deleteStoryById(storyId: String) = StoryManager.deleteStoryById(storyId)
 
     //endregion
 
     //region::  Post Related Work Here
 
-    suspend fun uploadingPost(post: Post)= PostManager.uploadPost(post)
+    suspend fun uploadingPost(post: Post) = PostManager.uploadPost(post)
 
-    suspend fun getDiscoverPost()=PostManager.getDiscoverPost()
-    suspend fun getFollowingPost()=PostManager.getFollowingPost()
+    suspend fun getDiscoverPost() = PostManager.getDiscoverPost()
+    suspend fun getFollowingPost() = PostManager.getFollowingPost()
 
-    suspend fun getMyPost(userId: String)=PostManager.getMyPost(userId)
+    suspend fun getMyPost(userId: String) = PostManager.getMyPost(userId)
 
-    suspend fun getPostById(postId:String)= PostManager.getPostById(postId)
+    suspend fun getPostById(postId: String) = PostManager.getPostById(postId)
 
     suspend fun subscribeToPostCount(userId: String) = UserManager.subscribeToPostCount(userId)
 
