@@ -120,6 +120,13 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
     )
     val userRelationshipStatus get() = _userRelationshipStatus.asSharedFlow()
 
+    private val _userRelationshipStatusUpdate = MutableSharedFlow<Resource<UpdateResponse>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val userRelationshipStatusUpdate get() = _userRelationshipStatusUpdate.asSharedFlow()
+
 
     fun subscribeToFollowerCount(userId: String) = viewModelScope.launch {
         repository.subscribeToFollowerCount(userId).onEach {
@@ -160,10 +167,10 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _followUser.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.followUser(AuthManager.currentUserId()!!, followedId).onEach{
-                if (it.isSuccess){
+            repository.followUser(AuthManager.currentUserId()!!, followedId).onEach {
+                if (it.isSuccess) {
                     _followUser.tryEmit(Resource.Success(it))
-                }else{
+                } else {
                     _followUser.tryEmit(Resource.Error(it.errorMessage))
                 }
             }.launchIn(this)
@@ -177,10 +184,10 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _unFollow.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.unFollow(followedId).onEach{
-                if (it.isSuccess){
+            repository.unFollow(followedId).onEach {
+                if (it.isSuccess) {
                     _unFollow.tryEmit(Resource.Success(it))
-                }else{
+                } else {
                     _unFollow.tryEmit(Resource.Error(it.errorMessage))
                 }
             }.launchIn(this)
@@ -194,10 +201,10 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _sendFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.sendFriendRequest(AuthManager.currentUserId()!!, followedId).onEach{
-                if (it.isSuccess){
+            repository.sendFriendRequest(AuthManager.currentUserId()!!, followedId).onEach {
+                if (it.isSuccess) {
                     _sendFriendRequest.tryEmit(Resource.Success(it))
-                }else{
+                } else {
                     _sendFriendRequest.tryEmit(Resource.Error(it.errorMessage))
                 }
             }.launchIn(this)
@@ -206,15 +213,17 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
             _sendFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
         }
     }
+
     fun acceptFriendRequest(followedId: String) = viewModelScope.launch {
         _acceptFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
             repository.acceptFriendRequest(
-                AuthManager.currentUserId()!!, followedId).onEach{
-                if (it.isSuccess){
+                AuthManager.currentUserId()!!, followedId
+            ).onEach {
+                if (it.isSuccess) {
                     _acceptFriendRequest.tryEmit(Resource.Success(it))
-                }else{
+                } else {
                     _acceptFriendRequest.tryEmit(Resource.Error(it.errorMessage))
                 }
             }.launchIn(this)
@@ -223,14 +232,15 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
             _acceptFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
         }
     }
+
     fun deleteFriendRequest(followedId: String) = viewModelScope.launch {
         _deleteFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.deleteFriendRequest(AuthManager.currentUserId()!!, followedId).onEach{
-                if (it.isSuccess){
+            repository.deleteFriendRequest(AuthManager.currentUserId()!!, followedId).onEach {
+                if (it.isSuccess) {
                     _deleteFriendRequest.tryEmit(Resource.Success(it))
-                }else{
+                } else {
                     _deleteFriendRequest.tryEmit(Resource.Error(it.errorMessage))
                 }
             }.launchIn(this)
@@ -244,10 +254,10 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _removeFriend.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.removeFriend(followedId).onEach{
-                if (it.isSuccess){
+            repository.removeFriend(followedId).onEach {
+                if (it.isSuccess) {
                     _removeFriend.tryEmit(Resource.Success(it))
-                }else{
+                } else {
                     _removeFriend.tryEmit(Resource.Error(it.errorMessage))
                 }
             }.launchIn(this)
@@ -256,16 +266,32 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
             _removeFriend.tryEmit(Resource.Error("No Internet Available !"))
         }
     }
+
     fun getUserRelationshipStatus(followedId: String) = viewModelScope.launch {
         _userRelationshipStatus.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.getUserRelationshipStatus(AuthManager.currentUserId()!!, followedId).onEach{
-                    _userRelationshipStatus.tryEmit(Resource.Success(it))
+            repository.getUserRelationshipStatus(AuthManager.currentUserId()!!, followedId).onEach {
+                _userRelationshipStatus.tryEmit(Resource.Success(it))
             }.launchIn(this)
 
         } else {
             _userRelationshipStatus.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    fun listenUserRelationStatus(followedId: String) = viewModelScope.launch {
+        _userRelationshipStatusUpdate.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.listenUserRelationStatus(followedId).onEach {
+                if (it.isSuccess) {
+                    _userRelationshipStatusUpdate.tryEmit(Resource.Success(it))
+                }
+            }.launchIn(this)
+
+        } else {
+            // Do Nothing
         }
     }
 

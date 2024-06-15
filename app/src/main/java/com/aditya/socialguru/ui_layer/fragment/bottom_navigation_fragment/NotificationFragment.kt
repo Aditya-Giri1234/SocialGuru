@@ -5,15 +5,16 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.aditya.socialguru.R
-import com.aditya.socialguru.databinding.FragmentAddPostBinding
 import com.aditya.socialguru.databinding.FragmentNotificationBinding
+import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 
 
 class NotificationFragment : Fragment() {
 
-    private var _binding: FragmentNotificationBinding?=null
+    private var _binding: FragmentNotificationBinding? = null
     private val binding get() = _binding!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,7 +27,7 @@ class NotificationFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        _binding=FragmentNotificationBinding.inflate(layoutInflater)
+        _binding = FragmentNotificationBinding.inflate(layoutInflater)
         return binding.root
     }
 
@@ -37,17 +38,25 @@ class NotificationFragment : Fragment() {
 
     private fun handleInitialization() {
         binding.apply {
+            myToolbar.apply {
+                profileImage.gone()
+                tvHeaderUserName.text = "Friend Request"
+                icSetting.myShow()
+            }
+
             setListener()
         }
     }
 
-    private fun FragmentNotificationBinding.setListener(){
+    private fun FragmentNotificationBinding.setListener() {
+        myToolbar.icSetting.setSafeOnClickListener {
 
+        }
 
     }
 
     override fun onDestroyView() {
-        _binding=null
+        _binding = null
         super.onDestroyView()
     }
 

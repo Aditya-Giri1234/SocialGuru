@@ -34,7 +34,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
     val user: SharedFlow<Resource<User>> get() = _user.asSharedFlow()
 
     private val _fcmToken= MutableSharedFlow<Resource<UpdateResponse>>(
-        1,
+        0,
         64,
         BufferOverflow.DROP_OLDEST
     )

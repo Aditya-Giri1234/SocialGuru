@@ -157,12 +157,12 @@ class ContainerActivity : AppCompatActivity() {
         when{
             navHostFragment.childFragmentManager.backStackEntryCount==0&&isTopAndBottomAnimation->{
                 MyLogger.w(msg = "back stack entry is 0 and this is  top bottom animation fragment !")
-                finish()
+                finishAndRemoveTask()
                 overridePendingTransition(0,R.anim.slide_out_bottom)
             }
             navHostFragment.childFragmentManager.backStackEntryCount==0->{
                 MyLogger.w(msg = "back stack entry is 0 but this is not top bottom animation fragment !")
-                finish()
+                finishAndRemoveTask()
                 overridePendingTransition(0,R.anim.slide_out_right)
             }
             else->{

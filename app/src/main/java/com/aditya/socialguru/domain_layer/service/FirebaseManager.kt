@@ -75,6 +75,9 @@ object FirebaseManager {
     suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String) =
         UserManager.getUserRelationshipStatus(currentUserId, targetUserId)
 
+    fun listenUserRelationStatus(friendId: String)=UserManager.listenUserRelationStatus(friendId)
+
+    fun listenFriendRequestComeEvent()=UserManager.listenFriendRequestComeEvent()
 
      suspend fun setFcmToken(token: String?) = UserManager.setFcmToken(token)
 

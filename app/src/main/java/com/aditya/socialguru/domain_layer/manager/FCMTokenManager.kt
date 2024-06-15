@@ -149,11 +149,13 @@ object FCMTokenManager {
                     "  \"universe_domain\": \"googleapis.com\"\n" +
                     "}"
 
-            val stream = serviceString.byteInputStream(Charsets.UTF_8)
-            val googleCredentials = GoogleCredentials.fromStream(stream)
-                .createScoped(Lists.newArrayList(Constants.FIREBASE_MESSAGING_SCOPE))
-            googleCredentials.refresh()
-            googleCredentials.accessToken.tokenValue
+            serviceString.byteInputStream(Charsets.UTF_8).use {
+                val googleCredentials = GoogleCredentials.fromStream(it)
+                    .createScoped(Lists.newArrayList(Constants.FIREBASE_MESSAGING_SCOPE))
+                googleCredentials.refresh()
+                googleCredentials.accessToken.tokenValue
+            }
+
 
         } catch (e: IOException) {
             MyLogger.v(

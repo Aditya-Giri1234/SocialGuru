@@ -134,6 +134,7 @@ class MainActivity : AppCompatActivity() {
                 mainViewModel.fcmToken.onEach {response->
                     when(response){
                         is Resource.Success ->{
+                            MyLogger.i(Constants.LogTag.FCMToken ,msg="Fcm response come !")
                            Helper.customToast(this@MainActivity ,"Fcm Token Send Successfully !" ,
                                Toast.LENGTH_SHORT)
                         }

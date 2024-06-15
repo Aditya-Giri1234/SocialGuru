@@ -72,8 +72,14 @@
             app:argType="android.net.Uri" />
     </fragment>
     <fragment
-        android:id="@+id/profileViewFragment2"
+        android:id="@+id/profileViewFragment3"
         android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragment"
         android:label="fragment_profile_view"
-        tools:layout="@layout/fragment_profile_view" />
+        tools:layout="@layout/fragment_profile_view" >
+        <argument
+            android:name="userId"
+            app:argType="string" />
+    </fragment>
+
+
 </navigation>

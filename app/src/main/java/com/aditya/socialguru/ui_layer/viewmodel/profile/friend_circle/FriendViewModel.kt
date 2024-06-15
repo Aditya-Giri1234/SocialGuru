@@ -12,6 +12,7 @@ import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.profile.friend_circle.FriendRepository
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -33,6 +34,12 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             1, 64, BufferOverflow.DROP_OLDEST
         )
     val followerList get() = _followerList.asSharedFlow()
+
+    private val _friendRequestList =
+        MutableSharedFlow<Resource<List<FriendCircleData>>>(
+            1, 64, BufferOverflow.DROP_OLDEST
+        )
+    val friendRequestList get() = _friendRequestList.asSharedFlow()
 
 
     private val _removeFollower =
@@ -66,6 +73,20 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             1, 64, BufferOverflow.DROP_OLDEST
         )
     val removeFriend get() = _removeFriend.asSharedFlow()
+
+    private val _acceptFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val acceptFriendRequest get() = _acceptFriendRequest.asSharedFlow()
+
+    private val _deleteFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val deleteFriendRequest get() = _deleteFriendRequest.asSharedFlow()
 
 
     //region:: Follower Operation
@@ -347,6 +368,111 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
+
+    //endregion
+
+    //region:: Friend request operation
+
+    fun getAndListenFriendRequestComeEvent() = viewModelScope.launch {
+        _friendRequestList.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.listenFriendRequestComeEvent().onEach {
+                _friendRequestList.tryEmit(handleFriendRequestResponse(it))
+            }.launchIn(this)
+
+        } else {
+            _friendRequestList.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    private fun handleFriendRequestResponse(listenerHandling: ListenerEmissionType<FriendCircleData, FriendCircleData>): Resource<List<FriendCircleData>> {
+        MyLogger.v(tagProfile, isFunctionCall = true)
+
+        val friendRequestList =
+            friendRequestList.replayCache[0].data?.toMutableList() ?: mutableListOf<FriendCircleData>()
+
+        when (listenerHandling.emitChangeType) {
+            Constants.ListenerEmitType.Starting -> {
+                MyLogger.v(
+                    tagProfile,
+                    msg = "This is starting friend type :- ${listenerHandling.responseList}"
+                )
+                friendRequestList.clear()
+                listenerHandling.responseList?.let {
+                    friendRequestList.addAll(it.toMutableList() as ArrayList<FriendCircleData>)
+                    friendRequestList.sortByDescending { it.timeStamp }
+                }
+            }
+
+            Constants.ListenerEmitType.Added -> {
+                MyLogger.v(
+                    tagProfile,
+                    msg = "This is added friend type :- ${listenerHandling.singleResponse}"
+                )
+                listenerHandling.singleResponse?.let {
+                    friendRequestList.add(it)
+                    friendRequestList.sortByDescending { it.timeStamp }
+                }
+            }
+
+            Constants.ListenerEmitType.Removed -> {
+                MyLogger.v(tagProfile, msg = "This is removed friend type")
+
+                listenerHandling.singleResponse?.let { friend ->
+                    friend.userId?.let { userId ->
+                        friendRequestList.forEach { temp ->
+                            if (temp.userId == userId) {
+                                friendRequestList.remove(temp)
+                                friendRequestList.sortBy { it.timeStamp }
+                                return@let
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            else -> {}
+        }
+
+        return Resource.Success(friendRequestList.toList())
+    }
+    fun acceptFriendRequest(followedId: String) = viewModelScope.launch {
+        _acceptFriendRequest.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.acceptFriendRequest(
+                AuthManager.currentUserId()!!, followedId
+            ).onEach {
+                if (it.isSuccess) {
+                    _acceptFriendRequest.tryEmit(Resource.Success(it))
+                } else {
+                    _acceptFriendRequest.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+
+        } else {
+            _acceptFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    fun deleteFriendRequest(followedId: String) = viewModelScope.launch {
+        _deleteFriendRequest.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.deleteFriendRequest(AuthManager.currentUserId()!!, followedId).onEach {
+                if (it.isSuccess) {
+                    _deleteFriendRequest.tryEmit(Resource.Success(it))
+                } else {
+                    _deleteFriendRequest.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+
+        } else {
+            _deleteFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
 
     //endregion
 

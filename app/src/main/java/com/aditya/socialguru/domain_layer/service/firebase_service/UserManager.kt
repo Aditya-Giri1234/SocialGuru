@@ -20,6 +20,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
+import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -56,6 +57,12 @@ object UserManager {
 
     private var friendListListener: ListenerRegistration? = null
     private var isFirstTimeFriendListListener = true
+
+    private var friendRequestListListener: ListenerRegistration? = null
+    private var isFirstTimeFriendRequestListListener = true
+
+    private val userRelationListeners = mutableListOf<ListenerRegistration>()
+    private var isFirstTimeUserStatusUpdateListListener = true
 
 
     suspend fun saveUser(user: User): Pair<Boolean, String?> {
@@ -207,11 +214,11 @@ object UserManager {
 
         userRef.document(AuthManager.currentUserId()!!)
             .update(Constants.UserTable.FCM_TOKEN.fieldName, token).addOnSuccessListener {
-            trySend(UpdateResponse(true, ""))
-
-        }.addOnFailureListener {
-            trySend(UpdateResponse(false, it.message))
-        }.await()
+                MyLogger.v(msg = "Fcm send successfully !")
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
 
 
         awaitClose {
@@ -219,6 +226,134 @@ object UserManager {
         }
     }
 
+    //region:: Listen user relation
+
+    fun listenUserRelationStatus(friendId: String) = callbackFlow<UpdateResponse> {
+        removeUserStatusListeners()
+        val collectionList = listOf(
+            Constants.Table.Following.name,
+            Constants.Table.Friend.name,
+            Constants.Table.FriendRequest.name,
+            Constants.Table.PendingRequest.name
+        )
+        val friendRef = userRef.document(AuthManager.currentUserId()!!)
+        collectionList.forEachIndexed { index, name ->
+            val listener = friendRef.collection(name).addSnapshotListener { value, error ->
+                if (error != null) return@addSnapshotListener
+
+
+                //These is for prevent multiple time userStatusFind when profile view just initialized
+                if (isFirstTimeUserStatusUpdateListListener) {
+                    if (index == collectionList.size - 1) {
+                        isFirstTimeUserStatusUpdateListListener = false
+                    }
+                    return@addSnapshotListener
+                }
+                value?.documentChanges?.forEach {
+                    when (it.type) {
+                        DocumentChange.Type.ADDED -> {
+                            if (it.document.id == friendId) {
+                                trySend(UpdateResponse(true, ""))
+                            }
+                        }
+
+                        DocumentChange.Type.MODIFIED -> {}
+                        DocumentChange.Type.REMOVED -> {
+                            if (it.document.id == friendId) {
+                                trySend(UpdateResponse(true, ""))
+                            }
+                        }
+                    }
+                }
+            }
+            userRelationListeners.add(listener)
+        }
+
+        awaitClose {
+            removeUserStatusListeners()
+            close()
+        }
+
+    }
+
+    private fun removeUserStatusListeners() {
+        isFirstTimeUserStatusUpdateListListener = true
+        userRelationListeners.forEach { it.remove() }
+        userRelationListeners.clear()
+    }
+
+    fun listenFriendRequestComeEvent() =
+        callbackFlow<ListenerEmissionType<FriendCircleData, FriendCircleData>> {
+
+            val friendRequestRef= userRef.document(AuthManager.currentUserId()!!).collection(Constants.Table.FriendRequest.name)
+            var friendRequestList=friendRequestRef.get().await().toObjects<FriendCircleData>()
+
+            friendRequestList=friendRequestList.map {
+                it.copy(
+                    user = it.userId?.let { it1 -> getUserById(it1) }
+                )
+            }.toMutableList()
+
+            trySend(
+                ListenerEmissionType(
+                    Constants.ListenerEmitType.Starting,
+                    responseList = friendRequestList.toList()
+                )
+            )
+
+            friendRequestList.clear()
+            friendRequestListListener?.remove()
+            friendRequestListListener =friendRequestRef.addSnapshotListener { value, error ->
+
+                if (error != null) return@addSnapshotListener
+
+                if (value != null) {
+                    if (isFirstTimeFriendRequestListListener) {
+                        isFirstTimeFriendRequestListListener = false
+                        return@addSnapshotListener
+                    }
+
+                    value.documentChanges.forEach {
+                        when (it.type) {
+                            DocumentChange.Type.ADDED -> {
+                                launch {
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Added,
+                                            singleResponse = it.document.toObject<FriendCircleData>()
+                                                .apply {
+                                                    user = getUserById(it.document.id)
+                                                }
+                                        )
+                                    )
+                                }
+                            }
+
+                            DocumentChange.Type.REMOVED -> {
+                                trySend(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Removed,
+                                        singleResponse = it.document.toObject<FriendCircleData>()
+                                    )
+                                )
+                            }
+
+                            DocumentChange.Type.MODIFIED -> {}
+                        }
+                    }
+                }
+
+            }
+
+            awaitClose {
+                isFirstTimeFriendRequestListListener=true
+                friendRequestListListener?.remove()
+                close()
+            }
+        }
+
+
+    //endregion
 
     //region:: User  Action (Follow, Following, Friend)
     suspend fun subscribeToCurrentUserData(userId: String) = callbackFlow<User?> {
@@ -549,30 +684,32 @@ object UserManager {
         val followedData = FriendCircleData(followedId, timeStamp)
         val myData = FriendCircleData(userId, timeStamp)
 
-        val notificationId=Helper.getNotificationId()
-        val timeInText=Helper.formatTimestampToDateAndTime(timeStamp)
-        val notificationData=NotificationData(
+        val notificationId = Helper.getNotificationId()
+        val timeInText = Helper.formatTimestampToDateAndTime(timeStamp)
+        val notificationData = NotificationData(
             notificationId = notificationId,
             friendOrFollowerId = userId,
             notificationTimeInText = timeInText,
             notificationTimeInTimeStamp = timeStamp.toString(),
-            type = Constants.NotificationType.NEW_FOLLOWER
+            type = Constants.NotificationType.NEW_FOLLOWER.name
         )
 
         val myUserRef =
             userRef.document(userId).collection(Constants.Table.Following.name).document(followedId)
         val followedRef =
             userRef.document(followedId).collection(Constants.Table.Follower.name).document(userId)
-        val notificationRef= userRef.document(followedId).collection(Constants.Table.Notification.name).document(notificationId)
+        val notificationRef =
+            userRef.document(followedId).collection(Constants.Table.Notification.name)
+                .document(notificationId)
 
         firestore.runBatch { batch ->
             batch.set(myUserRef, followedData)
             batch.set(followedRef, myData)
-            batch.set(notificationRef,notificationData)
+            batch.set(notificationRef, notificationData)
         }.addOnSuccessListener {
             launch {
                 userRef.document(followedId).get().await().toObject<User>()?.fcmToken?.let {
-                    NotificationSendingManager.sendNewFollowerNotification(it,notificationData)
+                    NotificationSendingManager.sendNewFollowerNotification(it, notificationData)
                 }
             }
 
@@ -592,14 +729,14 @@ object UserManager {
         val friendData = FriendCircleData(friendId, timeStamp)
         val myData = FriendCircleData(userId, timeStamp)
 
-        val notificationId=Helper.getNotificationId()
-        val timeInText=Helper.formatTimestampToDateAndTime(timeStamp)
-        val notificationData=NotificationData(
+        val notificationId = Helper.getNotificationId()
+        val timeInText = Helper.formatTimestampToDateAndTime(timeStamp)
+        val notificationData = NotificationData(
             notificationId = notificationId,
             friendOrFollowerId = userId,
             notificationTimeInText = timeInText,
             notificationTimeInTimeStamp = timeStamp.toString(),
-            type = Constants.NotificationType.FRIEND_REQUEST_COME
+            type = Constants.NotificationType.FRIEND_REQUEST_COME.name
         )
 
         val myUserRef =
@@ -608,13 +745,20 @@ object UserManager {
         val friendRef =
             userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
                 .document(userId)
-        val notificationRef= userRef.document(friendId).collection(Constants.Table.Notification.name).document(notificationId)
+        val notificationRef =
+            userRef.document(friendId).collection(Constants.Table.Notification.name)
+                .document(notificationId)
 
         firestore.runBatch { batch ->
             batch.set(myUserRef, friendData)
             batch.set(friendRef, myData)
-            batch.set(notificationRef,notificationData)
+            batch.set(notificationRef, notificationData)
         }.addOnSuccessListener {
+            launch {
+                userRef.document(friendId).get().await().toObject<User>()?.fcmToken?.let {
+                    NotificationSendingManager.sendNewFollowerNotification(it, notificationData)
+                }
+            }
             trySend(UpdateResponse(true, ""))
         }.addOnFailureListener {
             trySend(UpdateResponse(false, it.message))
@@ -656,14 +800,14 @@ object UserManager {
             val timeStamp = System.currentTimeMillis()
             val friendData = FriendCircleData(friendId, timeStamp)
             val myData = FriendCircleData(userId, timeStamp)
-            val notificationId=Helper.getNotificationId()
-            val timeInText=Helper.formatTimestampToDateAndTime(timeStamp)
-            val notificationData=NotificationData(
+            val notificationId = Helper.getNotificationId()
+            val timeInText = Helper.formatTimestampToDateAndTime(timeStamp)
+            val notificationData = NotificationData(
                 notificationId = notificationId,
                 friendOrFollowerId = userId,
                 notificationTimeInText = timeInText,
                 notificationTimeInTimeStamp = timeStamp.toString(),
-                type = Constants.NotificationType.ACCEPT_FRIEND_REQUEST
+                type = Constants.NotificationType.ACCEPT_FRIEND_REQUEST.name
             )
 
             val myPendingRef =
@@ -676,15 +820,22 @@ object UserManager {
                 userRef.document(userId).collection(Constants.Table.Friend.name).document(friendId)
             val friendFriendRef =
                 userRef.document(friendId).collection(Constants.Table.Friend.name).document(userId)
-            val notificationRef= userRef.document(friendId).collection(Constants.Table.Notification.name).document(notificationId)
+            val notificationRef =
+                userRef.document(friendId).collection(Constants.Table.Notification.name)
+                    .document(notificationId)
 
             firestore.runBatch { batch ->
                 batch.delete(myPendingRef)
                 batch.delete(friendRequestRef)
                 batch.set(myUserFriendRef, friendData)
                 batch.set(friendFriendRef, myData)
-                batch.set(notificationRef,notificationData)
+                batch.set(notificationRef, notificationData)
             }.addOnSuccessListener {
+                launch {
+                    userRef.document(friendId).get().await().toObject<User>()?.fcmToken?.let {
+                        NotificationSendingManager.sendNewFollowerNotification(it, notificationData)
+                    }
+                }
                 trySend(UpdateResponse(true, ""))
             }.addOnFailureListener {
                 trySend(UpdateResponse(false, it.message))
@@ -698,7 +849,8 @@ object UserManager {
 
     suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String) =
         callbackFlow<UserRelationshipStatus> {
-            val isFollowing = isUserInCollection(currentUserId, targetUserId, "Following")
+            val isFollowing =
+                isUserInCollection(currentUserId, targetUserId, Constants.Table.Following.name)
             val friendStatus = getFriendStatus(currentUserId, targetUserId)
             trySend(UserRelationshipStatus(isFollowing, friendStatus))
             awaitClose {

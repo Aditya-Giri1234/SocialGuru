@@ -248,8 +248,8 @@ class FollowingFragment : Fragment() ,AlertDialogOption {
         }
     }
 
-    private fun removeFollower(userId: String) {
-        followingViewModel.removeFollower(userId)
+    private fun unFollow(userId: String) {
+        followingViewModel.unFollow(userId)
     }
 
     private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
@@ -287,7 +287,7 @@ class FollowingFragment : Fragment() ,AlertDialogOption {
     override fun onResult(isYes: Boolean) {
         if (isYes) {
             removeUserId?.let {
-                removeFollower(it)
+                unFollow(it)
             }
         }
     }

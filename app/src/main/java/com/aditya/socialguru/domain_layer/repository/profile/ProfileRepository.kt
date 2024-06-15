@@ -34,4 +34,7 @@ class ProfileRepository {
     suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String)=
         FirebaseManager.getUserRelationshipStatus(currentUserId, targetUserId)
 
+    fun listenUserRelationStatus(friendId: String)=FirebaseManager.listenUserRelationStatus(friendId)
+
+
 }

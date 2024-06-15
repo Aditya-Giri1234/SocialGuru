@@ -110,7 +110,6 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                     when (response) {
                         is Resource.Success -> {
                             hideDialog()
-                            binding.btnFollow.setFollowingBackground()
                             showSnackBar("Successfully Following !", true)
                         }
 
@@ -129,7 +128,6 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                     when (response) {
                         is Resource.Success -> {
                             hideDialog()
-                            binding.btnFollow.setFollowBackground()
                             showSnackBar("UnFollow Successfully!", true)
                         }
 
@@ -149,7 +147,6 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                     when (response) {
                         is Resource.Success -> {
                             hideDialog()
-                            binding.btnFriend.setFriendRequestPendingBackground()
                             showSnackBar("Successfully  Friend Request Sent !", true)
 
                         }
@@ -170,7 +167,6 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                     when (response) {
                         is Resource.Success -> {
                             hideDialog()
-                            binding.btnFriend.setAlreadyFriendBackground()
                             showSnackBar("Friend Request Accepted !", true)
 
                         }
@@ -191,7 +187,6 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                     when (response) {
                         is Resource.Success -> {
                             hideDialog()
-                            binding.btnFriend.setSendFriendRequestBackground()
                             showSnackBar(" Friend Request deleted  successfully !", true)
                         }
 
@@ -227,13 +222,28 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                     }
 
                 }.launchIn(this)
+                profileViewModel.userRelationshipStatusUpdate.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            response.data?.let {
+                                profileViewModel.getUserRelationshipStatus(userId!!)
+                            }
+                        }
+
+                        is Resource.Loading -> {
+                        }
+
+                        is Resource.Error -> {
+                        }
+                    }
+
+                }.launchIn(this)
 
                 profileViewModel.removeFriend.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
                             hideDialog()
                             showSnackBar("Removed Successfully !", true)
-                            binding.btnFriend.setSendFriendRequestBackground()
                         }
 
                         is Resource.Loading -> {
@@ -365,6 +375,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     private fun getData() {
         userId?.let {
             profileViewModel.getUser(it)
+            profileViewModel.listenUserRelationStatus(it)
         }
     }
 

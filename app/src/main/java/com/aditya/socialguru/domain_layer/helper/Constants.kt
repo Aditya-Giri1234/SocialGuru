@@ -190,6 +190,11 @@ object Constants {
         High("high")
     }
 
+    //For Json Handling
+    enum class DataSource {
+        FCM
+    }
+
     // LogLevel
     enum class LogLevel {
         Error,
