@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
@@ -30,7 +31,7 @@ class AuthViewModel(val app: Application) : AndroidViewModel(app) {
     private val repositoryImpl = AuthRepositoryImpl()
 
 
-    fun createUser(user: User) = viewModelScope.launch {
+    fun createUser(user: User) = viewModelScope.myLaunch {
         _signUpStatus.value = Resource.Loading()
         if (SoftwareManager.isNetworkAvailable(app)) {
             MyLogger.v(tagLogin, msg = "Internet Available !")
@@ -67,7 +68,7 @@ class AuthViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun loginUser(email: String, password: String) = viewModelScope.launch {
+    fun loginUser(email: String, password: String) = viewModelScope.myLaunch {
         _loginStatus.value = Resource.Loading()
         if (SoftwareManager.isNetworkAvailable(app)) {
             MyLogger.v(tagLogin, msg = "Internet available !")

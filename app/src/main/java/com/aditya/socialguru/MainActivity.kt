@@ -2,7 +2,10 @@ package com.aditya.socialguru
 
 import android.animation.Animator
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Color
 import android.os.Bundle
 import android.view.ViewGroup
@@ -11,46 +14,47 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.get
 import androidx.core.view.isGone
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.NavDirections
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.fragment.findNavController
+import androidx.navigation.ui.setupWithNavController
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.databinding.ActivityMainBinding
-import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Constants.IntentTable
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
-import com.aditya.socialguru.domain_layer.helper.setupWithNavController
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
-import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import com.aditya.socialguru.ui_layer.viewmodel.MainViewModel
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import org.apache.http.auth.AUTH
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-    var navController: LiveData<NavController>? = null
+    lateinit var navController: NavController
 
 
     private var bottomMargin: Int = 0
@@ -59,6 +63,22 @@ class MainActivity : AppCompatActivity() {
     private val mainViewModel by viewModels<MainViewModel>()
     private val pref by lazy {
         SharePref(this@MainActivity)
+    }
+
+    private val broadcastReceiver= object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when(intent?.action){
+                Constants.AppBroadCast.LogIn.name->{
+                    MyLogger.i(msg = "User login event come !")
+                    mainViewModel.setDataLoadedStatus(false)
+                    getData()
+                }
+                Constants.AppBroadCast.LogOut.name->{
+                    MyLogger.i(msg = "User logout event come !")
+                }
+            }
+        }
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,61 +108,70 @@ class MainActivity : AppCompatActivity() {
 
         MyLogger.v(isFunctionCall = true)
         handleInitialization()
+        subscribeToBroadcast()
+    }
 
+    private fun subscribeToBroadcast() {
+        val intentFilter=IntentFilter()
+        intentFilter.addAction(Constants.AppBroadCast.LogIn.name)
+        intentFilter.addAction(Constants.AppBroadCast.LogOut.name)
 
+        ContextCompat.registerReceiver(this,broadcastReceiver,intentFilter,ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
     private fun handleInitialization() {
         initUi()
         subscribeToObserver()
         subscribeToDestinationChanges()
-        if (!mainViewModel.isDataLoaded){
-            getFCMToken()
-            getData()
-            mainViewModel.setDataLoadedStatus(true)
-        }
+        getData()
     }
 
     private fun subscribeToObserver() {
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED){
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
                 AppBroadcastHelper.mainActivityBottomNavHideByScroll.onEach {
-                    if(it){
+                    if (it) {
                         hideBottomNavigationFotScrollEffect()
-                    }else{
+                    } else {
                         showBottomNavigationFotScrollEffect()
                     }
                 }.launchIn(this)
-                mainViewModel.user.onEach {response->
-                    when(response){
-                        is Resource.Success ->{
+                mainViewModel.user.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
                             response.data?.let {
                                 pref.setPrefUser(it)
                                 setUpFirebaseCrashlytics()
                                 MyLogger.i(msg = it, isJson = true)
                             }
                         }
-                        is Resource.Loading ->{
+
+                        is Resource.Loading -> {
 
                         }
+
                         is Resource.Error -> {
-                            Helper.showSnackBar(binding.coordLayout,response.message.toString())
+                            Helper.showSnackBar(binding.coordLayout, response.message.toString())
                         }
                     }
                 }.launchIn(this)
 
-                mainViewModel.fcmToken.onEach {response->
-                    when(response){
-                        is Resource.Success ->{
-                            MyLogger.i(Constants.LogTag.FCMToken ,msg="Fcm response come !")
-                           Helper.customToast(this@MainActivity ,"Fcm Token Send Successfully !" ,
-                               Toast.LENGTH_SHORT)
+                mainViewModel.fcmToken.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            MyLogger.i(Constants.LogTag.FCMToken, msg = "Fcm response come !")
+                            Helper.customToast(
+                                this@MainActivity, "Fcm Token Send Successfully !",
+                                Toast.LENGTH_SHORT
+                            )
                         }
-                        is Resource.Loading ->{
+
+                        is Resource.Loading -> {
 
                         }
+
                         is Resource.Error -> {
-                            Helper.showSnackBar(binding.coordLayout,response.message.toString())
+                            Helper.showSnackBar(binding.coordLayout, response.message.toString())
                         }
                     }
                 }.launchIn(this)
@@ -154,27 +183,23 @@ class MainActivity : AppCompatActivity() {
     private fun subscribeToDestinationChanges() {
         MyLogger.v(isFunctionCall = true)
         lifecycleScope.launch {
-            navController?.observe(this@MainActivity) {
-                MyLogger.v(msg = "Nav Controller is change ${it.currentDestination}")
-                it.addOnDestinationChangedListener { controller, destination, arguments ->
-                    val bottomBarDestination = setOf(
-                        R.id.homeFragment,
-                        R.id.recentChatFragment,
-                        R.id.notificationFragment,
-                        R.id.profileFragment
-                    )
-                    MyLogger.d(msg = "Destination is change occurred :- ${destination.label}")
-                    if (bottomBarDestination.contains(destination.id)) {
-                        showBottomNavigation()
+            navController.addOnDestinationChangedListener { controller, destination, arguments ->
+                val bottomBarDestination = setOf(
+                    R.id.homeFragment,
+                    R.id.recentChatFragment,
+                    R.id.notificationFragment,
+                    R.id.profileFragment
+                )
+                MyLogger.d(msg = "Destination is change occurred :- ${destination.label}")
+                if (bottomBarDestination.contains(destination.id)) {
+                    showBottomNavigation()
 
-                    } else {
-                        val param =
-                            (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
-                        param.setMargins(0, 0, 0, 0)
-                        binding.localNavHostFragment.layoutParams = param
-                        hideBottomNavigation()
-                    }
-
+                } else {
+                    val param =
+                        (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
+                    param.setMargins(0, 0, 0, 0)
+                    binding.localNavHostFragment.layoutParams = param
+                    hideBottomNavigation()
                 }
             }
         }
@@ -183,30 +208,15 @@ class MainActivity : AppCompatActivity() {
     private fun initUi() {
         MyLogger.v(isFunctionCall = true)
         binding.apply {
+            navController =
+                (supportFragmentManager.findFragmentById(R.id.localNavHostFragment) as NavHostFragment).findNavController()
+            MyLogger.v(msg = "Navcontroller :- ${navController}")
             bottomNavigationView.menu[2].isEnabled = false
+            bottomNavigationView.setupWithNavController(navController)
             setListener()
         }
-        setUpBottomNav()
     }
 
-
-
-    private fun setUpBottomNav() {
-        MyLogger.v(isFunctionCall = true)
-        binding.apply {
-            val graphIds = listOf(
-                R.navigation.home_fragment_bar,
-                R.navigation.rescent_chat_fragment_bar,
-                R.navigation.notification_fragment_bar,
-                R.navigation.profile_fragment_bar
-            )
-            val controller = bottomNavigationView.setupWithNavController(
-                graphIds, supportFragmentManager, R.id.localNavHostFragment, intent
-            )
-            MyLogger.i(msg = "Nav Controller is now set !")
-            navController = controller
-        }
-    }
 
     private fun ActivityMainBinding.setListener() {
         //Just avoid extra padding in bottom app bar
@@ -221,21 +231,13 @@ class MainActivity : AppCompatActivity() {
         }
         fab.setOnClickListener {
 
-            Intent(this@MainActivity, ContainerActivity::class.java).apply {
-                putExtra(
-                    IntentTable.FragmentNavigation.name,
-                    Constants.FragmentNavigation.AddPostFragment.name
-                )
-                startActivity(this)
-                overridePendingTransition(
-                    R.anim.slide_in_top,
-                    R.anim.slide_out_top
-                )
+            navController.currentDestination?.let {
+                navController.safeNavigate(it.id,R.id.addPostFragment ,Helper.giveUpAndBottomAnimationNavOption())
             }
         }
     }
 
-    private fun showBottomNavigationFotScrollEffect(){
+    private fun showBottomNavigationFotScrollEffect() {
         binding.apply {
             val param =
                 (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
@@ -245,7 +247,8 @@ class MainActivity : AppCompatActivity() {
             fab.show()
         }
     }
-    private fun hideBottomNavigationFotScrollEffect(){
+
+    private fun hideBottomNavigationFotScrollEffect() {
         binding.apply {
             val param =
                 (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
@@ -255,6 +258,7 @@ class MainActivity : AppCompatActivity() {
             bottomApp.gone()
         }
     }
+
     private fun hideBottomNavigation() {
         binding.bottomApp.animate().apply {
             duration = 300
@@ -311,7 +315,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setUpFirebaseCrashlytics() {
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             FirebaseCrashlytics.getInstance().apply {
                 pref.getPrefUser().first()?.let {
                     setCustomKey("NAME", it.userName.toString())
@@ -321,13 +325,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun getData() {
-        mainViewModel.getUser()
+        if (AuthManager.currentUserId()!=null) {
+            if (!mainViewModel.isDataLoaded) {
+                getFCMToken()
+                mainViewModel.getUser()
+                mainViewModel.setDataLoadedStatus(true)
+            }
+        }
     }
 
     private fun getFCMToken() {
         MyLogger.v(Constants.LogTag.FCMToken, isFunctionCall = true)
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             FCMTokenManager.generateFcmTokenByBackOfAlgo(this@MainActivity, 1) { token ->
                 mainViewModel.setFcmToken(token)
             }
@@ -347,21 +358,33 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        return navController?.value?.navigateUp() ?: super.onSupportNavigateUp()
+        return navController.navigateUp()
     }
 
+    @Deprecated("Deprecated in Java")
+    @SuppressLint("MissingSuperCall")
     override fun onBackPressed() {
-        if (binding.bottomApp.isGone){
-            navController?.value?.popBackStack()
-        }else{
-           super.onBackPressed()
+        //These is for when add post fragment show bottom to up that time when it end need show top to bottom animation
+
+        //For getting exact back stack entry count we need child fragment manager not supportFragment manager
+        //Reason our fragment switch under nav host fragment , so we need nav host fragment means we need childFragment manager
+        val navHostFragment=supportFragmentManager.fragments.first()
+        MyLogger.w(msg = "Back pressed , current entry is ${navHostFragment.childFragmentManager.backStackEntryCount}")
+        when{
+            navHostFragment.childFragmentManager.backStackEntryCount==0->{
+                MyLogger.w(msg = "back stack entry is 0 but this is not top bottom animation fragment !")
+                finish()
+            }
+            else->{
+                MyLogger.w(msg = "Normal back stack removal !")
+                navController.popBackStack()
+            }
         }
     }
 
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        MyLogger.v(isFunctionCall = true)
-        setUpBottomNav()
+    override fun onDestroy() {
+        unregisterReceiver(broadcastReceiver)
+        super.onDestroy()
     }
+
 }

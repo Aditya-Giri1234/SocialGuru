@@ -37,6 +37,7 @@ import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
 import com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.HomeFragmentDirections
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeDiscoverPostFragment
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeFollowingPostFragment
+import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.profile.MyPostViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -98,7 +99,7 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
 
     private fun subscribeToObservation() {
         MyLogger.v(isFunctionCall = true)
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 myPostViewModel.myPost.onEach { response ->
                     when (response) {
@@ -189,7 +190,7 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
 
     private fun getData() {
         MyLogger.v(isFunctionCall = true)
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             pref.getPrefUser().first()?.let { user ->
                 MyLogger.v(tagProfile, msg = user, isJson = true)
                 user.userId?.let {
@@ -253,9 +254,8 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
     //endregion
 
     private fun navigateToDetailPostScreen(postId: String) {
-        val directions: NavDirections =
-            HomeFragmentDirections.actionHomeFragmentToDetailPostFragment(postId)
-        navController?.value?.safeNavigate(directions, Helper.giveAnimationNavOption())
+        navController.safeNavigate(R.id.myActivityFragment , R.id.detailPostFragment2, Helper.giveAnimationNavOption() ,
+            DetailPostFragmentArgs(postId).toBundle())
     }
 
 

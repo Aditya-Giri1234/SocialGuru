@@ -9,7 +9,7 @@
     app:cardBackgroundColor="@android:color/transparent"
     android:elevation="@dimen/_4sdp"
     app:cardElevation="@dimen/_4sdp"
-    android:layout_marginVertical="@dimen/_10sdp">
+    android:layout_marginTop="@dimen/_10sdp">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -3,6 +3,7 @@ package com.aditya.socialguru.domain_layer.service.firebase_service
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
+import com.aditya.socialguru.data_layer.model.notification.UserNotificationModel
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
@@ -60,6 +61,9 @@ object UserManager {
 
     private var friendRequestListListener: ListenerRegistration? = null
     private var isFirstTimeFriendRequestListListener = true
+
+    private var myNotificationListener: ListenerRegistration? = null
+    private var isFirstTimeMyNotificationListener = true
 
     private val userRelationListeners = mutableListOf<ListenerRegistration>()
     private var isFirstTimeUserStatusUpdateListListener = true
@@ -226,6 +230,140 @@ object UserManager {
         }
     }
 
+
+    //region:: Notification Related work here
+
+    suspend fun getMyNotificationAndListen() =
+        callbackFlow<ListenerEmissionType<UserNotificationModel, UserNotificationModel>> {
+
+            val notificationQuery = userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.Notification.name)
+
+            val notificationList = notificationQuery.get().await().toObjects<NotificationData>()
+
+            val userNotificationList =
+                notificationList.filter { it.friendOrFollowerId != null }.mapNotNull {
+                    getUserById(it.friendOrFollowerId!!)?.run {
+                        UserNotificationModel(this, it)
+                    }
+
+                }.toMutableList()
+
+            trySend(
+                ListenerEmissionType(
+                    Constants.ListenerEmitType.Starting,
+                    responseList = userNotificationList.toList()
+                )
+            )
+
+            userNotificationList.clear()
+            myNotificationListener?.remove()
+            myNotificationListener = notificationQuery.addSnapshotListener { value, error ->
+                if (error != null) return@addSnapshotListener
+
+                if (isFirstTimeMyNotificationListener) {
+                    isFirstTimeMyNotificationListener = false
+                    return@addSnapshotListener
+                }
+                value?.documentChanges?.forEach {
+                    when (it.type) {
+                        DocumentChange.Type.ADDED -> {
+                            launch {
+                                val notificationData = it.document.toObject<NotificationData>()
+                                getUserById(notificationData.friendOrFollowerId!!)?.let {
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Added,
+                                            singleResponse = UserNotificationModel(
+                                                it,
+                                                notificationData
+                                            )
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
+                        DocumentChange.Type.REMOVED -> {
+                            launch {
+                                val notificationData = it.document.toObject<NotificationData>()
+                                getUserById(notificationData.friendOrFollowerId!!)?.let {
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Removed,
+                                            singleResponse = UserNotificationModel(
+                                                it,
+                                                notificationData
+                                            )
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
+                        DocumentChange.Type.MODIFIED -> {}
+                    }
+                }
+            }
+
+
+
+            // Remember this callback listen in viewmodel scope means until viewmodel destroyed below part not called.
+            awaitClose {
+                MyLogger.w(Constants.LogTag.Notification ,msg="isFirstTimeMyNotificationListener reset ! ")
+                isFirstTimeMyNotificationListener = true
+                myNotificationListener?.remove()
+                close()
+            }
+        }
+
+    suspend fun deleteSingleNotification(notificationId: String) = callbackFlow<UpdateResponse> {
+        userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.Notification.name).document(notificationId).delete()
+            .addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun deleteAllNotification() = callbackFlow<UpdateResponse> {
+
+        val notificationRef = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.Notification.name)
+
+        try {
+            // Get all documents in the Notification collection
+            val querySnapshot = notificationRef.get().await()
+            val batch = firestore.batch()
+
+            // Add delete operations to the batch
+            for (document in querySnapshot.documents) {
+                batch.delete(document.reference)
+            }
+
+            // Commit the batch
+            batch.commit().addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+
+        } catch (e: Exception) {
+            trySend(UpdateResponse(false, e.message))
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
+
+
     //region:: Listen user relation
 
     fun listenUserRelationStatus(friendId: String) = callbackFlow<UpdateResponse> {
@@ -285,10 +423,11 @@ object UserManager {
     fun listenFriendRequestComeEvent() =
         callbackFlow<ListenerEmissionType<FriendCircleData, FriendCircleData>> {
 
-            val friendRequestRef= userRef.document(AuthManager.currentUserId()!!).collection(Constants.Table.FriendRequest.name)
-            var friendRequestList=friendRequestRef.get().await().toObjects<FriendCircleData>()
+            val friendRequestRef = userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.FriendRequest.name)
+            var friendRequestList = friendRequestRef.get().await().toObjects<FriendCircleData>()
 
-            friendRequestList=friendRequestList.map {
+            friendRequestList = friendRequestList.map {
                 it.copy(
                     user = it.userId?.let { it1 -> getUserById(it1) }
                 )
@@ -303,7 +442,7 @@ object UserManager {
 
             friendRequestList.clear()
             friendRequestListListener?.remove()
-            friendRequestListListener =friendRequestRef.addSnapshotListener { value, error ->
+            friendRequestListListener = friendRequestRef.addSnapshotListener { value, error ->
 
                 if (error != null) return@addSnapshotListener
 
@@ -346,7 +485,7 @@ object UserManager {
             }
 
             awaitClose {
-                isFirstTimeFriendRequestListListener=true
+                isFirstTimeFriendRequestListListener = true
                 friendRequestListListener?.remove()
                 close()
             }
@@ -773,12 +912,12 @@ object UserManager {
     suspend fun deleteFriendRequest(userId: String, friendId: String) =
         callbackFlow<UpdateResponse> {
 
-            val myUserRef =
-                userRef.document(userId).collection(Constants.Table.PendingRequest.name)
-                    .document(friendId)
             val friendRef =
-                userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
+                userRef.document(friendId).collection(Constants.Table.PendingRequest.name)
                     .document(userId)
+            val  myUserRef=
+                userRef.document(userId).collection(Constants.Table.FriendRequest.name)
+                    .document(friendId)
 
             firestore.runBatch { batch ->
                 batch.delete(myUserRef)

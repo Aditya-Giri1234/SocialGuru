@@ -9,6 +9,7 @@ import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.profile.friend_circle.FriendRepository
@@ -91,7 +92,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
 
     //region:: Follower Operation
 
-    fun getFollowerAndListenChangeEvent() = viewModelScope.launch {
+    fun getFollowerAndListenChangeEvent() = viewModelScope.myLaunch{
         _followerList.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -158,7 +159,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
         return Resource.Success(followerList.toList())
     }
 
-    fun removeFollower(userId: String) = viewModelScope.launch {
+    fun removeFollower(userId: String) = viewModelScope.myLaunch{
         _removeFollower.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -185,7 +186,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
     //endregion
 
     //region:: Following Operation
-    fun getFollowingListAndListenChange() = viewModelScope.launch {
+    fun getFollowingListAndListenChange() = viewModelScope.myLaunch{
         _followingList.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -252,7 +253,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
         return Resource.Success(followingList.toList())
     }
 
-    fun unFollow(userId: String) = viewModelScope.launch {
+    fun unFollow(userId: String) = viewModelScope.myLaunch{
         _unFollow.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -278,7 +279,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
     //endregion
 
     //region:: Friend Operation
-    fun getFriendListAndListenChange() = viewModelScope.launch {
+    fun getFriendListAndListenChange() = viewModelScope.myLaunch{
         _friendList.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -345,7 +346,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
         return Resource.Success(friendList.toList())
     }
 
-    fun removeFriend(userId: String) = viewModelScope.launch {
+    fun removeFriend(userId: String) = viewModelScope.myLaunch{
         _removeFriend.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -373,7 +374,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
 
     //region:: Friend request operation
 
-    fun getAndListenFriendRequestComeEvent() = viewModelScope.launch {
+    fun getAndListenFriendRequestComeEvent() = viewModelScope.myLaunch{
         _friendRequestList.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -438,7 +439,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
 
         return Resource.Success(friendRequestList.toList())
     }
-    fun acceptFriendRequest(followedId: String) = viewModelScope.launch {
+    fun acceptFriendRequest(followedId: String) = viewModelScope.myLaunch{
         _acceptFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -457,7 +458,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun deleteFriendRequest(followedId: String) = viewModelScope.launch {
+    fun deleteFriendRequest(followedId: String) = viewModelScope.myLaunch{
         _deleteFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {

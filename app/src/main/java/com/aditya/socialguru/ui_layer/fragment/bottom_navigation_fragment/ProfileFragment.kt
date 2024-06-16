@@ -27,19 +27,22 @@ import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.SharePref
-import com.aditya.socialguru.ui_layer.activity.ContainerActivity
+
 import com.aditya.socialguru.ui_layer.viewmodel.profile.ProfileViewModel
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class ProfileFragment : Fragment(), AlertDialogOption {
@@ -94,7 +97,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
 
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 profileViewModel.followerCount.onEach {
                     binding.tvFollowers.text = it.toString()
@@ -143,24 +146,24 @@ class ProfileFragment : Fragment(), AlertDialogOption {
 
     private fun initUI() {
         binding.apply {
-            lifecycleScope.launch {
+            lifecycleScope.myLaunch {
                 pref.getPrefUser().first()?.let { user ->
+                    withContext(Dispatchers.Main){
+                        if (user.userProfileImage != null) {
+                            ivProfile.tag =
+                                imageAvailable  // help to determine that image available not
+                            Glide.with(ivProfile).load(user.userProfileImage)
+                                .placeholder(R.drawable.ic_user).into(ivProfile)
+                        } else {
+                            ivProfile.tag = imageUnAvailable
+                            Glide.with(ivProfile).load(R.drawable.ic_user).into(ivProfile)
+                            ivProfile.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+                        }
 
-                    if (user.userProfileImage != null) {
-                        ivProfile.tag =
-                            imageAvailable  // help to determine that image available not
-                        Glide.with(ivProfile).load(user.userProfileImage)
-                            .placeholder(R.drawable.ic_user).into(ivProfile)
-                    } else {
-                        ivProfile.tag = imageUnAvailable
-                        Glide.with(ivProfile).load(R.drawable.ic_user).into(ivProfile)
-                        ivProfile.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+                        tvUserName.text = user.userName
+                        tvProffesion.text = user.userProfession
+                        tvBio.text = user.userBio
                     }
-
-                    tvUserName.text = user.userName
-                    tvProffesion.text = user.userProfession
-                    tvBio.text = user.userBio
-
                 }
             }
 
@@ -212,14 +215,14 @@ class ProfileFragment : Fragment(), AlertDialogOption {
                 popUp.dismiss()
                 val directions: NavDirections =
                     ProfileFragmentDirections.actionProfileFragmentToFriendCircleFragment()
-                navController?.value?.safeNavigate(directions, Helper.giveAnimationNavOption())
+                navController.safeNavigate(directions, Helper.giveAnimationNavOption())
             }
             linearItemActivity.setSafeOnClickListener {
                 popUp.dismiss()
 
                 val directions: NavDirections =
                     ProfileFragmentDirections.actionProfileFragmentToMyActivityFragment()
-                navController?.value?.safeNavigate(directions, Helper.giveAnimationNavOption())
+                navController.safeNavigate(directions, Helper.giveAnimationNavOption())
 
             }
             linearItemEditProfile.setSafeOnClickListener {
@@ -227,7 +230,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
 
                 val directions: NavDirections =
                     ProfileFragmentDirections.actionProfileFragmentToUpdateProfileFragment2()
-                navController?.value?.navigate(directions, Helper.giveAnimationNavOption())
+                navController.navigate(directions, Helper.giveAnimationNavOption())
             }
             linearItemLogOut.setSafeOnClickListener {
                 popUp.dismiss()
@@ -245,7 +248,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
 
                 val directions: NavDirections =
                     ProfileFragmentDirections.actionProfileFragmentToSettingFragment()
-                navController?.value?.navigate(directions, Helper.giveAnimationNavOption())
+                navController.navigate(directions, Helper.giveAnimationNavOption())
             }
 
         }
@@ -254,7 +257,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
     }
 
     private fun getData() {
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             pref.getPrefUser().first()?.let {
                 it.userId?.apply {
                     profileViewModel.subscribeToFollowerCount(this)
@@ -267,14 +270,9 @@ class ProfileFragment : Fragment(), AlertDialogOption {
     }
 
     private fun navigateToOnboardingScreen() {
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             delay(100)
-            startActivity(Intent(requireActivity(), ContainerActivity::class.java))
-            requireActivity().overridePendingTransition(
-                R.anim.slide_in_right,
-                R.anim.slide_out_left
-            )
-            requireActivity().finish()
+            navController.safeNavigate(R.id.profileFragment,R.id.onboardingScreenFragment,Helper.giveAnimationNavOption(R.id.homeFragment,true))
         }
     }
 

@@ -2,12 +2,15 @@ package com.aditya.socialguru.ui_layer.fragment.intro_part
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -21,7 +24,6 @@ import com.aditya.socialguru.domain_layer.helper.removeErrorOnTextChanged
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.service.SharePref
-import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import com.aditya.socialguru.ui_layer.viewmodel.AuthViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
@@ -34,7 +36,7 @@ class SignInFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val authViewModel: AuthViewModel by viewModels()
-    private val navController get() = (requireActivity() as ContainerActivity).navController
+    private val navController get() = (requireActivity() as MainActivity).navController
     private val pref by lazy {
         SharePref(requireContext())
     }
@@ -67,14 +69,14 @@ class SignInFragment : Fragment() {
     }
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             authViewModel.loginStatus.collect {
                 it?.let {
                     when (it) {
                         is Resource.Success -> {
                             Helper.hideLoader()
                             Helper.showSuccessSnackBar(
-                                (requireActivity() as ContainerActivity).findViewById(
+                                (requireActivity() as MainActivity).findViewById(
                                     R.id.coordLayout
                                 ), "Login Successful !"
                             )
@@ -82,16 +84,11 @@ class SignInFragment : Fragment() {
                             it.data?.let { data ->
                                 pref.setPrefUser(data)
                             }
-                            myDelay(200) {
-                                Intent(
-                                    requireActivity(),
-                                    MainActivity::class.java
-                                ).also(::startActivity)
-                                requireActivity().overridePendingTransition(
-                                    R.anim.slide_in_right,R.anim.slide_out_left
-                                )
-                                requireActivity().finish()
-                            }
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                val directions:NavDirections=SignInFragmentDirections.actionSignInFragmentToHomeFragmentBar()
+                                navController.safeNavigate(directions,Helper.giveAnimationNavOption(R.id.signInFragment,true))
+                            },200)
+
                         }
 
                         is Resource.Loading -> {
@@ -101,7 +98,7 @@ class SignInFragment : Fragment() {
                         is Resource.Error -> {
                             Helper.hideLoader()
                             Helper.showSnackBar(
-                                (requireActivity() as ContainerActivity).findViewById(R.id.coordLayout),
+                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
                                 it.message.toString()
                             )
                         }

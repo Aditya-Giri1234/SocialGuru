@@ -16,8 +16,11 @@ import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
+import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.Post
@@ -32,13 +35,13 @@ import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.hideKeyboard
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.service.SharePref
-import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import com.aditya.socialguru.ui_layer.viewmodel.AddPostViewModel
 import com.bumptech.glide.Glide
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -51,6 +54,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 
@@ -76,7 +81,7 @@ class AddPostFragment : Fragment() {
 
     private val addPostViewModel: AddPostViewModel by viewModels()
 
-    private val navController get() = (requireActivity() as ContainerActivity).navController
+    private val navController get() = (requireActivity() as MainActivity).navController
 
     val pickImageMedia =
         registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -110,7 +115,7 @@ class AddPostFragment : Fragment() {
                             msg = "User selected video length is -1 means some error occurred !"
                         )
                         Helper.showSnackBar(
-                            (requireActivity() as ContainerActivity).findViewById(
+                            (requireActivity() as MainActivity).findViewById(
                                 R.id.coordLayout
                             ),
                             "Some error occurred during video fetching  , may be file size to large!"
@@ -123,7 +128,7 @@ class AddPostFragment : Fragment() {
                             msg = "User selected video length is $videoLength and max lenght :- $MAX_VIDEO_SIZE_MB  which exceeded ! "
                         )
                         Helper.showSnackBar(
-                            (requireActivity() as ContainerActivity).findViewById(
+                            (requireActivity() as MainActivity).findViewById(
                                 R.id.coordLayout
                             ), "Video length exceeded , max length is $MAX_VIDEO_SIZE_MB mb !"
                         )
@@ -182,110 +187,110 @@ class AddPostFragment : Fragment() {
     private fun subscribeToObserver() {
 
         viewLifecycleOwner.lifecycleScope.launch {
-
-            binding.etCreatePost.getQueryTextChangeStateFlow().debounce(100).distinctUntilChanged()
-                .flatMapLatest {
-                    if (it.startsWith(" ")) {
+            repeatOnLifecycle(Lifecycle.State.STARTED){
+                binding.etCreatePost.getQueryTextChangeStateFlow().debounce(100).distinctUntilChanged()
+                    .flatMapLatest {
+                        if (it.startsWith(" ")) {
+                            runOnUiThread {
+                                binding.etCreatePost.setText(it.trim())
+                            }
+                        }
+                        flow {
+                            emit(it.trim())
+                        }
+                    }.flowOn(Dispatchers.Default).collect {
                         runOnUiThread {
-                            binding.etCreatePost.setText(it.trim())
+                            addPostViewModel.setText(it)
+                            checkNowPostCanSend()
                         }
                     }
-                    flow {
-                        emit(it.trim())
+
+                //buffer with delay use to delay for upcoming event due to when loader.show call it take some in millisecond the time duration between  loader.show and loader show that time duration between if some event come that event go to buffer for some time which i mention it.
+                AppBroadcastHelper.uploadPost.bufferWithDelay(100).onEach { response ->
+                    MyLogger.i(tagPost, msg = "Post Uploading event come ${response.state}")
+                    val progress = response.progress ?: 0
+                    val message: String? = when (response.state) {
+                        Constants.PostUploadState.VideoUploading -> {
+                            "Video Uploading"
+                        }
+
+                        Constants.PostUploadState.VideoUploaded -> {
+                            "Video Uploaded"
+                        }
+
+                        Constants.PostUploadState.ImageUploading -> {
+                            "Image Uploading"
+                        }
+
+                        Constants.PostUploadState.ImageUploaded -> {
+                            "Image Uploaded"
+                        }
+
+                        Constants.PostUploadState.PostUploading -> {
+                            "Post Uploading"
+                        }
+
+                        Constants.PostUploadState.PostUploaded -> {
+                            resetUiScreen()
+                            Helper.showSuccessSnackBar(
+                                (requireActivity() as MainActivity).findViewById(
+                                    R.id.coordLayout
+                                ),
+                                "Post uploaded successfully !"
+                            )
+
+                            null
+                        }
+
+                        Constants.PostUploadState.Error -> {
+                            Helper.showSnackBar(
+                                (requireActivity() as MainActivity).findViewById(
+                                    R.id.coordLayout
+                                ),
+                                response.errorMessage.toString()
+                            )
+                            null
+                        }
                     }
-                }.flowOn(Dispatchers.Default).collect {
-                    runOnUiThread {
-                        addPostViewModel.setText(it)
-                        checkNowPostCanSend()
+                    myLoader.setLoadingStatus(message, progress, message == null)
+
+                }.launchIn(this)
+
+                addPostViewModel.uploadPost.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            response.data?.let {
+                                //Do nothing here
+                            }
+
+                        }
+
+                        is Resource.Loading -> {
+                            MyLogger.v(tagPost, msg = "Post uploading now and now laoder is showing !")
+                            myLoader.show(childFragmentManager, "My_Post_Uploading_Loader")
+                        }
+
+                        is Resource.Error -> {
+                            MyLogger.e(
+                                tagPost,
+                                msg = "Some error occurred during post uploading :- ${response.message.toString()}"
+                            )
+                            myLoader.dismiss()
+                            Helper.showSnackBar(
+                                (requireActivity() as MainActivity).findViewById(
+                                    R.id.coordLayout
+                                ),
+                                response.message.toString()
+                            )
+                        }
                     }
-                }
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            //buffer with delay use to delay for upcoming event due to when loader.show call it take some in millisecond the time duration between  loader.show and loader show that time duration between if some event come that event go to buffer for some time which i mention it.
-            AppBroadcastHelper.uploadPost.bufferWithDelay(100).collect { response ->
-                MyLogger.i(tagPost, msg = "Post Uploading event come ${response.state}")
-                val progress = response.progress ?: 0
-                val message: String? = when (response.state) {
-                    Constants.PostUploadState.VideoUploading -> {
-                        "Video Uploading"
-                    }
-
-                    Constants.PostUploadState.VideoUploaded -> {
-                        "Video Uploaded"
-                    }
-
-                    Constants.PostUploadState.ImageUploading -> {
-                        "Image Uploading"
-                    }
-
-                    Constants.PostUploadState.ImageUploaded -> {
-                        "Image Uploaded"
-                    }
-
-                    Constants.PostUploadState.PostUploading -> {
-                        "Post Uploading"
-                    }
-
-                    Constants.PostUploadState.PostUploaded -> {
-                        resetUiScreen()
-                        Helper.showSuccessSnackBar(
-                            (requireActivity() as ContainerActivity).findViewById(
-                                R.id.coordLayout
-                            ),
-                            "Post uploaded successfully !"
-                        )
-
-                        null
-                    }
-
-                    Constants.PostUploadState.Error -> {
-                        Helper.showSnackBar(
-                            (requireActivity() as ContainerActivity).findViewById(
-                                R.id.coordLayout
-                            ),
-                            response.errorMessage.toString()
-                        )
-                        null
-                    }
-                }
-                myLoader.setLoadingStatus(message, progress, message == null)
-
-            }
-
-
-        }
-
-
-
-        addPostViewModel.uploadPost.observe(viewLifecycleOwner) { response ->
-            when (response) {
-                is Resource.Success -> {
-                    response.data?.let {
-                        //Do nothing here
-                    }
-
-                }
-
-                is Resource.Loading -> {
-                    MyLogger.v(tagPost, msg = "Post uploading now and now laoder is showing !")
-                    myLoader.show(childFragmentManager, "My_Post_Uploading_Loader")
-                }
-
-                is Resource.Error -> {
-                    MyLogger.e(
-                        tagPost,
-                        msg = "Some error occurred during post uploading :- ${response.message.toString()}"
-                    )
-                    myLoader.dismiss()
-                    Helper.showSnackBar(
-                        (requireActivity() as ContainerActivity).findViewById(
-                            R.id.coordLayout
-                        ),
-                        response.message.toString()
-                    )
-                }
+                }.launchIn(this)
             }
         }
+
+
+
+
 
     }
 
@@ -417,7 +422,7 @@ class AddPostFragment : Fragment() {
 
     private fun uploadPost() {
         MyLogger.d(tagPost, msg = "Image uri := ${addPostViewModel.imageUri}  -  Video uri := ${addPostViewModel.videoUri}")
-        viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.myLaunch {
             pref.getPrefUser().first()?.let { user ->
                 val timeStamp = System.currentTimeMillis()
                 val postId = Helper.getPostId()

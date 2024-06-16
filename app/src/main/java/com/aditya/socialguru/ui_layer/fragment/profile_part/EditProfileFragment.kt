@@ -29,6 +29,7 @@ import com.aditya.socialguru.domain_layer.helper.customError
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.hideKeyboard
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.removeErrorOnTextChanged
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -37,10 +38,12 @@ import com.aditya.socialguru.domain_layer.remote_service.profile.ProfilePicEditO
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.ui_layer.viewmodel.profile.EditProfileViewModel
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class EditProfileFragment : Fragment(), ProfilePicEditOption {
@@ -109,7 +112,7 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
     }
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 editProfileViewModel.userUpdateStatus.onEach { response ->
                     when (response) {
@@ -121,7 +124,7 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
                                 ), "Profile Updated !"
                             )
 
-                            navController?.value?.navigateUp()
+                            navController.navigateUp()
                         }
 
                         is Resource.Loading -> {
@@ -149,7 +152,7 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
                 tvHeaderUserName.text = "Edit Profile"
             }
 
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 pref.getPrefUser().first()?.let { user ->
                     user.userProfileImage?.let {
                         ivProfile.tag = imageAvailable
@@ -172,7 +175,7 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
     private fun FragmentUpdateProfileBinding.setListener() {
 
         myToolbar.icBack.setSafeOnClickListener {
-            navController?.value?.navigateUp()
+            navController.navigateUp()
         }
 
         root.setOnTouchListener { v, event ->
@@ -247,27 +250,30 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
     }
 
     private fun saveUser() {
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             pref.getPrefUser().first()?.let { user ->
-                val newData = user.copy(
-                    userName = binding.tiEtName.text.toString(),
-                    userBio = binding.tiEtBio.text.toString(),
-                    userProfession = binding.tiEtProfession.text.toString(),
-                    userProfileImage = if (isProfilePicDeleted()) null else currentImage  // There is put old image reason if image present that is online image and if user delete image it set to null . New image should first store in storage and then get image.
-                )
-                user.userId?.let {
-                    if (isProfilePicDeleted()) {
-                        MyLogger.d(
-                            tagProfile,
-                            msg = "Profile pic is deleted , currentImage:- $currentImage  - newImage:- $newImage"
-                        )
-                        editProfileViewModel.updateProfile(newData, currentImage, newImage)
-                    } else {
-                        MyLogger.d(
-                            tagProfile,
-                            msg = "Profile pic is not deleted , currentImage:- $currentImage  - newImage:- $newImage"
-                        )
-                        editProfileViewModel.updateProfile(newData, newImage = newImage)
+                withContext(Dispatchers.Main){
+                    val newData = user.copy(
+                        userName = binding.tiEtName.text.toString(),
+                        userBio = binding.tiEtBio.text.toString(),
+                        userProfession = binding.tiEtProfession.text.toString(),
+                        userProfileImage = if (isProfilePicDeleted()) null else currentImage  // There is put old image reason if image present that is online image and if user delete image it set to null . New image should first store in storage and then get image.
+                    )
+
+                    user.userId?.let {
+                        if (isProfilePicDeleted()) {
+                            MyLogger.d(
+                                tagProfile,
+                                msg = "Profile pic is deleted , currentImage:- $currentImage  - newImage:- $newImage"
+                            )
+                            editProfileViewModel.updateProfile(newData, currentImage, newImage)
+                        } else {
+                            MyLogger.d(
+                                tagProfile,
+                                msg = "Profile pic is not deleted , currentImage:- $currentImage  - newImage:- $newImage"
+                            )
+                            editProfileViewModel.updateProfile(newData, newImage = newImage)
+                        }
                     }
                 }
             }

@@ -58,7 +58,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="
 bottom"
-                android:visibility="visible"
+                android:visibility="gone"
                 app:backgroundTint="@color/lightBlack"
                 app:fabCradleMargin="@dimen/_8sdp"
                 app:fabCradleRoundedCornerRadius="@dimen/_15sdp"
@@ -82,7 +82,7 @@ bottom"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@drawable/ic_add"
-                android:visibility="visible"
+                android:visibility="gone"
                 app:backgroundTint="#FFE501"
                 app:layout_anchor="@id/bottomApp" />
 

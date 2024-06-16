@@ -20,7 +20,6 @@ import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.domain_layer.helper.Constants
-import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragmentArgs
 import java.util.Random
 
@@ -77,8 +76,8 @@ object MyNotificationManager {
 
         // And one more thing it will recreate give activity and open destination
         val pendingIntent = NavDeepLinkBuilder(context)
-            .setGraph(R.navigation.home_fragment_bar)
-            .setDestination(R.id.profileViewFragment2) // Reference deep link action ID
+            .setGraph(R.navigation.bottom_navigation)
+            .setDestination(R.id.profileViewFragment3) // Reference deep link action ID
             .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
             .setArguments(ProfileViewFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
             .createPendingIntent()
@@ -163,8 +162,8 @@ object MyNotificationManager {
 
         // And one more thing it will recreate give activity and open destination
         val pendingIntent = NavDeepLinkBuilder(context)
-            .setGraph(R.navigation.home_fragment_bar)
-            .setDestination(R.id.profileViewFragment2) // Reference deep link action ID
+            .setGraph(R.navigation.bottom_navigation)
+            .setDestination(R.id.profileViewFragment3) // Reference deep link action ID
             .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
             .setArguments(ProfileViewFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
             .createPendingIntent()
@@ -227,8 +226,8 @@ object MyNotificationManager {
 
         // And one more thing it will recreate give activity and open destination
         val pendingIntent = NavDeepLinkBuilder(context)
-            .setGraph(R.navigation.home_fragment_bar)
-            .setDestination(R.id.profileViewFragment2) // Reference deep link action ID
+            .setGraph(R.navigation.bottom_navigation)
+            .setDestination(R.id.profileViewFragment3) // Reference deep link action ID
             .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
             .setArguments(ProfileViewFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
             .createPendingIntent()

@@ -5,12 +5,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.databinding.FragmentOnboardingScreenBinding
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.aditya.socialguru.ui_layer.activity.ContainerActivity
+
 import com.aditya.socialguru.ui_layer.adapter.OnBoardingPagerAdapter
 import com.aditya.socialguru.ui_layer.fragment.intro_part.onboarding_screen.OnBaordingStoryIntroFragment
 import com.aditya.socialguru.ui_layer.fragment.intro_part.onboarding_screen.OnBoardingAppIntroFragment
@@ -22,7 +23,7 @@ class OnboardingScreenFragment : Fragment() {
     private var _binding: FragmentOnboardingScreenBinding? = null
     private val binding get() = _binding!!
 
-    private val navController get() = (requireActivity() as ContainerActivity).navController
+    private val navController get() = (requireActivity() as MainActivity).navController
 
     private val pagerAdapter: OnBoardingPagerAdapter by lazy {
         OnBoardingPagerAdapter(
@@ -71,7 +72,7 @@ class OnboardingScreenFragment : Fragment() {
 
     private fun FragmentOnboardingScreenBinding.setListener() {
         btnFinished.setOnClickListener {
-            navController?.safeNavigate(
+            navController.safeNavigate(
                 OnboardingScreenFragmentDirections.actionOnboardingScreenFragmentToSignInFragment(),
                 Helper.giveAnimationNavOption(R.id.onboardingScreenFragment,true)
             )

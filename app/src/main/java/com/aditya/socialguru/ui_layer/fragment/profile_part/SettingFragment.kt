@@ -18,7 +18,7 @@ class SettingFragment : Fragment() {
     private var _binding:FragmentSettingBinding?=null
     private val binding get() = _binding!!
 
-    private val navController get() = (requireActivity() as MainActivity).navController?.value
+    private val navController get() = (requireActivity() as MainActivity).navController
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }

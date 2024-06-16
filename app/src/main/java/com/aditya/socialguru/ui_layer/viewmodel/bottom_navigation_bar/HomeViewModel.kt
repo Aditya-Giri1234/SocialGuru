@@ -10,9 +10,11 @@ import com.aditya.socialguru.data_layer.model.story.StoryListenerEmissionType
 import com.aditya.socialguru.data_layer.model.story.StoryText
 import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.HomeRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -50,7 +52,7 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
         uri: Uri? = null,
         text: StoryText? = null,
         user: User
-    ) = viewModelScope.launch {
+    ) = viewModelScope. myLaunch{
         _uploadStories.tryEmit(Resource.Loading())
         MyLogger.v(tagStory, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -70,8 +72,11 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
     //region:: Get all story
 
     @OptIn(FlowPreview::class)
-    suspend fun getAllStory(userId: String) = viewModelScope.launch {
+    suspend fun getAllStory(userId: String) = viewModelScope.myLaunch {
         _userStories.tryEmit(Resource.Loading())
+        viewModelScope.launch {
+
+        }
         MyLogger.v(tagStory, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
             MyLogger.v(tagStory, msg = "Network available !")

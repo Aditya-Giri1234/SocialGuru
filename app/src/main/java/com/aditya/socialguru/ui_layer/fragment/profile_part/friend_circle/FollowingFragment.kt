@@ -102,7 +102,7 @@ class FollowingFragment : Fragment() ,AlertDialogOption {
 
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 followingViewModel.followingList.onEach { response ->
                     when (response) {
@@ -281,7 +281,7 @@ class FollowingFragment : Fragment() ,AlertDialogOption {
 
     private fun navigateToUserDetailsScreen(userId: String) {
         val direction: NavDirections = FriendCircleFragmentDirections.actionFriendCircleFragmentToProfileViewFragment(userId)
-        navController?.value?.safeNavigate(direction, Helper.giveAnimationNavOption())
+        navController.safeNavigate(direction, Helper.giveAnimationNavOption())
     }
 
     override fun onResult(isYes: Boolean) {

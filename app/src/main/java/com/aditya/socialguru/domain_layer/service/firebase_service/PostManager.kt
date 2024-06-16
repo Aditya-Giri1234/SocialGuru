@@ -256,6 +256,7 @@ object PostManager {
 
 
         awaitClose {
+            isFirstTimeMyPostListenerCall = true
             discoverPostListener?.remove()
             channel.close()
         }

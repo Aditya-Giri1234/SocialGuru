@@ -145,10 +145,11 @@ fun NavController.safeNavigate(direction: NavDirections, navOptions: NavOptions)
 fun NavController.safeNavigate(
     @IdRes currentDestinationId: Int,
     @IdRes id: Int,
+    navOptions: NavOptions?=null,
     args: Bundle? = null
 ) {
     if (currentDestinationId == currentDestination?.id) {
-        navigate(id, args)
+        navigate(id,args,navOptions)
     }
 }
 
@@ -339,3 +340,14 @@ fun Context.sspToPx(ssp: Float): Float {
 }
 
 
+
+
+/**
+* This function launch coroutine on IO thread.
+* @param run This function run on IO Thread.
+* */
+fun CoroutineScope.myLaunch(run:suspend CoroutineScope.()->Unit){
+    launch(Dispatchers.IO) {
+        run()
+    }
+}

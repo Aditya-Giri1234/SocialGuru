@@ -22,6 +22,7 @@ import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -51,7 +52,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
     private var isDataLoaded = false
 
-    private val navController get() = (requireActivity() as MainActivity).navController?.value
+    private val navController get() = (requireActivity() as MainActivity).navController
     private val showMyStoryViewModel by viewModels<ShowMyStoryViewModel>()
     private var currentItem = -1
 
@@ -95,7 +96,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             showMyStoryViewModel.myStories.onEach { response ->
                 when (response) {
 
@@ -185,7 +186,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
 
     private fun getData() {
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             pref.getPrefUser().first()?.let {
                 showMyStoryViewModel.getMyStory(it.userId!!)
             }

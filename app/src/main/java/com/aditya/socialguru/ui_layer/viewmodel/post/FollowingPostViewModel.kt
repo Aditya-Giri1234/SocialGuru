@@ -7,6 +7,7 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.PostListenerEmissionType
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.post.FollowingPostRepository
@@ -39,7 +40,7 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     //region:: Get Discover Post
 
-    fun getDiscoverPost() = viewModelScope.launch {
+    fun getDiscoverPost() = viewModelScope.myLaunch {
         _userPost.tryEmit(Resource.Loading())
         MyLogger.v(tagPost, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {

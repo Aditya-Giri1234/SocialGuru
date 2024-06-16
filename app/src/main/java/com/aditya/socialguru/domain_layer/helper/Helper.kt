@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Message
 import android.provider.OpenableColumns
 import android.util.Patterns
 import android.view.View
@@ -12,6 +11,10 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavOptions
 import com.aditya.socialguru.R
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
@@ -21,6 +24,8 @@ import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSnackBar
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSuccessSnackBar
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.google.android.material.snackbar.BaseTransientBottomBar
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.Instant
@@ -40,6 +45,20 @@ object Helper {
         .setExitAnim(R.anim.slide_out_left)
         .setPopEnterAnim(R.anim.slide_in_left)
         .setPopExitAnim(R.anim.slide_out_right)
+        .build()
+    fun giveUpAndBottomAnimationNavOption(): NavOptions = NavOptions.Builder()
+        .setEnterAnim(R.anim.slide_in_top)
+        .setExitAnim(R.anim.slide_out_top)
+        .setPopEnterAnim(R.anim.slide_in_bottom)
+        .setPopExitAnim(R.anim.slide_out_bottom)
+        .build()
+
+    fun giveUpAndBottomAnimationNavOption(popUpTo: Int, isInclusive: Boolean): NavOptions = NavOptions.Builder()
+        .setEnterAnim(R.anim.slide_in_top)
+        .setExitAnim(R.anim.slide_out_top)
+        .setPopEnterAnim(R.anim.slide_in_bottom)
+        .setPopExitAnim(R.anim.slide_out_bottom)
+        .setPopUpTo(popUpTo, isInclusive)
         .build()
 
     fun giveAnimationNavOption(popUpTo: Int, isInclusive: Boolean): NavOptions =
@@ -143,7 +162,7 @@ object Helper {
     }
 
 
-    fun timeDifference(timestampMillis: Long): String {
+    fun getTimeAgo(timestampMillis: Long): String {
         // Convert the timestamp in milliseconds to LocalDateTime
         val pastTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestampMillis), ZoneId.systemDefault())
         val now = LocalDateTime.now()
@@ -171,6 +190,14 @@ object Helper {
 
     fun showFcmNotSendDialog(activity: Activity,message: String){
         AlertDialog(message,null,false).show((activity as AppCompatActivity).supportFragmentManager ,"My_Fcm_Token_Not_Send")
+    }
+
+    fun LifecycleOwner.observeFlow(run:suspend CoroutineScope.()->Unit){
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED){
+                run()
+            }
+        }
     }
 
 }

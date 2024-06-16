@@ -51,7 +51,7 @@ class StoryShowFragment : Fragment() {
     private var currentStatusIndex = 0
     private val tagStory = Constants.LogTag.Story
 
-    private val navController get() = (requireActivity() as MainActivity).navController?.value
+    private val navController get() = (requireActivity() as MainActivity).navController
     private val mediaController: MediaController by lazy {
         MediaController(requireContext())
     }

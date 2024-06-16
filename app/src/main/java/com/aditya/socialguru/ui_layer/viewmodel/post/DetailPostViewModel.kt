@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.post.DetailPostRepository
 import kotlinx.coroutines.channels.BufferOverflow
@@ -29,7 +30,7 @@ class DetailPostViewModel(val app:Application) : AndroidViewModel(app) {
     )
     val postDetail get() = _postDetail.asSharedFlow()
 
-    fun getPostById(postId:String)= viewModelScope.launch {
+    fun getPostById(postId:String)= viewModelScope.myLaunch{
         _postDetail.tryEmit(Resource.Loading())
         if (SoftwareManager.isNetworkAvailable(app)){
             repository.getPostById(postId).onEach {

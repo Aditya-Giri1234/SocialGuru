@@ -91,7 +91,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 profileViewModel.followerCount.onEach {
                     binding.tvFollowers.text = it.toString()
@@ -332,7 +332,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
         }
 
         myToolbar.icBack.setSafeOnClickListener {
-            navController?.value?.navigateUp()
+            navController.navigateUp()
         }
 
         btnFollow.setSafeOnClickListener {

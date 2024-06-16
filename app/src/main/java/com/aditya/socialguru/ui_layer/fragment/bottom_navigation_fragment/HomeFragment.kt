@@ -38,6 +38,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.bufferWithDelay
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -81,7 +82,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     private val pagerAdapter get()=_pagerAdapter!!
 
 
-    private val navController get() = (requireActivity() as MainActivity).navController?.value
+    private val navController get() = (requireActivity() as MainActivity).navController
 
     private val pref by lazy {
         SharePref(requireContext())
@@ -229,7 +230,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 homeViewModel.userStories.onEach { response ->
                     response.let {
@@ -455,7 +456,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     //region:: UI utility function
 
     private fun getData() {
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             pref.getPrefUser().first()?.userId?.let {
                 homeViewModel.getAllStory(it)
             } ?: run {
@@ -532,7 +533,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         text: StoryText? = null
     ) {
 
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             try {
                 pref.getPrefUser().first()?.let {
                     MyLogger.v(tagStory, msg = "User data is retrieved !")
@@ -568,7 +569,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     private fun hideLoader() {
         MyLogger.w(tagStory, isFunctionCall = true)
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             delay(100)
             myLoader?.dismiss()
             myLoader = null

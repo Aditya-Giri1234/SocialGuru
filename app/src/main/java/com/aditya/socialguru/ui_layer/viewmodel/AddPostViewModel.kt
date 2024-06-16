@@ -10,9 +10,13 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.AddModelRepository
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 class AddPostViewModel (val app:Application) : AndroidViewModel(app) {
@@ -28,17 +32,17 @@ class AddPostViewModel (val app:Application) : AndroidViewModel(app) {
     private var _videoUri :Uri?=null
     val videoUri get() = _videoUri
 
-    private val _uploadPost=MutableLiveData<Resource<UpdateResponse>>()
-    val uploadPost:LiveData<Resource<UpdateResponse>> get() = _uploadPost
+    private val _uploadPost=MutableSharedFlow<Resource<UpdateResponse>>(0,64,BufferOverflow.DROP_OLDEST)
+    val uploadPost get() = _uploadPost.asSharedFlow()
 
-    fun uploadPost(post: Post)=viewModelScope.launch {
-        _uploadPost.postValue(Resource.Loading())
+    fun uploadPost(post: Post)=viewModelScope.myLaunch {
+        _uploadPost.tryEmit(Resource.Loading())
         if (SoftwareManager.isNetworkAvailable(app)){
             MyLogger.v(tagPost, msg = "Internet Available !")
               repository.uploadPost(post)
         }else{
             MyLogger.v(tagPost, msg = "Internet Not Available !")
-            _uploadPost.postValue(Resource.Error("No Internet  Available!"))
+            _uploadPost.tryEmit(Resource.Error("No Internet  Available!"))
         }
     }
 

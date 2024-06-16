@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.ShowMyStoryRepo
@@ -43,7 +44,7 @@ class ShowMyStoryViewModel(val app : Application) : AndroidViewModel(app) {
 
     //region::My stories
 
-    fun getMyStory(userId: String) = viewModelScope.launch {
+    fun getMyStory(userId: String) = viewModelScope.myLaunch{
         _myStories.tryEmit(Resource.Loading())
         MyLogger.v(tagStory, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -56,7 +57,7 @@ class ShowMyStoryViewModel(val app : Application) : AndroidViewModel(app) {
         }
     }
 
-     fun deleteStoryById(storyId: String)= viewModelScope.launch {
+     fun deleteStoryById(storyId: String)= viewModelScope.myLaunch{
         _deleteStories.tryEmit(Resource.Loading())
         MyLogger.v(tagStory, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {

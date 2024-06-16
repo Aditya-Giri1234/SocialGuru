@@ -26,7 +26,7 @@ class MyActivityFragment : Fragment() {
     private var _binding:FragmentMyActivityBinding?=null
     private val binding get() = _binding!!
 
-    private val navController get() = (requireActivity() as MainActivity).navController?.value
+    private val navController get() = (requireActivity() as MainActivity).navController
 
     // Don't use lazy it lead to memory leak and not leave old view when fragment switching and come back this view that time thi variable if initialize with lazy that not leave old view and crash app
     private var _pagerAdapter:NormalPagerAdapter?=null

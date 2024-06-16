@@ -3,9 +3,121 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/bottom_navigation_bar"
-    app:startDestination="@id/home_fragment_bar">
+    app:startDestination="@id/splashFragment">
     <include app:graph="@navigation/home_fragment_bar" />
     <include app:graph="@navigation/rescent_chat_fragment_bar" />
     <include app:graph="@navigation/notification_fragment_bar" />
     <include app:graph="@navigation/profile_fragment_bar" />
+
+    <fragment
+        android:id="@+id/onboardingScreenFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.intro_part.OnboardingScreenFragment"
+        android:label="fragment_onboarding_screen"
+        tools:layout="@layout/fragment_onboarding_screen">
+        <action
+            android:id="@+id/action_onboardingScreenFragment_to_signInFragment"
+            app:destination="@id/signInFragment"/>
+        <action
+            android:id="@+id/action_onboardingScreenFragment_to_addPostFragment"
+            app:destination="@id/addPostFragment" />
+        <action
+            android:id="@+id/action_onboardingScreenFragment_to_showImageFragment"
+            app:destination="@id/showImageFragment" />
+        <action
+            android:id="@+id/action_onboardingScreenFragment_to_showVideoFragment"
+            app:destination="@id/showVideoFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/signInFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.intro_part.SignInFragment"
+        android:label="fragment_sign_in"
+        tools:layout="@layout/fragment_sign_in">
+        <action
+            android:id="@+id/action_signInFragment_to_signUpFragment"
+            app:destination="@id/signUpFragment"/>
+        <action
+            android:id="@+id/action_signInFragment_to_home_fragment_bar"
+            app:destination="@id/home_fragment_bar" />
+    </fragment>
+    <fragment
+        android:id="@+id/signUpFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.intro_part.SignUpFragment"
+        android:label="fragment_sign_up"
+        tools:layout="@layout/fragment_sign_up">
+        <action
+            android:id="@+id/action_signUpFragment_to_signInFragment"
+            app:destination="@id/signInFragment"/>
+        <action
+            android:id="@+id/action_signUpFragment_to_home_fragment_bar"
+            app:destination="@id/home_fragment_bar" />
+    </fragment>
+    <fragment
+        android:id="@+id/addPostFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.AddPostFragment"
+        android:label="fragment_add_post"
+        tools:layout="@layout/fragment_add_post" >
+        <action
+            android:id="@+id/action_addPostFragment_to_showImageFragment"
+            app:destination="@id/showImageFragment" />
+        <action
+            android:id="@+id/action_addPostFragment_to_showVideoFragment"
+            app:destination="@id/showVideoFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/showImageFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.helper.ShowImageFragment"
+        android:label="fragment_image_show"
+        tools:layout="@layout/fragment_image_show" >
+        <argument
+            android:name="imageUri"
+            app:argType="android.net.Uri" />
+    </fragment>
+    <fragment
+        android:id="@+id/showVideoFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.helper.ShowVideoFragment"
+        android:label="fragment_show_video"
+        tools:layout="@layout/fragment_show_video" >
+        <argument
+            android:name="videoUri"
+            app:argType="android.net.Uri" />
+    </fragment>
+    <fragment
+        android:id="@+id/profileViewFragment3"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragment"
+        android:label="fragment_profile_view"
+        tools:layout="@layout/fragment_profile_view" >
+        <argument
+            android:name="userId"
+            app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/splashFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.intro_part.SplashFragment"
+        android:label="fragment_splash"
+        tools:layout="@layout/fragment_splash" >
+        <action
+            android:id="@+id/action_splashFragment_to_home_fragment_bar"
+            app:destination="@id/home_fragment_bar" />
+        <action
+            android:id="@+id/action_splashFragment_to_onboardingScreenFragment"
+            app:destination="@id/onboardingScreenFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/detailPostFragment2"
+        android:name="com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragment"
+        android:label="fragment_detail_post"
+        tools:layout="@layout/fragment_detail_post" >
+        <action
+            android:id="@+id/action_detailPostFragment2_to_profileViewFragment3"
+            app:destination="@id/profileViewFragment3" />
+        <argument
+            android:name="postId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_detailPostFragment2_to_showImageFragment"
+            app:destination="@id/showImageFragment" />
+        <action
+            android:id="@+id/action_detailPostFragment2_to_showVideoFragment"
+            app:destination="@id/showVideoFragment" />
+    </fragment>
 </navigation>

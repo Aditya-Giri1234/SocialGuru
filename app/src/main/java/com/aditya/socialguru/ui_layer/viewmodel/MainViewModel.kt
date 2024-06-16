@@ -7,6 +7,7 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.MainRepository
@@ -42,7 +43,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
 
 
 
-    fun getUser() = viewModelScope.launch {
+    fun getUser() = viewModelScope.myLaunch{
         _user.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -70,7 +71,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-      fun setFcmToken(token: String) = viewModelScope.launch {
+      fun setFcmToken(token: String) = viewModelScope.myLaunch{
           _fcmToken.tryEmit(Resource.Loading())
 
           if (SoftwareManager.isNetworkAvailable(app)) {

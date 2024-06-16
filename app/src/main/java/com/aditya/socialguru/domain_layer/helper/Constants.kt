@@ -26,6 +26,12 @@ object Constants {
     const val REQUEST_FRIEND = "RequestFriend"
 
 
+    enum class AppBroadCast{
+        LogIn,
+        LogOut
+    }
+
+
     enum class FragmentNavigation {
         OnBoardingFragment,
         SignInFragment,

@@ -28,8 +28,9 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.aditya.socialguru.ui_layer.activity.ContainerActivity
+
 import com.aditya.socialguru.ui_layer.adapter.post.PostImageVideoAdapter
+import com.aditya.socialguru.ui_layer.fragment.helper.ShowImageFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.post.DetailPostViewModel
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.flow.launchIn
@@ -47,7 +48,7 @@ class DetailPostFragment : Fragment() {
     private var myLoader: MyLoader? = null
     private lateinit var postId: String
     private lateinit var userId:String
-    private val navController get() = (requireActivity() as MainActivity).navController?.value
+    private val navController get() = (requireActivity() as MainActivity).navController
 
     private val detailPostViewModel by viewModels<DetailPostViewModel>()
     private val args by navArgs<DetailPostFragmentArgs>()
@@ -83,7 +84,7 @@ class DetailPostFragment : Fragment() {
     }
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 detailPostViewModel.postDetail.onEach { response ->
 
@@ -128,7 +129,7 @@ class DetailPostFragment : Fragment() {
 
     private fun FragmentDetailPostBinding.setListener() {
         myToolbar.icBack.setSafeOnClickListener {
-            navController?.navigateUp()
+            navController.navigateUp()
         }
 
         ivPostUserImage.setSafeOnClickListener {
@@ -285,32 +286,18 @@ class DetailPostFragment : Fragment() {
     }
 
     private fun navigateToProfileViewScreen() {
-            val directions:NavDirections=DetailPostFragmentDirections.actionDetailPostFragmentToProfileViewFragment2(userId)
-        navController?.safeNavigate(directions,Helper.giveAnimationNavOption())
+            val directions:NavDirections=DetailPostFragmentDirections.actionDetailPostFragment2ToProfileViewFragment3(userId)
+        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
     }
 
     private fun onImageClick(imageUri: Uri) {
-        Intent(requireActivity(),ContainerActivity::class.java).apply {
-            putExtra(Constants.IntentTable.MediaUri.name,imageUri.toString())
-            putExtra(Constants.IntentTable.FragmentNavigation.name,Constants.FragmentNavigation.ImageFragment.name)
-            startActivity(this)
-            requireActivity().overridePendingTransition(
-                R.anim.slide_in_right,
-                R.anim.slide_out_left
-            )
-        }
+        val directions:NavDirections=DetailPostFragmentDirections.actionDetailPostFragment2ToShowImageFragment(imageUri)
+        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
     }
 
     private fun onVideoClick(videoUri: Uri) {
-        Intent(requireActivity(),ContainerActivity::class.java).apply {
-            putExtra(Constants.IntentTable.MediaUri.name,videoUri.toString())
-            putExtra(Constants.IntentTable.FragmentNavigation.name,Constants.FragmentNavigation.VideoFragment.name)
-            startActivity(this)
-            requireActivity().overridePendingTransition(
-                R.anim.slide_in_right,
-                R.anim.slide_out_left
-            )
-        }
+        val directions:NavDirections=DetailPostFragmentDirections.actionDetailPostFragment2ToShowVideoFragment(videoUri)
+        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
     }
 
     private fun showNoDataView() {

@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.Flow
 
 object FirebaseManager {
 
-
     //region:: Auth related work here
 
     suspend fun login(email: String, password: String): Pair<String?, String?> =
@@ -116,6 +115,14 @@ object FirebaseManager {
 
     suspend fun subscribeToLikeCount(userId: String) = UserManager.subscribeToLikeCount(userId)
 
+    //endregion
+
+
+    //region:: Notification related work here
+
+    suspend fun getMyNotificationAndListen() = UserManager.getMyNotificationAndListen()
+    suspend fun deleteSingleNotification(notificationId:String)= UserManager.deleteSingleNotification(notificationId)
+    suspend fun deleteAllNotification()=UserManager.deleteAllNotification()
     //endregion
 
 }

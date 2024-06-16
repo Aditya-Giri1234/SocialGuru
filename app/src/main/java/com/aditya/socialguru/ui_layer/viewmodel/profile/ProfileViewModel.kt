@@ -8,6 +8,7 @@ import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.profile.ProfileRepository
@@ -128,32 +129,32 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
     val userRelationshipStatusUpdate get() = _userRelationshipStatusUpdate.asSharedFlow()
 
 
-    fun subscribeToFollowerCount(userId: String) = viewModelScope.launch {
+    fun subscribeToFollowerCount(userId: String) = viewModelScope.myLaunch{
         repository.subscribeToFollowerCount(userId).onEach {
             _followerCount.tryEmit(it)
         }.launchIn(this)
     }
 
-    fun subscribeToFollowingCount(userId: String) = viewModelScope.launch {
+    fun subscribeToFollowingCount(userId: String) = viewModelScope.myLaunch{
         repository.subscribeToFollowingCount(userId).onEach {
             _followingCount.tryEmit(it)
         }.launchIn(this)
     }
 
-    fun subscribeToPostCount(userId: String) = viewModelScope.launch {
+    fun subscribeToPostCount(userId: String) = viewModelScope.myLaunch{
         repository.subscribeToPostCount(userId).onEach {
             _postCount.tryEmit(it)
         }.launchIn(this)
     }
 
-    fun subscribeToLikeCount(userId: String) = viewModelScope.launch {
+    fun subscribeToLikeCount(userId: String) = viewModelScope.myLaunch{
         repository.subscribeToLikeCount(userId).onEach {
             _likeCount.tryEmit(it)
         }.launchIn(this)
     }
 
 
-    fun singOutUser() = viewModelScope.launch {
+    fun singOutUser() = viewModelScope.myLaunch{
         _userSignOut.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -163,7 +164,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun followUser(followedId: String) = viewModelScope.launch {
+    fun followUser(followedId: String) = viewModelScope.myLaunch{
         _followUser.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -180,7 +181,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun unFollow(followedId: String) = viewModelScope.launch {
+    fun unFollow(followedId: String) = viewModelScope.myLaunch{
         _unFollow.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -197,7 +198,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun sendFriendRequest(followedId: String) = viewModelScope.launch {
+    fun sendFriendRequest(followedId: String) = viewModelScope.myLaunch{
         _sendFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -214,7 +215,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun acceptFriendRequest(followedId: String) = viewModelScope.launch {
+    fun acceptFriendRequest(followedId: String) = viewModelScope.myLaunch{
         _acceptFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -233,7 +234,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun deleteFriendRequest(followedId: String) = viewModelScope.launch {
+    fun deleteFriendRequest(followedId: String) = viewModelScope.myLaunch{
         _deleteFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -250,7 +251,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun removeFriend(followedId: String) = viewModelScope.launch {
+    fun removeFriend(followedId: String) = viewModelScope.myLaunch{
         _removeFriend.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -267,7 +268,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun getUserRelationshipStatus(followedId: String) = viewModelScope.launch {
+    fun getUserRelationshipStatus(followedId: String) = viewModelScope.myLaunch{
         _userRelationshipStatus.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -280,7 +281,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun listenUserRelationStatus(followedId: String) = viewModelScope.launch {
+    fun listenUserRelationStatus(followedId: String) = viewModelScope.myLaunch{
         _userRelationshipStatusUpdate.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -295,7 +296,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun getUser(userId: String) = viewModelScope.launch {
+    fun getUser(userId: String) = viewModelScope.myLaunch{
         _userDetails.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -309,6 +310,10 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
 
     }
 
+    override fun onCleared() {
+        MyLogger.v(msg = "Profile View Model is cleared !")
+        super.onCleared()
+    }
 
     fun setDataLoadedStatus(status: Boolean) {
         _isDataLoaded = status

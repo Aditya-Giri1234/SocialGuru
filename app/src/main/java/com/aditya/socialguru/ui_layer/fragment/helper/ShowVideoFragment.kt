@@ -23,6 +23,7 @@ import androidx.fragment.app.viewModels
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.fragment.navArgs
+import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.databinding.FragmentShowVideoBinding
 import com.aditya.socialguru.domain_layer.helper.gone
@@ -30,7 +31,6 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.helper.shareVideo
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.aditya.socialguru.ui_layer.activity.ContainerActivity
 import com.aditya.socialguru.ui_layer.viewmodel.VideoViewModel
 import com.google.android.material.animation.AnimationUtils
 
@@ -57,7 +57,7 @@ class ShowVideoFragment : Fragment() {
     }
 
 
-    private val navController get() = (requireActivity() as ContainerActivity).navController
+    private val navController get() = (requireActivity() as MainActivity).navController
 
 
 

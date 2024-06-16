@@ -26,6 +26,8 @@ import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
 import com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.HomeFragmentDirections
+import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
+import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentDirections
 import com.aditya.socialguru.ui_layer.viewmodel.post.DiscoverPostViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -82,7 +84,7 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
 
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 discoverPostViewModel.userPost.onEach { response ->
                     response.let {
@@ -204,9 +206,8 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     //endregion
 
     private fun navigateToDetailPostScreen(postId: String) {
-        val directions: NavDirections =
-            HomeFragmentDirections.actionHomeFragmentToDetailPostFragment(postId)
-        navController?.value?.safeNavigate(directions, Helper.giveAnimationNavOption())
+        navController.safeNavigate(R.id.homeFragment , R.id.detailPostFragment2, Helper.giveAnimationNavOption() ,
+            DetailPostFragmentArgs(postId).toBundle())
     }
 
     override fun onDestroyView() {
