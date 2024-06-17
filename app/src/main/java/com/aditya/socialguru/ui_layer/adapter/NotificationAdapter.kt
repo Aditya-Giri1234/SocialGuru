@@ -137,6 +137,7 @@ class NotificationAdapter(val onNotificationDelete:(data:NotificationData)->Unit
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.bind(differ.currentList[position])
     }
+    fun isListIsEmpty() : Boolean = differ.currentList.isEmpty()
 
 
 }

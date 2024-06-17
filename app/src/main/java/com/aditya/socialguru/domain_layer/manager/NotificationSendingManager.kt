@@ -6,6 +6,7 @@ import com.aditya.socialguru.data_layer.model.notification.payload.NotificationD
 import com.aditya.socialguru.data_layer.model.notification.payload.NotificationMessage
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.RetrofitInstance
+import com.aditya.socialguru.domain_layer.helper.launchCoroutineInDefaultThread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -13,7 +14,7 @@ import kotlinx.coroutines.launch
 object NotificationSendingManager {
     private val tagNotification = Constants.LogTag.Notification
 
-    suspend fun sendNewFollowerNotification(token: String, data: NotificationData) {
+    suspend fun sendNotification(token: String, data: NotificationData) {
         MyLogger.d(tagNotification, msg = "Token :- $token and data :-> $data")
         val payload = NotificationDataPayload(
             NotificationMessage(
@@ -25,7 +26,7 @@ object NotificationSendingManager {
         )
 
 
-        CoroutineScope(Dispatchers.Default).launch {
+        launchCoroutineInDefaultThread {
             val accessToken = FCMTokenManager.getAccessToken()
             val result =
                 RetrofitInstance.notificationApi.sendNotification(payload, "Bearer $accessToken")
@@ -33,7 +34,7 @@ object NotificationSendingManager {
                 tagNotification,
                 msg = result.body(),
                 isJson = true,
-                jsonTitle = "Follower notification sending response"
+                jsonTitle = "Notification sending response"
             )
         }
 

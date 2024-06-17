@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.PostListenerEmissionType
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
+import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
 
@@ -36,6 +36,13 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
         BufferOverflow.DROP_OLDEST
     )
     val userPost: SharedFlow<Resource<List<UserPostModel>>> get() = _userPost.asSharedFlow()
+
+    private val _likePost = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val likePost get() = _likePost.asSharedFlow()
 
 
     //region:: Get Discover Post
@@ -117,10 +124,48 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
 
             Constants.ListenerEmitType.Modify -> {
                 //There we get updated like and comment count post data
+
+                discoverPostHandling.userPostModel?.let { post ->
+                    post.postId?.let { postId ->
+                        userPostList.forEach { userPost ->
+                            val currentPostId=userPost.post?.postId
+                            if (currentPostId != null&& currentPostId==postId) {
+                                userPost.post?.apply {
+                                    commentCount=post.commentCount
+                                    likeCount=post.likeCount
+                                    likedUserList=post.likedUserList
+                                }
+                                return@let
+                            }
+                        }
+                    }
+                    MyLogger.d(tagPost, msg = userPostList, isJson = true)
+                }
+                MyLogger.d(tagPost, msg = userPostList, isJson = true)
             }
         }
 
         return Resource.Success(userPostList.toList())
+    }
+
+    //endregion
+
+    // region:: Update like post count
+
+    fun updateLikeCount(postId: String ,postCreatorUserId:String, isLiked: Boolean) = viewModelScope.myLaunch {
+        _likePost.tryEmit(Resource.Loading())
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.updateLikeCount(postId,postCreatorUserId,isLiked).onEach {
+                if (it.isSuccess){
+                    _likePost.tryEmit(Resource.Success(it))
+                }else{
+                    _likePost.tryEmit(Resource.Error("Some error occurred !"))
+                }
+
+            }.launchIn(this)
+        }else{
+            _likePost.tryEmit(Resource.Error("No Internet Available !"))
+        }
     }
 
     //endregion

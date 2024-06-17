@@ -8,13 +8,15 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.NavDirections
+import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.databinding.FragmentHomeDiscoverPostBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
@@ -24,10 +26,9 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
-import com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.HomeFragmentDirections
 import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
-import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentDirections
 import com.aditya.socialguru.ui_layer.viewmodel.post.DiscoverPostViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -43,11 +44,13 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     private val tagPost = Constants.LogTag.Post
 
 
-    private var _discoverPostAdapter:PostAdapter?=null
+    private var _discoverPostAdapter: PostAdapter? = null
     private val discoverPostAdapter get() = _discoverPostAdapter!!
 
 
-    private val discoverPostViewModel: DiscoverPostViewModel by viewModels()
+    private val discoverPostViewModel: DiscoverPostViewModel by navGraphViewModels(R.id.bottom_navigation_bar) {
+        ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
+    }
 
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
@@ -119,14 +122,33 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
                     }
 
                 }.launchIn(this)
+                discoverPostViewModel.likePost.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            response.hasBeenMessagedToUser = true
+                        }
 
+                        is Resource.Loading -> {
+
+                        }
+
+                        is Resource.Error -> {
+                            response.hasBeenMessagedToUser = true
+                            discoverPostAdapter.notifyDataSetChanged()
+                            Helper.showSnackBar(
+                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                                response.message.toString()
+                            )
+                        }
+                    }
+                }.launchIn(this)
             }
 
         }
     }
 
     private fun initUi() {
-        _discoverPostAdapter= PostAdapter(this@HomeDiscoverPostFragment)
+        _discoverPostAdapter = PostAdapter(this@HomeDiscoverPostFragment)
         binding.apply {
             rvDiscoverPost.apply {
                 layoutManager = LinearLayoutManager(requireContext())
@@ -185,8 +207,11 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
 
     override fun onVideoClick(): (Uri) -> Unit = {}
 
-    override fun onLikeClick() {
-
+    override fun onLikeClick(post: Post) {
+        val isLiked = post.likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
+        post.run {
+            discoverPostViewModel.updateLikeCount(postId!!, userId!!, !isLiked)
+        }
     }
 
     override fun onCommentClick(postId: String) {
@@ -196,23 +221,27 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     override fun onSettingClick() {
     }
 
-    override fun onSendClick() {
+    override fun onSendClick(post: Post) {
     }
 
     override fun onPostClick(postId: String) {
         navigateToDetailPostScreen(postId)
     }
 
+
+
     //endregion
 
     private fun navigateToDetailPostScreen(postId: String) {
-        navController.safeNavigate(R.id.homeFragment , R.id.detailPostFragment2, Helper.giveAnimationNavOption() ,
-            DetailPostFragmentArgs(postId).toBundle())
+        navController.safeNavigate(
+            R.id.homeFragment, R.id.detailPostFragment2, Helper.giveAnimationNavOption(),
+            DetailPostFragmentArgs(postId).toBundle()
+        )
     }
 
     override fun onDestroyView() {
-        _discoverPostAdapter=null
-        binding.rvDiscoverPost.adapter=null
+        _discoverPostAdapter = null
+        binding.rvDiscoverPost.adapter = null
         _binding = null
         super.onDestroyView()
     }

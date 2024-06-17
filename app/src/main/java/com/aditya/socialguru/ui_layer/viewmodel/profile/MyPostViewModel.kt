@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.PostListenerEmissionType
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
+import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
+import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -17,17 +19,15 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
-class MyPostViewModel(val app:Application) : AndroidViewModel(app) {
+class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
 
-    private val tagProfile=Constants.LogTag.Profile
-    private val repository=MyPostRepository()
+    private val tagProfile = Constants.LogTag.Profile
+    private val repository = MyPostRepository()
 
 
     private var _isDataLoaded = false
     val isDataLoaded get() = _isDataLoaded
-
 
 
     private val _myPost = MutableSharedFlow<Resource<List<UserPostModel>>>(
@@ -37,10 +37,24 @@ class MyPostViewModel(val app:Application) : AndroidViewModel(app) {
     )
     val myPost: SharedFlow<Resource<List<UserPostModel>>> get() = _myPost.asSharedFlow()
 
+    private val _myLikedPost = MutableSharedFlow<Resource<List<UserPostModel>>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val myLikedPost get() = _myLikedPost.asSharedFlow()
 
-    //region:: Get Discover Post
+    private val _likePost = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val likePost get() = _likePost.asSharedFlow()
 
-    fun getMyPost(userId:String) = viewModelScope.myLaunch {
+
+    //region:: Get My Post
+
+    fun getMyPost(userId: String) = viewModelScope.myLaunch {
         _myPost.tryEmit(Resource.Loading())
         MyLogger.v(tagProfile, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -59,7 +73,8 @@ class MyPostViewModel(val app:Application) : AndroidViewModel(app) {
 
         MyLogger.v(tagProfile, isFunctionCall = true)
 
-        val userPostList = myPost.replayCache[0].data?.toMutableList() ?: mutableListOf<UserPostModel>()
+        val userPostList =
+            myPost.replayCache[0].data?.toMutableList() ?: mutableListOf<UserPostModel>()
 
         when (postHandling.emitChangeType) {
             Constants.ListenerEmitType.Starting -> {
@@ -80,7 +95,7 @@ class MyPostViewModel(val app:Application) : AndroidViewModel(app) {
                     post.userId?.let { userId ->
                         userPostList.forEachIndexed { index, userPost ->
                             if (userPost.user?.userId == userId) {
-                                userPostList[index].post=userPostList[index].post?.copy(
+                                userPostList[index].post = userPostList[index].post?.copy(
                                     likeCount = post.likeCount,
                                     commentCount = post.commentCount
                                 )
@@ -94,7 +109,8 @@ class MyPostViewModel(val app:Application) : AndroidViewModel(app) {
                 MyLogger.d(tagProfile, msg = userPostList, isJson = true)
 
             }
-            else->{}
+
+            else -> {}
         }
 
         return Resource.Success(userPostList.toList())
@@ -102,9 +118,123 @@ class MyPostViewModel(val app:Application) : AndroidViewModel(app) {
 
     //endregion
 
+    //region:: Get My Liked Post
 
-    fun setDataLoadedStatus(status:Boolean){
-        _isDataLoaded=status
+    fun getMyLikedPost() = viewModelScope.myLaunch {
+        _myLikedPost.tryEmit(Resource.Loading())
+        MyLogger.v(tagProfile, msg = "Request sending ....")
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            MyLogger.v(tagProfile, msg = "Network available !")
+            repository.getMyLikedPost().onEach {
+                _myLikedPost.tryEmit(handelMyLikedPost(it))
+            }.launchIn(this)
+        } else {
+            MyLogger.v(tagProfile, msg = "Network not available !")
+            _myLikedPost.tryEmit(Resource.Error(message = "Internet not available ."))
+        }
+    }
+
+    private suspend fun handelMyLikedPost(postHandling: ListenerEmissionType<UserPostModel, UserPostModel>): Resource<List<UserPostModel>> {
+
+        MyLogger.v(tagProfile, isFunctionCall = true)
+
+        val userPostList =
+            myLikedPost.replayCache[0].data?.toMutableList() ?: mutableListOf<UserPostModel>()
+
+        when (postHandling.emitChangeType) {
+            Constants.ListenerEmitType.Starting -> {
+                MyLogger.v(
+                    tagProfile,
+                    msg = "This is starting story type :- ${postHandling.responseList}"
+                )
+                postHandling.responseList?.let {
+                    userPostList.addAll(it.toMutableList() as ArrayList<UserPostModel>)
+                    userPostList.sortByDescending { it.post?.postUploadingTimeInTimeStamp }
+                }
+            }
+
+            Constants.ListenerEmitType.Modify -> {
+                MyLogger.v(tagProfile, msg = "Post Modify event come !")
+
+                postHandling.singleResponse?.post?.let { post ->
+                    post.userId?.let { userId ->
+                        userPostList.forEachIndexed { index, userPost ->
+                            if (userPost.user?.userId == userId) {
+                                userPostList[index].post = userPostList[index].post?.copy(
+                                    likeCount = post.likeCount,
+                                    commentCount = post.commentCount
+                                )
+                                userPostList.sortByDescending { it.post?.postUploadingTimeInTimeStamp }
+                                return@let
+                            }
+                        }
+                    }
+                    MyLogger.d(tagProfile, msg = userPostList, isJson = true)
+                }
+
+            }
+
+            Constants.ListenerEmitType.Added -> {
+                MyLogger.v(
+                    tagProfile,
+                    msg = "This is added post type :- ${postHandling.singleResponse}"
+                )
+                postHandling.singleResponse?.let {
+                    userPostList.add(it)
+                    userPostList.sortByDescending { it.post?.postUploadingTimeInTimeStamp }
+                }
+            }
+
+            Constants.ListenerEmitType.Removed -> {
+                MyLogger.v(tagProfile, msg = "This is removed post type")
+
+                postHandling.singleResponse?.post?.let { post ->
+                    post.postId?.let { postId ->
+                        userPostList.forEach { temp ->
+                            val currentPostId = temp.post?.postId
+                            if (currentPostId != null) {
+                                if (currentPostId == postId) {
+                                    userPostList.remove(temp)
+                                    userPostList.sortBy { it.post?.postUploadingTimeInTimeStamp }
+                                    return@let
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+
+        return Resource.Success(userPostList.toList())
+    }
+
+    //endregion
+
+    // region:: Update like post count
+
+    fun updateLikeCount(postId: String, postCreatorUserId: String, isLiked: Boolean) =
+        viewModelScope.myLaunch {
+            _likePost.tryEmit(Resource.Loading())
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                repository.updateLikeCount(postId, postCreatorUserId, isLiked).onEach {
+                    if (it.isSuccess) {
+                        _likePost.tryEmit(Resource.Success(it))
+                    } else {
+                        _likePost.tryEmit(Resource.Error("Some error occurred !"))
+                    }
+
+                }.launchIn(this)
+            } else {
+                _likePost.tryEmit(Resource.Error("No Internet Available !"))
+            }
+        }
+
+    //endregion
+
+
+    fun setDataLoadedStatus(status: Boolean) {
+        _isDataLoaded = status
     }
 
 }

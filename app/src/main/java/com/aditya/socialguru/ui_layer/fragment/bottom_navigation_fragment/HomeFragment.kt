@@ -21,9 +21,11 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
+import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
@@ -40,6 +42,7 @@ import com.aditya.socialguru.domain_layer.helper.bufferWithDelay
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -51,12 +54,15 @@ import com.aditya.socialguru.ui_layer.fragment.dialog_fragment.StoryTypeOptionDi
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeDiscoverPostFragment
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeFollowingPostFragment
 import com.aditya.socialguru.ui_layer.viewmodel.bottom_navigation_bar.HomeViewModel
+import com.bumptech.glide.Glide
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class HomeFragment : Fragment(), StoryTypeOptions {
 
@@ -89,7 +95,9 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
 
-    private val homeViewModel: HomeViewModel by viewModels()
+    private val homeViewModel: HomeViewModel by  navGraphViewModels(R.id.bottom_navigation_bar) {
+        ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
+    }
 
     val pickImage = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         // Callback is invoked after the user selects a media item or closes the
@@ -383,13 +391,21 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                 myToolbar.icSetting.myShow()
                 adapter = storyAdapter
 
+                myToolbar.apply {
+                    lifecycleScope.myLaunch {
+                         pref.getPrefUser().first()?.let {
+                             runOnUiThread {
+                                 tvHeaderUserName.text =it.userName
+                                 Glide.with(profileImage).load(it.userProfileImage).placeholder(R.drawable.ic_person).error(R.drawable.person).into(profileImage)
+                             }
+                        }
+                    }
+                }
 
             }
 
 
-            val username = lifecycleScope.async {
-                binding.myToolbar.tvHeaderUserName.text = pref.getPrefUser().first()?.userName
-            }
+
 
             setUpViewPager()
             setListener()

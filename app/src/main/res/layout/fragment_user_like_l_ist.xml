@@ -1,19 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/black"
-    tools:context=".ui_layer.fragment.profile_part.my_activity.ShowMyLikedPostFragment">
+    tools:context=".ui_layer.fragment.post.UserLikeLIstFragment">
 
+    <include
+        layout="@layout/custom_toolbar"
+        android:id="@+id/myToolbar"/>
 
+    <View
+        android:id="@+id/viewDivider"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_1sdp"
+        android:layout_marginTop="?actionBarSize"
+        android:background="@color/lightWhite"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
     <TextView
         android:id="@+id/tvNoDataView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/poppins_bold"
-        android:text="No Liked Post Available."
+        android:text="No User Found."
         android:textColor="@color/white"
         android:textSize="@dimen/_20ssp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -24,15 +36,18 @@
         app:layout_constraintVertical_bias="0.5" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvLikedPost"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:id="@+id/rvUserList"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:visibility="gone"
+        tools:listitem="@layout/sample_user_list"
+        android:layout_marginHorizontal="@dimen/_10sdp"
+        android:layout_marginVertical="@dimen/_5sdp"
         android:nestedScrollingEnabled="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/viewDivider" />
 
     <LinearLayout
         android:id="@+id/linearBackToTop"

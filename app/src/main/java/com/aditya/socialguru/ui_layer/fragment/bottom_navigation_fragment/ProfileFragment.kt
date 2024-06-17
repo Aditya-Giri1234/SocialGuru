@@ -15,9 +15,11 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
+import androidx.navigation.navGraphViewModels
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -59,7 +61,9 @@ class ProfileFragment : Fragment(), AlertDialogOption {
         (requireActivity() as MainActivity).navController
     }
 
-    private val profileViewModel by viewModels<ProfileViewModel>()
+    private val profileViewModel:ProfileViewModel by navGraphViewModels(R.id.bottom_navigation_bar) {
+        ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
+    }
 
     private val pref by lazy {
         SharePref(requireContext())
@@ -88,6 +92,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
     private fun handleInitialization() {
         initUI()
         subscribeToObserver()
+        MyLogger.w(msg = "Profile fragment is data loaded ${profileViewModel.isDataLoaded}")
         if (!profileViewModel.isDataLoaded) {
             profileViewModel.setDataLoadedStatus(true)
             getData()

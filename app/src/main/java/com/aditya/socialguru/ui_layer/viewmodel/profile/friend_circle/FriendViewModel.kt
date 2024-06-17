@@ -458,11 +458,11 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun deleteFriendRequest(followedId: String) = viewModelScope.myLaunch{
+    fun declineFriendRequest(followedId: String) = viewModelScope.myLaunch{
         _deleteFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.deleteFriendRequest(AuthManager.currentUserId()!!, followedId).onEach {
+            repository.declineFriendRequest(AuthManager.currentUserId()!!, followedId).onEach {
                 if (it.isSuccess) {
                     _deleteFriendRequest.tryEmit(Resource.Success(it))
                 } else {

@@ -1,6 +1,5 @@
 package com.aditya.socialguru.ui_layer.fragment.post
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -17,6 +16,7 @@ import androidx.navigation.fragment.navArgs
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.PostImageVideoModel
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.databinding.FragmentDetailPostBinding
@@ -28,14 +28,14 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.PostImageVideoAdapter
-import com.aditya.socialguru.ui_layer.fragment.helper.ShowImageFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.post.DetailPostViewModel
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlin.properties.Delegates
 
 
 class DetailPostFragment : Fragment() {
@@ -47,7 +47,12 @@ class DetailPostFragment : Fragment() {
 
     private var myLoader: MyLoader? = null
     private lateinit var postId: String
-    private lateinit var userId:String
+    private lateinit var userId: String
+    private lateinit var post: Post
+    private var countExceptLoginUser by Delegates.notNull<Int>()
+
+    private val imageNotLike = "0"
+    private val imageLike = "1"
     private val navController get() = (requireActivity() as MainActivity).navController
 
     private val detailPostViewModel by viewModels<DetailPostViewModel>()
@@ -74,6 +79,7 @@ class DetailPostFragment : Fragment() {
     }
 
     private fun handleInitialization() {
+        MyLogger.w(tagPost, msg = "Post Id := ${args.postId}")
         postId = args.postId
         initUi()
         subscribeToObserver()
@@ -111,6 +117,26 @@ class DetailPostFragment : Fragment() {
                     }
 
                 }.launchIn(this)
+                detailPostViewModel.likePost.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            response.hasBeenMessagedToUser = true
+                        }
+
+                        is Resource.Loading -> {
+
+                        }
+
+                        is Resource.Error -> {
+                            response.hasBeenMessagedToUser = true
+                            resetToPreviousIconOnLike()
+                            Helper.showSnackBar(
+                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                                response.message.toString()
+                            )
+                        }
+                    }
+                }.launchIn(this)
             }
         }
     }
@@ -139,8 +165,21 @@ class DetailPostFragment : Fragment() {
             navigateToProfileViewScreen()
         }
 
-        ivLike.setSafeOnClickListener {
+        tvPost.setSafeOnClickListener {
+            navigateToLikeUserScreen()
+        }
 
+        ivLike.setSafeOnClickListener {
+            var isLiked = post.likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
+            isLiked = !isLiked
+            updateTagOnLike(isLiked)
+            post.run {
+                detailPostViewModel.updateLikeCount(postId!!, userId!!, isLiked)
+            }
+        }
+
+        tvLike.setSafeOnClickListener {
+            navigateToLikeUserScreen()
         }
 
         ivComment.setSafeOnClickListener {
@@ -166,13 +205,13 @@ class DetailPostFragment : Fragment() {
         binding.apply {
             it.user?.let {
                 it.userId?.let {
-                    userId=it
+                    userId = it
                 }
                 Glide.with(ivPostUserImage).load(it.userProfileImage).into(ivPostUserImage)
                 tvPostUserName.text = it.userName
             }
             it.post?.let {
-
+                post = it
                 val postImageVideoModel: List<PostImageVideoModel>? = when (it.postType) {
                     Constants.PostType.OnlyText.name -> {
                         constMedia.gone()
@@ -261,7 +300,15 @@ class DetailPostFragment : Fragment() {
                     viewPagerAdapter.submitList(postImageVideoModel)
                 }
 
-                tvPost.text=it.text
+                val isLiked =
+                    it.likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
+
+                ivLike.setImageResource(if (isLiked) R.drawable.like else R.drawable.not_like)
+
+                // This is for when click like button then result show as soon as possible so that below calculation help to fast calculation
+                countExceptLoginUser =
+                    if (isLiked) (it.likeCount?.let { it - 1 } ?: 0) else it.likeCount ?: 0
+                tvPost.text = it.text
                 tvLike.text = "${it.likeCount} Likes"
                 tvComment.text = "${it.commentCount} Comments"
 
@@ -285,19 +332,74 @@ class DetailPostFragment : Fragment() {
         }
     }
 
+    private fun resetToPreviousIconOnLike() {
+        binding.apply {
+            val tag = ivLike.tag
+            when (tag) {
+                imageLike -> {
+                    updateTagOnLike(false)
+                }
+
+                imageNotLike -> {
+                    updateTagOnLike(true)
+                }
+            }
+        }
+    }
+
+    private fun updateTagOnLike(isLike: Boolean) {
+        binding.apply {
+            ivLike.tag = if (isLike) {
+                imageLike
+            } else {
+                imageNotLike
+            }
+        }
+        updateImageIconInLike()
+    }
+
+    private fun updateImageIconInLike() {
+        binding.apply {
+            val tempCount = when (ivLike.tag) {
+                imageLike -> {
+                    ivLike.setImageResource(R.drawable.like)
+                    countExceptLoginUser + 1
+                }
+
+                imageNotLike -> {
+                    ivLike.setImageResource(R.drawable.not_like)
+                    countExceptLoginUser
+                }
+
+                else -> {
+                    countExceptLoginUser
+                }
+            }
+
+            tvLike.text = "${tempCount} Likes"
+
+        }
+    }
+
+    private fun navigateToLikeUserScreen() {
+    navController.safeNavigate(R.id.detailPostFragment2,R.id.userLikeLIstFragment,Helper.giveAnimationNavOption(),UserLikeLIstFragmentArgs(postId).toBundle())
+    }
     private fun navigateToProfileViewScreen() {
-            val directions:NavDirections=DetailPostFragmentDirections.actionDetailPostFragment2ToProfileViewFragment3(userId)
-        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
+        val directions: NavDirections =
+            DetailPostFragmentDirections.actionDetailPostFragment2ToProfileViewFragment3(userId)
+        navController.safeNavigate(directions, Helper.giveAnimationNavOption())
     }
 
     private fun onImageClick(imageUri: Uri) {
-        val directions:NavDirections=DetailPostFragmentDirections.actionDetailPostFragment2ToShowImageFragment(imageUri)
-        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
+        val directions: NavDirections =
+            DetailPostFragmentDirections.actionDetailPostFragment2ToShowImageFragment(imageUri)
+        navController.safeNavigate(directions, Helper.giveAnimationNavOption())
     }
 
     private fun onVideoClick(videoUri: Uri) {
-        val directions:NavDirections=DetailPostFragmentDirections.actionDetailPostFragment2ToShowVideoFragment(videoUri)
-        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
+        val directions: NavDirections =
+            DetailPostFragmentDirections.actionDetailPostFragment2ToShowVideoFragment(videoUri)
+        navController.safeNavigate(directions, Helper.giveAnimationNavOption())
     }
 
     private fun showNoDataView() {

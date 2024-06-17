@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.post.PostImageVideoModel
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.databinding.SamplePostLayoutBinding
@@ -15,6 +16,7 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.bumptech.glide.Glide
 
 class PostAdapter(val onClick: OnPostClick) :
@@ -179,9 +181,21 @@ class PostAdapter(val onClick: OnPostClick) :
                         tvLike.text = "$likeCount Likes"
                         tvComment.text = "$commentCount Comments"
 
+                        var isLiked =
+                            likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
+
+                        // This is for when click like button then result show as soon as possible so that below calculation help to fast calculation
+                        val countExceptLoginUser=if (isLiked) (likeCount?.let { it - 1 } ?: 0) else likeCount ?: 0
+
+                        ivLike.setImageResource(if (isLiked) R.drawable.like else R.drawable.not_like)
+
 
                         ivLike.setSafeOnClickListener {
-                            onClick.onLikeClick()
+                            isLiked = !isLiked
+                            val tempCount= if (isLiked) countExceptLoginUser+1 else countExceptLoginUser
+                            tvLike.text = "${tempCount} Likes"
+                            ivLike.setImageResource(if (isLiked) R.drawable.like else R.drawable.not_like)
+                            onClick.onLikeClick(this@run)
                         }
 
                         ivComment.setSafeOnClickListener {
@@ -189,7 +203,7 @@ class PostAdapter(val onClick: OnPostClick) :
                         }
 
                         ivSend.setSafeOnClickListener {
-                            onClick.onSendClick()
+                            onClick.onSendClick(this@run)
                         }
 
                         ivSetting.setSafeOnClickListener {
@@ -229,7 +243,6 @@ class PostAdapter(val onClick: OnPostClick) :
             )
         )
     }
-
 
 
     override fun getItemCount(): Int {

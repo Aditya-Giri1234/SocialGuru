@@ -68,17 +68,20 @@ object FirebaseManager {
     suspend fun deleteFriendRequest(userId: String, friendId: String) =
         UserManager.deleteFriendRequest(userId, friendId)
 
+    suspend fun declineFriendRequest(userId: String, friendId: String) =
+        UserManager.declineFriendRequest(userId, friendId)
+
     suspend fun acceptFriendRequest(userId: String, friendId: String) =
         UserManager.acceptFriendRequest(userId, friendId)
 
     suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String) =
         UserManager.getUserRelationshipStatus(currentUserId, targetUserId)
 
-    fun listenUserRelationStatus(friendId: String)=UserManager.listenUserRelationStatus(friendId)
+    fun listenUserRelationStatus(friendId: String) = UserManager.listenUserRelationStatus(friendId)
 
-    fun listenFriendRequestComeEvent()=UserManager.listenFriendRequestComeEvent()
+    fun listenFriendRequestComeEvent() = UserManager.listenFriendRequestComeEvent()
 
-     suspend fun setFcmToken(token: String?) = UserManager.setFcmToken(token)
+    suspend fun setFcmToken(token: String?) = UserManager.setFcmToken(token)
 
 
     //endregion
@@ -110,10 +113,16 @@ object FirebaseManager {
     suspend fun getMyPost(userId: String) = PostManager.getMyPost(userId)
 
     suspend fun getPostById(postId: String) = PostManager.getPostById(postId)
+    suspend fun getMyLikedPost() = PostManager.getMyLikedPost()
 
     suspend fun subscribeToPostCount(userId: String) = UserManager.subscribeToPostCount(userId)
 
     suspend fun subscribeToLikeCount(userId: String) = UserManager.subscribeToLikeCount(userId)
+
+    suspend fun updateLikeCount(postId: String, postCreatorUserId: String, isLiked: Boolean) =
+        PostManager.updateLikeCount(postId, postCreatorUserId, isLiked)
+
+    suspend fun getPostLikeUser(postId: String) = PostManager.getPostLikeUser(postId)
 
     //endregion
 
@@ -121,8 +130,10 @@ object FirebaseManager {
     //region:: Notification related work here
 
     suspend fun getMyNotificationAndListen() = UserManager.getMyNotificationAndListen()
-    suspend fun deleteSingleNotification(notificationId:String)= UserManager.deleteSingleNotification(notificationId)
-    suspend fun deleteAllNotification()=UserManager.deleteAllNotification()
+    suspend fun deleteSingleNotification(notificationId: String) =
+        UserManager.deleteSingleNotification(notificationId)
+
+    suspend fun deleteAllNotification() = UserManager.deleteAllNotification()
     //endregion
 
 }

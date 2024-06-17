@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.databinding.FragmentHomeBinding
 import com.aditya.socialguru.databinding.FragmentShowMyCommentPostBinding
@@ -32,6 +33,7 @@ import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.domain_layer.service.SharePref
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.NormalPagerAdapter
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
 import com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.HomeFragmentDirections
@@ -123,6 +125,26 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
 
                         is Resource.Error -> {
                             response.hasBeenMessagedToUser = true
+                            Helper.showSnackBar(
+                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                                response.message.toString()
+                            )
+                        }
+                    }
+                }.launchIn(this)
+                myPostViewModel.likePost.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            response.hasBeenMessagedToUser = true
+                        }
+
+                        is Resource.Loading -> {
+
+                        }
+
+                        is Resource.Error -> {
+                            response.hasBeenMessagedToUser = true
+                            postAdapter.notifyDataSetChanged()
                             Helper.showSnackBar(
                                 (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
                                 response.message.toString()
@@ -232,7 +254,11 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
 
     override fun onVideoClick(): (Uri) -> Unit = {}
 
-    override fun onLikeClick() {
+    override fun onLikeClick(post:Post) {
+        val isLiked = post.likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
+        post.run {
+            myPostViewModel.updateLikeCount(postId!!, userId!!, !isLiked)
+        }
     }
 
     override fun onCommentClick(postId: String) {
@@ -242,12 +268,13 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
     override fun onSettingClick() {
     }
 
-    override fun onSendClick() {
+    override fun onSendClick(post: Post) {
     }
 
     override fun onPostClick(postId: String) {
         navigateToDetailPostScreen(postId)
     }
+
 
 
 

@@ -6,4 +6,7 @@ class DiscoverPostRepository {
 
     suspend fun getDiscoverPost()=FirebaseManager.getDiscoverPost()
     suspend fun getUser(userId:String)=FirebaseManager.getUser(userId)
+
+    suspend fun updateLikeCount(postId: String ,postCreatorUserId:String, isLiked: Boolean) = FirebaseManager.updateLikeCount(postId ,postCreatorUserId,isLiked)
+
 }

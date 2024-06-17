@@ -6,11 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.PostListenerEmissionType
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
+import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.post.FollowingPostRepository
+import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -36,6 +38,13 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
         BufferOverflow.DROP_OLDEST
     )
     val userPost: SharedFlow<Resource<List<UserPostModel>>> get() = _userPost.asSharedFlow()
+
+    private val _likePost = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val likePost get() = _likePost.asSharedFlow()
 
 
     //region:: Get Discover Post
@@ -100,11 +109,11 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
                 MyLogger.v(tagPost, msg = "This is removed post type")
 
                 discoverPostHandling.userPostModel?.let { post ->
-                    post.userId?.let { userId ->
+                    post.postId?.let { postId ->
                         userPostList.forEach { userPost ->
-                            if (userPost.user?.userId == userId) {
+                            val currentPostId=userPost.post?.postId
+                            if (currentPostId != null&& currentPostId==postId) {
                                 userPostList.remove(userPost)
-                                userPostList.sortByDescending { it.post?.postUploadingTimeInTimeStamp }
                                 return@let
                             }
                         }
@@ -117,11 +126,48 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
 
             Constants.ListenerEmitType.Modify -> {
                 // For Future
+                discoverPostHandling.userPostModel?.let { post ->
+                    post.postId?.let { postId ->
+                        userPostList.forEach { userPost ->
+                            val currentPostId=userPost.post?.postId
+                            if (currentPostId != null&& currentPostId==postId) {
+                                userPost.post=userPost.post?.copy(
+                                    commentCount=post.commentCount,
+                                    likeCount = post.likeCount ,
+                                    likedUserList=post.likedUserList
+                                )
+                                return@let
+                            }
+                        }
+                    }
+                    MyLogger.d(tagPost, msg = userPostList, isJson = true)
+                }
+                MyLogger.d(tagPost, msg = userPostList, isJson = true)
             }
         }
 
         return Resource.Success(userPostList.toList())
     }
+
+    //endregion
+
+    // region:: Update like post count
+
+     fun updateLikeCount(postId: String ,postCreatorUserId:String, isLiked: Boolean) = viewModelScope.myLaunch {
+         _likePost.tryEmit(Resource.Loading())
+         if (SoftwareManager.isNetworkAvailable(app)){
+             repository.updateLikeCount(postId,postCreatorUserId,isLiked).onEach {
+                 if (it.isSuccess){
+                     _likePost.tryEmit(Resource.Success(it))
+                 }else{
+                     _likePost.tryEmit(Resource.Error("Some error occurred !"))
+                 }
+
+             }.launchIn(this)
+         }else{
+             _likePost.tryEmit(Resource.Error("No Internet Available !"))
+         }
+     }
 
     //endregion
 

@@ -13,8 +13,8 @@ class FriendRepository {
 
     fun listenFriendRequestComeEvent()= UserManager.listenFriendRequestComeEvent()
 
-    suspend fun deleteFriendRequest(userId: String, friendId: String)=
-        FirebaseManager.deleteFriendRequest(userId,friendId)
+    suspend fun declineFriendRequest(userId: String, friendId: String) =
+        UserManager.declineFriendRequest(userId, friendId)
 
     suspend fun acceptFriendRequest(userId: String, friendId: String) = FirebaseManager.acceptFriendRequest(userId,friendId)
 

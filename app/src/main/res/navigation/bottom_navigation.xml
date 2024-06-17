@@ -120,4 +120,16 @@
             android:id="@+id/action_detailPostFragment2_to_showVideoFragment"
             app:destination="@id/showVideoFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/userLikeLIstFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.post.UserLikeLIstFragment"
+        android:label="fragment_user_like_l_ist"
+        tools:layout="@layout/fragment_user_like_l_ist" >
+        <action
+            android:id="@+id/action_userLikeLIstFragment_to_profileViewFragment3"
+            app:destination="@id/profileViewFragment3" />
+        <argument
+            android:name="postId"
+            app:argType="string" />
+    </fragment>
 </navigation>

@@ -351,3 +351,15 @@ fun CoroutineScope.myLaunch(run:suspend CoroutineScope.()->Unit){
         run()
     }
 }
+
+
+fun launchCoroutineInIOThread(run:suspend CoroutineScope.()->Unit){
+    CoroutineScope(Dispatchers.IO).launch {
+        run()
+    }
+}
+fun launchCoroutineInDefaultThread(run:suspend CoroutineScope.()->Unit){
+    CoroutineScope(Dispatchers.Default).launch {
+        run()
+    }
+}

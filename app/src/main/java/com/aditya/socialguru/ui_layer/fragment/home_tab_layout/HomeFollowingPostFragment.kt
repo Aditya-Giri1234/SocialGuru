@@ -8,13 +8,16 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
+import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.databinding.FragmentHomeFollowingPostBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
@@ -24,6 +27,7 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
 import com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.HomeFragmentDirections
 import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
@@ -43,7 +47,9 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
     private val followingPostAdapter get() = _followingPostAdapter!!
 
 
-    private val followingPostViewModel: FollowingPostViewModel by viewModels()
+    private val followingPostViewModel: FollowingPostViewModel by navGraphViewModels(R.id.bottom_navigation_bar) {
+        ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
+    }
 
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
@@ -119,6 +125,26 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
                     }
 
                 }.launchIn(this)
+                followingPostViewModel.likePost.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            response.hasBeenMessagedToUser = true
+                        }
+
+                        is Resource.Loading -> {
+
+                        }
+
+                        is Resource.Error -> {
+                            response.hasBeenMessagedToUser = true
+                            followingPostAdapter.notifyDataSetChanged()
+                            Helper.showSnackBar(
+                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                                response.message.toString()
+                            )
+                        }
+                    }
+                }.launchIn(this)
             }
 
         }
@@ -188,7 +214,12 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
 
     }
 
-    override fun onLikeClick() {
+    override fun onLikeClick(post: Post) {
+        val isLiked=post.likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
+        MyLogger.w(tagPost , msg = "User Liked this post before click :- $isLiked")
+        post.run {
+            followingPostViewModel.updateLikeCount(postId!!,userId!!,!isLiked)
+        }
 
     }
 
@@ -199,7 +230,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
     override fun onSettingClick() {
     }
 
-    override fun onSendClick() {
+    override fun onSendClick(post:Post) {
     }
 
     override fun onPostClick(postId: String) {

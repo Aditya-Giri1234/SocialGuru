@@ -48,6 +48,16 @@ object FcmDataHandling : HandleJsonData {
     }
 
     private fun handleLikeInPostNotification(notificationData: NotificationData, context: Context) {
+        notificationData.friendOrFollowerId?.let {
+            CoroutineScope(Dispatchers.IO).launch {
+                FirebaseManager.getUser(it).onEach {
+                    it.data?.let {
+                        MyNotificationManager.showLikeInPostNotification(it,notificationData,context)
+                        MyNotificationManager.showGroupSummaryNotification(context)
+                    }
+                }.launchIn(this)
+            }
+        }
     }
 
     private fun handleFriendRequestComeNotification(

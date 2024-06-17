@@ -172,7 +172,7 @@ class FriendRequestFragment : Fragment() {
 
     private fun onResultOfDeclineOrAccept(userId: String, decline: Boolean) {
         if (decline) {
-            friendViewModel.deleteFriendRequest(userId)
+            friendViewModel.declineFriendRequest(userId)
         } else {
             friendViewModel.acceptFriendRequest(userId)
         }

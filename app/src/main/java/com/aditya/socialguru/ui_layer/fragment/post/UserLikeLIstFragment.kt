@@ -1,6 +1,5 @@
-package com.aditya.socialguru.ui_layer.fragment.profile_part.my_activity
+package com.aditya.socialguru.ui_layer.fragment.post
 
-import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -12,15 +11,15 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavDirections
+import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
-import com.aditya.socialguru.data_layer.model.post.Post
-import com.aditya.socialguru.data_layer.model.post.UserPostModel
-import com.aditya.socialguru.databinding.FragmentShowMyLikedPostBinding
-import com.aditya.socialguru.domain_layer.custom_class.MyLoader
+import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
+import com.aditya.socialguru.databinding.FragmentUserLikeLIstBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
@@ -28,27 +27,29 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
-import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
-import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
-import com.aditya.socialguru.ui_layer.viewmodel.profile.MyPostViewModel
+import com.aditya.socialguru.ui_layer.adapter.post.UserAdapter
+import com.aditya.socialguru.ui_layer.viewmodel.post.DetailPostViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 
-class ShowMyLikedPostFragment : Fragment(), OnPostClick {
+class UserLikeLIstFragment : Fragment() {
 
-    private var _binding: FragmentShowMyLikedPostBinding? = null
+
+    private var _binding: FragmentUserLikeLIstBinding? = null
     private val binding get() = _binding!!
 
-    private var _postAdapter: PostAdapter? = null
-    private val postAdapter get() = _postAdapter!!
+    private val tagPost = Constants.LogTag.Post
 
-    private var myLoader: MyLoader? = null
+    private var _userAdapter: UserAdapter? = null
+    private val userAdapter get() = _userAdapter!!
+    private lateinit var postId: String
 
-    private val tagProfile = Constants.LogTag.Profile
-    private val myPostViewModel by viewModels<MyPostViewModel>()
+    private val args by navArgs<UserLikeLIstFragmentArgs>()
+
+
+    private val myPostViewModel by viewModels<DetailPostViewModel>()
 
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
@@ -62,8 +63,7 @@ class ShowMyLikedPostFragment : Fragment(), OnPostClick {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
-        _binding = FragmentShowMyLikedPostBinding.inflate(layoutInflater)
+        _binding = FragmentUserLikeLIstBinding.inflate(layoutInflater)
         return binding.root
     }
 
@@ -73,6 +73,7 @@ class ShowMyLikedPostFragment : Fragment(), OnPostClick {
     }
 
     private fun handleInitialization() {
+        postId = args.postId
         initUi()
         subscribeToObservation()
         if (!myPostViewModel.isDataLoaded) {
@@ -85,7 +86,7 @@ class ShowMyLikedPostFragment : Fragment(), OnPostClick {
         MyLogger.v(isFunctionCall = true)
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                myPostViewModel.myLikedPost.onEach { response ->
+                myPostViewModel.userList.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
                             response.hasBeenMessagedToUser = true
@@ -114,53 +115,43 @@ class ShowMyLikedPostFragment : Fragment(), OnPostClick {
                         }
                     }
                 }.launchIn(this)
-                myPostViewModel.likePost.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            hideDialog()
-                            response.hasBeenMessagedToUser = true
-                        }
 
-                        is Resource.Loading -> {
-                            showDialog()
-                        }
-
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser = true
-                            hideDialog()
-                            postAdapter.notifyDataSetChanged()
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                response.message.toString()
-                            )
-                        }
-                    }
-                }.launchIn(this)
             }
         }
     }
 
     private fun initUi() {
-        _postAdapter = PostAdapter(this@ShowMyLikedPostFragment)
+        _userAdapter = UserAdapter {
+            navigateToProfileViewScreen(it)
+        }
         binding.apply {
-            rvLikedPost.apply {
+            myToolbar.apply {
+                icBack.myShow()
+                profileImage.gone()
+                tvHeaderUserName.text="Likes"
+            }
+            rvUserList.apply {
                 layoutManager = LinearLayoutManager(requireContext())
-                adapter = postAdapter
+                adapter = userAdapter
                 setHasFixedSize(true)
                 isMotionEventSplittingEnabled = false
             }
             setListener()
         }
+
     }
 
-    private fun FragmentShowMyLikedPostBinding.setListener() {
-        linearBackToTop.setSafeOnClickListener {
-            rvLikedPost.smoothScrollToPosition(0)
+    private fun FragmentUserLikeLIstBinding.setListener() {
+        myToolbar.icBack.setSafeOnClickListener {
+            navController.navigateUp()
         }
-        rvLikedPost.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+        linearBackToTop.setSafeOnClickListener {
+            rvUserList.smoothScrollToPosition(0)
+        }
+        rvUserList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    MyLogger.v(tagProfile, msg = "Idle State")
+                    MyLogger.v(tagPost, msg = "Idle State")
                     linearBackToTop.gone()
                 }
             }
@@ -168,10 +159,10 @@ class ShowMyLikedPostFragment : Fragment(), OnPostClick {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
                 if (dy < 0) {
-                    MyLogger.v(tagProfile, msg = "Up scroll")
+                    MyLogger.v(tagPost, msg = "Up scroll")
                     showBackToTopView()
                 } else {
-                    MyLogger.v(tagProfile, msg = "Down scroll")
+                    MyLogger.v(tagPost, msg = "Down scroll")
                     linearBackToTop.gone()
                 }
             }
@@ -182,7 +173,7 @@ class ShowMyLikedPostFragment : Fragment(), OnPostClick {
         binding.linearBackToTop.myShow()
 
         Handler(Looper.getMainLooper()).postDelayed({
-            if (this@ShowMyLikedPostFragment.isResumed) {
+            if (this@UserLikeLIstFragment.isResumed) {
                 binding.linearBackToTop.gone()
             }
         }, 2000)
@@ -191,83 +182,45 @@ class ShowMyLikedPostFragment : Fragment(), OnPostClick {
 
     private fun getData() {
         MyLogger.v(isFunctionCall = true)
-        myPostViewModel.getMyLikedPost()
+        myPostViewModel.getPostLikeUser(postId)
     }
 
-    private fun setData(userPosts: List<UserPostModel> = mutableListOf()) {
+    private fun setData(userPosts: List<FriendCircleData> = mutableListOf()) {
         MyLogger.v(isFunctionCall = true)
 
         if (userPosts.isEmpty()) {
-            MyLogger.w(tagProfile, msg = "list is empty then show no data view !")
+            MyLogger.w(tagPost, msg = "list is empty then show no data view !")
             showNoDataView()
         } else {
             MyLogger.v(msg = "Now data is set into homeFragment !")
             hideNoDataView()
-            postAdapter.submitList(userPosts.toList())
+            userAdapter.submitList(userPosts.toList())
         }
     }
 
     private fun showNoDataView() {
         binding.apply {
             tvNoDataView.myShow()
-            rvLikedPost.gone()
+            rvUserList.gone()
         }
     }
 
     private fun hideNoDataView() {
         binding.apply {
             tvNoDataView.gone()
-            rvLikedPost.myShow()
+            rvUserList.myShow()
         }
     }
 
 
-    //region:: Post Operation
-    override fun onImageClick(): (Uri) -> Unit = {}
-
-    override fun onVideoClick(): (Uri) -> Unit = {}
-
-    override fun onLikeClick(post: Post) {
-        post.run {
-            myPostViewModel.updateLikeCount(postId!!, userId!!, false)
-        }
-    }
-
-    override fun onCommentClick(postId: String) {
-        navigateToDetailPostScreen(postId)
-    }
-
-    override fun onSettingClick() {
-    }
-
-    override fun onSendClick(post: Post) {
-    }
-
-    override fun onPostClick(postId: String) {
-        navigateToDetailPostScreen(postId)
-    }
-
-
-
-    //endregion
-
-    private fun navigateToDetailPostScreen(postId: String) {
+    private fun navigateToProfileViewScreen(userId: String) {
+        val directions: NavDirections =
+            UserLikeLIstFragmentDirections.actionUserLikeLIstFragmentToProfileViewFragment3(userId)
         navController.safeNavigate(
-            R.id.myActivityFragment, R.id.detailPostFragment2, Helper.giveAnimationNavOption(),
-            DetailPostFragmentArgs(postId).toBundle()
+            directions, Helper.giveAnimationNavOption()
         )
     }
 
-    private fun showDialog() {
-        myLoader?.dismiss()
-        myLoader = MyLoader()
-        myLoader?.show(childFragmentManager, "My_Loader")
-    }
-
-    private fun hideDialog() {
-        myLoader?.dismiss()
-        myLoader = null
-    }
 
     override fun onDestroyView() {
         _binding = null

@@ -848,7 +848,7 @@ object UserManager {
         }.addOnSuccessListener {
             launch {
                 userRef.document(followedId).get().await().toObject<User>()?.fcmToken?.let {
-                    NotificationSendingManager.sendNewFollowerNotification(it, notificationData)
+                    NotificationSendingManager.sendNotification(it, notificationData)
                 }
             }
 
@@ -895,7 +895,7 @@ object UserManager {
         }.addOnSuccessListener {
             launch {
                 userRef.document(friendId).get().await().toObject<User>()?.fcmToken?.let {
-                    NotificationSendingManager.sendNewFollowerNotification(it, notificationData)
+                    NotificationSendingManager.sendNotification(it, notificationData)
                 }
             }
             trySend(UpdateResponse(true, ""))
@@ -910,6 +910,31 @@ object UserManager {
     }
 
     suspend fun deleteFriendRequest(userId: String, friendId: String) =
+        callbackFlow<UpdateResponse> {
+
+            val friendRef =
+                userRef.document(userId).collection(Constants.Table.PendingRequest.name)
+                    .document(userId)
+            val  myUserRef=
+                userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
+                    .document(friendId)
+
+            firestore.runBatch { batch ->
+                batch.delete(myUserRef)
+                batch.delete(friendRef)
+            }.addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+
+
+            awaitClose {
+                close()
+            }
+        }
+
+    suspend fun declineFriendRequest(userId: String, friendId: String) =
         callbackFlow<UpdateResponse> {
 
             val friendRef =
@@ -972,7 +997,7 @@ object UserManager {
             }.addOnSuccessListener {
                 launch {
                     userRef.document(friendId).get().await().toObject<User>()?.fcmToken?.let {
-                        NotificationSendingManager.sendNewFollowerNotification(it, notificationData)
+                        NotificationSendingManager.sendNotification(it, notificationData)
                     }
                 }
                 trySend(UpdateResponse(true, ""))

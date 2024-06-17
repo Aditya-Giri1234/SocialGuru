@@ -96,13 +96,15 @@ object Constants {
         Stories,
         User,
         Post,
+        Like,
         Comment,
         Follower,
         Following,
         Friend,
         FriendRequest ,
         PendingRequest,
-        Notification
+        Notification,
+        MyLikedPost
     }
 
     enum class FriendStatus {
@@ -150,7 +152,8 @@ object Constants {
         POST_UPLOADING_TIME_IN_TEXT("postUploadingTimeInText"),
         POST_UPLOADING_TIME_IN_TIMESTAMP("postUploadingTimeInTimeStamp"),
         COMMENT_COUNT("commentCount"),
-        LIKE_COUNT("likeCount")
+        LIKE_COUNT("likeCount"),
+        LIKED_USER_LIST("likedUserList")
     }
 
 

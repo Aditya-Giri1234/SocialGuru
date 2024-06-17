@@ -285,6 +285,11 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
         popUp.animationStyle = R.style.popup_window_animation
         popUp.showAsDropDown(binding.myToolbar.icSetting)
 
+        if (notificationAdapter.isListIsEmpty()){
+            bindingPopUp.viewDevider1.gone()
+            bindingPopUp.linearItemDeleteAll.gone()
+        }
+
         bindingPopUp.linearItemFriendRequest.setSafeOnClickListener {
             navigateToFriendRequest()
             popUp.dismiss()
