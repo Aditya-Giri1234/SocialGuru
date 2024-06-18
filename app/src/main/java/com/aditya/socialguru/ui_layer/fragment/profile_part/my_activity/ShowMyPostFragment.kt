@@ -4,10 +4,10 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -15,15 +15,13 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
-import com.aditya.socialguru.databinding.FragmentHomeBinding
-import com.aditya.socialguru.databinding.FragmentShowMyCommentPostBinding
 import com.aditya.socialguru.databinding.FragmentShowMyPostBinding
-import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
@@ -34,20 +32,15 @@ import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
-import com.aditya.socialguru.ui_layer.adapter.NormalPagerAdapter
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
-import com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.HomeFragmentDirections
-import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeDiscoverPostFragment
-import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeFollowingPostFragment
 import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.profile.MyPostViewModel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 
-class ShowMyPostFragment : Fragment(), OnPostClick {
+class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
 
     private var _binding: FragmentShowMyPostBinding? = null
     private val binding get() = _binding!!
@@ -176,7 +169,7 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
         }
         rvMyPost.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                if (newState==RecyclerView.SCROLL_STATE_IDLE){
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     MyLogger.v(tagProfile, msg = "Idle State")
                     linearBackToTop.gone()
                 }
@@ -184,16 +177,15 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
 
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-                if (dy<0){
+                if (dy < 0) {
                     MyLogger.v(tagProfile, msg = "Up scroll")
                     showBackToTopView()
-                }else{
+                } else {
                     MyLogger.v(tagProfile, msg = "Down scroll")
                     linearBackToTop.gone()
                 }
             }
         })
-
 
 
     }
@@ -212,19 +204,11 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
 
     private fun getData() {
         MyLogger.v(isFunctionCall = true)
-        viewLifecycleOwner.lifecycleScope.launch {
-            pref.getPrefUser().first()?.let { user ->
-                MyLogger.v(tagProfile, msg = user, isJson = true)
-                user.userId?.let {
-                    myPostViewModel.getMyPost(it)
-                }
-            }
-        }
+        myPostViewModel.getMyPost(userId)
     }
 
     private fun setData(userPosts: List<UserPostModel> = mutableListOf()) {
         MyLogger.v(isFunctionCall = true)
-
         if (userPosts.isEmpty()) {
             MyLogger.w(tagProfile, msg = "list is empty then show no data view !")
             showNoDataView()
@@ -254,7 +238,7 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
 
     override fun onVideoClick(): (Uri) -> Unit = {}
 
-    override fun onLikeClick(post:Post) {
+    override fun onLikeClick(post: Post) {
         val isLiked = post.likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
         post.run {
             myPostViewModel.updateLikeCount(postId!!, userId!!, !isLiked)
@@ -276,13 +260,14 @@ class ShowMyPostFragment : Fragment(), OnPostClick {
     }
 
 
-
-
     //endregion
 
     private fun navigateToDetailPostScreen(postId: String) {
-        navController.safeNavigate(R.id.myActivityFragment , R.id.detailPostFragment2, Helper.giveAnimationNavOption() ,
-            DetailPostFragmentArgs(postId).toBundle())
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalDetailPostFragment(postId)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
 

@@ -31,10 +31,11 @@
                 android:id="@+id/linearParent"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:background="@drawable/rounded_white_border_bg"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:background="@drawable/rounded_white_border_bg"
-                    android:visibility="gone"
+                android:paddingTop="@dimen/_4sdp"
+                android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="@id/guideLineEnd"
                 app:layout_constraintStart_toStartOf="@id/guideLineStart"
                 app:layout_constraintTop_toTopOf="@id/guideLineUp">
@@ -85,12 +86,12 @@
                     android:id="@+id/linearMain"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="@dimen/_1sdp"
+                    android:background="@color/black"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:weightSum="3"
-                     android:background="@color/black"
                     android:padding="@dimen/_5sdp"
-                    android:layout_marginHorizontal="@dimen/_1sdp"
+                    android:weightSum="3"
                     app:layout_constraintEnd_toEndOf="@id/linearHeader"
                     app:layout_constraintStart_toStartOf="@id/linearHeader"
                     app:layout_constraintTop_toBottomOf="@id/linearHeader">
@@ -154,9 +155,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:alpha="0.7"
-                    android:padding="@dimen/_5sdp"
                     android:gravity="center_vertical|start"
-                    android:minHeight="@dimen/_50sdp">
+                    android:minHeight="@dimen/_50sdp"
+                    android:padding="@dimen/_5sdp">
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -210,8 +211,8 @@
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/_5sdp"
                         android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/_5sdp"
                         android:orientation="vertical">
 
                         <ImageView
@@ -237,6 +238,7 @@
 
 
             </LinearLayout>
+
             <TextView
                 android:id="@+id/noDataView"
                 android:layout_width="wrap_content"

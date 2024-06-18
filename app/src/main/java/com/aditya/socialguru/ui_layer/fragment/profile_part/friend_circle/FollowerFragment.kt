@@ -15,6 +15,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -31,8 +32,9 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.profile.friend_circle.FriendAdapter
-import com.aditya.socialguru.ui_layer.fragment.profile_part.FriendCircleFragmentDirections
+import com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.profile.friend_circle.FriendViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -284,8 +286,11 @@ class FollowerFragment : Fragment(), AlertDialogOption {
     }
 
     private fun navigateToUserDetailsScreen(userId: String) {
-        val direction: NavDirections = FriendCircleFragmentDirections.actionFriendCircleFragmentToProfileViewFragment(userId)
-        navController.safeNavigate(direction,Helper.giveAnimationNavOption())
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalProfileViewFragment(userId)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
     override fun onResult(isYes: Boolean) {

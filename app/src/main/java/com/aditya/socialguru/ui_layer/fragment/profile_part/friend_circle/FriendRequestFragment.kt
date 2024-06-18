@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -22,6 +23,7 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.ui_layer.adapter.profile.friend_circle.FriendRequestAdapter
+import com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.profile.friend_circle.FriendViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -180,8 +182,10 @@ class FriendRequestFragment : Fragment() {
 
     private fun navigateToProfileView(userId: String) {
         val directions: NavDirections =
-            FriendRequestFragmentDirections.actionFriendRequestFragmentToProfileViewFragment4(userId)
-        navController.safeNavigate(directions, Helper.giveAnimationNavOption())
+            BottomNavigationBarDirections.actionGlobalProfileViewFragment(userId)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
     private fun showNoDataView() {

@@ -19,7 +19,7 @@ import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.bumptech.glide.Glide
 
-class PostAdapter(val onClick: OnPostClick) :
+class PostAdapter(val onClick: OnPostClick , val isIAmCurrentSeeingOtherPost:Boolean=false) :
     RecyclerView.Adapter<PostAdapter.ViewHolder>() {
 
     companion object {
@@ -181,10 +181,15 @@ class PostAdapter(val onClick: OnPostClick) :
                         tvLike.text = "$likeCount Likes"
                         tvComment.text = "$commentCount Comments"
 
+                        if (isIAmCurrentSeeingOtherPost){
+                            ivSetting.gone()
+                        }
+
                         var isLiked =
                             likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
 
                         // This is for when click like button then result show as soon as possible so that below calculation help to fast calculation
+                        MyLogger.w(Constants.LogTag.Post, msg = "Index :- $absoluteAdapterPosition and isLiked $isLiked and liked User list := $likedUserList")
                         val countExceptLoginUser=if (isLiked) (likeCount?.let { it - 1 } ?: 0) else likeCount ?: 0
 
                         ivLike.setImageResource(if (isLiked) R.drawable.like else R.drawable.not_like)

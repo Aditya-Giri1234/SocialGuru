@@ -15,34 +15,10 @@
         <action
             android:id="@+id/action_homeFragment_to_writeTextStoryFragment"
             app:destination="@id/writeTextStoryFragment" />
-        <action
-            android:id="@+id/action_homeFragment_to_storyShowFragment"
-            app:destination="@id/storyShowFragment" />
-        <action
-            android:id="@+id/action_homeFragment_to_showMyStoryFragment"
-            app:destination="@id/showMyStoryFragment" />
     </fragment>
     <fragment
         android:id="@+id/writeTextStoryFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.story_helper.WriteTextStoryFragment"
         android:label="fragment_write_text_story"
         tools:layout="@layout/fragment_write_text_story" />
-    <fragment
-        android:id="@+id/storyShowFragment"
-        android:name="com.aditya.socialguru.ui_layer.fragment.story_helper.StoryShowFragment"
-        android:label="fragment_story_show"
-        tools:layout="@layout/fragment_story_show" >
-        <argument
-            android:name="userStory"
-            app:argType="com.aditya.socialguru.data_layer.model.story.UserStories" />
-    </fragment>
-    <fragment
-        android:id="@+id/showMyStoryFragment"
-        android:name="com.aditya.socialguru.ui_layer.fragment.story_helper.ShowMyStoryFragment"
-        android:label="fragment_show_my_story"
-        tools:layout="@layout/fragment_show_my_story" >
-        <action
-            android:id="@+id/action_showMyStoryFragment_to_storyShowFragment"
-            app:destination="@id/storyShowFragment" />
-    </fragment>
 </navigation>

@@ -24,6 +24,7 @@
             android:src="@drawable/ic_left_arrow" />
 
         <TextView
+            android:id="@+id/tvHeader"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginStart="@dimen/_5sdp"

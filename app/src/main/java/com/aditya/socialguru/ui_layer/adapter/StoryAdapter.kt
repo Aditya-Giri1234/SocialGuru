@@ -59,9 +59,8 @@ class StoryAdapter(
 
         fun bind(data: UserStories) {
             binding.apply {
-                profileImage.setImageResource(
-                    R.drawable.person
-                )
+                Glide.with(profileImage).load(data.user?.userProfileImage).placeholder(R.drawable.ic_person).error(R.drawable.ic_person).into(profileImage)
+
                 tvProfileName.text = data.user?.userName ?: "Unknown"
                 tvStoryCount.text = "${data.stories?.size ?: 0} stories"
                 data.stories?.get(0)?.let { story ->

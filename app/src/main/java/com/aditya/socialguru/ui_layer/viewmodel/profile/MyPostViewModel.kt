@@ -69,7 +69,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private suspend fun handelMyPost(postHandling: PostListenerEmissionType): Resource<List<UserPostModel>> {
+    private  fun handelMyPost(postHandling: PostListenerEmissionType): Resource<List<UserPostModel>> {
 
         MyLogger.v(tagProfile, isFunctionCall = true)
 
@@ -88,6 +88,23 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
                 }
             }
 
+            Constants.ListenerEmitType.Removed -> {
+                MyLogger.v(tagProfile, msg = "This is removed post type")
+
+                postHandling.userPostModel?.postId?.let { postId ->
+                    userPostList.forEach { temp ->
+                        val currentPostId = temp.post?.postId
+                        if (currentPostId != null) {
+                            if (currentPostId == postId) {
+                                userPostList.remove(temp)
+                                userPostList.sortByDescending { it.post?.postUploadingTimeInTimeStamp }
+                                return@let
+                            }
+                        }
+                    }
+                }
+            }
+
             Constants.ListenerEmitType.Modify -> {
                 MyLogger.v(tagProfile, msg = "Post Modify event come !")
 
@@ -97,7 +114,8 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
                             if (userPost.user?.userId == userId) {
                                 userPostList[index].post = userPostList[index].post?.copy(
                                     likeCount = post.likeCount,
-                                    commentCount = post.commentCount
+                                    commentCount = post.commentCount,
+                                    likedUserList = post.likedUserList
                                 )
                                 userPostList.sortByDescending { it.post?.postUploadingTimeInTimeStamp }
                                 return@let
@@ -120,12 +138,12 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     //region:: Get My Liked Post
 
-    fun getMyLikedPost() = viewModelScope.myLaunch {
+    fun getMyLikedPost(userId: String) = viewModelScope.myLaunch {
         _myLikedPost.tryEmit(Resource.Loading())
         MyLogger.v(tagProfile, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
             MyLogger.v(tagProfile, msg = "Network available !")
-            repository.getMyLikedPost().onEach {
+            repository.getMyLikedPost(userId).onEach {
                 _myLikedPost.tryEmit(handelMyLikedPost(it))
             }.launchIn(this)
         } else {
@@ -162,7 +180,8 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
                             if (userPost.user?.userId == userId) {
                                 userPostList[index].post = userPostList[index].post?.copy(
                                     likeCount = post.likeCount,
-                                    commentCount = post.commentCount
+                                    commentCount = post.commentCount,
+                                    likedUserList = post.likedUserList
                                 )
                                 userPostList.sortByDescending { it.post?.postUploadingTimeInTimeStamp }
                                 return@let
@@ -195,7 +214,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
                             if (currentPostId != null) {
                                 if (currentPostId == postId) {
                                     userPostList.remove(temp)
-                                    userPostList.sortBy { it.post?.postUploadingTimeInTimeStamp }
+                                    userPostList.sortByDescending { it.post?.postUploadingTimeInTimeStamp }
                                     return@let
                                 }
                             }

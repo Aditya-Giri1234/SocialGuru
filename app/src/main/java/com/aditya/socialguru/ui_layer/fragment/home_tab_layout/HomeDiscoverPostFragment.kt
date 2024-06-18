@@ -6,13 +6,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavDirections
 import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -233,9 +234,10 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     //endregion
 
     private fun navigateToDetailPostScreen(postId: String) {
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalDetailPostFragment(postId)
         navController.safeNavigate(
-            R.id.homeFragment, R.id.detailPostFragment2, Helper.giveAnimationNavOption(),
-            DetailPostFragmentArgs(postId).toBundle()
+            directions, Helper.giveAnimationNavOption()
         )
     }
 

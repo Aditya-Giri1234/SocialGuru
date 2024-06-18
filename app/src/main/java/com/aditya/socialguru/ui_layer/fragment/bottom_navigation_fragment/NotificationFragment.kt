@@ -18,6 +18,7 @@ import androidx.navigation.NavDirections
 import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -319,17 +320,17 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
 
     private fun navigateToProfileView(userId: String) {
         val directions: NavDirections =
-            NotificationFragmentDirections.actionNotificationFragmentToProfileViewFragment4(userId)
-        navController.safeNavigate(directions, Helper.giveAnimationNavOption())
+            BottomNavigationBarDirections.actionGlobalProfileViewFragment(userId)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
     private fun navigateToDetailPost(postId: String) {
-
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalDetailPostFragment(postId)
         navController.safeNavigate(
-            R.id.notificationFragment,
-            R.id.detailPostFragment2,
-            Helper.giveAnimationNavOption(),
-            DetailPostFragmentArgs(postId).toBundle()
+            directions, Helper.giveAnimationNavOption()
         )
     }
 

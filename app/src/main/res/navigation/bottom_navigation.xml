@@ -82,13 +82,16 @@
             app:argType="android.net.Uri" />
     </fragment>
     <fragment
-        android:id="@+id/profileViewFragment3"
+        android:id="@+id/profileViewFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragment"
         android:label="fragment_profile_view"
         tools:layout="@layout/fragment_profile_view" >
         <argument
             android:name="userId"
             app:argType="string" />
+        <action
+            android:id="@+id/action_profileViewFragment_to_myActivityFragment"
+            app:destination="@id/myActivityFragment" />
     </fragment>
     <fragment
         android:id="@+id/splashFragment"
@@ -103,13 +106,13 @@
             app:destination="@id/onboardingScreenFragment" />
     </fragment>
     <fragment
-        android:id="@+id/detailPostFragment2"
+        android:id="@+id/detailPostFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragment"
         android:label="fragment_detail_post"
         tools:layout="@layout/fragment_detail_post" >
         <action
             android:id="@+id/action_detailPostFragment2_to_profileViewFragment3"
-            app:destination="@id/profileViewFragment3" />
+            app:destination="@id/profileViewFragment" />
         <argument
             android:name="postId"
             app:argType="string" />
@@ -127,9 +130,44 @@
         tools:layout="@layout/fragment_user_like_l_ist" >
         <action
             android:id="@+id/action_userLikeLIstFragment_to_profileViewFragment3"
-            app:destination="@id/profileViewFragment3" />
+            app:destination="@id/profileViewFragment" />
         <argument
             android:name="postId"
             app:argType="string" />
     </fragment>
+    <fragment
+        android:id="@+id/showMyStoryFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.story_helper.ShowMyStoryFragment"
+        android:label="fragment_show_my_story"
+        tools:layout="@layout/fragment_show_my_story" >
+        <action
+            android:id="@+id/action_showMyStoryFragment_to_storyShowFragment"
+            app:destination="@id/storyShowFragment" />
+        <argument
+            android:name="userId"
+            app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/storyShowFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.story_helper.StoryShowFragment"
+        android:label="fragment_story_show"
+        tools:layout="@layout/fragment_story_show" >
+        <argument
+            android:name="userStory"
+            app:argType="com.aditya.socialguru.data_layer.model.story.UserStories" />
+    </fragment>
+    <fragment
+        android:id="@+id/myActivityFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.MyActivityFragment"
+        android:label="fragment_my_activity"
+        tools:layout="@layout/fragment_my_activity" >
+        <action
+            android:id="@+id/action_myActivityFragment_to_detailPostFragment2"
+            app:destination="@id/detailPostFragment" />
+        <argument
+            android:name="userId"
+            app:argType="string" />
+    </fragment>
+    <action android:id="@+id/action_global_showMyStoryFragment" app:destination="@id/showMyStoryFragment" />
+    <action android:id="@+id/action_global_profileViewFragment" app:destination="@id/profileViewFragment" /><action android:id="@+id/action_global_detailPostFragment" app:destination="@id/detailPostFragment"/><action android:id="@+id/action_global_addPostFragment" app:destination="@id/addPostFragment"/><action android:id="@+id/action_global_myActivityFragment" app:destination="@id/myActivityFragment"/><action android:id="@+id/action_global_storyShowFragment" app:destination="@id/storyShowFragment"/>
 </navigation>

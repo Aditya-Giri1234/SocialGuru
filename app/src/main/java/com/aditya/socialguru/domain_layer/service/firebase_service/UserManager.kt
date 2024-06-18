@@ -307,10 +307,12 @@ object UserManager {
             }
 
 
-
             // Remember this callback listen in viewmodel scope means until viewmodel destroyed below part not called.
             awaitClose {
-                MyLogger.w(Constants.LogTag.Notification ,msg="isFirstTimeMyNotificationListener reset ! ")
+                MyLogger.w(
+                    Constants.LogTag.Notification,
+                    msg = "isFirstTimeMyNotificationListener reset ! "
+                )
                 isFirstTimeMyNotificationListener = true
                 myNotificationListener?.remove()
                 close()
@@ -639,12 +641,20 @@ object UserManager {
                     value.documentChanges.forEach {
                         when (it.type) {
                             DocumentChange.Type.ADDED -> {
-                                trySend(
-                                    ListenerEmissionType(
-                                        Constants.ListenerEmitType.Added,
-                                        singleResponse = it.document.toObject<FriendCircleData>()
+                                launch {
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Added,
+                                            singleResponse = it.document.toObject<FriendCircleData>().let {
+                                                it.copy(
+                                                    user = it.userId?.let { getUserById(it) }
+                                                )
+                                            }
+
+                                        )
                                     )
-                                )
+                                }
+
                             }
 
                             DocumentChange.Type.REMOVED -> {
@@ -915,7 +925,7 @@ object UserManager {
             val friendRef =
                 userRef.document(userId).collection(Constants.Table.PendingRequest.name)
                     .document(userId)
-            val  myUserRef=
+            val myUserRef =
                 userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
                     .document(friendId)
 
@@ -940,7 +950,7 @@ object UserManager {
             val friendRef =
                 userRef.document(friendId).collection(Constants.Table.PendingRequest.name)
                     .document(userId)
-            val  myUserRef=
+            val myUserRef =
                 userRef.document(userId).collection(Constants.Table.FriendRequest.name)
                     .document(friendId)
 

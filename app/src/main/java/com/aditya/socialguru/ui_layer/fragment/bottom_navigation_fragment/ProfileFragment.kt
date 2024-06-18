@@ -1,7 +1,6 @@
 package com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.ColorDrawable
@@ -13,13 +12,13 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.navigation.navGraphViewModels
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -35,7 +34,7 @@ import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.SharePref
-
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.viewmodel.profile.ProfileViewModel
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.Dispatchers
@@ -61,7 +60,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
         (requireActivity() as MainActivity).navController
     }
 
-    private val profileViewModel:ProfileViewModel by navGraphViewModels(R.id.bottom_navigation_bar) {
+    private val profileViewModel: ProfileViewModel by navGraphViewModels(R.id.bottom_navigation_bar) {
         ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
     }
 
@@ -153,7 +152,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
         binding.apply {
             lifecycleScope.myLaunch {
                 pref.getPrefUser().first()?.let { user ->
-                    withContext(Dispatchers.Main){
+                    withContext(Dispatchers.Main) {
                         if (user.userProfileImage != null) {
                             ivProfile.tag =
                                 imageAvailable  // help to determine that image available not
@@ -224,10 +223,11 @@ class ProfileFragment : Fragment(), AlertDialogOption {
             }
             linearItemActivity.setSafeOnClickListener {
                 popUp.dismiss()
-
                 val directions: NavDirections =
-                    ProfileFragmentDirections.actionProfileFragmentToMyActivityFragment()
-                navController.safeNavigate(directions, Helper.giveAnimationNavOption())
+                    BottomNavigationBarDirections.actionGlobalMyActivityFragment(AuthManager.currentUserId()!!)
+                navController.safeNavigate(
+                    directions, Helper.giveAnimationNavOption()
+                )
 
             }
             linearItemEditProfile.setSafeOnClickListener {
@@ -277,7 +277,11 @@ class ProfileFragment : Fragment(), AlertDialogOption {
     private fun navigateToOnboardingScreen() {
         lifecycleScope.myLaunch {
             delay(100)
-            navController.safeNavigate(R.id.profileFragment,R.id.onboardingScreenFragment,Helper.giveAnimationNavOption(R.id.homeFragment,true))
+            navController.safeNavigate(
+                R.id.profileFragment,
+                R.id.onboardingScreenFragment,
+                Helper.giveAnimationNavOption(R.id.homeFragment, true)
+            )
         }
     }
 

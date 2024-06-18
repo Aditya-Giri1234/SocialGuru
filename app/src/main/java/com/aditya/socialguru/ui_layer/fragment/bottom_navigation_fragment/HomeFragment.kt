@@ -27,6 +27,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -48,11 +49,15 @@ import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.StoryTypeOptions
 import com.aditya.socialguru.domain_layer.service.SharePref
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.NormalPagerAdapter
 import com.aditya.socialguru.ui_layer.adapter.StoryAdapter
 import com.aditya.socialguru.ui_layer.fragment.dialog_fragment.StoryTypeOptionDialog
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeDiscoverPostFragment
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeFollowingPostFragment
+import com.aditya.socialguru.ui_layer.fragment.profile_part.MyActivityFragmentArgs
+import com.aditya.socialguru.ui_layer.fragment.story_helper.ShowMyStoryFragmentArgs
+import com.aditya.socialguru.ui_layer.fragment.story_helper.StoryShowFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.bottom_navigation_bar.HomeViewModel
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.Dispatchers
@@ -430,6 +435,9 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
     private fun FragmentHomeBinding.setListener() {
+        myToolbar.profileImage.setSafeOnClickListener {
+            navigateToProfileViewFragment()
+        }
         myToolbar.icSetting.setOnClickListener {
             showPopupMenu()
         }
@@ -519,14 +527,26 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     private fun navigateToShowMyStatus() {
         val directions: NavDirections =
-            HomeFragmentDirections.actionHomeFragmentToShowMyStoryFragment()
-        navController?.safeNavigate(directions)
+            BottomNavigationBarDirections.actionGlobalShowMyStoryFragment(AuthManager.currentUserId()!!)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
     private fun navigateToStoryShow(stories: UserStories) {
         val directions: NavDirections =
-            HomeFragmentDirections.actionHomeFragmentToStoryShowFragment(stories)
-        navController?.safeNavigate(directions, Helper.giveAnimationNavOption())
+            BottomNavigationBarDirections.actionGlobalStoryShowFragment(stories)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
+    }
+
+    private fun navigateToProfileViewFragment(){
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalProfileViewFragment(AuthManager.currentUserId()!!)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
     private fun showBackToTopView() {

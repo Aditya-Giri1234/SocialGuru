@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.navigation.fragment.navArgs
 import androidx.navigation.ui.navigateUp
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
@@ -32,6 +33,9 @@ class MyActivityFragment : Fragment() {
     private var _pagerAdapter:NormalPagerAdapter?=null
     private val pagerAdapter get()=_pagerAdapter!!
 
+    private val args by navArgs<MyActivityFragmentArgs>()
+    private lateinit var userId:String
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +56,7 @@ class MyActivityFragment : Fragment() {
     }
 
     private fun handleInitialization() {
+        userId=args.userId
         initUi()
     }
 
@@ -72,9 +77,9 @@ class MyActivityFragment : Fragment() {
     private fun FragmentMyActivityBinding.setUpViewPager() {
         _pagerAdapter = NormalPagerAdapter(
             listOf(
-                ShowMyPostFragment(),
-                ShowMyCommentPostFragment(),
-                ShowMyLikedPostFragment()
+                ShowMyPostFragment(userId),
+                ShowMyCommentPostFragment(userId),
+                ShowMyLikedPostFragment(userId)
             ), childFragmentManager, viewLifecycleOwner.lifecycle
         )
         viewPagerHome.apply {

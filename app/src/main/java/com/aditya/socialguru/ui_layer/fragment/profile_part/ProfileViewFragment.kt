@@ -1,25 +1,34 @@
 package com.aditya.socialguru.ui_layer.fragment.profile_part
 
+import android.content.Context
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.PopupWindow
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
 import com.aditya.socialguru.databinding.FragmentProfileViewBinding
+import com.aditya.socialguru.databinding.PopUpHomeSettingBinding
+import com.aditya.socialguru.databinding.PopUpProfileSettingBinding
+import com.aditya.socialguru.databinding.SampleProfileViewPopMenuBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
@@ -28,9 +37,11 @@ import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
+import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.profile.ProfileViewModel
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.flow.launchIn
@@ -56,7 +67,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     private val args by navArgs<ProfileViewFragmentArgs>()
 
 
-    private var userId: String? = null
+    private lateinit var userId:String
 
     private val profileViewModel by viewModels<ProfileViewModel>()
 
@@ -302,6 +313,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 icBack.myShow()
                 profileImage.gone()
                 tvHeaderUserName.text = "Profile"
+                icSetting.myShow()
             }
 
             userId?.let {
@@ -316,6 +328,10 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     private fun FragmentProfileViewBinding.setListener() {
+
+        myToolbar.icSetting.setSafeOnClickListener {
+            showPopupMenu()
+        }
 
         ivProfile.setSafeOnClickListener {
             if (ivProfile.tag == imageAvailable) {
@@ -464,6 +480,56 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
         setBackgroundColor(requireContext().giveMeColor(R.color.green))
         setTextColor(requireContext().giveMeColor(R.color.black))
         text = getString(R.string.already_friend)
+    }
+
+    private fun showPopupMenu() {
+        // Pop up menu take two thing first one context and second  is in which view is parent so it adjust size accordingly
+        val layoutInflater =
+            requireContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+
+        val bindingPopUp = SampleProfileViewPopMenuBinding.inflate(layoutInflater)
+        val popUp = PopupWindow(context)
+        popUp.contentView = bindingPopUp.root
+        popUp.width = LinearLayout.LayoutParams.WRAP_CONTENT
+        popUp.height = LinearLayout.LayoutParams.WRAP_CONTENT
+        popUp.isFocusable = true
+        popUp.isOutsideTouchable = true
+        popUp.setBackgroundDrawable(ColorDrawable())
+        popUp.animationStyle = R.style.popup_window_animation
+        popUp.showAsDropDown(binding.myToolbar.icSetting)
+
+        if (binding.btnFriend.text!=getString(R.string.already_friend)&&userId!=AuthManager.currentUserId()!!){
+            bindingPopUp.linearItemStories.gone()
+            bindingPopUp.viewDevider1.gone()
+        }
+
+        bindingPopUp.linearItemPostRequest.setSafeOnClickListener {
+            navigateToPostScreen()
+            popUp.dismiss()
+        }
+
+        bindingPopUp.linearItemStories.setSafeOnClickListener {
+            navigateToStoriesScreen()
+            popUp.dismiss()
+        }
+
+
+    }
+
+    private fun navigateToStoriesScreen() {
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalShowMyStoryFragment(userId)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
+    }
+
+    private fun navigateToPostScreen() {
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalMyActivityFragment(userId)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
     private fun showSnackBar(message: String?, isSuccess: Boolean = false) {

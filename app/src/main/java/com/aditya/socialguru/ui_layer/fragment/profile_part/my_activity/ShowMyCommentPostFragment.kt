@@ -10,7 +10,7 @@ import com.aditya.socialguru.databinding.FragmentShowMyCommentPostBinding
 import com.aditya.socialguru.databinding.FragmentShowMyLikedPostBinding
 
 
-class ShowMyCommentPostFragment : Fragment() {
+class ShowMyCommentPostFragment(val userId:String) : Fragment() {
     private var _binding: FragmentShowMyCommentPostBinding?=null
     private val binding get() = _binding!!
 

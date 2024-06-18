@@ -12,8 +12,10 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -29,6 +31,7 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
 import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.profile.MyPostViewModel
@@ -37,7 +40,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 
-class ShowMyLikedPostFragment : Fragment(), OnPostClick {
+class ShowMyLikedPostFragment(val userId:String) : Fragment(), OnPostClick {
 
     private var _binding: FragmentShowMyLikedPostBinding? = null
     private val binding get() = _binding!!
@@ -191,7 +194,7 @@ class ShowMyLikedPostFragment : Fragment(), OnPostClick {
 
     private fun getData() {
         MyLogger.v(isFunctionCall = true)
-        myPostViewModel.getMyLikedPost()
+        myPostViewModel.getMyLikedPost(userId)
     }
 
     private fun setData(userPosts: List<UserPostModel> = mutableListOf()) {
@@ -228,8 +231,17 @@ class ShowMyLikedPostFragment : Fragment(), OnPostClick {
     override fun onVideoClick(): (Uri) -> Unit = {}
 
     override fun onLikeClick(post: Post) {
-        post.run {
-            myPostViewModel.updateLikeCount(postId!!, userId!!, false)
+        if (userId==AuthManager.currentUserId()){
+            //Currently i am seeing my post
+            post.run {
+                myPostViewModel.updateLikeCount(postId!!, userId!!, false)
+            }
+        }else{
+            // Currently i am seeing other post
+            val isLiked = post.likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
+            post.run {
+                myPostViewModel.updateLikeCount(postId!!, AuthManager.currentUserId()!!, !isLiked)
+            }
         }
     }
 
@@ -252,9 +264,10 @@ class ShowMyLikedPostFragment : Fragment(), OnPostClick {
     //endregion
 
     private fun navigateToDetailPostScreen(postId: String) {
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalDetailPostFragment(postId)
         navController.safeNavigate(
-            R.id.myActivityFragment, R.id.detailPostFragment2, Helper.giveAnimationNavOption(),
-            DetailPostFragmentArgs(postId).toBundle()
+            directions, Helper.giveAnimationNavOption()
         )
     }
 

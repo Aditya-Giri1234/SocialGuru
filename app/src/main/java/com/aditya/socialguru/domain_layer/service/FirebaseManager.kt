@@ -113,7 +113,7 @@ object FirebaseManager {
     suspend fun getMyPost(userId: String) = PostManager.getMyPost(userId)
 
     suspend fun getPostById(postId: String) = PostManager.getPostById(postId)
-    suspend fun getMyLikedPost() = PostManager.getMyLikedPost()
+    suspend fun getMyLikedPost(userId: String) = PostManager.getMyLikedPost(userId)
 
     suspend fun subscribeToPostCount(userId: String) = UserManager.subscribeToPostCount(userId)
 

@@ -28,6 +28,7 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.SharePref
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.MyStoryAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.ShowMyStoryViewModel
 import kotlinx.coroutines.flow.first
@@ -174,6 +175,13 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
                 adapter = myStoryAdapter
                 setItemTouchListener()
             }
+
+            user.userId?.let {
+                if (it!=AuthManager.currentUserId()!!){
+                    tvHeader.text="Stories"
+                }
+            }
+
             setListener()
         }
     }

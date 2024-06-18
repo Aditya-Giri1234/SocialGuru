@@ -382,7 +382,7 @@ class DetailPostFragment : Fragment() {
     }
 
     private fun navigateToLikeUserScreen() {
-    navController.safeNavigate(R.id.detailPostFragment2,R.id.userLikeLIstFragment,Helper.giveAnimationNavOption(),UserLikeLIstFragmentArgs(postId).toBundle())
+    navController.safeNavigate(R.id.detailPostFragment,R.id.userLikeLIstFragment,Helper.giveAnimationNavOption(),UserLikeLIstFragmentArgs(postId).toBundle())
     }
     private fun navigateToProfileViewScreen() {
         val directions: NavDirections =

@@ -215,10 +215,10 @@ object PostManager {
             }
         }
 
-    suspend fun getMyLikedPost() =
+    suspend fun getMyLikedPost(userId: String) =
         callbackFlow<ListenerEmissionType<UserPostModel, UserPostModel>> {
 
-            val postIdRef = postRef.whereArrayContains(PostTable.LIKED_USER_LIST.fieldName,AuthManager.currentUserId()!!)
+            val postIdRef = postRef.whereArrayContains(PostTable.LIKED_USER_LIST.fieldName,userId)
 
             val userPostList = postIdRef.get().await().mapNotNull {
                 it.toObject<Post>().let {
@@ -522,6 +522,14 @@ object PostManager {
                             )
                         }
 
+                        DocumentChange.Type.REMOVED->{
+                            trySend(
+                                PostListenerEmissionType(
+                                    Constants.ListenerEmitType.Removed,
+                                    userPostModel = document.document.toObject<Post>()
+                                )
+                            )
+                        }
 
                         else -> {}
                     }
