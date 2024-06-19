@@ -115,7 +115,8 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Starting -> {
                 MyLogger.v(
                     tagProfile,
-                    msg = "This is starting follower type :- ${listenerHandling.responseList}"
+                    msg = listenerHandling.responseList, isJson = true,
+                    jsonTitle = "This is starting follower type"
                 )
                 followerList.clear()
                 listenerHandling.responseList?.let {
@@ -128,8 +129,10 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Added -> {
                 MyLogger.v(
                     tagProfile,
-                    msg = "This is added follower type :- ${listenerHandling.singleResponse}"
+                    msg = listenerHandling.singleResponse, isJson = true,
+                    jsonTitle = "This is added follower type"
                 )
+
                 listenerHandling.singleResponse?.let {
                     followerList.add(it)
                     followerList.sortByDescending { it.timeStamp }
@@ -209,8 +212,10 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Starting -> {
                 MyLogger.v(
                     tagProfile,
-                    msg = "This is starting following type :- ${listenerHandling.responseList}"
+                    msg = listenerHandling.responseList, isJson = true,
+                    jsonTitle = "This is starting following type"
                 )
+
                 followingList.clear()
                 listenerHandling.responseList?.let {
                     followingList.addAll(it.toMutableList() as ArrayList<FriendCircleData>)
@@ -222,8 +227,10 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Added -> {
                 MyLogger.v(
                     tagProfile,
-                    msg = "This is added following type :- ${listenerHandling.singleResponse}"
+                    msg = listenerHandling.singleResponse, isJson = true,
+                    jsonTitle = "This is added following type"
                 )
+
                 listenerHandling.singleResponse?.let {
                     followingList.add(it)
                     followingList.sortByDescending { it.timeStamp }
@@ -299,11 +306,15 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             friendList.replayCache[0].data?.toMutableList() ?: mutableListOf<FriendCircleData>()
 
         when (listenerHandling.emitChangeType) {
+
+
             Constants.ListenerEmitType.Starting -> {
                 MyLogger.v(
                     tagProfile,
-                    msg = "This is starting friend type :- ${listenerHandling.responseList}"
+                    msg = listenerHandling.responseList, isJson = true,
+                    jsonTitle = "This is starting friend type"
                 )
+
                 friendList.clear()
                 listenerHandling.responseList?.let {
                     friendList.addAll(it.toMutableList() as ArrayList<FriendCircleData>)
@@ -315,8 +326,10 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Added -> {
                 MyLogger.v(
                     tagProfile,
-                    msg = "This is added friend type :- ${listenerHandling.singleResponse}"
+                    msg = listenerHandling.singleResponse, isJson = true,
+                    jsonTitle = "This is added friend type"
                 )
+
                 listenerHandling.singleResponse?.let {
                     friendList.add(it)
                     friendList.sortByDescending { it.timeStamp }
@@ -395,10 +408,13 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
 
         when (listenerHandling.emitChangeType) {
             Constants.ListenerEmitType.Starting -> {
+
                 MyLogger.v(
                     tagProfile,
-                    msg = "This is starting friend type :- ${listenerHandling.responseList}"
+                    msg = listenerHandling.responseList, isJson = true,
+                    jsonTitle = "This is starting friend request type"
                 )
+
                 friendRequestList.clear()
                 listenerHandling.responseList?.let {
                     friendRequestList.addAll(it.toMutableList() as ArrayList<FriendCircleData>)
@@ -407,10 +423,13 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             }
 
             Constants.ListenerEmitType.Added -> {
+
                 MyLogger.v(
                     tagProfile,
-                    msg = "This is added friend type :- ${listenerHandling.singleResponse}"
+                    msg = listenerHandling.singleResponse, isJson = true,
+                    jsonTitle = "This is added friend request type"
                 )
+
                 listenerHandling.singleResponse?.let {
                     friendRequestList.add(it)
                     friendRequestList.sortByDescending { it.timeStamp }

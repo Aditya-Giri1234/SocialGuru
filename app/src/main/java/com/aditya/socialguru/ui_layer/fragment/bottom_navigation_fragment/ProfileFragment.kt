@@ -91,7 +91,6 @@ class ProfileFragment : Fragment(), AlertDialogOption {
     private fun handleInitialization() {
         initUI()
         subscribeToObserver()
-        MyLogger.w(msg = "Profile fragment is data loaded ${profileViewModel.isDataLoaded}")
         if (!profileViewModel.isDataLoaded) {
             profileViewModel.setDataLoadedStatus(true)
             getData()
@@ -275,14 +274,12 @@ class ProfileFragment : Fragment(), AlertDialogOption {
     }
 
     private fun navigateToOnboardingScreen() {
-        lifecycleScope.myLaunch {
-            delay(100)
-            navController.safeNavigate(
-                R.id.profileFragment,
-                R.id.onboardingScreenFragment,
-                Helper.giveAnimationNavOption(R.id.homeFragment, true)
-            )
-        }
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalOnboardingScreenFragment()
+        navController.safeNavigate(
+            directions,
+            Helper.giveAnimationNavOption(R.id.homeFragment, true)
+        )
     }
 
     private fun showDialog() {

@@ -74,7 +74,7 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Starting -> {
                 MyLogger.v(
                     tagPost,
-                    msg = "This is starting story type :- ${discoverPostHandling.userPostList}"
+                    msg = "This is starting story type "
                 )
                 discoverPostHandling.userPostList?.let {
                     userPostList.addAll(it.toMutableList() as ArrayList<UserPostModel>)
@@ -85,7 +85,7 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Added -> {
                 MyLogger.v(
                     tagPost,
-                    msg = "This is added post type :- ${discoverPostHandling.userPostModel}"
+                    msg = "This is added post type "
                 )
                 discoverPostHandling.userPostModel?.let { post ->
                     post.userId?.let { userId ->
@@ -99,7 +99,6 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
                             it.post?.postUploadingTimeInTimeStamp
                         }
                     }
-                    MyLogger.d(tagPost, msg = userPostList, isJson = true)
                 }
                 MyLogger.d(tagPost, msg = userPostList, isJson = true)
 
@@ -118,7 +117,6 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
                             }
                         }
                     }
-                    MyLogger.d(tagPost, msg = userPostList, isJson = true)
                 }
                 MyLogger.d(tagPost, msg = userPostList, isJson = true)
 
@@ -126,6 +124,7 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
 
             Constants.ListenerEmitType.Modify -> {
                 // For Future
+                MyLogger.v(tagPost, msg = "This modify post type ..")
                 discoverPostHandling.userPostModel?.let { post ->
                     post.postId?.let { postId ->
                         userPostList.forEach { userPost ->
@@ -140,7 +139,6 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
                             }
                         }
                     }
-                    MyLogger.d(tagPost, msg = userPostList, isJson = true)
                 }
                 MyLogger.d(tagPost, msg = userPostList, isJson = true)
             }

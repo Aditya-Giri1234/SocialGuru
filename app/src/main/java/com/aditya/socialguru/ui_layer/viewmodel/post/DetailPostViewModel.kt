@@ -88,6 +88,7 @@ class DetailPostViewModel(val app: Application) : AndroidViewModel(app) {
 
         if (SoftwareManager.isNetworkAvailable(app)) {
             repository.getPostLikeUser(postId).onEach {
+                MyLogger.v(tagPost, msg = it, isJson = true)
                 _userList.tryEmit(Resource.Success(handleLikePostUser(it)))
             }.launchIn(this)
         } else {
@@ -107,7 +108,7 @@ class DetailPostViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Starting -> {
                 MyLogger.v(
                     tagPost,
-                    msg = "This is starting user like type :- ${postLikedHandling.responseList}"
+                    msg = "This is starting user like type "
                 )
                 postLikedHandling.responseList?.let {
                     userList.addAll(it)
@@ -119,7 +120,7 @@ class DetailPostViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Added -> {
                 MyLogger.v(
                     tagPost,
-                    msg = "This is added user like type :- ${postLikedHandling.singleResponse}"
+                    msg = "This is added user like type "
                 )
 
                 postLikedHandling.singleResponse?.let {

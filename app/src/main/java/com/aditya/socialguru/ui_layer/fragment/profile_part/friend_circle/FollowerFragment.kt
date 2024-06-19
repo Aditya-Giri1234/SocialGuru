@@ -111,8 +111,8 @@ class FollowerFragment : Fragment(), AlertDialogOption {
                 followerViewModel.followerList.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
-                            MyLogger.v(tagProfile, msg = "Follower List response come !")
-                            MyLogger.v(
+                            MyLogger.i(tagProfile, msg = "Follower List response come !")
+                            MyLogger.d(
                                 tagProfile,
                                 msg = response.data,
                                 isJson = true,

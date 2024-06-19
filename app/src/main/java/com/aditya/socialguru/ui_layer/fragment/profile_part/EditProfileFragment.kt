@@ -284,15 +284,15 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
     private fun validateDate(): Boolean {
         binding.apply {
             return when {
-                tiEtName.text.isNullOrEmpty() -> {
+                tiEtName.text.isNullOrBlank()-> {
                     tilName.customError("Name must not null !")
                 }
 
-                tiEtProfession.text.isNullOrEmpty() -> {
+                tiEtProfession.text.isNullOrBlank() -> {
                     tilProfession.customError("Profession must not null !")
                 }
 
-                tiEtBio.text.isNullOrEmpty() -> {
+                tiEtBio.text.isNullOrBlank()-> {
                     tilBio.customError("Bio must not null !")
                 }
 

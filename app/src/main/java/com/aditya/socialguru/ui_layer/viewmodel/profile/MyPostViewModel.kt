@@ -80,7 +80,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Starting -> {
                 MyLogger.v(
                     tagProfile,
-                    msg = "This is starting story type :- ${postHandling.userPostList}"
+                    msg = "This is starting my post type "
                 )
                 postHandling.userPostList?.let {
                     userPostList.addAll(it.toMutableList() as ArrayList<UserPostModel>)
@@ -89,7 +89,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
             }
 
             Constants.ListenerEmitType.Removed -> {
-                MyLogger.v(tagProfile, msg = "This is removed post type")
+                MyLogger.v(tagProfile, msg = "This is removed my post type")
 
                 postHandling.userPostModel?.postId?.let { postId ->
                     userPostList.forEach { temp ->
@@ -106,7 +106,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
             }
 
             Constants.ListenerEmitType.Modify -> {
-                MyLogger.v(tagProfile, msg = "Post Modify event come !")
+                MyLogger.v(tagProfile, msg = "My Post Modify event come !")
 
                 postHandling.userPostModel?.let { post ->
                     post.userId?.let { userId ->
@@ -122,7 +122,6 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
                             }
                         }
                     }
-                    MyLogger.d(tagProfile, msg = userPostList, isJson = true)
                 }
                 MyLogger.d(tagProfile, msg = userPostList, isJson = true)
 
@@ -163,7 +162,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Starting -> {
                 MyLogger.v(
                     tagProfile,
-                    msg = "This is starting story type :- ${postHandling.responseList}"
+                    msg = "This is starting my liked post type :- ${postHandling.responseList}"
                 )
                 postHandling.responseList?.let {
                     userPostList.addAll(it.toMutableList() as ArrayList<UserPostModel>)
@@ -172,7 +171,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
             }
 
             Constants.ListenerEmitType.Modify -> {
-                MyLogger.v(tagProfile, msg = "Post Modify event come !")
+                MyLogger.v(tagProfile, msg = "My Liked Post Modify event come !")
 
                 postHandling.singleResponse?.post?.let { post ->
                     post.userId?.let { userId ->
@@ -205,7 +204,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
             }
 
             Constants.ListenerEmitType.Removed -> {
-                MyLogger.v(tagProfile, msg = "This is removed post type")
+                MyLogger.v(tagProfile, msg = "This is removed my liked post type")
 
                 postHandling.singleResponse?.post?.let { post ->
                     post.postId?.let { postId ->

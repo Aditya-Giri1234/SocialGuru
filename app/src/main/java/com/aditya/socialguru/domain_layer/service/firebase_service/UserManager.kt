@@ -530,7 +530,7 @@ object UserManager {
                 it.timeStamp
             }
 
-            MyLogger.v(Constants.LogTag.Profile, msg = followerList)
+            MyLogger.v(Constants.LogTag.Profile, msg = followerList , isJson = true, jsonTitle = "Follower List ")
 
             trySend(
                 ListenerEmissionType(
@@ -617,7 +617,7 @@ object UserManager {
             followingList.sortBy {
                 it.timeStamp
             }
-            MyLogger.v(tagProfile, msg = followingList, isJson = true)
+            MyLogger.v(tagProfile, msg = followingList, isJson = true , jsonTitle = "Following List")
 
             trySend(
                 ListenerEmissionType(
@@ -701,7 +701,7 @@ object UserManager {
                 it.timeStamp
             }
 
-            MyLogger.v(Constants.LogTag.Profile, msg = friendList)
+            MyLogger.v(Constants.LogTag.Profile, msg = friendList , isJson = true, jsonTitle = "Friend List ")
 
             trySend(
                 ListenerEmissionType(
@@ -922,12 +922,12 @@ object UserManager {
     suspend fun deleteFriendRequest(userId: String, friendId: String) =
         callbackFlow<UpdateResponse> {
 
-            val friendRef =
-                userRef.document(userId).collection(Constants.Table.PendingRequest.name)
-                    .document(userId)
             val myUserRef =
-                userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
+                userRef.document(userId).collection(Constants.Table.PendingRequest.name)
                     .document(friendId)
+            val friendRef =
+                userRef.document(friendId).collection(Constants.Table.FriendRequest.name)
+                    .document(userId)
 
             firestore.runBatch { batch ->
                 batch.delete(myUserRef)

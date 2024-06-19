@@ -92,7 +92,7 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 discoverPostViewModel.userPost.onEach { response ->
                     response.let {
-                        MyLogger.d(msg = "Response coming and it was $response")
+                        MyLogger.d(msg = "Response coming in ui screen !")
                         when (response) {
                             is Resource.Success -> {
                                 response.hasBeenMessagedToUser = true

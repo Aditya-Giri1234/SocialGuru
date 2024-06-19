@@ -110,8 +110,8 @@ class FollowingFragment : Fragment() ,AlertDialogOption {
                 followingViewModel.followingList.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
-                            MyLogger.v(tagProfile, msg = "Following List response come !")
-                            MyLogger.v(
+                            MyLogger.i(tagProfile, msg = "Following List response come !")
+                            MyLogger.d(
                                 tagProfile,
                                 msg = response.data,
                                 isJson = true,

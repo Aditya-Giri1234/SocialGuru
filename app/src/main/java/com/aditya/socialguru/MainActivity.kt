@@ -210,7 +210,6 @@ class MainActivity : AppCompatActivity() {
         binding.apply {
             navController =
                 (supportFragmentManager.findFragmentById(R.id.localNavHostFragment) as NavHostFragment).findNavController()
-            MyLogger.v(msg = "Navcontroller :- ${navController}")
             bottomNavigationView.menu[2].isEnabled = false
             bottomNavigationView.setupWithNavController(navController)
             setListener()

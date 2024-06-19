@@ -3,18 +3,57 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/lightBlack"
+    android:background="@color/black"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".ui_layer.fragment.bottom_navigation_fragment.RecentChatFragment">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="RescentChatFragment"
-        android:textColor="@color/white"
+    <LinearLayout
+        android:id="@+id/linearHeaderSearch"
+        android:layout_width="match_parent"
+        android:layout_height="?actionBarSize"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginHorizontal="@dimen/_10sdp"
+        android:background="@drawable/shape_fab_bg"
+        android:layout_marginVertical="@dimen/_5sdp"
+        android:paddingHorizontal="@dimen/_10sdp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
+        <ImageView
+            android:layout_width="@dimen/_24sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:src="@drawable/ic_search"
+            app:tint="@color/lightWhite"
+            android:contentDescription="Search Icon"/>
+        <EditText
+            android:id="@+id/etSearch"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:hint="Search User"
+            android:focusable="true"
+            android:clickable="true"
+            android:textCursorDrawable="@null"
+            android:focusableInTouchMode="true"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="@dimen/_5sdp"
+            android:textColorHint="@color/lightWhite"
+            android:textColor="@color/white"
+            android:fontFamily="@font/poppin_medium"
+            android:maxLines="1"
+            android:inputType="textPersonName"
+            android:textSize="@dimen/_14ssp"/>
+        <ImageView
+            android:id="@+id/icClose"
+            android:layout_width="@dimen/_24sdp"
+            android:layout_height="@dimen/_24sdp"
+            android:src="@drawable/ic_close"
+            android:contentDescription="Search Icon"/>
+
+
+    </LinearLayout>
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

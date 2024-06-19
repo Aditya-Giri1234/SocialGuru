@@ -72,7 +72,7 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
     //region:: Get all story
 
     @OptIn(FlowPreview::class)
-    suspend fun getAllStory(userId: String) = viewModelScope.myLaunch {
+     fun getAllStory(userId: String) = viewModelScope.myLaunch {
         _userStories.tryEmit(Resource.Loading())
         viewModelScope.launch {
 
@@ -81,7 +81,7 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
         if (SoftwareManager.isNetworkAvailable(app)) {
             MyLogger.v(tagStory, msg = "Network available !")
             repository.getAllStory(userId).onEach {
-                MyLogger.d(tagStory, msg = it.userStoryList, isJson = true)
+                MyLogger.v(tagStory, msg = it.userStoryList, isJson = true)
                 _userStories.tryEmit(handleGetAllStory(it))
             }.launchIn(this)
         } else {
@@ -99,9 +99,10 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
 
         when (storyHandling.emitChangeType) {
             Constants.StoryEmitType.Starting -> {
+
                 MyLogger.v(
                     tagStory,
-                    msg = "This is starting story type :- ${storyHandling.userStoryList}"
+                    msg = "This is starting story type "
                 )
                 userStoryList.clear()
                 storyHandling.userStoryList?.let {
@@ -110,7 +111,7 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
             }
 
             Constants.StoryEmitType.Added -> {
-                MyLogger.v(tagStory, msg = "This is added story type :- ${storyHandling.story}")
+                MyLogger.v(tagStory, msg = "This is added story type")
                 storyHandling.story?.let { story ->
                     story.userId?.let { userId ->
                         if (userStoryList.isEmpty()) {

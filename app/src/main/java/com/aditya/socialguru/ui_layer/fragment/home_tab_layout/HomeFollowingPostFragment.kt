@@ -88,12 +88,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 followingPostViewModel.userPost.onEach { response ->
                     response.let {
-                        MyLogger.d(
-                            tagPost,
-                            msg = response.data,
-                            isJson = true,
-                            jsonTitle = "Response coming in fragment"
-                        )
+                         MyLogger.i(tagPost, msg = "Response coming in ui screen !")
                         when (response) {
                             is Resource.Success -> {
                                 response.hasBeenMessagedToUser = true

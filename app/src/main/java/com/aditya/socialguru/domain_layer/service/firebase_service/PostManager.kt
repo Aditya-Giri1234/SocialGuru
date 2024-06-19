@@ -333,7 +333,7 @@ object PostManager {
             tagPost,
             msg = userPostList,
             isJson = true,
-            jsonTitle = "User Post list !"
+            jsonTitle = "User Discover Post list !"
         )
 
         trySend(
@@ -410,7 +410,7 @@ object PostManager {
             tagPost,
             msg = userPostList,
             isJson = true,
-            jsonTitle = "User Post list !"
+            jsonTitle = "User Following Post list !"
         )
 
         trySend(
@@ -495,7 +495,7 @@ object PostManager {
             tagPost,
             msg = userPostList,
             isJson = true,
-            jsonTitle = "User Post list !"
+            jsonTitle = "My Post list !"
         )
 
         trySend(
@@ -569,7 +569,7 @@ object PostManager {
                 tagPost,
                 msg = post,
                 isJson = true,
-                jsonTitle = "User Post Get !"
+                jsonTitle = "Post By Id Get !"
             )
 
             trySend(

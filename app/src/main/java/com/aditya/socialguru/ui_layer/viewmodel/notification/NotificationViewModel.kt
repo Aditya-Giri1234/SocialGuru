@@ -59,6 +59,7 @@ class NotificationViewModel(val app:Application) : AndroidViewModel(app) {
 
          if (SoftwareManager.isNetworkAvailable(app)) {
              repository.getMyNotificationAndListen().onEach {
+                 MyLogger.v(tagNotification, msg = it, isJson = true)
                  _notificationList.tryEmit(handleNotificationListResponse(it))
              }.launchIn(this)
 
@@ -76,7 +77,7 @@ class NotificationViewModel(val app:Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Starting -> {
                 MyLogger.v(
                     tagNotification,
-                    msg = "This is starting notification type :- ${listenerHandling.responseList}"
+                    msg = "This is starting notification type "
                 )
                 notificationList.clear()
                 listenerHandling.responseList?.let {
@@ -88,7 +89,7 @@ class NotificationViewModel(val app:Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Added -> {
                 MyLogger.v(
                     tagNotification,
-                    msg = "This is added notification type :- ${listenerHandling.singleResponse}"
+                    msg = "This is added notification type "
                 )
                 listenerHandling.singleResponse?.let {
                     notificationList.add(it)

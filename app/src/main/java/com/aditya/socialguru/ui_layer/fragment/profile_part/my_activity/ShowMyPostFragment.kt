@@ -170,7 +170,7 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
         rvMyPost.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    MyLogger.v(tagProfile, msg = "Idle State")
+//                    MyLogger.v(tagProfile, msg = "Idle State")
                     linearBackToTop.gone()
                 }
             }
@@ -178,10 +178,10 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
                 if (dy < 0) {
-                    MyLogger.v(tagProfile, msg = "Up scroll")
+//                    MyLogger.v(tagProfile, msg = "Up scroll")
                     showBackToTopView()
                 } else {
-                    MyLogger.v(tagProfile, msg = "Down scroll")
+//                    MyLogger.v(tagProfile, msg = "Down scroll")
                     linearBackToTop.gone()
                 }
             }

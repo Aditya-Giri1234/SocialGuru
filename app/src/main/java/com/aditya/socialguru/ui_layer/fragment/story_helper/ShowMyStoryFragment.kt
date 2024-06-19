@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDirections
+import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
@@ -22,7 +23,6 @@ import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
-import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -31,7 +31,6 @@ import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.MyStoryAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.ShowMyStoryViewModel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -51,7 +50,10 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
     private var _stories: MutableList<Stories>? = null
     private val stories get() = _stories!!
 
+    private lateinit var userId: String
+
     private var isDataLoaded = false
+    private val args by navArgs<ShowMyStoryFragmentArgs>()
 
     private val navController get() = (requireActivity() as MainActivity).navController
     private val showMyStoryViewModel by viewModels<ShowMyStoryViewModel>()
@@ -87,6 +89,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
     }
 
     private fun handleInitialization() {
+        userId=args.userId
         initUi()
         subscribeToObserver()
         if (!isDataLoaded) {
@@ -176,11 +179,11 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
                 setItemTouchListener()
             }
 
-            user.userId?.let {
-                if (it!=AuthManager.currentUserId()!!){
-                    tvHeader.text="Stories"
-                }
+
+            if (userId!= AuthManager.currentUserId()!!) {
+                tvHeader.text = "Stories"
             }
+
 
             setListener()
         }
@@ -194,11 +197,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
 
     private fun getData() {
-        lifecycleScope.myLaunch {
-            pref.getPrefUser().first()?.let {
-                showMyStoryViewModel.getMyStory(it.userId!!)
-            }
-        }
+        showMyStoryViewModel.getMyStory(userId)
     }
 
     private fun setItemTouchListener() {
@@ -238,10 +237,10 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
     private fun setData() {
         binding.apply {
-            if (stories.isNotEmpty()){
+            if (stories.isNotEmpty()) {
                 hideNoStatusView()
                 myStoryAdapter.submitList(stories)
-            }else{
+            } else {
                 showNoStatusView()
             }
 
