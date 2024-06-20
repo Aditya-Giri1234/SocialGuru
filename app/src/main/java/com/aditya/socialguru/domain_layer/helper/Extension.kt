@@ -4,8 +4,10 @@ import android.app.PendingIntent
 import android.app.TaskStackBuilder
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Rect
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.Uri
@@ -14,12 +16,14 @@ import android.os.SystemClock
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
 import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isGone
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
@@ -362,4 +366,26 @@ fun launchCoroutineInDefaultThread(run:suspend CoroutineScope.()->Unit){
     CoroutineScope(Dispatchers.Default).launch {
         run()
     }
+}
+
+
+/**
+ * Call this method (in onActivityCreated or later) to set
+ * the width of the dialog to a percentage of the current
+ * screen width.
+ */
+fun DialogFragment.setWidthPercent(percentage: Int) {
+    val percent = percentage.toFloat() / 100
+    val dm = Resources.getSystem().displayMetrics
+    val rect = dm.run { Rect(0, 0, widthPixels, heightPixels) }
+    val percentWidth = rect.width() * percent
+    dialog?.window?.setLayout(percentWidth.toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+}
+
+/**
+ * Call this method (in onActivityCreated or later)
+ * to make the dialog near-full screen.
+ */
+fun DialogFragment.setFullScreen() {
+    dialog?.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
 }

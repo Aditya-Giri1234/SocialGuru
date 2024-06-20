@@ -8,6 +8,7 @@ import android.provider.OpenableColumns
 import android.util.Patterns
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
@@ -23,6 +24,7 @@ import com.aditya.socialguru.domain_layer.custom_class.ProfileViewDialog
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSnackBar
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSuccessSnackBar
 import com.aditya.socialguru.domain_layer.service.SharePref
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.google.android.material.snackbar.BaseTransientBottomBar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -93,6 +95,8 @@ object Helper {
     }
 
 
+
+
     fun customToast(context: Context, msg: CharSequence, duration: Int, isNeeded: Boolean = false) {
 //        if (isNeeded) {
         toast?.cancel();
@@ -145,6 +149,10 @@ object Helper {
     fun getStoryId():String="${Constants.Table.Stories.name}_${generateUUID()}"
     fun getCommentId(post_id:String):String="${Constants.Table.Post.name}_${post_id}"
 
+
+    fun getChatRoomId(receiverId:String) :String ="${Constants.Table.Chats.name}_${AuthManager.currentUserId()!!}_$receiverId"
+
+    fun getMessageId():String = "${Constants.Table.Messages.name}_${AuthManager.currentUserId()!!}_${System.currentTimeMillis()}"
     fun getNotificationId():String="${Constants.Table.Notification.name}_${generateUUID()}"
     fun getUserId():String=UUID.randomUUID().toString()
     fun getPostCommentId(postId:String):String="${Constants.Table.Post.name}_${Constants.Table.Comment.name}_$postId"

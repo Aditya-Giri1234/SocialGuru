@@ -14,11 +14,13 @@ android {
 
 
 
-    // Index.List and dependencies have duplicate file so remove one during gradle build
+    // Index.List , LICENSE.md  ,META-INF/NOTICE.md and dependencies have duplicate file so remove one during gradle build
     packaging {
         resources {
             excludes += "META-INF/INDEX.LIST"
             excludes +="META-INF/DEPENDENCIES"
+            excludes +="META-INF/LICENSE.md"
+            excludes +="META-INF/NOTICE.md"
         }
     }
 
@@ -34,7 +36,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -63,6 +65,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.firebase.storage.ktx)
     implementation(libs.androidx.media3.exoplayer.hls)
+    implementation(libs.androidx.databinding.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

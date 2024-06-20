@@ -104,7 +104,9 @@ object Constants {
         FriendRequest ,
         PendingRequest,
         Notification,
-        MyLikedPost
+        MyLikedPost,
+        Chats ,
+        Messages
     }
 
     enum class FriendStatus {
@@ -156,6 +158,25 @@ object Constants {
         LIKED_USER_LIST("likedUserList")
     }
 
+    enum class MessageTable(val fieldName: String){
+        MESSAGE_ID("messageId"),
+        MESSAGE_TYPE("messageType"),
+        TEXT("text"),
+        IMAGE_URI("imageUri"),
+        VIDEO_URI("videoUri"),
+        SENDER_ID("senderId"),
+        RECEIVER_ID("receiverId"),
+        MESSAGE_SENT_TIME_IN_TIMESTAMP("messageSentTimeInTimeStamp"),
+        MESSAGE_SEND_TIME_IN_TEXT("messageSendTimeInText"),
+        SEEN_STATUS("seenStatus")
+    }
+
+    enum class SeenStatus(val status:String){
+        Send("Message Sent To Server"),
+        Received("Message Received To User"),
+        MessageSeen("Message seen by receiver")
+    }
+
 
     //Post type
 
@@ -190,7 +211,9 @@ object Constants {
         ACCEPT_FRIEND_REQUEST,
         FRIEND_REQUEST_COME,
         LIKE_IN_POST,
-        COMMENT_IN_POST
+        COMMENT_IN_POST,
+        TextChat,
+        MediaChat
     }
 
     // NotificationPriority

@@ -1,6 +1,5 @@
 package com.aditya.socialguru.domain_layer.service.firebase_service
 
-import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.PostListenerEmissionType
@@ -17,14 +16,12 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
-import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.NotificationSendingManager
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
-import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
@@ -67,7 +64,8 @@ object PostManager {
     //region:: Like or Unlike a post
 
     suspend fun updateLikeCount(postId: String, postCreatorUserId: String, isLiked: Boolean) =
-        callbackFlow<UpdateResponse> {
+        callbackFlow<UpdateResponse>
+        {
             val postIdRef = postRef.document(postId)
             val likeRef = postIdRef.collection(Table.Like.name)
             // This is for showing liked user on post in detail post fragment to liked user screen
@@ -115,17 +113,12 @@ object PostManager {
                         PostTable.LIKED_USER_LIST.fieldName to updatedLikedUserList
                     )
                 )
-                if (postCreatorUserId != AuthManager.currentUserId()&&isLiked) {
+                if (postCreatorUserId != AuthManager.currentUserId() && isLiked) {
                     transaction.set(notificationRef, notificationData)
                 }
             }.addOnSuccessListener {
                 if (postCreatorUserId != AuthManager.currentUserId()!! && isLiked) {
-                    launchCoroutineInIOThread {
-                        userRef.document(postCreatorUserId).get().await()
-                            .toObject<User>()?.fcmToken?.let {
-                            NotificationSendingManager.sendNotification(it, notificationData)
-                        }
-                    }
+                    NotificationSendingManager.sendNotification(postCreatorUserId, notificationData)
                 }
                 MyLogger.i(tagPost, msg = "Like count updated successfully!")
                 trySend(UpdateResponse(true, ""))
@@ -218,14 +211,14 @@ object PostManager {
     suspend fun getMyLikedPost(userId: String) =
         callbackFlow<ListenerEmissionType<UserPostModel, UserPostModel>> {
 
-            val postIdRef = postRef.whereArrayContains(PostTable.LIKED_USER_LIST.fieldName,userId)
+            val postIdRef = postRef.whereArrayContains(PostTable.LIKED_USER_LIST.fieldName, userId)
 
             val userPostList = postIdRef.get().await().mapNotNull {
                 it.toObject<Post>().let {
-                   it.userId?.run {
-                       val user=UserManager.getUserById(this)
-                       UserPostModel(user,it)
-                   }
+                    it.userId?.run {
+                        val user = UserManager.getUserById(this)
+                        UserPostModel(user, it)
+                    }
                 }
 
             }.toMutableList()
@@ -256,8 +249,8 @@ object PostManager {
                                         Constants.ListenerEmitType.Added,
                                         singleResponse = it.document.toObject<Post>().let {
                                             it.userId?.run {
-                                                val user=UserManager.getUserById(this)
-                                                UserPostModel(user,it)
+                                                val user = UserManager.getUserById(this)
+                                                UserPostModel(user, it)
                                             }
                                         }
                                     )
@@ -273,8 +266,8 @@ object PostManager {
                                         Constants.ListenerEmitType.Modify,
                                         singleResponse = it.document.toObject<Post>().let {
                                             it.userId?.run {
-                                                val user=UserManager.getUserById(this)
-                                                UserPostModel(user,it)
+                                                val user = UserManager.getUserById(this)
+                                                UserPostModel(user, it)
                                             }
                                         }
                                     )
@@ -289,8 +282,8 @@ object PostManager {
                                         Constants.ListenerEmitType.Removed,
                                         singleResponse = it.document.toObject<Post>().let {
                                             it.userId?.run {
-                                                val user=UserManager.getUserById(this)
-                                                UserPostModel(user,it)
+                                                val user = UserManager.getUserById(this)
+                                                UserPostModel(user, it)
                                             }
                                         }
                                     )
@@ -522,7 +515,7 @@ object PostManager {
                             )
                         }
 
-                        DocumentChange.Type.REMOVED->{
+                        DocumentChange.Type.REMOVED -> {
                             trySend(
                                 PostListenerEmissionType(
                                     Constants.ListenerEmitType.Removed,

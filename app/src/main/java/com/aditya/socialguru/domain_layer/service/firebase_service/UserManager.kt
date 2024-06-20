@@ -69,6 +69,7 @@ object UserManager {
     private var isFirstTimeUserStatusUpdateListListener = true
 
 
+
     suspend fun saveUser(user: User): Pair<Boolean, String?> {
         MyLogger.v(tagLogin, isFunctionCall = true)
         return try {
@@ -530,7 +531,12 @@ object UserManager {
                 it.timeStamp
             }
 
-            MyLogger.v(Constants.LogTag.Profile, msg = followerList , isJson = true, jsonTitle = "Follower List ")
+            MyLogger.v(
+                Constants.LogTag.Profile,
+                msg = followerList,
+                isJson = true,
+                jsonTitle = "Follower List "
+            )
 
             trySend(
                 ListenerEmissionType(
@@ -617,7 +623,7 @@ object UserManager {
             followingList.sortBy {
                 it.timeStamp
             }
-            MyLogger.v(tagProfile, msg = followingList, isJson = true , jsonTitle = "Following List")
+            MyLogger.v(tagProfile, msg = followingList, isJson = true, jsonTitle = "Following List")
 
             trySend(
                 ListenerEmissionType(
@@ -645,11 +651,12 @@ object UserManager {
                                     trySend(
                                         ListenerEmissionType(
                                             Constants.ListenerEmitType.Added,
-                                            singleResponse = it.document.toObject<FriendCircleData>().let {
-                                                it.copy(
-                                                    user = it.userId?.let { getUserById(it) }
-                                                )
-                                            }
+                                            singleResponse = it.document.toObject<FriendCircleData>()
+                                                .let {
+                                                    it.copy(
+                                                        user = it.userId?.let { getUserById(it) }
+                                                    )
+                                                }
 
                                         )
                                     )
@@ -701,7 +708,12 @@ object UserManager {
                 it.timeStamp
             }
 
-            MyLogger.v(Constants.LogTag.Profile, msg = friendList , isJson = true, jsonTitle = "Friend List ")
+            MyLogger.v(
+                Constants.LogTag.Profile,
+                msg = friendList,
+                isJson = true,
+                jsonTitle = "Friend List "
+            )
 
             trySend(
                 ListenerEmissionType(
@@ -856,12 +868,7 @@ object UserManager {
             batch.set(followedRef, myData)
             batch.set(notificationRef, notificationData)
         }.addOnSuccessListener {
-            launch {
-                userRef.document(followedId).get().await().toObject<User>()?.fcmToken?.let {
-                    NotificationSendingManager.sendNotification(it, notificationData)
-                }
-            }
-
+                    NotificationSendingManager.sendNotification(followedId, notificationData)
             trySend(UpdateResponse(true, ""))
         }.addOnFailureListener {
             trySend(UpdateResponse(false, it.message))
@@ -903,11 +910,7 @@ object UserManager {
             batch.set(friendRef, myData)
             batch.set(notificationRef, notificationData)
         }.addOnSuccessListener {
-            launch {
-                userRef.document(friendId).get().await().toObject<User>()?.fcmToken?.let {
-                    NotificationSendingManager.sendNotification(it, notificationData)
-                }
-            }
+            NotificationSendingManager.sendNotification(friendId, notificationData)
             trySend(UpdateResponse(true, ""))
         }.addOnFailureListener {
             trySend(UpdateResponse(false, it.message))
@@ -1005,11 +1008,7 @@ object UserManager {
                 batch.set(friendFriendRef, myData)
                 batch.set(notificationRef, notificationData)
             }.addOnSuccessListener {
-                launch {
-                    userRef.document(friendId).get().await().toObject<User>()?.fcmToken?.let {
-                        NotificationSendingManager.sendNotification(it, notificationData)
-                    }
-                }
+                        NotificationSendingManager.sendNotification(friendId, notificationData)
                 trySend(UpdateResponse(true, ""))
             }.addOnFailureListener {
                 trySend(UpdateResponse(false, it.message))

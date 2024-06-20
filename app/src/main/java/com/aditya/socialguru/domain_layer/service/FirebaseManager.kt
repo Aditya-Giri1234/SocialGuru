@@ -3,10 +3,12 @@ package com.aditya.socialguru.domain_layer.service
 import android.net.Uri
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.story.StoryText
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
+import com.aditya.socialguru.domain_layer.service.firebase_service.ChatManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.PostManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.StoryManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.UserManager
@@ -136,4 +138,8 @@ object FirebaseManager {
     suspend fun deleteAllNotification() = UserManager.deleteAllNotification()
     //endregion
 
+
+    //region:: Chat related work here
+    fun sentMessage(message: Message, chatRoomId: String)=ChatManager.sentMessage(message,chatRoomId)
+    //endregion
 }
