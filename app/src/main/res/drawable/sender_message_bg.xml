@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
+    <!-- Main bubble background -->
+    <item android:id="@+id/main">
+        <shape android:shape="rectangle">
+            <solid android:color="#DCF8C6"/> <!-- Background color similar to WhatsApp's sender color -->
+            <corners android:radius="12dp" />
+            <padding
+                android:left="8dp"
+                android:top="4dp"
+                android:right="12dp"
+                android:bottom="4dp"/>
+        </shape>
+    </item>
+
+    <!-- Tail of the chat bubble -->
+    <item android:gravity="center_horizontal"  android:end="@dimen/_6sdp"  android:id="@+id/tail">
+        <shape android:shape="rectangle" >
+            <solid android:color="@color/black"/>
+            <size android:height="@dimen/_6sdp" android:width="@dimen/_10sdp"/>
+        </shape>
+    </item>
+</layer-list>

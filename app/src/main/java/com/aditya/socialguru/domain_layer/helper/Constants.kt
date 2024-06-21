@@ -32,13 +32,6 @@ object Constants {
     }
 
 
-    enum class FragmentNavigation {
-        OnBoardingFragment,
-        SignInFragment,
-        AddPostFragment ,
-        ImageFragment,
-        VideoFragment
-    }
 
 
     enum class FolderName {
@@ -51,10 +44,6 @@ object Constants {
 
 
 
-    enum class IntentTable {
-        MediaUri,
-        FragmentNavigation
-    }
 
     enum class BroadcastType {
         StoryUploading
@@ -171,10 +160,18 @@ object Constants {
         SEEN_STATUS("seenStatus")
     }
 
+    //This is for chat seen status help to set tick status on message
     enum class SeenStatus(val status:String){
         Send("Message Sent To Server"),
         Received("Message Received To User"),
         MessageSeen("Message seen by receiver")
+    }
+
+    //Message Type in chat which help to differentiate between date header and message
+
+    enum class MessageType(val type:String){
+        Chat("Chat Message"),
+        DateHeader("Date Header")
     }
 
 

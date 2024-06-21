@@ -32,7 +32,7 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.databinding.ActivityMainBinding
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
-import com.aditya.socialguru.domain_layer.helper.Constants.IntentTable
+
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myLaunch

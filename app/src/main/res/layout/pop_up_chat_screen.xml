@@ -19,41 +19,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
-            android:id="@+id/linearItemFriendRequest"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="@dimen/_10sdp"
-            android:paddingVertical="@dimen/_5sdp"
-            android:gravity="start|center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="@dimen/_20sdp"
-                android:layout_height="@dimen/_20sdp"
-                app:tint="@color/black"
-                android:src="@drawable/ic_friend_request" />
-
-            <androidx.appcompat.widget.AppCompatTextView
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_marginStart="@dimen/_8sdp"
-                android:fontFamily="@font/poppin_medium"
-                android:gravity="center"
-                android:text="Friend Request"
-                android:textColor="@color/black"
-                android:textSize="@dimen/_12ssp" />
-
-        </LinearLayout>
-
-
-        <View
-            android:id="@+id/viewDevider1"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/_1sdp"
-            android:alpha=".1"
-            android:layout_marginVertical="@dimen/_5sdp"
-            android:background="@color/black" />
 
         <LinearLayout
             android:id="@+id/linearItemDeleteAll"
@@ -67,7 +32,7 @@
             <ImageView
                 android:layout_width="@dimen/_20sdp"
                 android:layout_height="@dimen/_20sdp"
-                android:tint="@color/black"
+                app:tint="@color/black"
                 android:src="@drawable/ic_delete" />
 
             <androidx.appcompat.widget.AppCompatTextView
@@ -76,7 +41,7 @@
                 android:layout_marginStart="@dimen/_8sdp"
                 android:fontFamily="@font/poppin_medium"
                 android:gravity="center"
-                android:text="Delete All"
+                android:text="Clear chat"
                 android:textColor="@color/black"
                 android:textSize="@dimen/_12ssp" />
 
