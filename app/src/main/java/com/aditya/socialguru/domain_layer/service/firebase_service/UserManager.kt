@@ -14,6 +14,7 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
+import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.NotificationSendingManager
 import com.google.firebase.firestore.DocumentChange
@@ -25,6 +26,7 @@ import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -67,7 +69,6 @@ object UserManager {
 
     private val userRelationListeners = mutableListOf<ListenerRegistration>()
     private var isFirstTimeUserStatusUpdateListListener = true
-
 
 
     suspend fun saveUser(user: User): Pair<Boolean, String?> {
@@ -157,24 +158,27 @@ object UserManager {
 
     suspend fun getUserByIdAsync(userId: String): Flow<Resource<User>> {
         return callbackFlow {
-            val docRef = firestore.collection(Constants.Table.User.name).document(userId)
-            try {
-                val documentSnapshot = docRef.get().await()
-                if (!documentSnapshot.exists()) {
-                    trySend(Resource.Error("User not found!"))
+            firestore.collection(Constants.Table.User.name).document(userId).addSnapshotListener { value, error ->
+                if (error!=null){
+                    trySend(Resource.Error(error.message))
+                    return@addSnapshotListener
                 }
+                value?.let {documentSnapshot->
+                    try {
+                        val user = documentSnapshot.toObject(User::class.java)
 
-                val user = documentSnapshot.toObject(User::class.java)
+                        if (user != null) {
+                            trySend(Resource.Success(user))
+                        } else {
+                            trySend(Resource.Error("User document found but data is null!"))
+                        }
 
-                if (user != null) {
-                    trySend(Resource.Success(user))
-                } else {
-                    trySend(Resource.Error("User document found but data is null!"))
+                    } catch (e: Exception) {
+                        trySend(Resource.Error("Error getting user: ${e.message}"))
+                    }
                 }
-
-            } catch (e: Exception) {
-                trySend(Resource.Error("Error getting user: ${e.message}"))
             }
+
 
             awaitClose {
                 channel.close()
@@ -182,6 +186,7 @@ object UserManager {
         }
 
     }
+
 
     suspend fun getUserById(userId: String): User? {
         val docRef = firestore.collection(Constants.Table.User.name).document(userId)
@@ -366,9 +371,11 @@ object UserManager {
 
     //endregion
 
-
     //region:: Listen user relation
 
+    /**
+     *This help to update status on  button of follow and friend by listening change below sub collection
+     */
     fun listenUserRelationStatus(friendId: String) = callbackFlow<UpdateResponse> {
         removeUserStatusListeners()
         val collectionList = listOf(
@@ -868,7 +875,7 @@ object UserManager {
             batch.set(followedRef, myData)
             batch.set(notificationRef, notificationData)
         }.addOnSuccessListener {
-                    NotificationSendingManager.sendNotification(followedId, notificationData)
+            NotificationSendingManager.sendNotification(followedId, notificationData)
             trySend(UpdateResponse(true, ""))
         }.addOnFailureListener {
             trySend(UpdateResponse(false, it.message))
@@ -1008,7 +1015,7 @@ object UserManager {
                 batch.set(friendFriendRef, myData)
                 batch.set(notificationRef, notificationData)
             }.addOnSuccessListener {
-                        NotificationSendingManager.sendNotification(friendId, notificationData)
+                NotificationSendingManager.sendNotification(friendId, notificationData)
                 trySend(UpdateResponse(true, ""))
             }.addOnFailureListener {
                 trySend(UpdateResponse(false, it.message))
@@ -1155,6 +1162,15 @@ object UserManager {
         awaitClose {
             close()
         }
+    }
+
+    //endregion
+
+    //region:: Update UserAvailability
+
+    suspend fun updateUserAvailability(isUserAvailable: Boolean) {
+        userRef.document(AuthManager.currentUserId()!!)
+            .update(Constants.UserTable.USER_AVAILABLE.fieldName, isUserAvailable).await()
     }
 
     //endregion

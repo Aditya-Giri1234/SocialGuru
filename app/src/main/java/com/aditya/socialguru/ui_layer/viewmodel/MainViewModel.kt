@@ -87,6 +87,9 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
               _fcmToken.tryEmit(Resource.Error("Network Not Available !"))
           }
       }
+    fun updateUserAvailability(isUserAvailable:Boolean) = viewModelScope.myLaunch {
+        repository.updateUserAvailability(isUserAvailable)
+    }
 
     fun setDataLoadedStatus(status: Boolean) {
         _isDataLoaded = status

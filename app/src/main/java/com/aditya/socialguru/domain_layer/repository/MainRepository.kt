@@ -8,4 +8,6 @@ class MainRepository {
         FirebaseManager.subscribeToCurrentUser(userId)
 
     suspend fun setFcmToken(token: String?) = FirebaseManager.setFcmToken(token)
+
+    suspend fun updateUserAvailability(isUserAvailable:Boolean) = UserManager.updateUserAvailability(isUserAvailable)
 }

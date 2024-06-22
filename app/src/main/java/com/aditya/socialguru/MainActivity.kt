@@ -346,14 +346,15 @@ class MainActivity : AppCompatActivity() {
 
 
     override fun onResume() {
+        mainViewModel.updateUserAvailability(true)
         super.onResume()
         MyLogger.v(isFunctionCall = true)
 
     }
 
-    override fun onPause() {
-        super.onPause()
-
+    override fun onStop() {
+        mainViewModel.updateUserAvailability(false)
+        super.onStop()
     }
 
     override fun onSupportNavigateUp(): Boolean {

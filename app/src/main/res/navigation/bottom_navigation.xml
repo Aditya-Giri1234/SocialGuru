@@ -178,10 +178,16 @@
         <action
             android:id="@+id/action_chatFragment_to_userChatProfileFragment"
             app:destination="@id/userChatProfileFragment" />
+        <argument
+            android:name="userId"
+            app:argType="string" />
     </fragment>
     <fragment
         android:id="@+id/userChatProfileFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.UserChatProfileFragment"
         android:label="fragment_user_chat_profile"
         tools:layout="@layout/fragment_user_chat_profile" /><action android:id="@+id/action_global_chatFragment" app:destination="@id/chatFragment"/><action android:id="@+id/action_global_onboardingScreenFragment" app:destination="@id/onboardingScreenFragment"/>
+    <argument
+        android:name="userId"
+        app:argType="string" />
 </navigation>

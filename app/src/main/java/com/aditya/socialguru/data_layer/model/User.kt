@@ -13,5 +13,6 @@ data class User(
     val loginTimeInText:String?=null,
     val loginTimeInTimeStamp:Long?=null,
     val fcmToken:String?=null,
-    val postCount:Int?=null
+    val postCount:Int?=null,
+    val userAvailable:Boolean?=false
 ) : Serializable

@@ -32,6 +32,7 @@ object FirebaseManager {
     //endregion
 
     //region:: User related work here
+    suspend fun updateUserAvailability(isUserAvailable:Boolean) = UserManager.updateUserAvailability(isUserAvailable)
     suspend fun saveUserToDatabase(user: User): Pair<Boolean, String?> = UserManager.saveUser(user)
 
     suspend fun updateUser(user: User, oldImage: String? = null, newImage: String? = null) =
@@ -128,7 +129,6 @@ object FirebaseManager {
 
     //endregion
 
-
     //region:: Notification related work here
 
     suspend fun getMyNotificationAndListen() = UserManager.getMyNotificationAndListen()
@@ -138,8 +138,10 @@ object FirebaseManager {
     suspend fun deleteAllNotification() = UserManager.deleteAllNotification()
     //endregion
 
-
     //region:: Chat related work here
-    fun sentMessage(message: Message, chatRoomId: String)=ChatManager.sentMessage(message,chatRoomId)
+    suspend fun sentMessage(message: Message, chatRoomId: String , isUserOnline:Boolean=false)=ChatManager.sentMessage(message,chatRoomId,isUserOnline)
+
+    suspend fun getChatMessageAndListen(chatRoomId: String) = ChatManager.getChatMessageAndListen(chatRoomId)
+    fun updateSeenStatus(status:String,messageId:String,chatRoomId: String) = ChatManager.updateSeenStatus(status,messageId,chatRoomId)
     //endregion
 }

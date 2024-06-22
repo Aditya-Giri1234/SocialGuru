@@ -150,7 +150,12 @@ object Helper {
     fun getCommentId(post_id:String):String="${Constants.Table.Post.name}_${post_id}"
 
 
-    fun getChatRoomId(receiverId:String) :String ="${Constants.Table.Chats.name}_${AuthManager.currentUserId()!!}_$receiverId"
+    fun getChatRoomId(receiverId:String) :String {
+        // Sort the user IDs lexicographically
+        val sortedUserIds = listOf(AuthManager.currentUserId()!!, receiverId).sorted()
+        // Concatenate them with a delimiter to form the chat room ID
+        return "Chat_${sortedUserIds[0]}_${sortedUserIds[1]}"
+    }
 
     fun getMessageId():String = "${Constants.Table.Messages.name}_${AuthManager.currentUserId()!!}_${System.currentTimeMillis()}"
     fun getNotificationId():String="${Constants.Table.Notification.name}_${generateUUID()}"
@@ -184,6 +189,18 @@ object Helper {
             duration.toDays() == 1L -> "yesterday"
             else -> "${duration.toDays()} day(s) ago"
         }
+    }
+
+    fun getTimeForChat(timestamp: Long): String {
+        val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+        val date = Date(timestamp)
+        return sdf.format(date)
+    }
+
+    fun getChatDateHeaderTime(timestamp: Long): String {
+        val sdf = SimpleDateFormat("dd MMMM, yyyy", Locale.getDefault())
+        val date = Date(timestamp)
+        return sdf.format(date)
     }
 
     fun showImageDialog(activity: Activity, bitmap: Bitmap) {

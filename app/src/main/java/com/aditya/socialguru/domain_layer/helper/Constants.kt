@@ -114,7 +114,8 @@ object Constants {
         LOG_IN_TIME_IN_TEXT("loginTimeInText"),
         LOG_IN_TIME_IN_TIMESTAMP("loginTimeInTimeStamp"),
         FCM_TOKEN("fcmToken"),
-        POST_COUNT("postCount")
+        POST_COUNT("postCount"),
+        USER_AVAILABLE("userAvailable")
     }
 
     enum class StoryTable(val fieldName: String) {
@@ -162,6 +163,7 @@ object Constants {
 
     //This is for chat seen status help to set tick status on message
     enum class SeenStatus(val status:String){
+        Sending("Message is now sending to server"),
         Send("Message Sent To Server"),
         Received("Message Received To User"),
         MessageSeen("Message seen by receiver")

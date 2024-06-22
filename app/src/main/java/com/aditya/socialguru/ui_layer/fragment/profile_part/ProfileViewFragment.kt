@@ -39,6 +39,7 @@ import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
@@ -399,13 +400,14 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
         binding.apply {
             if (user.userProfileImage != null) {
                 ivProfile.tag =
-                    imageAvailable  // help to determine that image available not
+                    imageAvailable  // help to determine that image available or  not
                 Glide.with(ivProfile).load(user.userProfileImage)
-                    .placeholder(R.drawable.ic_user).into(ivProfile)
+                    .placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivProfile)
             } else {
                 ivProfile.tag = imageUnAvailable
                 Glide.with(ivProfile).load(R.drawable.ic_user).into(ivProfile)
-                ivProfile.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+                //NOt need below code :- Below code for tint color set on icon
+//                ivProfile.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
             }
 
             tvUserName.text = user.userName
@@ -560,6 +562,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     override fun onDestroyView() {
+        _binding=null
         super.onDestroyView()
     }
 
