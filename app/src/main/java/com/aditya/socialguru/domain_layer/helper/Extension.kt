@@ -31,6 +31,9 @@ import androidx.navigation.NavOptions
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.tasks.Task
 import com.google.android.material.textfield.TextInputLayout
+import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,6 +48,7 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.lang.reflect.Field
 import kotlin.coroutines.resumeWithException
 import kotlin.system.measureTimeMillis
 
@@ -388,4 +392,34 @@ fun DialogFragment.setWidthPercent(percentage: Int) {
  */
 fun DialogFragment.setFullScreen() {
     dialog?.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+}
+
+
+/**
+ * [toNormalMap] is convert data class to map. It just convert data class propery name as key in string data type in map .
+ * */
+fun <T:Any> T.toNormalMap(): Map<String, Any> {
+    val gson = Gson()
+    val json = gson.toJson(this)
+    val type = object : TypeToken<Map<String, Any>>() {}.type
+    return gson.fromJson(json, type)
+}
+
+
+/**
+ * [toMapWithSerializedName] is convert data class to map. But  it give priority base on if [SerializedName] present it give priority else make key name from property name.
+ * */
+fun <T:Any> T.toMapWithSerializedName(): Map<String, Any> {
+    val map = LinkedHashMap<String, Any>()
+    val fields: Array<Field> = this.javaClass.declaredFields
+
+    for (field in fields) {
+        //This is for kotlin add this field extra , so avoid this to add into map
+        if (field.name.equals("\$stable")) continue
+        field.isAccessible = true
+        val serializedName = field.getAnnotation(SerializedName::class.java)?.value ?: field.name
+        val value = field.get(this) ?: ""
+        map[serializedName] = value
+    }
+    return map
 }

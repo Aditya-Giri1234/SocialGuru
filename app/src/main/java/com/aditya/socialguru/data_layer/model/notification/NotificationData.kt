@@ -9,5 +9,6 @@ data class NotificationData(
     val notificationTimeInText:String?=null,
     val notificationTimeInTimeStamp:String?=null,
     val notificationId:String?=null,
-    val chatRoomId:String?=null
+    val chatRoomId:String?=null,
+    val messageId:String?=null
 )

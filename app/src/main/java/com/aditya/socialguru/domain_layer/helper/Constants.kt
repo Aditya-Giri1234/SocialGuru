@@ -95,7 +95,8 @@ object Constants {
         Notification,
         MyLikedPost,
         Chats ,
-        Messages
+        Messages,
+        LastMessage
     }
 
     enum class FriendStatus {
@@ -167,6 +168,19 @@ object Constants {
         Send("Message Sent To Server"),
         Received("Message Received To User"),
         MessageSeen("Message seen by receiver")
+    }
+
+    enum class LastMessageTable(val fieldName:String){
+        SENDER_ID("senderId"),
+        RECEIVER_ID("receiverId"),
+        MESSAGE_TYPE("messageType"),
+        MESSAGE("message"),
+        CHAT_TYPE("chatType"),
+        UNSEEN_MESSAGE_COUNT("unSeenMessageCount"),
+        LAST_MESSAGE_SENT_TIME_IN_TIMESTAMP("lastMessageSentTimeInTimeStamp"),
+        LAST_MESSAGE_SENT_TIME_IN_TEXT("lastMessageSentTimeInText"),
+        IS_USER_1_ONLINE("isUser1Online"),
+        IS_USER_2_ONLINE("isUser2Online")
     }
 
     //Message Type in chat which help to differentiate between date header and message

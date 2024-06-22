@@ -16,9 +16,11 @@ import androidx.navigation.NavDeepLinkBuilder
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
+import com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.ChatFragmentArgs
 import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
 import com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragmentArgs
 import java.util.Random
@@ -338,6 +340,71 @@ object MyNotificationManager {
         val notificationId= POST_ACTION_NOTIFICATION_ID
 
         MyLogger.d(Constants.LogTag.Notification, msg = "Post Id :- $notificationId")
+
+        removeHeadUpNotificationBehaviour(notification,notificationManager,notificationId)
+        notificationManager.notify(notificationId, notification.build())
+    }
+
+    fun showTextChatMessage(
+        user: User,
+        notificationData: NotificationData,
+        message:Message,
+        context: Context
+    ) {
+
+        // There is no need to make deep link in graph it was implicit deep link  which help like open url base link in app but below is explicit deep link which not require any thing.
+
+        // And one more thing it will recreate give activity and open destination
+        val pendingIntent = NavDeepLinkBuilder(context)
+            .setGraph(R.navigation.bottom_navigation)
+            .setDestination(R.id.chatFragment) // Reference deep link action ID
+//            .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
+            .setArguments(ChatFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
+            .createPendingIntent()
+
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationChannel = NotificationChannel(
+            CHAT_MESSAGE_CHANNEL_ID,
+            CHAT_MESSAGE_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        }
+
+        notificationManager.createNotificationChannel(notificationChannel)
+
+        val appIcon = context.packageManager.getApplicationIcon(context.packageName)
+
+        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID)
+        notification.setSmallIcon(R.drawable.app_icon)
+        if (appIcon is AdaptiveIconDrawable) {
+            val bitmap = appIcon.toBitmap()
+            notification.setLargeIcon(bitmap)
+        } else {
+            // If it's not an AdaptiveIconDrawable, assume it's a BitmapDrawable
+            notification.setLargeIcon((appIcon as BitmapDrawable).bitmap)
+        }
+        notification.setTicker("Text Message")
+        notification.setContentTitle(user.userName ?: "Unknown")
+        notification.setContentText(message.text.toString())
+
+
+        // Set other notification properties...
+
+        notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
+        notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
+        notification.setGroup(NOTIFICATON_GROUP)
+        notification.setColor(context.giveMeColor(R.color.dark_night_blue))
+        notification.setAutoCancel(true)
+
+        // below two line important because in android 8 notification not show like head up so that we need below  2 line.
+        notification.setContentIntent(pendingIntent)
+        notification.setFullScreenIntent(pendingIntent,true)
+
+
+        val notificationId= CHAT_MESSAGE_NOTIFICATION_ID
+
+        MyLogger.d(Constants.LogTag.Notification, msg = "Message Id :- ${message.messageId}")
 
         removeHeadUpNotificationBehaviour(notification,notificationManager,notificationId)
         notificationManager.notify(notificationId, notification.build())

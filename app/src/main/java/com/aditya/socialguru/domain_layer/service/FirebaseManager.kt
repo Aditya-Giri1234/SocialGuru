@@ -143,5 +143,11 @@ object FirebaseManager {
 
     suspend fun getChatMessageAndListen(chatRoomId: String) = ChatManager.getChatMessageAndListen(chatRoomId)
     fun updateSeenStatus(status:String,messageId:String,chatRoomId: String) = ChatManager.updateSeenStatus(status,messageId,chatRoomId)
+
+    suspend fun listenLastMessage(chatRoomId: String) = ChatManager.listenLastMessage(chatRoomId)
+    suspend fun updateUserAvailabilityForChatRoom(chatRoomId: String,isIAmUser1:Boolean,status: Boolean)=ChatManager.updateUserAvailabilityForChatRoom(chatRoomId
+    ,isIAmUser1,status)
+
+    suspend fun getMessageById(chatRoomId: String,messageId:String) = ChatManager.getMessageById(chatRoomId,messageId)
     //endregion
 }

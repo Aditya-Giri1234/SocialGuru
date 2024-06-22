@@ -1,8 +1,10 @@
 package com.aditya.socialguru.ui_layer.adapter.chat
 
 import android.graphics.Color
+import android.graphics.PorterDuff
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -148,7 +150,7 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
                         }
                         Constants.SeenStatus.MessageSeen.status->{
                             ivMessageSeenStatus.setImageResource(R.drawable.ic_message_received)
-                            ivMessageSeenStatus.setColorFilter(Color.BLUE)
+                            ivMessageSeenStatus.setColorFilter(ContextCompat.getColor(ivMessageSeenStatus.context, R.color.yellow), android.graphics.PorterDuff.Mode.SRC_IN)
                         }
                     }
                 }

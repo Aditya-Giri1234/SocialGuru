@@ -5,13 +5,13 @@ import android.content.Context
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -19,11 +19,10 @@ import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.chat.LastMessage
 import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.databinding.FragmentChatBinding
-import com.aditya.socialguru.databinding.FragmentUserChatProfileBinding
 import com.aditya.socialguru.databinding.PopUpChatScreenBinding
-import com.aditya.socialguru.databinding.PopUpNotificationFragmentBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
@@ -33,6 +32,7 @@ import com.aditya.socialguru.domain_layer.helper.disabled
 import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -53,25 +53,29 @@ import kotlinx.coroutines.flow.onEach
 import kotlin.properties.Delegates
 
 
-class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
+class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
     private var _binding: FragmentChatBinding? = null
     private val binding get() = _binding!!
 
     private var myLoader: MyLoader? = null
 
-    private lateinit var userId:String
-    private var imageUri:String?=null
-    private var videoUri:String?=null
+    private lateinit var userId: String
+    private var imageUri: String? = null
+    private var videoUri: String? = null
 
-    private var _chatAdapter:ChatMessageAdapter?=null
+    private var _chatAdapter: ChatMessageAdapter? = null
     private val chatAdapter get() = _chatAdapter!!
+
+    private val isIAmUser1 by lazy {
+        val list = listOf(AuthManager.currentUserId()!!, userId).sorted()
+        list[0] == AuthManager.currentUserId()!!
+    }
 
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
     }
     private val chatViewModel by viewModels<ChatViewModel>()
-    private var isUserAvailable by Delegates.notNull<Boolean>()
-
+    private var isUserAvailable =false
 
 
     private val args by navArgs<ChatFragmentArgs>()
@@ -79,8 +83,6 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
     private val chatRoomId by lazy {
         Helper.getChatRoomId(userId)
     }
-
-
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,36 +103,32 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
     }
 
     private fun handleInitialization() {
-        userId=args.userId
-        _chatAdapter= ChatMessageAdapter(this@ChatFragment)
+        userId = args.userId
+        _chatAdapter = ChatMessageAdapter(this@ChatFragment)
         initUi()
         subscribeToObserver()
         getData()
     }
 
-    private fun getData() {
-        if (!chatViewModel.isDataLoaded){
-            chatViewModel.setDataLoadedStatus(true)
-            chatViewModel.getUser(userId)
-            chatViewModel.getChatMessage(chatRoomId)
-        }
-    }
+
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     private fun subscribeToObserver() {
         viewLifecycleOwner.observeFlow {
 
-            chatViewModel.userDetails.onEach { response->
-                when(response){
+            chatViewModel.userDetails.onEach { response ->
+                when (response) {
                     is Resource.Success -> {
                         hideDialog()
                         response.data?.let {
                             setUserProfile(it)
                         }
                     }
+
                     is Resource.Loading -> {
                         showDialog()
                     }
+
                     is Resource.Error -> {
                         hideDialog()
                         showSnackBar(response.message, isSuccess = false)
@@ -138,15 +136,20 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
                 }
 
             }.launchIn(this)
-            chatViewModel.chatMessage.onEach { response->
-                when(response){
+            chatViewModel.lastMessage.onEach {
+                updateUserAvailability(it)
+            }.launchIn(this)
+            chatViewModel.chatMessage.onEach { response ->
+                when (response) {
                     is Resource.Success -> {
                         response.data?.let {
                             setChatMessageList(it)
                         }
                     }
+
                     is Resource.Loading -> {
                     }
+
                     is Resource.Error -> {
                         showSnackBar(response.message, isSuccess = false)
                     }
@@ -154,13 +157,15 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
 
             }.launchIn(this)
 
-            chatViewModel.sendMessage.onEach { response->
-                when(response){
+            chatViewModel.sendMessage.onEach { response ->
+                when (response) {
                     is Resource.Success -> {
-                       binding.etMessage.text.clear()
+                        binding.etMessage.text.clear()
                     }
+
                     is Resource.Loading -> {
                     }
+
                     is Resource.Error -> {
                         showSnackBar(response.message, isSuccess = false)
                     }
@@ -168,37 +173,28 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
 
             }.launchIn(this)
 
-            binding.etMessage.getQueryTextChangeStateFlow().debounce(100).distinctUntilChanged().flatMapLatest {
-                if (it.startsWith(" ")){
+            binding.etMessage.getQueryTextChangeStateFlow().debounce(100).distinctUntilChanged()
+                .flatMapLatest {
+                    if (it.startsWith(" ")) {
+                        runOnUiThread {
+                            binding.etMessage.setText(binding.etMessage.text.trim())
+                            return@runOnUiThread
+                        }
+                    }
+                    flow {
+                        emit(it)
+                    }
+                }.onEach {
                     runOnUiThread {
-                        binding.etMessage.setText(binding.etMessage.text.trim())
-                        return@runOnUiThread
+                        if (it.isBlank()) {
+                            binding.btnSend.disabled()
+                        } else {
+                            binding.btnSend.enabled()
+                        }
                     }
-                }
-                flow {
-                    emit(it)
-                }
-            }.onEach {
-                runOnUiThread {
-                    if (it.isBlank()){
-                        binding.btnSend.disabled()
-                    }else{
-                        binding.btnSend.enabled()
-                    }
-                }
-            }.launchIn(this)
+                }.launchIn(this)
 
 
-        }
-    }
-
-    private fun setChatMessageList(message: List<Message>) {
-        if (message.isNotEmpty()){
-            hideNoDataView()
-            chatAdapter.submitList(message)
-            binding.rvChats.smoothScrollToPosition(message.size-1)
-        }else{
-            showNoDataView()
         }
     }
 
@@ -206,10 +202,10 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
     private fun initUi() {
         binding.apply {
             rvChats.apply {
-                layoutManager=LinearLayoutManager(requireContext())
-                adapter=chatAdapter
+                layoutManager = LinearLayoutManager(requireContext())
+                adapter = chatAdapter
                 setHasFixedSize(true)
-                isMotionEventSplittingEnabled=false
+                isMotionEventSplittingEnabled = false
             }
             setListener()
         }
@@ -225,7 +221,10 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
             navController.navigateUp()
         }
 
-
+        rvChats.setSafeOnClickListener {
+            etMessage.clearFocus()
+            etMessage.hideKeyboard()
+        }
 
         btnSend.setSafeOnClickListener {
             sendMessage()
@@ -233,16 +232,45 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
 
     }
 
+    private fun getData() {
+        if (!chatViewModel.isDataLoaded) {
+            chatViewModel.setDataLoadedStatus(true)
+            chatViewModel.getUser(userId)
+            chatViewModel.getChatMessage(chatRoomId)
+            chatViewModel.listenLastMessage(chatRoomId)
+        }
+    }
+
+    private fun updateUserAvailability(message: LastMessage) {
+        val userAvailable = if (isIAmUser1) {
+            message.isUser2Online ?: false
+        } else {
+            message.isUser1Online ?: false
+        }
+        updateOnlineStatus(userAvailable)
+    }
+
+    private fun setChatMessageList(message: List<Message>) {
+        if (message.isNotEmpty()) {
+            hideNoDataView()
+            chatAdapter.submitList(message)
+            binding.rvChats.smoothScrollToPosition(message.size - 1)
+            chatViewModel.updateMessageSeenAvailability(message.filter { it.seenStatus!=Constants.SeenStatus.MessageSeen.status } ,chatRoomId)
+        } else {
+            showNoDataView()
+        }
+    }
+
 
     private fun sendMessage() {
-        val message=binding.etMessage.text.toString()
+        val message = binding.etMessage.text.toString()
 
-        val timeStamp=System.currentTimeMillis()
-        val chatData=Message(
+        val timeStamp = System.currentTimeMillis()
+        val chatData = Message(
             messageId = Helper.getMessageId(),
             messageType = Constants.MessageType.Chat.type,
             chatType = getChatType(message),
-            text=message,
+            text = message,
             imageUri = imageUri,
             videoUri = videoUri,
             senderId = AuthManager.currentUserId()!!,
@@ -252,7 +280,7 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
             seenStatus = Constants.SeenStatus.Sending.status
 
         )
-        chatViewModel.sendMessage(chatData,chatRoomId ,isUserAvailable )
+        chatViewModel.sendMessage(chatData, chatRoomId, isUserAvailable)
 
     }
 
@@ -288,7 +316,10 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
 
 
         bindingPopUp.linearItemDeleteAll.setSafeOnClickListener {
-            AlertDialog("Are your sure clear Chats ?",this@ChatFragment,true).show(childFragmentManager,"MY_Dialog")
+            AlertDialog("Are your sure clear Chats ?", this@ChatFragment, true).show(
+                childFragmentManager,
+                "MY_Dialog"
+            )
             popUp.dismiss()
         }
 
@@ -298,9 +329,9 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
     private fun setUserProfile(receiver: User) {
         binding.apply {
             receiver.run {
-                Glide.with(ivProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivProfileImage)
-                tvUserName.text=userName
-                updateOnlineStatus(userAvailable ?: false)
+                Glide.with(ivProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user)
+                    .error(R.drawable.ic_user).into(ivProfileImage)
+                tvUserName.text = userName
             }
 
         }
@@ -309,40 +340,40 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
     }
 
     private fun updateOnlineStatus(userAvailable: Boolean) {
-        if (userAvailable){
+        if (userAvailable) {
             showOnline()
-        }else{
+        } else {
             hideOnline()
         }
-        isUserAvailable=userAvailable
+        isUserAvailable = userAvailable
     }
 
     private fun showOnline() {
 
         binding.tvOnlineStatus.animate().apply {
-         duration=200
-         alpha(1f)
-         setListener(object : Animator.AnimatorListener {
-             override fun onAnimationStart(animation: Animator) {
-             }
+            duration = 200
+            alpha(1f)
+            setListener(object : Animator.AnimatorListener {
+                override fun onAnimationStart(animation: Animator) {
+                }
 
-             override fun onAnimationEnd(animation: Animator) {
-                 binding.tvOnlineStatus.myShow()
-             }
+                override fun onAnimationEnd(animation: Animator) {
+                    binding.tvOnlineStatus.myShow()
+                }
 
-             override fun onAnimationCancel(animation: Animator) {
-             }
+                override fun onAnimationCancel(animation: Animator) {
+                }
 
-             override fun onAnimationRepeat(animation: Animator) {
-             }
-         })
+                override fun onAnimationRepeat(animation: Animator) {
+                }
+            })
         }
 
     }
 
     private fun hideOnline() {
         binding.tvOnlineStatus.animate().apply {
-            duration=200
+            duration = 200
             alpha(0f)
             setListener(object : Animator.AnimatorListener {
                 override fun onAnimationStart(animation: Animator) {
@@ -407,26 +438,37 @@ class ChatFragment : Fragment() , AlertDialogOption , ChatMessageOption {
         }
     }
 
+    override fun onResume() {
+        chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId,isIAmUser1,true)
+        super.onResume()
+    }
+
+    override fun onStop() {
+        chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId,isIAmUser1,false)
+        super.onStop()
+    }
+
 
     override fun onResult(isYes: Boolean) {
-        if (isYes){
+        if (isYes) {
             clearChat()
         }
     }
 
 
     override fun onDestroyView() {
-        _binding=null
+        _binding = null
         super.onDestroyView()
     }
 
-    override fun onImageClick(): (Uri) -> Unit ={
+    override fun onImageClick(): (Uri) -> Unit = {
 
     }
 
-    override fun onVideoClick(): (Uri) -> Unit ={
+    override fun onVideoClick(): (Uri) -> Unit = {
 
     }
+
     override fun onMessageClick(message: Message) {
     }
 

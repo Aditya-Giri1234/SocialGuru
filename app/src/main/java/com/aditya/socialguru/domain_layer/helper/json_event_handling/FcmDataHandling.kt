@@ -3,12 +3,15 @@ package com.aditya.socialguru.domain_layer.helper.json_event_handling
 import android.content.Context
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.MyNotificationManager
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -37,6 +40,43 @@ object FcmDataHandling : HandleJsonData {
             Constants.NotificationType.COMMENT_IN_POST.name -> {
                 handleCommentInPostNotification(notificationData,context)
             }
+            Constants.NotificationType.TextChat.name -> {
+                handleTextChatMessage(notificationData,context)
+            }
+            Constants.NotificationType.MediaChat.name -> {
+                handleMediaChatMessage(notificationData,context)
+            }
+        }
+    }
+
+    private fun handleMediaChatMessage(notificationData: NotificationData, context: Context) {
+        val userId=notificationData.friendOrFollowerId!!
+        val messageId=notificationData.messageId!!
+        val chatRoomId=notificationData.chatRoomId!!
+        launchCoroutineInIOThread {
+            val messageData=async {  FirebaseManager.getMessageById(chatRoomId,messageId).first()}
+            val userData=async {  FirebaseManager.getUser(userId).first().data }
+
+        }
+
+
+    }
+
+    private fun handleTextChatMessage(notificationData: NotificationData, context: Context) {
+        val userId=notificationData.friendOrFollowerId!!
+        val messageId=notificationData.messageId!!
+        val chatRoomId=notificationData.chatRoomId!!
+        launchCoroutineInIOThread {
+            val messageData=async {  FirebaseManager.getMessageById(chatRoomId,messageId).first()}
+            val userData=async {  FirebaseManager.getUser(userId).first().data }
+            val user=userData.await()
+            val message=messageData.await()
+            if (user!=null){
+                FirebaseManager.updateSeenStatus(Constants.SeenStatus.Received.status,messageId,chatRoomId)
+                MyNotificationManager.showTextChatMessage(user,notificationData ,message,context)
+                MyNotificationManager.showGroupSummaryNotification(context)
+            }
+
         }
     }
 

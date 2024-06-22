@@ -134,7 +134,7 @@
             android:layout_weight="1"
             android:background="@drawable/chat_message_bg"
             android:paddingVertical="@dimen/_8sdp"
-            android:paddingHorizontal="@dimen/_5sdp"
+            android:paddingHorizontal="@dimen/_10sdp"
             android:layout_marginEnd="@dimen/_5sdp"
             android:layout_gravity="bottom"
             android:orientation="horizontal">
