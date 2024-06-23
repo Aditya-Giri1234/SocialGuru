@@ -4,15 +4,21 @@ import android.animation.Animator
 import android.content.Context
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
+import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.PopupWindow
+import androidx.annotation.RequiresApi
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.MainActivity
@@ -25,7 +31,10 @@ import com.aditya.socialguru.databinding.FragmentChatBinding
 import com.aditya.socialguru.databinding.PopUpChatScreenBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
+import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Constants.MessageType
+import com.aditya.socialguru.domain_layer.helper.Constants.SeenStatus
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.disabled
@@ -36,6 +45,7 @@ import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
@@ -44,13 +54,14 @@ import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlin.properties.Delegates
+import kotlinx.coroutines.launch
 
 
 class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
@@ -59,15 +70,23 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
 
     private var myLoader: MyLoader? = null
 
-    private lateinit var userId: String
+    private val tagChat = Constants.LogTag.Chats
+
+    private lateinit var receiverId: String  //This is for receive userId
+    private var isUserAppOpen = false
+    private var isUserActiveOnCurrentChat = false
+    private var isFirstTimeDataSetOnUi = true
+
     private var imageUri: String? = null
     private var videoUri: String? = null
 
     private var _chatAdapter: ChatMessageAdapter? = null
     private val chatAdapter get() = _chatAdapter!!
 
+    private var myDetails: User? = null
+
     private val isIAmUser1 by lazy {
-        val list = listOf(AuthManager.currentUserId()!!, userId).sorted()
+        val list = listOf(AuthManager.currentUserId()!!, receiverId).sorted()
         list[0] == AuthManager.currentUserId()!!
     }
 
@@ -75,18 +94,21 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
         (requireActivity() as MainActivity).navController
     }
     private val chatViewModel by viewModels<ChatViewModel>()
-    private var isUserAvailable =false
 
+    private val senderId by lazy {
+        AuthManager.currentUserId()!!
+    }
 
     private val args by navArgs<ChatFragmentArgs>()
 
     private val chatRoomId by lazy {
-        Helper.getChatRoomId(userId)
+        Helper.getChatRoomId(receiverId)
     }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+//        activity?.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     }
 
     override fun onCreateView(
@@ -103,13 +125,12 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
     }
 
     private fun handleInitialization() {
-        userId = args.userId
+        receiverId = args.userId
         _chatAdapter = ChatMessageAdapter(this@ChatFragment)
         initUi()
         subscribeToObserver()
         getData()
     }
-
 
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
@@ -213,6 +234,39 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
 
     private fun FragmentChatBinding.setListener() {
 
+        backToBottom.setSafeOnClickListener {
+            rvChats.scrollToPosition(chatAdapter.itemCount - 1)
+        }
+
+        rvChats.setOnScrollChangeListener { v, scrollX, scrollY, oldScrollX, oldScrollY ->
+            lifecycleScope.launch {
+                val layoutManager = rvChats.layoutManager as? LinearLayoutManager
+                val lastItemPosition = layoutManager?.findLastVisibleItemPosition() ?: 0
+
+                if (scrollY > oldScrollY) {
+                    //Scroll Down
+//                    MyLogger.v(tagChat, msg = "Down scroll")
+                    isFirstTimeDataSetOnUi = false
+                    backToBottom.myShow()
+
+                }
+                if (scrollY < oldScrollY) {
+                    //Scroll Up
+//                    MyLogger.v(tagChat, msg = "Up scroll")
+                    isFirstTimeDataSetOnUi = false
+                    backToBottom.myShow()
+                }
+
+                if (scrollY == 0 && lastItemPosition == chatAdapter.itemCount - 1) {
+                    //Top Scroll
+//                    MyLogger.v(tagChat, msg = "At The Bottom")
+                    isFirstTimeDataSetOnUi = true
+                    backToBottom.gone()
+                }
+            }
+
+        }
+
         icMore.setSafeOnClickListener {
             showPopupMenu()
         }
@@ -235,27 +289,30 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
     private fun getData() {
         if (!chatViewModel.isDataLoaded) {
             chatViewModel.setDataLoadedStatus(true)
-            chatViewModel.getUser(userId)
+            chatViewModel.getUser(receiverId)
             chatViewModel.getChatMessage(chatRoomId)
             chatViewModel.listenLastMessage(chatRoomId)
         }
     }
 
-    private fun updateUserAvailability(message: LastMessage) {
-        val userAvailable = if (isIAmUser1) {
-            message.isUser2Online ?: false
-        } else {
-            message.isUser1Online ?: false
-        }
-        updateOnlineStatus(userAvailable)
-    }
 
     private fun setChatMessageList(message: List<Message>) {
         if (message.isNotEmpty()) {
             hideNoDataView()
             chatAdapter.submitList(message)
-            binding.rvChats.smoothScrollToPosition(message.size - 1)
-            chatViewModel.updateMessageSeenAvailability(message.filter { it.seenStatus!=Constants.SeenStatus.MessageSeen.status } ,chatRoomId)
+
+            if (isFirstTimeDataSetOnUi) {
+                isFirstTimeDataSetOnUi = false
+                lifecycleScope.launch {
+                    delay(100)
+                    binding.rvChats.scrollToPosition(chatAdapter.itemCount - 1)
+                }
+            }
+            //Update seen status of message of receiver not my  message
+            chatViewModel.updateMessageSeenAvailability(
+                message.filter { it.seenStatus != Constants.SeenStatus.MessageSeen.status && it.senderId != senderId },
+                chatRoomId
+            )
         } else {
             showNoDataView()
         }
@@ -263,24 +320,43 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
 
 
     private fun sendMessage() {
+        isFirstTimeDataSetOnUi = true
         val message = binding.etMessage.text.toString()
 
         val timeStamp = System.currentTimeMillis()
+        val timeInText = Helper.formatTimestampToDateAndTime(timeStamp)
+        val chatType = getChatType(message)
         val chatData = Message(
             messageId = Helper.getMessageId(),
-            messageType = Constants.MessageType.Chat.type,
-            chatType = getChatType(message),
+            messageType = MessageType.Chat.type,
+            chatType = chatType,
             text = message,
             imageUri = imageUri,
             videoUri = videoUri,
-            senderId = AuthManager.currentUserId()!!,
-            receiverId = userId,
+            senderId = senderId,
+            receiverId = receiverId,
             messageSentTimeInTimeStamp = timeStamp,
-            messageSendTimeInText = Helper.formatTimestampToDateAndTime(timeStamp),
-            seenStatus = Constants.SeenStatus.Sending.status
-
+            messageSendTimeInText = timeInText,
+            seenStatus = SeenStatus.Sending.status,
+            senderProfileImage = myDetails?.userProfileImage
         )
-        chatViewModel.sendMessage(chatData, chatRoomId, isUserAvailable)
+        val lastMessage = LastMessage(
+            senderId = senderId,
+            receiverId = receiverId,
+            messageType = MessageType.Chat.type,
+            chatType = chatType,
+            message = message,
+            lastMessageSentTimeInTimeStamp = timeStamp,
+            lastMessageSentTimeInText = timeInText,
+            isUser1Online = findUserAvailability(true),
+            isUser2Online = findUserAvailability(false),
+        )
+        chatViewModel.sendMessage(
+            chatData,
+            lastMessage,
+            chatRoomId,
+            isUserAppOpen && isUserActiveOnCurrentChat
+        )
 
     }
 
@@ -327,16 +403,27 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
     }
 
     private fun setUserProfile(receiver: User) {
+        myDetails = receiver
         binding.apply {
             receiver.run {
                 Glide.with(ivProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user)
                     .error(R.drawable.ic_user).into(ivProfileImage)
                 tvUserName.text = userName
+                isUserAppOpen = userAvailable ?: false
             }
 
         }
 
 
+    }
+
+    private fun updateUserAvailability(message: LastMessage) {
+        val userAvailable = if (isIAmUser1) {
+            message.isUser2Online ?: false
+        } else {
+            message.isUser1Online ?: false
+        }
+        updateOnlineStatus(userAvailable)
     }
 
     private fun updateOnlineStatus(userAvailable: Boolean) {
@@ -345,7 +432,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
         } else {
             hideOnline()
         }
-        isUserAvailable = userAvailable
+        isUserActiveOnCurrentChat = userAvailable
     }
 
     private fun showOnline() {
@@ -391,6 +478,22 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
             })
         }
 
+    }
+
+    private fun findUserAvailability(forUser1: Boolean): Boolean {
+        return if (forUser1) {
+            if (isIAmUser1) {
+                true
+            } else {
+                isUserActiveOnCurrentChat
+            }
+        } else {
+            if (isIAmUser1) {
+                isUserActiveOnCurrentChat
+            } else {
+                true
+            }
+        }
     }
 
     private fun clearChat() {
@@ -439,12 +542,12 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
     }
 
     override fun onResume() {
-        chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId,isIAmUser1,true)
+        chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId, isIAmUser1, true)
         super.onResume()
     }
 
     override fun onStop() {
-        chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId,isIAmUser1,false)
+        chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId, isIAmUser1, false)
         super.onStop()
     }
 
@@ -457,6 +560,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
 
 
     override fun onDestroyView() {
+//        activity?.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         _binding = null
         super.onDestroyView()
     }

@@ -96,7 +96,8 @@ object Constants {
         MyLikedPost,
         Chats ,
         Messages,
-        LastMessage
+        LastMessage,
+        RecentChat
     }
 
     enum class FriendStatus {
@@ -183,11 +184,28 @@ object Constants {
         IS_USER_2_ONLINE("isUser2Online")
     }
 
+    enum class RecentChatTable(val fieldName:String){
+        CHAT_ROOM_ID("chatRoomId"),
+        LAST_MESSAGE_TIME_IN_TIMESTAMP("lastMessageTimeInTimeStamp"),
+        LAST_MESSAGE_TIME_IN_TEXT("lastMessageTimeInText"),
+        UNSEEN_MESSAGE_COUNT("unSeenMessageCount"),
+        MESSAGE("message"),
+        LAST_MESSAGE_TYPE("lastMessageType"),
+        RECEIVER_ID("receiverId"),
+        LAST_MESSAGE_SEEN("lastMessageSeen"),
+        SENDER_ID("senderId"),
+        USER_ID("userId")
+    }
+
     //Message Type in chat which help to differentiate between date header and message
 
     enum class MessageType(val type:String){
         Chat("Chat Message"),
         DateHeader("Date Header")
+    }
+    enum class LastMessageType(val type:String){
+        Text("TextMessage"),
+        Media("MediaMessage")
     }
 
 

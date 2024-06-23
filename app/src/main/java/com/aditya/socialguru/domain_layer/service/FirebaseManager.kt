@@ -3,6 +3,7 @@ package com.aditya.socialguru.domain_layer.service
 import android.net.Uri
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.chat.LastMessage
 import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.story.StoryText
@@ -139,15 +140,16 @@ object FirebaseManager {
     //endregion
 
     //region:: Chat related work here
-    suspend fun sentMessage(message: Message, chatRoomId: String , isUserOnline:Boolean=false)=ChatManager.sentMessage(message,chatRoomId,isUserOnline)
+    suspend fun sentMessage(message: Message ,lastMessage: LastMessage, chatRoomId: String , isUserOnline:Boolean=false)=ChatManager.sentMessage(message ,lastMessage,chatRoomId,isUserOnline)
 
     suspend fun getChatMessageAndListen(chatRoomId: String) = ChatManager.getChatMessageAndListen(chatRoomId)
-    fun updateSeenStatus(status:String,messageId:String,chatRoomId: String) = ChatManager.updateSeenStatus(status,messageId,chatRoomId)
+    fun updateSeenStatus(status:String,messageId:String,chatRoomId: String ,receiverId:String) = ChatManager.updateSeenStatus(status,messageId,chatRoomId ,receiverId)
 
     suspend fun listenLastMessage(chatRoomId: String) = ChatManager.listenLastMessage(chatRoomId)
     suspend fun updateUserAvailabilityForChatRoom(chatRoomId: String,isIAmUser1:Boolean,status: Boolean)=ChatManager.updateUserAvailabilityForChatRoom(chatRoomId
     ,isIAmUser1,status)
 
     suspend fun getMessageById(chatRoomId: String,messageId:String) = ChatManager.getMessageById(chatRoomId,messageId)
+    suspend fun getRecentChatAndListen() = ChatManager.getRecentChatAndListen()
     //endregion
 }

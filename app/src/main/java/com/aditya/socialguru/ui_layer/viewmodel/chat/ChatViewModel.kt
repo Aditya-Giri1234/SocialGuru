@@ -7,6 +7,7 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.chat.LastMessage
 import com.aditya.socialguru.data_layer.model.chat.Message
+import com.aditya.socialguru.data_layer.model.chat.UserRecentModel
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
@@ -16,6 +17,7 @@ import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.chat.ChatRepo
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -34,6 +36,9 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     private val tagChat = Constants.LogTag.Chats
 
     private val repository = ChatRepo()
+    private val senderId by lazy {
+        AuthManager.currentUserId()!!
+    }
 
     private var _isDataLoaded = false
 
@@ -53,6 +58,11 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     private val _sendMessage =
         MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
     val sendMessage get() = _sendMessage.asSharedFlow()
+
+    private val _recentChat= MutableSharedFlow<Resource<List<UserRecentModel>>>(
+        1,64 ,BufferOverflow.DROP_OLDEST
+    )
+    val recentChat get() = _recentChat.asSharedFlow()
 
     private val _chatMessage =
         MutableSharedFlow<Resource<List<Message>>>(1, 64, BufferOverflow.DROP_OLDEST)
@@ -153,12 +163,12 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
     //region:: Send Message
 
-    fun sendMessage(message: Message, charRoomId: String, isUserOnline: Boolean) =
+    fun sendMessage(message: Message,lastMessage: LastMessage, charRoomId: String, isUserOnline: Boolean) =
         viewModelScope.myLaunch {
             _sendMessage.tryEmit(Resource.Loading())
 
             if (SoftwareManager.isNetworkAvailable(app)) {
-                repository.sendMessage(message, charRoomId, isUserOnline).onEach {
+                repository.sendMessage(message,lastMessage, charRoomId, isUserOnline).onEach {
                     MyLogger.i(
                         tagChat,
                         msg = it,
@@ -218,11 +228,14 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 it.singleResponse?.let {
                     chatMessageList.add(it)
                     chatMessageList.sortBy { it.messageSentTimeInTimeStamp }
-                    FirebaseManager.updateSeenStatus(
-                        Constants.SeenStatus.MessageSeen.status,
-                        it.messageId!!,
-                        chatRoomId
-                    )
+                    if (it.senderId!=senderId){
+                        FirebaseManager.updateSeenStatus(
+                            Constants.SeenStatus.MessageSeen.status,
+                            it.messageId!!,
+                            chatRoomId,
+                            it.senderId!!
+                        )
+                    }
                 }
             }
 
@@ -252,7 +265,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
             }
         }
 
-        return Resource.Success(addDateHeaders(chatMessageList))
+        return Resource.Success(addDateHeaders(chatMessageList.filter { it.messageType!=Constants.MessageType.DateHeader.type }))
 
     }
 
@@ -265,17 +278,13 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
         val today = Calendar.getInstance()
         val yesterday = Calendar.getInstance().apply { add(Calendar.DATE, -1) }
         val dateFormatter = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
+//        MyLogger.d(tagChat, msg = messages, isJson = true, jsonTitle = "Messages List")
 
         messages.forEach { message ->
             val messageDate = message.messageSentTimeInTimeStamp?.let {
                 Calendar.getInstance().apply { timeInMillis = it }
             }
             val currentDateHeader = when {
-                message.messageType == Constants.MessageType.DateHeader.type -> {
-                    lastDateHeader = message.text // Update lastDateHeader for date headers
-                    message.text // Return current date header text as-is
-                }
-
                 messageDate == null -> null
                 isSameDay(messageDate, today) -> "Today"
                 isSameDay(messageDate, yesterday) -> "Yesterday"
@@ -283,6 +292,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
             }
 
             // Add new date header if currentDateHeader is different from lastDateHeader
+//            MyLogger.w(tagChat, msg = "lastDateHeader:- $lastDateHeader  and currentDateHeader:- $currentDateHeader , currentDateHeader != lastDateHeader :=> ${currentDateHeader != lastDateHeader}")
             if (currentDateHeader != null && currentDateHeader != lastDateHeader) {
                 lastDateHeader = currentDateHeader
                 messagesWithHeaders.add(
@@ -299,7 +309,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
         return messagesWithHeaders
     }
 
-    fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
+    private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
         return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
                 cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
     }
@@ -320,10 +330,12 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     fun updateMessageSeenAvailability(message: List<Message>,chatRoomId: String) = viewModelScope.myLaunch {
         message.forEach{
             if (it.messageId !=null){
-                repository.updateMessageChatAvailability(Constants.SeenStatus.MessageSeen.status,it.messageId,chatRoomId)
+                repository.updateMessageChatAvailability(Constants.SeenStatus.MessageSeen.status,it.messageId,chatRoomId , it.senderId!! )
             }
         }
     }
+
+    //endregion
 
     //region:: Set User online visibility
 
@@ -334,6 +346,94 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     ) = viewModelScope.myLaunch {
         repository.updateUserAvailabilityForChatRoom(chatRoomId, isIAmUser1, status)
     }
+    //endregion
+
+
+    //region:: Get Recent Chat
+
+    fun getRecentChat() = viewModelScope.myLaunch {
+        _recentChat.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.getRecentChatAndListen().onEach {
+                MyLogger.v(
+                    tagChat,
+                    msg = it,
+                    isJson = true,
+                    jsonTitle = "Recent Chat List  "
+                )
+                _recentChat.tryEmit(handleRecentChatMessageResponse(it))
+            }.launchIn(this)
+        } else {
+            _recentChat.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    private fun handleRecentChatMessageResponse(
+        it: ListenerEmissionType<UserRecentModel, UserRecentModel>
+    ): Resource<List<UserRecentModel>> {
+
+        val recentChatList = recentChat.replayCache[0].data?.toMutableList() ?: mutableListOf()
+
+        when (it.emitChangeType) {
+            Constants.ListenerEmitType.Starting -> {
+                recentChatList.clear()
+                it.responseList?.let {
+                    recentChatList.addAll(it)
+                    recentChatList.sortBy { it.recentChat?.lastMessageTimeInTimeStamp }
+                }
+            }
+
+            Constants.ListenerEmitType.Added -> {
+                it.singleResponse?.let {
+                    recentChatList.add(it)
+                    recentChatList.sortBy { it.recentChat?.lastMessageTimeInTimeStamp }
+                }
+            }
+
+            Constants.ListenerEmitType.Removed -> {
+                it.singleResponse?.recentChat?.receiverId?.let { removedMessageId ->
+                    recentChatList.forEach {
+                        val messageId = it.recentChat?.receiverId
+                        if (messageId != null && messageId == removedMessageId) {
+                            recentChatList.remove(it)
+                            recentChatList.sortBy { it.recentChat?.lastMessageTimeInTimeStamp }
+                            return@let
+                        }
+                    }
+                }
+            }
+
+            Constants.ListenerEmitType.Modify -> {
+                it.singleResponse?.let { modifiedMessage ->
+                    val existingMessage =
+                        recentChatList.find { it.user?.userId == modifiedMessage.user?.userId }
+                    MyLogger.w(tagChat, msg = existingMessage, isJson = true, jsonTitle = "Existing Message")
+                    existingMessage?.apply {
+                        recentChat=recentChat?.copy(
+                            chatRoomId = modifiedMessage.recentChat?.chatRoomId,
+                            lastMessageTimeInTimeStamp = modifiedMessage.recentChat?.lastMessageTimeInTimeStamp,
+                            lastMessageTimeInText = modifiedMessage.recentChat?.lastMessageTimeInText,
+                            unSeenMessageCount = modifiedMessage.recentChat?.unSeenMessageCount,
+                            message = modifiedMessage.recentChat?.message,
+                            lastMessageType = modifiedMessage.recentChat?.lastMessageType,
+                            receiverId = modifiedMessage.recentChat?.receiverId,
+                            senderId=modifiedMessage.recentChat?.senderId,
+                            userId=modifiedMessage.recentChat?.userId,
+                            lastMessageSeen = modifiedMessage.recentChat?.lastMessageSeen
+                        )
+                        // Ensure the list remains sorted by message timestamp
+                        recentChatList.sortBy { recentChat -> recentChat.recentChat?.lastMessageTimeInTimeStamp }
+                    }
+                }
+            }
+        }
+
+        return Resource.Success(recentChatList)
+
+    }
+
+
     //endregion
 
     fun setDataLoadedStatus(status: Boolean) {

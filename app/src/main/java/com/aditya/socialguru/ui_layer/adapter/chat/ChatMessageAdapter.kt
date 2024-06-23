@@ -1,10 +1,8 @@
 package com.aditya.socialguru.ui_layer.adapter.chat
 
-import android.graphics.Color
-import android.graphics.PorterDuff
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -17,36 +15,38 @@ import com.aditya.socialguru.databinding.SampleSenderMessageViewBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
-import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
-import com.aditya.socialguru.ui_layer.adapter.StoryAdapter
 import com.aditya.socialguru.ui_layer.adapter.post.PostImageVideoAdapter
+import com.bumptech.glide.Glide
 
 class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-        private val SENDER_VIEW_TYPE=0
-        private val RECEIVER_VIEW_TYPE=1
-        private val DATE_HEADER_VIEW_TYPE=2
+    private val SENDER_VIEW_TYPE = 0
+    private val RECEIVER_VIEW_TYPE = 1
+    private val DATE_HEADER_VIEW_TYPE = 2
+    private val tagChat = Constants.LogTag.Chats
 
     private val differ = AsyncListDiffer(this, object : DiffUtil.ItemCallback<Message>() {
         override fun areItemsTheSame(oldItem: Message, newItem: Message): Boolean {
-            return oldItem.messageId==newItem.messageId
+            return oldItem.messageId == newItem.messageId
         }
 
         override fun areContentsTheSame(oldItem: Message, newItem: Message): Boolean {
-            return oldItem.messageId==newItem.messageId
+            return oldItem.messageId == newItem.messageId
         }
     })
 
-    fun submitList(list: List<Message>){
+    fun submitList(list: List<Message>) {
         differ.submitList(list)
         notifyDataSetChanged()
     }
 
-    inner class SenderMessageViewHolder(val binding:SampleSenderMessageViewBinding) : RecyclerView.ViewHolder(binding.root){
-        fun bind(message: Message){
+    inner class SenderMessageViewHolder(val binding: SampleSenderMessageViewBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(message: Message) {
 
             binding.apply {
                 message.apply {
@@ -136,21 +136,24 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
 
                         viewPagerAdapter.submitList(postImageVideoModel)
                     }
-                    tvMessage.text=text
-                    tvTime.text= Helper.getTimeForChat(messageSentTimeInTimeStamp!!)
-                    when(seenStatus){
-                        Constants.SeenStatus.Sending.status->{
-                            ivMessageSeenStatus.setImageResource(R.drawable.ic_message_sending)
+                    tvMessage.text = text
+                    tvTime.text = Helper.getTimeForChat(messageSentTimeInTimeStamp!!)
+                    MyLogger.d(tagChat, msg = "sending Time:=> $messageSendTimeInText , seenStatus : $seenStatus")
+                    when (seenStatus) {
+                        Constants.SeenStatus.Sending.status -> {
+                            Glide.with(ivMessageSeenStatus.context).load(R.drawable.ic_message_sending).into(ivMessageSeenStatus)
                         }
-                        Constants.SeenStatus.Send.status->{
-                            ivMessageSeenStatus.setImageResource(R.drawable.ic_message_sent)
+
+                        Constants.SeenStatus.Send.status -> {
+                            Glide.with(ivMessageSeenStatus.context).load(R.drawable.ic_message_sent).into(ivMessageSeenStatus)
                         }
-                        Constants.SeenStatus.Received.status->{
-                            ivMessageSeenStatus.setImageResource(R.drawable.ic_message_received)
+
+                        Constants.SeenStatus.Received.status -> {
+                            Glide.with(ivMessageSeenStatus.context).load(R.drawable.ic_message_received).into(ivMessageSeenStatus)
                         }
-                        Constants.SeenStatus.MessageSeen.status->{
-                            ivMessageSeenStatus.setImageResource(R.drawable.ic_message_received)
-                            ivMessageSeenStatus.setColorFilter(ContextCompat.getColor(ivMessageSeenStatus.context, R.color.yellow), android.graphics.PorterDuff.Mode.SRC_IN)
+
+                        Constants.SeenStatus.MessageSeen.status -> {
+                            Glide.with(ivMessageSeenStatus.context).load(R.drawable.ic_message_seen).into(ivMessageSeenStatus)
                         }
                     }
                 }
@@ -158,8 +161,10 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
 
         }
     }
-    inner class ReceiverMessageViewHolder(val binding:SampleReceiverMessageViewBinding) : RecyclerView.ViewHolder(binding.root){
-        fun bind(message: Message){
+
+    inner class ReceiverMessageViewHolder(val binding: SampleReceiverMessageViewBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(message: Message) {
 
             binding.apply {
                 message.apply {
@@ -249,51 +254,82 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
 
                         viewPagerAdapter.submitList(postImageVideoModel)
                     }
-                    tvMessage.text=text
-                    tvTime.text= Helper.getTimeForChat(messageSentTimeInTimeStamp!!)
+                    tvMessage.text = text
+                    tvTime.text = Helper.getTimeForChat(messageSentTimeInTimeStamp!!)
+                    Glide.with(ivProfileImage.context).load(senderProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivProfileImage)
+
                 }
             }
 
         }
     }
-    inner class DateHeaderViewHolder(val binding:ChatMessageDateHeaderBinding) : RecyclerView.ViewHolder(binding.root){
-        fun bind(message: Message){
+
+    inner class DateHeaderViewHolder(val binding: ChatMessageDateHeaderBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(message: Message) {
             binding.apply {
                 message.apply {
-                    tvDateHeader.text=text
+                    tvDateHeader.text = text
                 }
             }
         }
     }
 
     override fun getItemViewType(position: Int): Int {
-        val message=differ.currentList[position]
-        val type=message.messageType!!
-        return if (type==Constants.MessageType.Chat.type){
-            if (message.senderId!! == AuthManager.currentUserId()!!){
+        val message = differ.currentList[position]
+        val type = message.messageType!!
+        return if (type == Constants.MessageType.Chat.type) {
+            if (message.senderId!! == AuthManager.currentUserId()!!) {
                 SENDER_VIEW_TYPE
-            }else{
+            } else {
                 RECEIVER_VIEW_TYPE
             }
-        }else{
+        } else {
             DATE_HEADER_VIEW_TYPE
         }
 
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return when(viewType){
-            SENDER_VIEW_TYPE->{
-                SenderMessageViewHolder(SampleSenderMessageViewBinding.inflate(LayoutInflater.from(parent.context) ,parent,false))
+        return when (viewType) {
+            SENDER_VIEW_TYPE -> {
+                SenderMessageViewHolder(
+                    SampleSenderMessageViewBinding.inflate(
+                        LayoutInflater.from(
+                            parent.context
+                        ), parent, false
+                    )
+                )
             }
-            RECEIVER_VIEW_TYPE->{
-                ReceiverMessageViewHolder(SampleReceiverMessageViewBinding.inflate(LayoutInflater.from(parent.context) ,parent,false))
+
+            RECEIVER_VIEW_TYPE -> {
+                ReceiverMessageViewHolder(
+                    SampleReceiverMessageViewBinding.inflate(
+                        LayoutInflater.from(
+                            parent.context
+                        ), parent, false
+                    )
+                )
             }
-            DATE_HEADER_VIEW_TYPE->{
-                DateHeaderViewHolder(ChatMessageDateHeaderBinding.inflate(LayoutInflater.from(parent.context) ,parent,false))
+
+            DATE_HEADER_VIEW_TYPE -> {
+                DateHeaderViewHolder(
+                    ChatMessageDateHeaderBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false
+                    )
+                )
             }
-            else->{
-                SenderMessageViewHolder(SampleSenderMessageViewBinding.inflate(LayoutInflater.from(parent.context) ,parent,false))
+
+            else -> {
+                SenderMessageViewHolder(
+                    SampleSenderMessageViewBinding.inflate(
+                        LayoutInflater.from(
+                            parent.context
+                        ), parent, false
+                    )
+                )
             }
         }
     }
@@ -312,11 +348,14 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
                 is ReceiverMessageViewHolder -> {
                     (holder as ReceiverMessageViewHolder).bind(it)
                 }
-                is DateHeaderViewHolder ->{
+
+                is DateHeaderViewHolder -> {
                     (holder as DateHeaderViewHolder).bind(it)
                 }
             }
         }
     }
+
+
 
 }

@@ -72,7 +72,7 @@ object FcmDataHandling : HandleJsonData {
             val user=userData.await()
             val message=messageData.await()
             if (user!=null){
-                FirebaseManager.updateSeenStatus(Constants.SeenStatus.Received.status,messageId,chatRoomId)
+                FirebaseManager.updateSeenStatus(Constants.SeenStatus.Received.status,messageId,chatRoomId ,notificationData.friendOrFollowerId)
                 MyNotificationManager.showTextChatMessage(user,notificationData ,message,context)
                 MyNotificationManager.showGroupSummaryNotification(context)
             }

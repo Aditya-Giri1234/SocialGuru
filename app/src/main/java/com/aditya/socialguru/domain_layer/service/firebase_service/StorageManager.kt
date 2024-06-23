@@ -67,7 +67,7 @@ object StorageManager {
                         MyLogger.i(tagStory, msg = "Image uploading successfully !")
                         downLoadUri(storageRef) { uri: Uri?, error: String ->
                             if (uri != null) {
-                                MyLogger.i(tagStory, msg = "Uri is not :- $uri")
+                                MyLogger.i(tagStory, msg = "Uri is  :- $uri")
                                 trySend(
                                     StorageManagerStatus(
                                         Constants.StorageManagerState.Success,

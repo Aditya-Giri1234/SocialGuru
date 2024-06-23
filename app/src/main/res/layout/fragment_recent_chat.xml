@@ -1,71 +1,148 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".ui_layer.fragment.bottom_navigation_fragment.RecentChatFragment">
 
     <LinearLayout
         android:id="@+id/linearHeaderSearch"
         android:layout_width="match_parent"
         android:layout_height="?actionBarSize"
-        android:orientation="horizontal"
-        android:gravity="center"
         android:layout_marginHorizontal="@dimen/_10sdp"
-        android:background="@drawable/shape_fab_bg"
         android:layout_marginVertical="@dimen/_5sdp"
+        android:background="@drawable/shape_fab_bg"
+        android:gravity="center"
+        android:orientation="horizontal"
         android:paddingHorizontal="@dimen/_10sdp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
+
         <ImageView
             android:layout_width="@dimen/_24sdp"
             android:layout_height="@dimen/_30sdp"
+            android:contentDescription="Search Icon"
             android:src="@drawable/ic_search"
-            app:tint="@color/lightWhite"
-            android:contentDescription="Search Icon"/>
+            app:tint="@color/lightWhite" />
+
         <EditText
             android:id="@+id/etSearch"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@android:color/transparent"
-            android:hint="Search User"
-            android:focusable="true"
-            android:clickable="true"
-            android:textCursorDrawable="@null"
-            android:focusableInTouchMode="true"
-            android:layout_weight="1"
             android:layout_marginHorizontal="@dimen/_5sdp"
-            android:textColorHint="@color/lightWhite"
-            android:textColor="@color/white"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:clickable="true"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
             android:fontFamily="@font/poppin_medium"
-            android:maxLines="1"
+            android:hint="Search User"
             android:inputType="textPersonName"
-            android:textSize="@dimen/_14ssp"/>
+            android:maxLines="1"
+            android:textColor="@color/white"
+            android:textColorHint="@color/lightWhite"
+            android:textCursorDrawable="@null"
+            android:textSize="@dimen/_14ssp" />
+
         <ImageView
             android:id="@+id/icClose"
             android:layout_width="@dimen/_24sdp"
             android:layout_height="@dimen/_24sdp"
-            android:src="@drawable/ic_close"
-            android:contentDescription="Search Icon"/>
+            android:contentDescription="Search Icon"
+            android:src="@drawable/ic_close" />
 
 
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/noDataView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="No Chat Available."
+        android:textColor="@color/white"
+        android:textSize="@dimen/_16ssp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.5" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvRecentChat"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        tools:listitem="@layout/sample_recent_chat_layout"
+        android:layout_marginTop="@dimen/_10sdp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/linearHeaderSearch"
+        app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <LinearLayout
+        android:id="@+id/linearBackToTop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="@dimen/_20sdp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:alpha=".8"
+        app:layout_constraintBottom_toTopOf="@id/fBtnStartChat"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:background="@drawable/circle_shape_for_button"
+            android:backgroundTint="@color/blue">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:rotation="90"
+                android:src="@drawable/ic_left_arrow_without_line" />
+
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BACK TO TOP"
+            android:textColor="@color/white"
+            android:includeFontPadding="false"
+            android:fontFamily="@font/poppin_medium"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:textSize="@dimen/_13ssp"/>
+
+
+    </LinearLayout>
+
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fBtnStartChat"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:icon="@drawable/ic_add"
-        android:backgroundTint="@color/lightBlack"
-        app:iconTint="@color/white"
-        android:layout_marginVertical="@dimen/_40sdp"
         android:layout_marginHorizontal="@dimen/_20sdp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        android:layout_marginVertical="@dimen/_40sdp"
+        android:backgroundTint="@color/lightBlack"
+        app:icon="@drawable/ic_add"
+        app:iconTint="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineBottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_end="20dp" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

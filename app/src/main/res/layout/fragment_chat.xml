@@ -187,6 +187,20 @@
 
     </LinearLayout>
 
+    <ImageButton
+        android:id="@+id/backToBottom"
+        android:layout_width="@dimen/_30sdp"
+        android:layout_height="@dimen/_30sdp"
+        android:background="@drawable/circle_shape_bg"
+        android:src="@drawable/ic_right_arrow"
+        android:rotation="90"
+        android:visibility="gone"
+        android:backgroundTint="@color/grey"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+        app:layout_constraintBottom_toTopOf="@id/linearFooter"
+        android:layout_marginVertical="@dimen/_10sdp"
+        android:layout_marginHorizontal="@dimen/_10sdp"/>
+
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guidelineStart"
         android:layout_width="wrap_content"

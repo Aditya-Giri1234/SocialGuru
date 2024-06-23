@@ -12,5 +12,5 @@ data class Message(
     val messageSentTimeInTimeStamp:Long?=null,
     val messageSendTimeInText:String?=null,
     var seenStatus:String?=null ,
-    val receiverProfileImage:String?=null  // This is for recycle view showing receiver profile on message
+    val senderProfileImage:String?=null  // This is for recycle view showing receiver profile on message
 )
