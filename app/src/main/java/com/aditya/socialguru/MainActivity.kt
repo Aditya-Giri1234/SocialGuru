@@ -40,6 +40,7 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.viewmodel.MainViewModel
@@ -65,15 +66,16 @@ class MainActivity : AppCompatActivity() {
         SharePref(this@MainActivity)
     }
 
-    private val broadcastReceiver= object : BroadcastReceiver() {
+    private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            when(intent?.action){
-                Constants.AppBroadCast.LogIn.name->{
+            when (intent?.action) {
+                Constants.AppBroadCast.LogIn.name -> {
                     MyLogger.i(msg = "User login event come !")
                     mainViewModel.setDataLoadedStatus(false)
                     getData()
                 }
-                Constants.AppBroadCast.LogOut.name->{
+
+                Constants.AppBroadCast.LogOut.name -> {
                     MyLogger.i(msg = "User logout event come !")
                 }
             }
@@ -112,11 +114,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun subscribeToBroadcast() {
-        val intentFilter=IntentFilter()
+        val intentFilter = IntentFilter()
         intentFilter.addAction(Constants.AppBroadCast.LogIn.name)
         intentFilter.addAction(Constants.AppBroadCast.LogOut.name)
 
-        ContextCompat.registerReceiver(this,broadcastReceiver,intentFilter,ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(
+            this,
+            broadcastReceiver,
+            intentFilter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
     }
 
     private fun handleInitialization() {
@@ -231,7 +238,11 @@ class MainActivity : AppCompatActivity() {
         fab.setOnClickListener {
 
             navController.currentDestination?.let {
-                navController.safeNavigate(it.id,R.id.addPostFragment ,Helper.giveUpAndBottomAnimationNavOption())
+                navController.safeNavigate(
+                    it.id,
+                    R.id.addPostFragment,
+                    Helper.giveUpAndBottomAnimationNavOption()
+                )
             }
         }
     }
@@ -326,7 +337,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getData() {
-        if (AuthManager.currentUserId()!=null) {
+        if (AuthManager.currentUserId() != null) {
             if (!mainViewModel.isDataLoaded) {
                 getFCMToken()
                 mainViewModel.getUser()
@@ -346,14 +357,18 @@ class MainActivity : AppCompatActivity() {
 
 
     override fun onResume() {
-        mainViewModel.updateUserAvailability(true)
+        AuthManager.isUserLogin().takeIf { it }?.let {
+            mainViewModel.updateUserAvailability(true)
+        }
         super.onResume()
         MyLogger.v(isFunctionCall = true)
 
     }
 
     override fun onStop() {
-        mainViewModel.updateUserAvailability(false)
+        AuthManager.isUserLogin().takeIf { it }?.let {
+            mainViewModel.updateUserAvailability(false)
+        }
         super.onStop()
     }
 
@@ -368,14 +383,15 @@ class MainActivity : AppCompatActivity() {
 
         //For getting exact back stack entry count we need child fragment manager not supportFragment manager
         //Reason our fragment switch under nav host fragment , so we need nav host fragment means we need childFragment manager
-        val navHostFragment=supportFragmentManager.fragments.first()
+        val navHostFragment = supportFragmentManager.fragments.first()
         MyLogger.w(msg = "Back pressed , current entry is ${navHostFragment.childFragmentManager.backStackEntryCount}")
-        when{
-            navHostFragment.childFragmentManager.backStackEntryCount==0->{
+        when {
+            navHostFragment.childFragmentManager.backStackEntryCount == 0 -> {
                 MyLogger.w(msg = "back stack entry is 0 but this is not top bottom animation fragment !")
                 finish()
             }
-            else->{
+
+            else -> {
                 MyLogger.w(msg = "Normal back stack removal !")
                 navController.popBackStack()
             }
