@@ -6,15 +6,18 @@ import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.WindowManager
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.annotation.RequiresApi
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.content.ContextCompat
 import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -45,6 +48,7 @@ import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
+import com.aditya.socialguru.domain_layer.helper.showKeyboard
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
@@ -52,6 +56,9 @@ import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.chat.ChatMessageAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.bumptech.glide.Glide
+import com.vanniktech.emoji.EmojiPopup
+import com.vanniktech.emoji.listeners.OnEmojiPopupShownListener
+import com.vanniktech.ui.hideKeyboardAndFocus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -77,6 +84,13 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
     private var isUserAppOpen = false
     private var isUserActiveOnCurrentChat = false
     private var isFirstTimeDataSetOnUi = true
+    private val emojiKeyboardTag = 0
+    private val emojiPopup by lazy {
+        EmojiPopup(
+            binding.root,
+            binding.etMessage
+        )
+    }
 
     private var imageUri: String? = null
     private var videoUri: String? = null
@@ -275,12 +289,37 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
         icBack.setOnClickListener {
             navController.navigateUp()
         }
-
-        rvChats.setSafeOnClickListener {
-            etMessage.clearFocus()
-            etMessage.hideKeyboard()
+        etMessage.setOnTouchListener { v, event ->
+            MyLogger.v(tagChat, msg = "Now user touch on edit status view !")
+            v.onTouchEvent(event)
+            emojiPopup.dismiss()
+            true
         }
 
+        icEmoji.setSafeOnClickListener {
+            //https://johncodeos.com/move-view-with-keyboard-in-android-using-kotlin/
+            // Use this article to solve keyboard issue
+
+            if (it.tag.toString().toInt() == emojiKeyboardTag) {
+                emojiPopup.toggle()
+                icEmoji.tag = "1"  // Important tag set into string else get unexpected result
+                icEmoji.setImageDrawable(
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.ic_keybaord
+                    )
+                )
+            } else {
+                icEmoji.tag = "0"
+                emojiPopup.dismiss()
+                icEmoji.setImageDrawable(
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.emoji
+                    )
+                )
+            }
+        }
         btnSend.setSafeOnClickListener {
             sendMessage()
         }
@@ -543,13 +582,13 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
 
     private fun deleteThisMessage(deleteMessage: Message?) {
         deleteMessage?.let {
-            if (chatAdapter.itemCount==1){
+            if (chatAdapter.itemCount == 1) {
                 clearChat()
-            }else{
-                when{
-                    chatAdapter.findMessageIndex(it)==chatAdapter.itemCount-1->{
+            } else {
+                when {
+                    chatAdapter.findMessageIndex(it) == chatAdapter.itemCount - 1 -> {
                         //User want to delete  last message so need to update last message on chat room and recent chat data in both parties
-                        val secondLastMessage=chatAdapter.giveMeSecondLastMessage()
+                        val secondLastMessage = chatAdapter.giveMeSecondLastMessage()
                         val lastMessage = LastMessage(
                             senderId = secondLastMessage.senderId,
                             receiverId = secondLastMessage.receiverId,
@@ -562,11 +601,18 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
                             isUser2Online = findUserAvailability(false),
                         )
 
-                        chatViewModel.deleteMessage(it ,chatRoomId,receiverId,lastMessage,secondLastMessage)
+                        chatViewModel.deleteMessage(
+                            it,
+                            chatRoomId,
+                            receiverId,
+                            lastMessage,
+                            secondLastMessage
+                        )
 
                     }
-                    else->{
-                        chatViewModel.deleteMessage(it ,chatRoomId,receiverId,null,null)
+
+                    else -> {
+                        chatViewModel.deleteMessage(it, chatRoomId, receiverId, null, null)
                     }
                 }
             }

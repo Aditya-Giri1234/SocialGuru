@@ -143,6 +143,7 @@
                 android:layout_width="@dimen/_20sdp"
                 android:layout_height="@dimen/_20sdp"
                 android:contentDescription="Emoji Selector Button"
+                android:tag="0"
                 android:layout_gravity="bottom"
                 app:tint="@color/lightWhite"
                 android:src="@drawable/emoji"/>

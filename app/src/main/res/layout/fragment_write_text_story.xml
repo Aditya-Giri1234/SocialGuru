@@ -27,15 +27,17 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="4"/>
+
         <ImageView
             android:id="@+id/ic_emoji"
             android:layout_width="@dimen/_24sdp"
             android:layout_height="@dimen/_24sdp"
-            android:src="@drawable/emoji"
-            android:padding="@dimen/_2sdp"
-            android:tag="0"
             android:layout_marginHorizontal="@dimen/_10sdp"
-            app:tint="@color/white"/>
+            android:padding="@dimen/_2sdp"
+            android:src="@drawable/emoji"
+            android:tag="0"
+            app:tint="@color/white" />
+
         <ImageView
             android:id="@+id/ic_text_font"
             android:layout_width="@dimen/_24sdp"
