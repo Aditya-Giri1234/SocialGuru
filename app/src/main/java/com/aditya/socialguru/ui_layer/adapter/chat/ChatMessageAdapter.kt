@@ -160,6 +160,11 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
                     root.setSafeOnClickListener {
                         chatMessageOption.onMessageClick(this)
                     }
+
+                    root.setOnLongClickListener {
+                        chatMessageOption.onLongMessageClick(this)
+                        true
+                    }
                 }
             }
 
@@ -263,6 +268,10 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
                     Glide.with(ivProfileImage.context).load(senderProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivProfileImage)
                     root.setSafeOnClickListener {
                         chatMessageOption.onMessageClick(this)
+                    }
+                    root.setOnLongClickListener {
+                        chatMessageOption.onLongMessageClick(this)
+                        true
                     }
                 }
             }
