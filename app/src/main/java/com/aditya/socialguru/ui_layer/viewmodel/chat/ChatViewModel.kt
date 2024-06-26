@@ -59,6 +59,10 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
         MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
     val sendMessage get() = _sendMessage.asSharedFlow()
 
+    private val _deleteMessage =
+        MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
+    val deleteMessage get() = _deleteMessage.asSharedFlow()
+
     private val _recentChat= MutableSharedFlow<Resource<List<UserRecentModel>>>(
         1,64 ,BufferOverflow.DROP_OLDEST
     )
@@ -348,7 +352,6 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     }
     //endregion
 
-
     //region:: Get Recent Chat
 
     fun getRecentChat() = viewModelScope.myLaunch {
@@ -394,8 +397,8 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Removed -> {
                 it.singleResponse?.recentChat?.receiverId?.let { removedMessageId ->
                     recentChatList.forEach {
-                        val messageId = it.recentChat?.receiverId
-                        if (messageId != null && messageId == removedMessageId) {
+                        val userId = it.user?.userId
+                        if (userId != null && userId == removedMessageId) {
                             recentChatList.remove(it)
                             recentChatList.sortBy { it.recentChat?.lastMessageTimeInTimeStamp }
                             return@let
@@ -433,6 +436,33 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
     }
 
+
+    //endregion
+
+    //region:: Send Message
+
+    fun deleteMessage(message: Message,chatRoomId:String,userId:String  , lastMessage: LastMessage?, secondLastMessage:Message?=null) =
+        viewModelScope.myLaunch {
+            _deleteMessage.tryEmit(Resource.Loading())
+
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                repository.deleteMessage(message,chatRoomId, userId, lastMessage , secondLastMessage).onEach {
+                    MyLogger.i(
+                        tagChat,
+                        msg = it,
+                        isJson = true,
+                        jsonTitle = "Message sent response come"
+                    )
+                    if (it.isSuccess) {
+                        _deleteMessage.tryEmit(Resource.Success(it))
+                    } else {
+                        _deleteMessage.tryEmit(Resource.Error(it.errorMessage))
+                    }
+                }.launchIn(this)
+            } else {
+                _deleteMessage.tryEmit(Resource.Error("No Internet Available !"))
+            }
+        }
 
     //endregion
 

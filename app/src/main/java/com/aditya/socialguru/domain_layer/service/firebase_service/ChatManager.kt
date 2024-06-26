@@ -180,6 +180,70 @@ object ChatManager {
             }
         }
 
+    suspend fun deleteMessage(message: Message,chatRoomId:String,userId:String  , lastMessage: LastMessage?, secondLastMessage:Message?=null) = callbackFlow<UpdateResponse> {
+
+        if (secondLastMessage!=null){
+            // need to update last message , recent chat
+            //For My Recent Chat
+            val timeStamp=secondLastMessage.messageSentTimeInTimeStamp
+            val timeInText=secondLastMessage.messageSendTimeInText
+            val lastMessageType=secondLastMessage.messageType
+            val forMyRecentData = RecentChat(
+                chatRoomId = chatRoomId,
+                lastMessageTimeInTimeStamp = timeStamp,
+                lastMessageTimeInText = timeInText,
+                message = secondLastMessage.text,
+                lastMessageType = lastMessageType,
+                senderId = secondLastMessage.senderId,
+                receiverId = secondLastMessage.receiverId,
+                userId = userId,
+                lastMessageSeen = secondLastMessage.seenStatus
+            )
+
+            //For Receiver Recent Chat
+            val forReceiverRecentData = RecentChat(
+                chatRoomId = chatRoomId,
+                lastMessageTimeInTimeStamp = timeStamp,
+                lastMessageTimeInText = timeInText,
+                message = secondLastMessage.text,
+                lastMessageType = lastMessageType,
+                senderId =secondLastMessage.senderId,
+                receiverId = secondLastMessage.receiverId,
+                userId = AuthManager.currentUserId()!!,
+                lastMessageSeen = secondLastMessage.seenStatus
+            )
+
+            val messageRef= chatRef.document(chatRoomId).collection(Table.Messages.name).document(message.messageId!!)
+            val lastMessageRef= chatRef.document(chatRoomId)
+            val receiverRecentRef= userRef.document(userId).collection(Table.RecentChat.name).document(chatRoomId)
+            val myRecentChatRef= userRef.document(AuthManager.currentUserId()!!).collection(Table.RecentChat.name).document(chatRoomId)
+
+            firestore.runBatch { batch->
+                batch.delete(messageRef)
+                batch.update(lastMessageRef ,lastMessage!!.toNormalMap().filterValues { it!=null })
+                batch.update(receiverRecentRef,forReceiverRecentData.toNormalMap())
+                batch.update(myRecentChatRef,forMyRecentData.toNormalMap())
+            }.addOnSuccessListener {
+                trySend(UpdateResponse(true,""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false,it.message))
+            }.await()
+
+
+        }else{
+            // just delete message no need to update any thing
+            chatRef.document(chatRoomId).collection(Table.Messages.name).document(message.messageId!!).delete().addOnSuccessListener {
+                trySend(UpdateResponse(true,""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false,it.message))
+            }.await()
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
     fun updateSeenStatus(
         status: String,
         messageId: String,

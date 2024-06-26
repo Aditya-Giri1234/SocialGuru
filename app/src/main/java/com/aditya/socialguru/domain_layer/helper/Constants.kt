@@ -105,6 +105,7 @@ object Constants {
     }
 
 
+
     enum class UserTable(val fieldName: String) {
         USERID("userId"),
         USERNAME("userName"),
@@ -251,6 +252,12 @@ object Constants {
     enum class NotificationPriority(val priority:String){
         Normal("normal"),
         High("high")
+    }
+
+    //This is for which action invoke dialog in chat fragment
+    enum class ChatDialogInvokeAction(val invokeReason:String){
+        ClearChat("Clear all chat!"),
+        DeleteSingleChat("Delete Single Chat !")
     }
 
     //For Json Handling

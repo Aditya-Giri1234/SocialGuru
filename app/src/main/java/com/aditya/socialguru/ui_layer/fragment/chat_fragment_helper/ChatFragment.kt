@@ -73,12 +73,14 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
     private val tagChat = Constants.LogTag.Chats
 
     private lateinit var receiverId: String  //This is for receive userId
+    private var dialogInvokeReason = Constants.ChatDialogInvokeAction.DeleteSingleChat
     private var isUserAppOpen = false
     private var isUserActiveOnCurrentChat = false
     private var isFirstTimeDataSetOnUi = true
 
     private var imageUri: String? = null
     private var videoUri: String? = null
+    private var deleteMessage: Message? = null
 
     private var _chatAdapter: ChatMessageAdapter? = null
     private val chatAdapter get() = _chatAdapter!!
@@ -108,7 +110,6 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        activity?.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     }
 
     override fun onCreateView(
@@ -389,9 +390,8 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
         popUp.animationStyle = R.style.popup_window_animation
         popUp.showAsDropDown(binding.icMore)
 
-
-
         bindingPopUp.linearItemDeleteAll.setSafeOnClickListener {
+            dialogInvokeReason = Constants.ChatDialogInvokeAction.ClearChat
             AlertDialog("Are your sure clear Chats ?", this@ChatFragment, true).show(
                 childFragmentManager,
                 "MY_Dialog"
@@ -541,6 +541,39 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
         }
     }
 
+    private fun deleteThisMessage(deleteMessage: Message?) {
+        deleteMessage?.let {
+            if (chatAdapter.itemCount==1){
+                clearChat()
+            }else{
+                when{
+                    chatAdapter.findMessageIndex(it)==chatAdapter.itemCount-1->{
+                        //User want to delete  last message so need to update last message on chat room and recent chat data in both parties
+                        val secondLastMessage=chatAdapter.giveMeSecondLastMessage()
+                        val lastMessage = LastMessage(
+                            senderId = secondLastMessage.senderId,
+                            receiverId = secondLastMessage.receiverId,
+                            messageType = secondLastMessage.messageType,
+                            chatType = secondLastMessage.chatType,
+                            message = secondLastMessage.text,
+                            lastMessageSentTimeInTimeStamp = secondLastMessage.messageSentTimeInTimeStamp,
+                            lastMessageSentTimeInText = secondLastMessage.messageSendTimeInText,
+                            isUser1Online = findUserAvailability(true),
+                            isUser2Online = findUserAvailability(false),
+                        )
+
+                        chatViewModel.deleteMessage(it ,chatRoomId,receiverId,lastMessage,secondLastMessage)
+
+                    }
+                    else->{
+                        chatViewModel.deleteMessage(it ,chatRoomId,receiverId,null,null)
+                    }
+                }
+            }
+        }
+    }
+
+
     override fun onResume() {
         chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId, isIAmUser1, true)
         super.onResume()
@@ -551,19 +584,20 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
         super.onStop()
     }
 
-
     override fun onResult(isYes: Boolean) {
         if (isYes) {
-            clearChat()
+            when (dialogInvokeReason) {
+                Constants.ChatDialogInvokeAction.ClearChat -> {
+                    clearChat()
+                }
+
+                Constants.ChatDialogInvokeAction.DeleteSingleChat -> {
+                    deleteThisMessage(deleteMessage)
+                }
+            }
         }
     }
 
-
-    override fun onDestroyView() {
-//        activity?.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
-        _binding = null
-        super.onDestroyView()
-    }
 
     override fun onImageClick(): (Uri) -> Unit = {
 
@@ -574,9 +608,21 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
     }
 
     override fun onMessageClick(message: Message) {
+
     }
 
     override fun onLongMessageClick(message: Message) {
+        deleteMessage = message
+        dialogInvokeReason = Constants.ChatDialogInvokeAction.DeleteSingleChat
+        AlertDialog("Are you sure delete this chat ?", this, true).show(
+            childFragmentManager,
+            "My_Delete_Dialog"
+        )
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 
 
