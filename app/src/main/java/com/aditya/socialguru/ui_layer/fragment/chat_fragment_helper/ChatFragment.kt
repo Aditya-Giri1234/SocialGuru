@@ -1,11 +1,14 @@
 package com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper
 
 import android.animation.Animator
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
@@ -15,9 +18,12 @@ import android.view.WindowManager
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.PopupWindow
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import androidx.core.view.isGone
 import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -41,6 +47,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants.MessageType
 import com.aditya.socialguru.domain_layer.helper.Constants.SeenStatus
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
+import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.disabled
 import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
@@ -73,7 +80,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 
-class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption  , OnAttachmentItemListener{
+class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachmentItemListener {
     private var _binding: FragmentChatBinding? = null
     private val binding get() = _binding!!
 
@@ -86,6 +93,8 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption  , OnAttac
     private var isUserAppOpen = false
     private var isUserActiveOnCurrentChat = false
     private var isFirstTimeDataSetOnUi = true
+    private var attachmentImageUri: Uri? = null
+    private var attachmentVideoUri: Uri? = null
     private val emojiKeyboardTag = 0
     private val emojiPopup by lazy {
         EmojiPopup(
@@ -122,6 +131,24 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption  , OnAttac
     private val chatRoomId by lazy {
         Helper.getChatRoomId(receiverId)
     }
+
+    private val cameraIntent =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (it.resultCode == Activity.RESULT_OK) {
+                val uri = it.data?.extras?.get
+                if (uri != null) {
+                    setImageOnAttachmentUi(uri)
+                    MyLogger.i(tagChat, msg = "User capture image and now it show to ui !")
+                } else {
+                    MyLogger.e(
+                        tagChat,
+                        msg = "User select image but some error occurred so that uri is null and ${it.data?.data} !"
+                    )
+                }
+            } else {
+                MyLogger.v(tagChat, msg = "User cancel image capturing !")
+            }
+        }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -327,7 +354,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption  , OnAttac
         }
 
         icAttachment.setSafeOnClickListener {
-            AttachmentDialog(this@ChatFragment).show(childFragmentManager,"My_Attchment_Dialog")
+            AttachmentDialog(this@ChatFragment).show(childFragmentManager, "My_Attchment_Dialog")
         }
 
     }
@@ -625,6 +652,42 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption  , OnAttac
         }
     }
 
+    private fun setImageOnAttachmentUi(data: Uri) {
+        attachmentImageUri = data
+        binding.apply {
+            linearAttachment.myShow()
+            cardImageMessage.myShow()
+            ivImageSendMessage.setImageURI(data)
+            ivCancleImage.setSafeOnClickListener {
+                attachmentImageUri=null
+                cardImageMessage.gone()
+                hideLinearAttachmentLayout()
+            }
+        }
+    }
+
+    private fun setVideoOnAttachmentUi(data: Uri) {
+        attachmentVideoUri = data
+        binding.apply {
+            linearAttachment.myShow()
+            cardVideoMessage.myShow()
+            ivVideoSendMessage.setImageURI(data)
+            ivCancleVideo.setSafeOnClickListener {
+                attachmentVideoUri=null
+                cardVideoMessage.gone()
+                hideLinearAttachmentLayout()
+            }
+        }
+    }
+
+    private fun hideLinearAttachmentLayout() {
+        binding.apply {
+            if (cardImageMessage.isGone && cardVideoMessage.isGone){
+                linearAttachment.gone()
+            }
+        }
+    }
+
 
     override fun onResume() {
         chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId, isIAmUser1, true)
@@ -674,7 +737,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption  , OnAttac
     }
 
     override fun onAttachmentImageClick() {
-
+        cameraIntent.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
     }
 
     override fun onAttachmentGalleryClick() {
@@ -685,8 +748,6 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption  , OnAttac
         _binding = null
         super.onDestroyView()
     }
-
-
 
 
 }
