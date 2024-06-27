@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@android:color/transparent"
+    app:cardUseCompatPadding="true"
+    app:cardBackgroundColor="@color/lightBlack"
+    app:cardCornerRadius="@dimen/_15sdp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/_15sdp">
+
+        <LinearLayout
+            android:id="@+id/ivCamera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            tools:ignore="MissingConstraints">
+            <ImageView
+                android:layout_width="@dimen/_40sdp"
+                android:layout_height="@dimen/_40sdp"
+                android:background="@drawable/circle_shape_bg"
+                android:backgroundTint="@color/deep_pink"
+                android:src="@drawable/ic_camera"
+                android:padding="@dimen/_10sdp"
+                tools:ignore="MissingConstraints"/>
+
+             <TextView
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:text="Camera"
+                 android:textSize="@dimen/_14ssp"
+                 android:textColor="@color/white"
+                 android:fontFamily="@font/poppin_medium"/>
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/ivGallery"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            tools:ignore="MissingConstraints">
+            <ImageView
+                android:layout_width="@dimen/_40sdp"
+                android:layout_height="@dimen/_40sdp"
+                android:background="@drawable/circle_shape_bg"
+                android:backgroundTint="@color/dark_night_blue"
+                android:src="@drawable/ic_gallery"
+                android:padding="@dimen/_10sdp"
+                tools:ignore="MissingConstraints"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gallery"
+                android:textSize="@dimen/_14ssp"
+                android:textColor="@color/white"
+                android:fontFamily="@font/poppin_medium"/>
+        </LinearLayout>
+
+        <androidx.constraintlayout.helper.widget.Flow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:constraint_referenced_ids="ivCamera ,ivGallery"
+            app:flow_wrapMode="chain"
+            app:flow_verticalAlign="center"
+            app:flow_verticalGap="@dimen/_5sdp"
+            app:flow_maxElementsWrap="3"
+            app:flow_horizontalGap="@dimen/_20sdp"
+            tools:ignore="MissingConstraints" />
+
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
+</com.google.android.material.card.MaterialCardView>

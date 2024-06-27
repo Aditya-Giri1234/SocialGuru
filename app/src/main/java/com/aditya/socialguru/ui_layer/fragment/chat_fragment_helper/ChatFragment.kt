@@ -34,6 +34,7 @@ import com.aditya.socialguru.databinding.FragmentChatBinding
 import com.aditya.socialguru.databinding.PopUpChatScreenBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
+import com.aditya.socialguru.domain_layer.custom_class.dialog.chat.AttachmentDialog
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Constants.MessageType
@@ -52,6 +53,7 @@ import com.aditya.socialguru.domain_layer.helper.showKeyboard
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
+import com.aditya.socialguru.domain_layer.remote_service.chat.OnAttachmentItemListener
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.chat.ChatMessageAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
@@ -71,7 +73,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 
-class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
+class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption  , OnAttachmentItemListener{
     private var _binding: FragmentChatBinding? = null
     private val binding get() = _binding!!
 
@@ -322,6 +324,10 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
         }
         btnSend.setSafeOnClickListener {
             sendMessage()
+        }
+
+        icAttachment.setSafeOnClickListener {
+            AttachmentDialog(this@ChatFragment).show(childFragmentManager,"My_Attchment_Dialog")
         }
 
     }
@@ -649,6 +655,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
 
     }
 
+
     override fun onVideoClick(): (Uri) -> Unit = {
 
     }
@@ -666,10 +673,20 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption {
         )
     }
 
+    override fun onAttachmentImageClick() {
+
+    }
+
+    override fun onAttachmentGalleryClick() {
+
+    }
+
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
     }
+
+
 
 
 }
