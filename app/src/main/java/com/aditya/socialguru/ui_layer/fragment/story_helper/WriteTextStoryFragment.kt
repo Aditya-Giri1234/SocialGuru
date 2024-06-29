@@ -119,7 +119,6 @@ class WriteTextStoryFragment : Fragment() {
                     )
                 )
             }
-
         }
         etStatus.setOnTouchListener { v, event ->
             MyLogger.v(tagStory, msg = "Now user touch on edit status view !")

@@ -15,6 +15,7 @@ import com.aditya.socialguru.databinding.SampleSenderMessageViewBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
@@ -156,6 +157,14 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
                             Glide.with(ivMessageSeenStatus.context).load(R.drawable.ic_message_seen).into(ivMessageSeenStatus)
                         }
                     }
+                    root.setSafeOnClickListener {
+                        chatMessageOption.onMessageClick(this)
+                    }
+
+                    root.setOnLongClickListener {
+                        chatMessageOption.onLongMessageClick(this)
+                        true
+                    }
                 }
             }
 
@@ -257,7 +266,13 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
                     tvMessage.text = text
                     tvTime.text = Helper.getTimeForChat(messageSentTimeInTimeStamp!!)
                     Glide.with(ivProfileImage.context).load(senderProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivProfileImage)
-
+                    root.setSafeOnClickListener {
+                        chatMessageOption.onMessageClick(this)
+                    }
+                    root.setOnLongClickListener {
+                        chatMessageOption.onLongMessageClick(this)
+                        true
+                    }
                 }
             }
 
@@ -357,5 +372,14 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
     }
 
 
+
+    fun findMessageIndex(message: Message) = differ.currentList.indexOf(message)
+    fun giveMeSecondLastMessage() : Message = differ.currentList[differ.currentList.size-2].let {
+        if (it.messageType==Constants.MessageType.DateHeader.type){
+            differ.currentList[differ.currentList.size-3]
+        }else{
+            it
+        }
+    }
 
 }

@@ -151,5 +151,7 @@ object FirebaseManager {
 
     suspend fun getMessageById(chatRoomId: String,messageId:String) = ChatManager.getMessageById(chatRoomId,messageId)
     suspend fun getRecentChatAndListen() = ChatManager.getRecentChatAndListen()
+
+    suspend fun deleteMessage(message: Message,chatRoomId:String,userId:String  , lastMessage: LastMessage?, secondLastMessage:Message?=null) = ChatManager.deleteMessage(message,chatRoomId,userId,lastMessage,secondLastMessage)
     //endregion
 }

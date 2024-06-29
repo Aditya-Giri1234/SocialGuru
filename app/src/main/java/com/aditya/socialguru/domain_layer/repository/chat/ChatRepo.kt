@@ -26,4 +26,6 @@ class ChatRepo {
 
     suspend fun getRecentChatAndListen() = ChatManager.getRecentChatAndListen()
 
+    suspend fun deleteMessage(message: Message,chatRoomId:String,userId:String  , lastMessage: LastMessage?, secondLastMessage:Message?=null) = FirebaseManager.deleteMessage(message,chatRoomId,userId,lastMessage,secondLastMessage)
+
 }

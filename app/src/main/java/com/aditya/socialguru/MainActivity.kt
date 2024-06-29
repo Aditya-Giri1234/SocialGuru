@@ -7,8 +7,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -16,6 +18,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.get
 import androidx.core.view.isGone
@@ -40,6 +43,7 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.viewmodel.MainViewModel
@@ -65,15 +69,16 @@ class MainActivity : AppCompatActivity() {
         SharePref(this@MainActivity)
     }
 
-    private val broadcastReceiver= object : BroadcastReceiver() {
+    private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            when(intent?.action){
-                Constants.AppBroadCast.LogIn.name->{
+            when (intent?.action) {
+                Constants.AppBroadCast.LogIn.name -> {
                     MyLogger.i(msg = "User login event come !")
                     mainViewModel.setDataLoadedStatus(false)
                     getData()
                 }
-                Constants.AppBroadCast.LogOut.name->{
+
+                Constants.AppBroadCast.LogOut.name -> {
                     MyLogger.i(msg = "User logout event come !")
                 }
             }
@@ -91,16 +96,29 @@ class MainActivity : AppCompatActivity() {
         )
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        //region:: This prevent to os not  to update ui your self when key board open
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+            @Suppress("DEPRECATION")
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        }
+
+        //endregion
+
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
 
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val systemBarsIMEInsets =
+                insets.getInsets(WindowInsetsCompat.Type.systemBars() + WindowInsetsCompat.Type.ime())
             bottomMargin = -systemBars.bottom
 
             v.setPadding(
                 systemBars.left,
                 systemBars.top,
                 systemBars.right,
-                systemBars.bottom
+                systemBarsIMEInsets.bottom
             )
             insets
         }
@@ -112,11 +130,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun subscribeToBroadcast() {
-        val intentFilter=IntentFilter()
+        val intentFilter = IntentFilter()
         intentFilter.addAction(Constants.AppBroadCast.LogIn.name)
         intentFilter.addAction(Constants.AppBroadCast.LogOut.name)
 
-        ContextCompat.registerReceiver(this,broadcastReceiver,intentFilter,ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(
+            this,
+            broadcastReceiver,
+            intentFilter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
     }
 
     private fun handleInitialization() {
@@ -231,7 +254,11 @@ class MainActivity : AppCompatActivity() {
         fab.setOnClickListener {
 
             navController.currentDestination?.let {
-                navController.safeNavigate(it.id,R.id.addPostFragment ,Helper.giveUpAndBottomAnimationNavOption())
+                navController.safeNavigate(
+                    it.id,
+                    R.id.addPostFragment,
+                    Helper.giveUpAndBottomAnimationNavOption()
+                )
             }
         }
     }
@@ -326,7 +353,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getData() {
-        if (AuthManager.currentUserId()!=null) {
+        if (AuthManager.currentUserId() != null) {
             if (!mainViewModel.isDataLoaded) {
                 getFCMToken()
                 mainViewModel.getUser()
@@ -346,14 +373,18 @@ class MainActivity : AppCompatActivity() {
 
 
     override fun onResume() {
-        mainViewModel.updateUserAvailability(true)
+        AuthManager.isUserLogin().takeIf { it }?.let {
+            mainViewModel.updateUserAvailability(true)
+        }
         super.onResume()
         MyLogger.v(isFunctionCall = true)
 
     }
 
     override fun onStop() {
-        mainViewModel.updateUserAvailability(false)
+        AuthManager.isUserLogin().takeIf { it }?.let {
+            mainViewModel.updateUserAvailability(false)
+        }
         super.onStop()
     }
 
@@ -368,14 +399,15 @@ class MainActivity : AppCompatActivity() {
 
         //For getting exact back stack entry count we need child fragment manager not supportFragment manager
         //Reason our fragment switch under nav host fragment , so we need nav host fragment means we need childFragment manager
-        val navHostFragment=supportFragmentManager.fragments.first()
+        val navHostFragment = supportFragmentManager.fragments.first()
         MyLogger.w(msg = "Back pressed , current entry is ${navHostFragment.childFragmentManager.backStackEntryCount}")
-        when{
-            navHostFragment.childFragmentManager.backStackEntryCount==0->{
+        when {
+            navHostFragment.childFragmentManager.backStackEntryCount == 0 -> {
                 MyLogger.w(msg = "back stack entry is 0 but this is not top bottom animation fragment !")
                 finish()
             }
-            else->{
+
+            else -> {
                 MyLogger.w(msg = "Normal back stack removal !")
                 navController.popBackStack()
             }
