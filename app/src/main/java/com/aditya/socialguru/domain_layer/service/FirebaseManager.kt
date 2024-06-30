@@ -153,5 +153,13 @@ object FirebaseManager {
     suspend fun getRecentChatAndListen() = ChatManager.getRecentChatAndListen()
 
     suspend fun deleteMessage(message: Message,chatRoomId:String,userId:String  , lastMessage: LastMessage?, secondLastMessage:Message?=null) = ChatManager.deleteMessage(message,chatRoomId,userId,lastMessage,secondLastMessage)
+
+    suspend fun clearChats(chatRoomId: String,receiverId: String) = ChatManager.clearChats(chatRoomId,receiverId)
+    suspend fun muteChatNotification(userId: String, isMute: Boolean) = ChatManager.muteChatNotification(userId, isMute)
+
+    suspend fun isUserMuted(userId: String) : Boolean = ChatManager.isUserMuted(userId)
+    suspend fun isUserMutedAndListen(userId: String) = ChatManager.isUserMutedAndListen(userId)
+
+    suspend fun getAllMediaOfChat(chatRoomId: String) = ChatManager.getAllMediaOfChat(chatRoomId)
     //endregion
 }

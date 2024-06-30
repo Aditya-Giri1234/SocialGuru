@@ -73,8 +73,13 @@ object FcmDataHandling : HandleJsonData {
             val message=messageData.await()
             if (user!=null){
                 FirebaseManager.updateSeenStatus(Constants.SeenStatus.Received.status,messageId,chatRoomId ,notificationData.friendOrFollowerId)
-                MyNotificationManager.showTextChatMessage(user,notificationData ,message,context)
-                MyNotificationManager.showGroupSummaryNotification(context)
+                if (!FirebaseManager.isUserMuted(userId)){
+                    MyNotificationManager.showTextChatMessage(user,notificationData ,message,context)
+                    MyNotificationManager.showGroupSummaryNotification(context)
+                }else{
+                    MyLogger.w(Constants.LogTag.Notification, msg = "Notification come of chat but sender is muted so that no notification show !")
+                }
+
             }
 
         }

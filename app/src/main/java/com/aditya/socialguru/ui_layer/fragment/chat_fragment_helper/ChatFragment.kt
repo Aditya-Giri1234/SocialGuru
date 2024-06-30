@@ -1,35 +1,28 @@
 package com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper
 
 import android.animation.Animator
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
-import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowInsets
-import android.view.WindowManager
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.PopupWindow
-import androidx.activity.result.ActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.isGone
-import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -41,22 +34,19 @@ import com.aditya.socialguru.databinding.PopUpChatScreenBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.dialog.chat.AttachmentDialog
-import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Constants.MessageType
 import com.aditya.socialguru.domain_layer.helper.Constants.SeenStatus
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
-import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.disabled
 import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
-import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
+import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
-import com.aditya.socialguru.domain_layer.helper.showKeyboard
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
@@ -66,8 +56,6 @@ import com.aditya.socialguru.ui_layer.adapter.chat.ChatMessageAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.bumptech.glide.Glide
 import com.vanniktech.emoji.EmojiPopup
-import com.vanniktech.emoji.listeners.OnEmojiPopupShownListener
-import com.vanniktech.ui.hideKeyboardAndFocus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -78,13 +66,12 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.io.File
 
 
 class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachmentItemListener {
     private var _binding: FragmentChatBinding? = null
     private val binding get() = _binding!!
-
-    private var myLoader: MyLoader? = null
 
     private val tagChat = Constants.LogTag.Chats
 
@@ -93,8 +80,8 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     private var isUserAppOpen = false
     private var isUserActiveOnCurrentChat = false
     private var isFirstTimeDataSetOnUi = true
-    private var attachmentImageUri: Uri? = null
-    private var attachmentVideoUri: Uri? = null
+    private val MAX_VIDEO_SIZE_MB = 50f
+
     private val emojiKeyboardTag = 0
     private val emojiPopup by lazy {
         EmojiPopup(
@@ -103,6 +90,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         )
     }
 
+    private var myLoader: MyLoader? = null
     private var imageUri: String? = null
     private var videoUri: String? = null
     private var deleteMessage: Message? = null
@@ -110,13 +98,11 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     private var _chatAdapter: ChatMessageAdapter? = null
     private val chatAdapter get() = _chatAdapter!!
 
-    private var myDetails: User? = null
 
     private val isIAmUser1 by lazy {
         val list = listOf(AuthManager.currentUserId()!!, receiverId).sorted()
         list[0] == AuthManager.currentUserId()!!
     }
-
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
     }
@@ -132,21 +118,48 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         Helper.getChatRoomId(receiverId)
     }
 
+
     private val cameraIntent =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode == Activity.RESULT_OK) {
-                val uri = it.data?.extras?.get
-                if (uri != null) {
-                    setImageOnAttachmentUi(uri)
-                    MyLogger.i(tagChat, msg = "User capture image and now it show to ui !")
-                } else {
-                    MyLogger.e(
-                        tagChat,
-                        msg = "User select image but some error occurred so that uri is null and ${it.data?.data} !"
-                    )
-                }
+        registerForActivityResult(ActivityResultContracts.TakePicture()) { result ->
+            if (result) {
+                chatViewModel.imageUri?.let { setImageOnAttachmentUi(it) }
             } else {
                 MyLogger.v(tagChat, msg = "User cancel image capturing !")
+            }
+        }
+
+    private val pickMedia =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            // Callback is invoked after the user selects a media item or closes the photo picker.
+            uri?.let { selectedUri ->
+                val mimeType = requireContext().contentResolver.getType(selectedUri)
+                mimeType?.let {
+                    if (it.startsWith("image/")) {
+                        // It's an image
+                        MyLogger.v(tagChat, msg = "User selected an image! URI: $selectedUri")
+                        setImageOnAttachmentUi(selectedUri)
+                    } else if (it.startsWith("video/")) {
+                        // It's a video
+                        MyLogger.v(tagChat, msg = "User selected a video! URI: $selectedUri")
+                        handleVideoSelection(selectedUri)
+                    } else {
+                        // Unsupported media type
+                        MyLogger.v(
+                            tagChat,
+                            msg = "User selected media with unsupported type! URI: $selectedUri"
+                        )
+                        // Handle unsupported media type
+                    }
+                } ?: run {
+                    // MIME type could not be determined
+                    MyLogger.v(
+                        tagChat,
+                        msg = "Could not determine MIME type for selected media! URI: $selectedUri"
+                    )
+                }
+            } ?: run {
+                // URI is null, user cancelled or selection failed
+                MyLogger.v(tagChat, msg = "User cancelled media selection or selection failed!")
             }
         }
 
@@ -180,7 +193,6 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     private fun subscribeToObserver() {
         viewLifecycleOwner.observeFlow {
-
             chatViewModel.userDetails.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
@@ -188,6 +200,9 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                         response.data?.let {
                             setUserProfile(it)
                         }
+                      if (!chatViewModel.isDataLoaded){
+                          getChatDataAndListen()
+                      }
                     }
 
                     is Resource.Loading -> {
@@ -225,14 +240,55 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
             chatViewModel.sendMessage.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
-                        binding.etMessage.text.clear()
+                        response.data?.let {
+                            when {
+                                it.isSending -> {
+                                    myLoader?.setLoadingStatus(
+                                        it.sendingMessage,
+                                        it.progress ?: 0,
+                                        false
+                                    )
+                                }
+
+                                it.isSuccess -> {
+                                    resetUiScreen()
+                                }
+
+                                else -> {
+                                    resetUiScreen()
+                                }
+                            }
+                        }
+
                     }
 
                     is Resource.Loading -> {
+                        showDialog()
                     }
 
                     is Resource.Error -> {
+                        hideDialog()
                         showSnackBar(response.message, isSuccess = false)
+                    }
+                }
+
+            }.launchIn(this)
+
+
+            chatViewModel.clearChat.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        showNoDataView()
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        showSnackBar(response.message, false)
                     }
                 }
 
@@ -251,11 +307,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                     }
                 }.onEach {
                     runOnUiThread {
-                        if (it.isBlank()) {
-                            binding.btnSend.disabled()
-                        } else {
-                            binding.btnSend.enabled()
-                        }
+                        setSendButtonState()
                     }
                 }.launchIn(this)
 
@@ -266,6 +318,12 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
 
     private fun initUi() {
         binding.apply {
+            chatViewModel.imageUri?.apply {
+                setImageOnAttachmentUi(this)
+            }
+            chatViewModel.videoUri?.apply {
+                setVideoOnAttachmentUi(this)
+            }
             rvChats.apply {
                 layoutManager = LinearLayoutManager(requireContext())
                 adapter = chatAdapter
@@ -277,6 +335,13 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     }
 
     private fun FragmentChatBinding.setListener() {
+
+        ivProfileImage.setSafeOnClickListener {
+            navigateToChatProfileScreen()
+        }
+        linearUserStatus.setSafeOnClickListener {
+            navigateToChatProfileScreen()
+        }
 
         backToBottom.setSafeOnClickListener {
             rvChats.scrollToPosition(chatAdapter.itemCount - 1)
@@ -357,17 +422,27 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
             AttachmentDialog(this@ChatFragment).show(childFragmentManager, "My_Attchment_Dialog")
         }
 
+        cardImageMessage.setSafeOnClickListener {
+            navigateToImageViewScreen(chatViewModel.imageUri)
+        }
+        cardVideoMessage.setSafeOnClickListener {
+            navigateToVideoViewScreen(chatViewModel.videoUri)
+        }
+
     }
 
     private fun getData() {
         if (!chatViewModel.isDataLoaded) {
-            chatViewModel.setDataLoadedStatus(true)
             chatViewModel.getUser(receiverId)
-            chatViewModel.getChatMessage(chatRoomId)
-            chatViewModel.listenLastMessage(chatRoomId)
         }
     }
+    private fun getChatDataAndListen(){
+        chatViewModel.getChatMessage(chatRoomId)
+        chatViewModel.listenLastMessage(chatRoomId)
 
+        // Now set data loaded state to true
+        chatViewModel.setDataLoadedStatus(true)
+    }
 
     private fun setChatMessageList(message: List<Message>) {
         if (message.isNotEmpty()) {
@@ -391,9 +466,10 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         }
     }
 
-
     private fun sendMessage() {
         isFirstTimeDataSetOnUi = true
+        imageUri = chatViewModel.imageUri?.toString()
+        videoUri = chatViewModel.videoUri?.toString()
         val message = binding.etMessage.text.toString()
 
         val timeStamp = System.currentTimeMillis()
@@ -410,8 +486,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
             receiverId = receiverId,
             messageSentTimeInTimeStamp = timeStamp,
             messageSendTimeInText = timeInText,
-            seenStatus = SeenStatus.Sending.status,
-            senderProfileImage = myDetails?.userProfileImage
+            seenStatus = SeenStatus.Sending.status
         )
         val lastMessage = LastMessage(
             senderId = senderId,
@@ -445,7 +520,6 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         }
     }
 
-
     private fun showPopupMenu() {
         // Pop up menu take two thing first one context and second  is in which view is parent so it adjust size accordingly
         val layoutInflater =
@@ -475,7 +549,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     }
 
     private fun setUserProfile(receiver: User) {
-        myDetails = receiver
+        chatAdapter.submitUser(receiver)
         binding.apply {
             receiver.run {
                 Glide.with(ivProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user)
@@ -483,10 +557,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                 tvUserName.text = userName
                 isUserAppOpen = userAvailable ?: false
             }
-
         }
-
-
     }
 
     private fun updateUserAvailability(message: LastMessage) {
@@ -569,7 +640,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     }
 
     private fun clearChat() {
-
+        chatViewModel.clearChat(chatRoomId, receiverId)
     }
 
     private fun showDialog() {
@@ -653,41 +724,174 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     }
 
     private fun setImageOnAttachmentUi(data: Uri) {
-        attachmentImageUri = data
+        chatViewModel.setImageUriData(data)
         binding.apply {
             linearAttachment.myShow()
             cardImageMessage.myShow()
             ivImageSendMessage.setImageURI(data)
+            if (!cardImageMessage.isGone) {
+                val params = cardVideoMessage.layoutParams as ViewGroup.MarginLayoutParams
+                params.marginStart = resources.getDimensionPixelSize(com.intuit.sdp.R.dimen._10sdp)
+                cardVideoMessage.layoutParams = params
+            }
             ivCancleImage.setSafeOnClickListener {
-                attachmentImageUri=null
+                chatViewModel.setImageUriData(null)
                 cardImageMessage.gone()
                 hideLinearAttachmentLayout()
             }
         }
+        setSendButtonState()
     }
 
     private fun setVideoOnAttachmentUi(data: Uri) {
-        attachmentVideoUri = data
+        chatViewModel.setVideoUriData(data)
         binding.apply {
             linearAttachment.myShow()
             cardVideoMessage.myShow()
-            ivVideoSendMessage.setImageURI(data)
+            Glide.with(ivVideoSendMessage).load(data).into(ivVideoSendMessage)
+            if (cardImageMessage.isGone) {
+                val params = cardVideoMessage.layoutParams as ViewGroup.MarginLayoutParams
+                params.marginStart = 0
+                cardVideoMessage.layoutParams = params
+            } else {
+                val params = cardVideoMessage.layoutParams as ViewGroup.MarginLayoutParams
+                params.marginStart = resources.getDimensionPixelSize(com.intuit.sdp.R.dimen._10sdp)
+                cardVideoMessage.layoutParams = params
+            }
             ivCancleVideo.setSafeOnClickListener {
-                attachmentVideoUri=null
+                chatViewModel.setVideoUriData(null)
                 cardVideoMessage.gone()
                 hideLinearAttachmentLayout()
             }
         }
+        setSendButtonState()
     }
 
     private fun hideLinearAttachmentLayout() {
         binding.apply {
-            if (cardImageMessage.isGone && cardVideoMessage.isGone){
+            if (cardImageMessage.isGone && cardVideoMessage.isGone) {
                 linearAttachment.gone()
+                setSendButtonState()
             }
         }
     }
 
+    private fun getFileUri(): Uri {
+        val folderName = "picFromCamera"
+        val folder = File(requireContext().cacheDir, folderName)
+
+        // Check if the directory exists and attempt to delete it
+        if (folder.exists()) {
+            val isDirDeleted = folder.deleteRecursively() // Deletes the directory and its contents
+            MyLogger.v(tagChat, msg = "Pic Directory deleted: $isDirDeleted")
+            if (!isDirDeleted) {
+                MyLogger.e(tagChat, msg = "Failed to delete Pic Directory")
+            }
+        }
+
+        // Attempt to create the directory
+        val isDirCreated = folder.mkdirs()
+        MyLogger.v(tagChat, msg = "File created: $isDirCreated")
+
+        if (!isDirCreated) {
+            MyLogger.e(tagChat, msg = "Failed to create Pic Directory")
+        }
+
+        // Create a new file within the directory
+        val imageFile = File(folder, "${System.currentTimeMillis()}_my_pic")
+
+        return FileProvider.getUriForFile(
+            requireContext(),
+            "${requireContext().packageName}.provider",
+            imageFile
+        )
+    }
+
+    private fun handleVideoSelection(uri: Uri) {
+        val videoLength = Helper.getVideoSize(requireActivity(), uri)
+        when {
+            videoLength == -1f -> {
+                MyLogger.e(
+                    tagChat,
+                    msg = "User selected video length is -1 means some error occurred !"
+                )
+                Helper.showSnackBar(
+                    (requireActivity() as MainActivity).findViewById(
+                        R.id.coordLayout
+                    ),
+                    "Some error occurred during video fetching  , may be file size to large!"
+                )
+            }
+
+            videoLength >= MAX_VIDEO_SIZE_MB -> {
+                MyLogger.e(
+                    tagChat,
+                    msg = "User selected video length is $videoLength and max lenght :- $MAX_VIDEO_SIZE_MB  which exceeded ! "
+                )
+                Helper.showSnackBar(
+                    (requireActivity() as MainActivity).findViewById(
+                        R.id.coordLayout
+                    ), "Video length exceeded , max length is $MAX_VIDEO_SIZE_MB mb !"
+                )
+            }
+
+            else -> {
+                MyLogger.v(
+                    tagChat,
+                    msg = "User selected video length is $videoLength and max length :- $MAX_VIDEO_SIZE_MB  which is not exceeded 😁! "
+                )
+                setVideoOnAttachmentUi(uri)
+            }
+        }
+
+    }
+
+    private fun hideMediaPanel() {
+        binding.apply {
+            chatViewModel.setImageUriData(null)
+            chatViewModel.setVideoUriData(null)
+            cardImageMessage.gone()
+            cardVideoMessage.gone()
+            hideLinearAttachmentLayout()
+        }
+    }
+
+    private fun resetUiScreen() {
+        hideDialog()
+        binding.etMessage.text.clear()
+        hideMediaPanel()
+        binding.backToBottom.gone()
+    }
+
+    private fun setSendButtonState() {
+        binding.apply {
+            if (etMessage.text.isNotBlank() || !linearAttachment.isGone) {
+                btnSend.enabled()
+            } else {
+                btnSend.disabled()
+            }
+        }
+    }
+
+    private fun navigateToChatProfileScreen(){
+        val direction:NavDirections=ChatFragmentDirections.actionChatFragmentToUserChatProfileFragment(chatRoomId,receiverId)
+        navController.safeNavigate(direction,Helper.giveAnimationNavOption())
+    }
+    private fun navigateToVideoViewScreen(attachmentVideoUri: Uri?) {
+        attachmentVideoUri?.apply {
+            val direction: NavDirections =
+                BottomNavigationBarDirections.actionGlobalShowVideoFragment(this)
+            navController.safeNavigate(direction, Helper.giveAnimationNavOption())
+        }
+    }
+
+    private fun navigateToImageViewScreen(attachmentImageUri: Uri?) {
+        attachmentImageUri?.apply {
+            val direction: NavDirections =
+                BottomNavigationBarDirections.actionGlobalShowImageFragment(this)
+            navController.safeNavigate(direction, Helper.giveAnimationNavOption())
+        }
+    }
 
     override fun onResume() {
         chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId, isIAmUser1, true)
@@ -715,12 +919,12 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
 
 
     override fun onImageClick(): (Uri) -> Unit = {
-
+        navigateToImageViewScreen(it)
     }
 
 
     override fun onVideoClick(): (Uri) -> Unit = {
-
+        navigateToVideoViewScreen(it)
     }
 
     override fun onMessageClick(message: Message) {
@@ -736,19 +940,26 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         )
     }
 
+    override fun onProfileClick() {
+        navigateToChatProfileScreen()
+    }
+
     override fun onAttachmentImageClick() {
-        cameraIntent.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
+        chatViewModel.setImageUriData(getFileUri())
+        MyLogger.i(tagChat, msg = "Image uri for saving pic :- ${chatViewModel.imageUri}")
+        cameraIntent.launch(chatViewModel.imageUri)
     }
 
     override fun onAttachmentGalleryClick() {
-
+        pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
     }
 
     override fun onDestroyView() {
+        _chatAdapter=null
+        binding.rvChats.adapter = null
         _binding = null
         super.onDestroyView()
     }
-
 
 }
 

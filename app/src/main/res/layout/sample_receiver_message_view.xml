@@ -1,103 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="start"
-    android:paddingVertical="@dimen/_5sdp"
-    android:paddingHorizontal="@dimen/_2sdp">
-
-    <de.hdodenhof.circleimageview.CircleImageView
-        android:id="@+id/ivProfileImage"
-        android:layout_width="@dimen/_24sdp"
-        android:layout_height="@dimen/_24sdp"
-        app:civ_border_width="@dimen/_1sdp"
-        app:civ_border_color="@color/blue"
-        android:src="@drawable/person"
-        android:padding="@dimen/_2sdp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/linearMessage"
-        app:layout_constraintBottom_toBottomOf="@id/linearMessage"/>
+    android:paddingHorizontal="@dimen/_2sdp"
+    android:paddingVertical="@dimen/_5sdp">
 
     <LinearLayout
-        android:id="@+id/linearMessage"
-        android:layout_width="wrap_content"
+        android:id="@+id/linearSupport"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginStart="@dimen/_5sdp"
-        android:background="@drawable/receiver_message_bg"
-        app:layout_constraintStart_toEndOf="@id/ivProfileImage"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/constMedia"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone"
-            android:layout_marginVertical="@dimen/_10sdp"
-            android:minHeight="@dimen/_125sdp">
-
-            <androidx.viewpager2.widget.ViewPager2
-                android:id="@+id/viewPagerChat"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:background="@color/lightBlack"
-                android:clickable="true"
-                android:layoutDirection="ltr"
-                android:orientation="horizontal"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-
-            <com.tbuonomo.viewpagerdotsindicator.DotsIndicator
-                android:id="@+id/dots_indicator"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:dotsColor="@color/grey"
-                app:dotsCornerRadius="@dimen/_6sdp"
-                app:dotsSize="@dimen/_8sdp"
-                app:dotsSpacing="@dimen/_3sdp"
-                app:dotsWidthFactor="2.5"
-                app:layout_constraintBottom_toBottomOf="@id/viewPagerChat"
-                app:layout_constraintEnd_toEndOf="@id/viewPagerChat"
-                app:layout_constraintStart_toStartOf="@id/viewPagerChat"
-                android:layout_marginBottom="@dimen/_5sdp"
-                app:progressMode="true"
-                app:selectedDotColor="@color/white" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <TextView
-            android:id="@+id/tvMessage"
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/ivProfileImage"
+            android:layout_width="@dimen/_24sdp"
+            android:layout_height="@dimen/_24sdp"
+            android:layout_marginStart="@dimen/_6sdp"
+            android:padding="@dimen/_2sdp"
+            android:src="@drawable/person"
+            app:civ_border_color="@color/blue"
+            app:civ_border_width="@dimen/_1sdp"
+            android:layout_gravity="bottom"/>
+        <LinearLayout
+            android:id="@+id/linearMessage"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:text="Aditya is Android Developer ..."
-            android:textSize="@dimen/_14ssp"
-            android:textColor="@color/white"
-            android:fontFamily="@font/poppin_medium" />
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/_5sdp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/receiver_message_bg"
+            android:orientation="vertical">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constMedia"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginVertical="@dimen/_10sdp"
+                android:minWidth="@dimen/_150sdp"
+                android:minHeight="@dimen/_150sdp"
+                android:visibility="gone">
+
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/viewPagerChat"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:background="@color/lightBlack"
+                    android:clickable="true"
+                    android:layoutDirection="ltr"
+                    android:orientation="horizontal"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
 
+                <com.tbuonomo.viewpagerdotsindicator.DotsIndicator
+                    android:id="@+id/dots_indicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/_5sdp"
+                    app:dotsColor="@color/grey"
+                    app:dotsCornerRadius="@dimen/_6sdp"
+                    app:dotsSize="@dimen/_8sdp"
+                    app:dotsSpacing="@dimen/_3sdp"
+                    app:dotsWidthFactor="2.5"
+                    app:layout_constraintBottom_toBottomOf="@id/viewPagerChat"
+                    app:layout_constraintEnd_toEndOf="@id/viewPagerChat"
+                    app:layout_constraintStart_toStartOf="@id/viewPagerChat"
+                    app:progressMode="true"
+                    app:selectedDotColor="@color/white" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <TextView
+                android:id="@+id/tvMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppin_medium"
+                android:text="Message Received ...."
+                android:textColor="@color/white"
+                android:textSize="@dimen/_14ssp" />
+
+
+        </LinearLayout>
     </LinearLayout>
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="end"
-        android:layout_marginStart="@dimen/_5sdp"
+        android:layout_marginStart="@dimen/_35sdp"
         android:layout_marginTop="@dimen/_5sdp"
-        app:layout_constraintTop_toBottomOf="@id/linearMessage"
-        app:layout_constraintStart_toStartOf="@id/linearMessage">
+        android:gravity="end"
+        android:orientation="horizontal"
+        app:layout_constraintStart_toStartOf="@id/linearSupport"
+        app:layout_constraintTop_toBottomOf="@id/linearSupport">
+
         <TextView
             android:id="@+id/tvTime"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
+            android:fontFamily="@font/poppins_regular"
             android:gravity="bottom|end"
             android:text="11:50 pm"
-            android:textSize="@dimen/_12ssp"
             android:textColor="@color/lightWhite"
-            android:fontFamily="@font/poppins_regular" />
+            android:textSize="@dimen/_12ssp" />
     </LinearLayout>
 
 

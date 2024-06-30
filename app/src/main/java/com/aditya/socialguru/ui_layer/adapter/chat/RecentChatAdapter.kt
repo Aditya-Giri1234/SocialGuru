@@ -1,6 +1,5 @@
 package com.aditya.socialguru.ui_layer.adapter.chat
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -82,7 +81,7 @@ class RecentChatAdapter(
                     }
 
 
-                    val unSeenMessageCount=unSeenMessageCount ?: 0
+                    val unSeenMessageCount = unSeenMessageCount ?: 0
                     if (unSeenMessageCount == 0) {
                         tvUnSeenMessage.gone()
                         tvLastMessageTime.setTextColor(tvLastMessageTime.context.giveMeColor(R.color.white))
@@ -98,12 +97,24 @@ class RecentChatAdapter(
                         ivMessageSeenStatus.gone()
                     }
 
-                    tvLastMessage.text=message
+                    tvLastMessage.text =
+                        if (lastMessageType == Constants.LastMessageType.Media.type) {
+                            ivMedia.myShow()
+                            "Media"
+                        } else {
+                            ivMedia.gone()
+                            message
+                        }
                 }
 
                 if (absoluteAdapterPosition == differ.currentList.size - 1) {
                     root.context.apply {
-                        root.setMargin(com.intuit.sdp.R.dimen._1sdp, com.intuit.sdp.R.dimen._1sdp, com.intuit.sdp.R.dimen._1sdp, com.intuit.sdp.R.dimen._10sdp)
+                        root.setMargin(
+                            com.intuit.sdp.R.dimen._1sdp,
+                            com.intuit.sdp.R.dimen._1sdp,
+                            com.intuit.sdp.R.dimen._1sdp,
+                            com.intuit.sdp.R.dimen._10sdp
+                        )
                     }
                 }
 

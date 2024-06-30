@@ -148,7 +148,18 @@ object Helper {
     fun getPostId():String="${Constants.Table.Post.name}_${generateUUID()}"
     fun getStoryId():String="${Constants.Table.Stories.name}_${generateUUID()}"
     fun getCommentId(post_id:String):String="${Constants.Table.Post.name}_${post_id}"
+   private fun getMediaId(timestamp: Long):String="${Constants.Table.Media.name}_$timestamp"
 
+
+    /**
+     * Help to delete image  from server and database without changes data class.
+    * */
+    fun getImageMediaId(timestamp: Long) :String = "${getMediaId(timestamp)}_I"
+
+    /**
+     * Help to delete video from server and database without changes data class.
+     * */
+    fun getVideoMediaId(timestamp: Long) : String = "${getMediaId(timestamp)}_V"
 
     fun getChatRoomId(receiverId:String) :String {
         // Sort the user IDs lexicographically

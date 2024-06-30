@@ -1,14 +1,152 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/black"
     tools:context=".ui_layer.fragment.chat_fragment_helper.UserChatProfileFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+    <include
+        android:id="@+id/myToolbar"
+        layout="@layout/custom_toolbar" />
 
-</FrameLayout>
+    <View
+        android:id="@+id/view"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_1sdp"
+        android:background="@color/lightWhite"
+        android:layout_marginTop="?actionBarSize"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/ivProfileImage"
+        android:layout_width="@dimen/_100sdp"
+        android:layout_height="@dimen/_100sdp"
+        android:layout_marginStart="@dimen/_2sdp"
+        app:civ_border_color="@color/blue"
+        app:civ_border_width="@dimen/_1sdp"
+        android:src="@drawable/ic_person"
+        android:layout_marginTop="@dimen/_20sdp"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"
+        app:layout_constraintTop_toTopOf="@id/view"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"/>
+
+    <TextView
+        android:id="@+id/tvUserName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:paddingHorizontal="@dimen/_10sdp"
+        android:maxWidth="@dimen/_400sdp"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:fontFamily="@font/poppin_medium"
+        android:textSize="@dimen/_16ssp"
+        android:layout_marginTop="@dimen/_10sdp"
+        app:layout_constraintStart_toStartOf="@id/ivProfileImage"
+        app:layout_constraintTop_toBottomOf="@id/ivProfileImage"
+        app:layout_constraintEnd_toEndOf="@id/ivProfileImage"/>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardMuteNotification"
+        android:layout_width="0dp"
+        android:layout_height="?actionBarSize"
+        android:layout_marginTop="@dimen/_30sdp"
+        app:cardBackgroundColor="@color/lightBlack"
+        app:cardCornerRadius="@dimen/_10sdp"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"
+        app:layout_constraintTop_toBottomOf="@id/tvUserName"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/_10sdp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Mute Notification"
+                android:textColor="@color/white"
+                android:layout_weight="1"
+                android:textSize="@dimen/_16ssp"
+                android:fontFamily="@font/poppin_medium"/>
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchMute"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:thumb="@drawable/toggle_thumb"
+                app:switchMinWidth="@dimen/_50sdp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:track="@drawable/toggle_track" />
+
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardMedia"
+        android:layout_width="0dp"
+        android:layout_height="?actionBarSize"
+        android:layout_marginTop="@dimen/_30sdp"
+        app:cardBackgroundColor="@color/lightBlack"
+        app:cardCornerRadius="@dimen/_10sdp"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"
+        app:layout_constraintTop_toBottomOf="@id/cardMuteNotification"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/_10sdp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="See Media"
+                android:textColor="@color/white"
+                android:layout_weight="1"
+                android:textSize="@dimen/_16ssp"
+                android:fontFamily="@font/poppin_medium"/>
+
+            <ImageView
+                android:id="@+id/ivMedia"
+                android:layout_width="@dimen/_40sdp"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_right_arrow_without_line"
+                app:tint="@color/white"/>
+
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_begin="@dimen/_15sdp" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineEnd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_end="@dimen/_15sdp" />
+
+
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineBottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_end="@dimen/_10sdp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

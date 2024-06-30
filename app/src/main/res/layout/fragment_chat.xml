@@ -34,6 +34,7 @@
             app:civ_border_width="@dimen/_1sdp"
             android:src="@drawable/ic_person"/>
         <LinearLayout
+            android:id="@+id/linearUserStatus"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginStart="@dimen/_4sdp"
@@ -118,6 +119,8 @@
 
     </LinearLayout>
 
+
+
     <LinearLayout
         android:id="@+id/linearFooter"
         android:layout_width="0dp"
@@ -143,11 +146,12 @@
                 android:background="@drawable/create_post_text_bg"
                 android:padding="@dimen/_10sdp"
                 android:visibility="gone"
+                android:layout_marginStart="@dimen/_5sdp"
                 android:layout_marginBottom="@dimen/_10sdp">
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardImageMessage"
                     android:layout_width="0dp"
-                    android:layout_height="@dimen/_150sdp"
+                    android:layout_height="@dimen/_125sdp"
                     app:strokeColor="@color/lightWhite"
                     app:strokeWidth="@dimen/_1sdp"
                     android:visibility="gone"
@@ -195,7 +199,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardVideoMessage"
                     android:layout_width="0dp"
-                    android:layout_height="@dimen/_150sdp"
+                    android:layout_height="@dimen/_125sdp"
                     app:strokeColor="@color/lightWhite"
                     android:layout_weight="1"
                     app:strokeWidth="@dimen/_1sdp"
@@ -262,6 +266,7 @@
                 android:paddingHorizontal="@dimen/_10sdp"
                 android:layout_marginEnd="@dimen/_5sdp"
                 android:layout_gravity="bottom"
+                android:gravity="bottom"
                 android:orientation="horizontal">
                 <ImageView
                     android:id="@+id/icEmoji"
@@ -288,6 +293,15 @@
                     android:textSize="@dimen/_14ssp"
                     android:fontFamily="@font/poppin_medium"/>
 
+<!--                <ImageView
+                    android:id="@+id/icCamera"
+                    android:layout_width="@dimen/_20sdp"
+                    android:layout_height="@dimen/_20sdp"
+                    android:contentDescription="Emoji Selector Button"
+                    android:layout_gravity="bottom"
+                    app:tint="@color/lightWhite"
+                    android:layout_marginHorizontal="@dimen/_5sdp"
+                    android:src="@drawable/ic_camera"/>-->
                 <ImageView
                     android:id="@+id/icAttachment"
                     android:layout_width="@dimen/_20sdp"

@@ -28,4 +28,12 @@ class ChatRepo {
 
     suspend fun deleteMessage(message: Message,chatRoomId:String,userId:String  , lastMessage: LastMessage?, secondLastMessage:Message?=null) = FirebaseManager.deleteMessage(message,chatRoomId,userId,lastMessage,secondLastMessage)
 
+    suspend fun clearChats(chatRoomId: String,receiverId: String) = ChatManager.clearChats(chatRoomId,receiverId)
+
+    suspend fun isUserMutedAndListen(userId: String) = FirebaseManager.isUserMutedAndListen(userId)
+
+    suspend fun muteChatNotification(userId: String, isMute: Boolean) = FirebaseManager.muteChatNotification(userId, isMute)
+
+    suspend fun getAllMediaOfChat(chatRoomId: String) = FirebaseManager.getAllMediaOfChat(chatRoomId)
+
 }

@@ -19,10 +19,13 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/constMedia"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:visibility="gone"
+            android:layout_weight="1"
             android:layout_marginVertical="@dimen/_10sdp"
-            android:minHeight="@dimen/_125sdp">
+            android:fitsSystemWindows="false"
+            android:minWidth="@dimen/_150sdp"
+            android:minHeight="@dimen/_150sdp">
 
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/viewPagerChat"
@@ -58,11 +61,12 @@
 
         <TextView
             android:id="@+id/tvMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:text="Aditya is Android Developer ..."
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Aditya is android developer ..."
             android:textSize="@dimen/_14ssp"
             android:textColor="@color/white"
+            android:layout_weight="1"
             android:fontFamily="@font/poppin_medium" />
 
 

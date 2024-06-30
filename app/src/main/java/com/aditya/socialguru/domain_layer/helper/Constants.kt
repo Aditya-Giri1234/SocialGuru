@@ -39,7 +39,9 @@ object Constants {
         StoryVideo,
         PostImage,
         PostVideo,
-        ProfilePic
+        ProfilePic,
+        ChatImage,
+        ChatVideo
     }
 
 
@@ -97,7 +99,9 @@ object Constants {
         Chats ,
         Messages,
         LastMessage,
-        RecentChat
+        RecentChat,
+        Media,
+        ChatMuteNotification
     }
 
     enum class FriendStatus {

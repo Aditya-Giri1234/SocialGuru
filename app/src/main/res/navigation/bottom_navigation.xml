@@ -186,8 +186,27 @@
         android:id="@+id/userChatProfileFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.UserChatProfileFragment"
         android:label="fragment_user_chat_profile"
-        tools:layout="@layout/fragment_user_chat_profile" /><action android:id="@+id/action_global_chatFragment" app:destination="@id/chatFragment"/><action android:id="@+id/action_global_onboardingScreenFragment" app:destination="@id/onboardingScreenFragment"/>
+        tools:layout="@layout/fragment_user_chat_profile" >
+        <argument
+            android:name="chatRoomId"
+            app:argType="string" />
+        <argument
+            android:name="userId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_userChatProfileFragment_to_chatMediaFragment"
+            app:destination="@id/chatMediaFragment" />
+    </fragment><action android:id="@+id/action_global_chatFragment" app:destination="@id/chatFragment"/><action android:id="@+id/action_global_onboardingScreenFragment" app:destination="@id/onboardingScreenFragment"/>
     <argument
         android:name="userId"
-        app:argType="string" />
+        app:argType="string" /><action android:id="@+id/action_global_showImageFragment" app:destination="@id/showImageFragment"/><action android:id="@+id/action_global_showVideoFragment" app:destination="@id/showVideoFragment"/>
+    <fragment
+        android:id="@+id/chatMediaFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.ChatMediaFragment"
+        android:label="fragment_chat_media"
+        tools:layout="@layout/fragment_chat_media" >
+        <argument
+            android:name="chatRoomId"
+            app:argType="string" />
+    </fragment>
 </navigation>

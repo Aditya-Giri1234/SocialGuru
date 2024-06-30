@@ -8,9 +8,13 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.UploadTask
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 
@@ -177,6 +181,57 @@ object StorageManager {
 
     private fun calculateProgress(taskSnapshot: UploadTask.TaskSnapshot): Int {
         return (100.0 * taskSnapshot.bytesTransferred / taskSnapshot.totalByteCount).toInt()
+    }
+
+    suspend fun deleteMediaOfChats(chatRoomId:String) = callbackFlow<UpdateResponse> {
+        val storageImageRef = storageReference.child(Constants.Table.Chats.name).child(chatRoomId).child(Constants.FolderName.ChatImage.name)
+        val storageVideoRef = storageReference.child(Constants.Table.Chats.name).child(chatRoomId).child(Constants.FolderName.ChatVideo.name)
+
+        val listImageResult = storageImageRef.listAll().await()
+        val listVideoResult = storageVideoRef.listAll().await()
+
+        
+        MyLogger.v(Constants.LogTag.Chats,msg="listImageResult :- $listImageResult \n  ,  listVideoResult :- $listVideoResult")
+
+        val deleteImageTasks = listImageResult.items.map { item ->
+            async {
+                try {
+                    item.delete().await()
+                    true // Deletion successful
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false // Deletion failed
+                }
+            }
+        }
+        val deleteVideoTask = listVideoResult.items.map { item ->
+            async {
+                try {
+                    item.delete().await()
+                    true // Deletion successful
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false // Deletion failed
+                }
+            }
+        }
+
+        // Await all delete tasks to complete
+        val resultsImage = deleteImageTasks.awaitAll()
+        val resultsVideo = deleteVideoTask.awaitAll()
+
+       val isAllDeleted = resultsImage.all { it } && resultsVideo.all { it }
+
+        if (isAllDeleted){
+            trySend(UpdateResponse(true,""))
+        }else{
+            trySend(UpdateResponse(false,"All media not deleted"))
+
+        }
+
+        awaitClose{
+            close()
+        }
     }
 
 }

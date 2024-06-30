@@ -73,6 +73,15 @@
                 android:src="@drawable/ic_message_sending"
                 android:layout_gravity="center" />
 
+            <ImageView
+                android:id="@+id/ivMedia"
+                android:layout_width="@dimen/_18sdp"
+                android:layout_height="match_parent"
+                android:padding="@dimen/_2sdp"
+                android:visibility="gone"
+                android:src="@drawable/ic_gallery"
+                android:layout_gravity="center" />
+
             <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/tvLastMessage"
                 android:layout_width="match_parent"

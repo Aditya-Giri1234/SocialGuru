@@ -1,12 +1,15 @@
 package com.aditya.socialguru.ui_layer.viewmodel.chat
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.chat.ChatMediaData
 import com.aditya.socialguru.data_layer.model.chat.LastMessage
 import com.aditya.socialguru.data_layer.model.chat.Message
+import com.aditya.socialguru.data_layer.model.chat.UpdateChatResponse
 import com.aditya.socialguru.data_layer.model.chat.UserRecentModel
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
@@ -21,14 +24,10 @@ import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
 
@@ -44,10 +43,15 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
     val isDataLoaded get() = _isDataLoaded
 
-    private val _friendList =
-        MutableSharedFlow<Resource<List<FriendCircleData>>>(
-            1, 64, BufferOverflow.DROP_OLDEST
-        )
+    private var _imageUri: Uri? = null
+    val imageUri get() = _imageUri
+
+    private var _videoUri: Uri? = null
+    val videoUri get() = _videoUri
+
+    private val _friendList = MutableSharedFlow<Resource<List<FriendCircleData>>>(
+        1, 64, BufferOverflow.DROP_OLDEST
+    )
     val friendList get() = _friendList.asSharedFlow()
 
     private val _userDetails = MutableSharedFlow<Resource<User>>(
@@ -56,15 +60,19 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     val userDetails get() = _userDetails.asSharedFlow()
 
     private val _sendMessage =
-        MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Resource<UpdateChatResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
     val sendMessage get() = _sendMessage.asSharedFlow()
 
     private val _deleteMessage =
         MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
     val deleteMessage get() = _deleteMessage.asSharedFlow()
 
-    private val _recentChat= MutableSharedFlow<Resource<List<UserRecentModel>>>(
-        1,64 ,BufferOverflow.DROP_OLDEST
+    private val _clearChat =
+        MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
+    val clearChat get() = _clearChat.asSharedFlow()
+
+    private val _recentChat = MutableSharedFlow<Resource<List<UserRecentModel>>>(
+        1, 64, BufferOverflow.DROP_OLDEST
     )
     val recentChat get() = _recentChat.asSharedFlow()
 
@@ -74,6 +82,15 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
     private val _lastMessage = MutableSharedFlow<LastMessage>(1, 64, BufferOverflow.DROP_OLDEST)
     val lastMessage = _lastMessage.asSharedFlow()
+
+    private val _isMuted = MutableSharedFlow<Resource<Boolean>>(1, 64, BufferOverflow.DROP_OLDEST)
+    val isMuted = _isMuted.asSharedFlow()
+
+    private val _muteOperation = MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
+    val muteOperation = _muteOperation.asSharedFlow()
+
+    private val _chatMedia = MutableSharedFlow<Resource<List<ChatMediaData>>>(1 , 64 ,BufferOverflow.DROP_OLDEST)
+    val chatMedia  = _chatMedia.asSharedFlow()
 
     //region:: Friend Operation
     fun getFriendListAndListenChange() = viewModelScope.myLaunch {
@@ -101,7 +118,8 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Starting -> {
                 MyLogger.v(
                     tagChat,
-                    msg = listenerHandling.responseList, isJson = true,
+                    msg = listenerHandling.responseList,
+                    isJson = true,
                     jsonTitle = "This is starting friend type"
                 )
 
@@ -116,7 +134,8 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Added -> {
                 MyLogger.v(
                     tagChat,
-                    msg = listenerHandling.singleResponse, isJson = true,
+                    msg = listenerHandling.singleResponse,
+                    isJson = true,
                     jsonTitle = "This is added friend type"
                 )
 
@@ -167,28 +186,31 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
     //region:: Send Message
 
-    fun sendMessage(message: Message,lastMessage: LastMessage, charRoomId: String, isUserOnline: Boolean) =
-        viewModelScope.myLaunch {
-            _sendMessage.tryEmit(Resource.Loading())
+    fun sendMessage(
+        message: Message, lastMessage: LastMessage, charRoomId: String, isUserOnline: Boolean
+    ) = viewModelScope.myLaunch {
+        val isImagePresent = message.imageUri != null
+        val isVideoPresent = message.videoUri != null
 
-            if (SoftwareManager.isNetworkAvailable(app)) {
-                repository.sendMessage(message,lastMessage, charRoomId, isUserOnline).onEach {
-                    MyLogger.i(
-                        tagChat,
-                        msg = it,
-                        isJson = true,
-                        jsonTitle = "Message sent response come"
-                    )
-                    if (it.isSuccess) {
-                        _sendMessage.tryEmit(Resource.Success(it))
-                    } else {
-                        _sendMessage.tryEmit(Resource.Error(it.errorMessage))
-                    }
-                }.launchIn(this)
-            } else {
-                _sendMessage.tryEmit(Resource.Error("No Internet Available !"))
-            }
+        if (isVideoPresent || isImagePresent) {
+            _sendMessage.tryEmit(Resource.Loading())
         }
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.sendMessage(message, lastMessage, charRoomId, isUserOnline).onEach {
+                MyLogger.i(
+                    tagChat, msg = it, isJson = true, jsonTitle = "Message sent response come"
+                )
+                if (it.isSuccess || it.isSending) {
+                    _sendMessage.tryEmit(Resource.Success(it))
+                } else {
+                    _sendMessage.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+        } else {
+            _sendMessage.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
 
     //endregion
 
@@ -200,10 +222,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
         if (SoftwareManager.isNetworkAvailable(app)) {
             repository.getChatMessageAndListen(chatRoomId).onEach {
                 MyLogger.v(
-                    tagChat,
-                    msg = it,
-                    isJson = true,
-                    jsonTitle = "Current Chat Message Updated "
+                    tagChat, msg = it, isJson = true, jsonTitle = "Current Chat Message Updated "
                 )
                 _chatMessage.tryEmit(handleChatMessageResponse(it, chatRoomId))
             }.launchIn(this)
@@ -213,8 +232,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     }
 
     private fun handleChatMessageResponse(
-        it: ListenerEmissionType<Message, Message>,
-        chatRoomId: String
+        it: ListenerEmissionType<Message, Message>, chatRoomId: String
     ): Resource<List<Message>> {
 
         val chatMessageList = chatMessage.replayCache[0].data?.toMutableList() ?: mutableListOf()
@@ -232,7 +250,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 it.singleResponse?.let {
                     chatMessageList.add(it)
                     chatMessageList.sortBy { it.messageSentTimeInTimeStamp }
-                    if (it.senderId!=senderId){
+                    if (it.senderId != senderId) {
                         FirebaseManager.updateSeenStatus(
                             Constants.SeenStatus.MessageSeen.status,
                             it.messageId!!,
@@ -269,7 +287,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
             }
         }
 
-        return Resource.Success(addDateHeaders(chatMessageList.filter { it.messageType!=Constants.MessageType.DateHeader.type }))
+        return Resource.Success(addDateHeaders(chatMessageList.filter { it.messageType != Constants.MessageType.DateHeader.type }))
 
     }
 
@@ -314,8 +332,9 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     }
 
     private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
-        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) && cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(
+            Calendar.DAY_OF_YEAR
+        )
     }
     //endregion
 
@@ -331,22 +350,26 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     //endregion
 
     //region::Update Message Seen Availability
-    fun updateMessageSeenAvailability(message: List<Message>,chatRoomId: String) = viewModelScope.myLaunch {
-        message.forEach{
-            if (it.messageId !=null){
-                repository.updateMessageChatAvailability(Constants.SeenStatus.MessageSeen.status,it.messageId,chatRoomId , it.senderId!! )
+    fun updateMessageSeenAvailability(message: List<Message>, chatRoomId: String) =
+        viewModelScope.myLaunch {
+            message.forEach {
+                if (it.messageId != null) {
+                    repository.updateMessageChatAvailability(
+                        Constants.SeenStatus.MessageSeen.status,
+                        it.messageId,
+                        chatRoomId,
+                        it.senderId!!
+                    )
+                }
             }
         }
-    }
 
     //endregion
 
     //region:: Set User online visibility
 
     fun updateUserAvailabilityForChatRoom(
-        chatRoomId: String,
-        isIAmUser1: Boolean,
-        status: Boolean
+        chatRoomId: String, isIAmUser1: Boolean, status: Boolean
     ) = viewModelScope.myLaunch {
         repository.updateUserAvailabilityForChatRoom(chatRoomId, isIAmUser1, status)
     }
@@ -360,10 +383,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
         if (SoftwareManager.isNetworkAvailable(app)) {
             repository.getRecentChatAndListen().onEach {
                 MyLogger.v(
-                    tagChat,
-                    msg = it,
-                    isJson = true,
-                    jsonTitle = "Recent Chat List  "
+                    tagChat, msg = it, isJson = true, jsonTitle = "Recent Chat List  "
                 )
                 _recentChat.tryEmit(handleRecentChatMessageResponse(it))
             }.launchIn(this)
@@ -411,9 +431,14 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 it.singleResponse?.let { modifiedMessage ->
                     val existingMessage =
                         recentChatList.find { it.user?.userId == modifiedMessage.user?.userId }
-                    MyLogger.w(tagChat, msg = existingMessage, isJson = true, jsonTitle = "Existing Message")
+                    MyLogger.w(
+                        tagChat,
+                        msg = existingMessage,
+                        isJson = true,
+                        jsonTitle = "Existing Message"
+                    )
                     existingMessage?.apply {
-                        recentChat=recentChat?.copy(
+                        recentChat = recentChat?.copy(
                             chatRoomId = modifiedMessage.recentChat?.chatRoomId,
                             lastMessageTimeInTimeStamp = modifiedMessage.recentChat?.lastMessageTimeInTimeStamp,
                             lastMessageTimeInText = modifiedMessage.recentChat?.lastMessageTimeInText,
@@ -421,8 +446,8 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                             message = modifiedMessage.recentChat?.message,
                             lastMessageType = modifiedMessage.recentChat?.lastMessageType,
                             receiverId = modifiedMessage.recentChat?.receiverId,
-                            senderId=modifiedMessage.recentChat?.senderId,
-                            userId=modifiedMessage.recentChat?.userId,
+                            senderId = modifiedMessage.recentChat?.senderId,
+                            userId = modifiedMessage.recentChat?.userId,
                             lastMessageSeen = modifiedMessage.recentChat?.lastMessageSeen
                         )
                         // Ensure the list remains sorted by message timestamp
@@ -439,34 +464,182 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
     //endregion
 
-    //region:: Send Message
+    //region:: Delete Message
 
-    fun deleteMessage(message: Message,chatRoomId:String,userId:String  , lastMessage: LastMessage?, secondLastMessage:Message?=null) =
-        viewModelScope.myLaunch {
-            _deleteMessage.tryEmit(Resource.Loading())
+    fun deleteMessage(
+        message: Message,
+        chatRoomId: String,
+        userId: String,
+        lastMessage: LastMessage?,
+        secondLastMessage: Message? = null
+    ) = viewModelScope.myLaunch {
+        _deleteMessage.tryEmit(Resource.Loading())
 
-            if (SoftwareManager.isNetworkAvailable(app)) {
-                repository.deleteMessage(message,chatRoomId, userId, lastMessage , secondLastMessage).onEach {
-                    MyLogger.i(
-                        tagChat,
-                        msg = it,
-                        isJson = true,
-                        jsonTitle = "Message sent response come"
-                    )
-                    if (it.isSuccess) {
-                        _deleteMessage.tryEmit(Resource.Success(it))
-                    } else {
-                        _deleteMessage.tryEmit(Resource.Error(it.errorMessage))
-                    }
-                }.launchIn(this)
-            } else {
-                _deleteMessage.tryEmit(Resource.Error("No Internet Available !"))
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.deleteMessage(
+                message, chatRoomId, userId, lastMessage, secondLastMessage
+            ).onEach {
+                MyLogger.i(
+                    tagChat, msg = it, isJson = true, jsonTitle = "Message sent response come"
+                )
+                if (it.isSuccess) {
+                    _deleteMessage.tryEmit(Resource.Success(it))
+                } else {
+                    _deleteMessage.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+        } else {
+            _deleteMessage.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    //endregion
+
+    //region:: Clear chat
+
+    fun clearChat(
+        chatRoomId: String, receiverId: String
+    ) = viewModelScope.myLaunch {
+        _clearChat.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.clearChats(
+                chatRoomId, receiverId
+            ).onEach {
+                MyLogger.i(
+                    tagChat, msg = it, isJson = true, jsonTitle = "Message sent response come"
+                )
+                if (it.isSuccess) {
+                    _clearChat.tryEmit(Resource.Success(it))
+                } else {
+                    _clearChat.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+        } else {
+            _clearChat.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    //endregion
+
+    //region:: Get And Listen Muted state of user
+    fun isUserMutedAndListen(userId: String) = viewModelScope.myLaunch {
+        _isMuted.tryEmit(Resource.Loading())
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.isUserMutedAndListen(userId).onEach {
+                _isMuted.tryEmit(Resource.Success(it))
+            }.launchIn(this)
+        } else {
+            _isMuted.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+    //endregion
+
+    //region:: Mute or Un-mute user
+
+    fun muteChatNotification(userId: String,isMute:Boolean) = viewModelScope.myLaunch {
+        _muteOperation.tryEmit(Resource.Loading())
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.muteChatNotification(userId,isMute).onEach {
+                if (it.isSuccess){
+                    _muteOperation.tryEmit(Resource.Success(it))
+                }else{
+                    _muteOperation.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+        }else{
+            MyLogger.e(tagChat, msg = "Internet Off")
+            _muteOperation.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    //endregion
+
+    //region:: Get All Media For specific chat
+
+    fun getAllMediaForChat(chatRoomId: String , category: Int=0) = viewModelScope.myLaunch {
+        _chatMedia.tryEmit(Resource.Loading())
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.getAllMediaOfChat(chatRoomId).onEach {
+                _chatMedia.tryEmit(Resource.Success(handleMediaResponse(it,category)))
+            }.launchIn(this)
+        }else{
+            _chatMedia.tryEmit(Resource.Error("No Internet Connection !"))
+        }
+    }
+
+    private fun handleMediaResponse(media: List<ChatMediaData>, category: Int): List<ChatMediaData> {
+        if (media.isEmpty()) return emptyList()
+
+        return when(category){
+            0->{
+                // All Media
+                giveMeMediaWithDate(media)
+            }
+            1->{
+                // Only Image
+                giveMeMediaWithDate(media.filter { it.isImage==true })
+            }
+            2->{
+                //Only Video
+                giveMeMediaWithDate(media.filter { it.isImage==false })
+            }
+            else->{
+                //By default All Media
+                giveMeMediaWithDate(media)
             }
         }
+    }
+
+    private fun giveMeMediaWithDate(media: List<ChatMediaData>): List<ChatMediaData> {
+        if (media.isEmpty()) return media
+
+        val messagesWithHeaders = mutableListOf<ChatMediaData>()
+        var lastDateHeader: String? = null
+
+        val today = Calendar.getInstance()
+        val yesterday = Calendar.getInstance().apply { add(Calendar.DATE, -1) }
+        val dateFormatter = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
+//        MyLogger.d(tagChat, msg = messages, isJson = true, jsonTitle = "Messages List")
+
+        media.forEach { message ->
+            val messageDate = message.mediaUploadingTimeInTimeStamp?.let {
+                Calendar.getInstance().apply { timeInMillis = it }
+            }
+            val currentDateHeader = when {
+                messageDate == null -> null
+                isSameDay(messageDate, today) -> "Today"
+                isSameDay(messageDate, yesterday) -> "Yesterday"
+                else -> dateFormatter.format(messageDate.time)
+            }
+
+            if (currentDateHeader != null && currentDateHeader != lastDateHeader) {
+                lastDateHeader = currentDateHeader
+                messagesWithHeaders.add(
+                    ChatMediaData(
+                        mediaUri = null,
+                        date = currentDateHeader
+                    )
+                )
+            }
+
+            messagesWithHeaders.add(message)
+        }
+
+        return messagesWithHeaders
+    }
 
     //endregion
 
     fun setDataLoadedStatus(status: Boolean) {
         _isDataLoaded = status
+    }
+
+    fun setImageUriData(uri: Uri?) {
+        _imageUri = uri
+    }
+
+    fun setVideoUriData(uri: Uri?) {
+        _videoUri = uri
     }
 }
