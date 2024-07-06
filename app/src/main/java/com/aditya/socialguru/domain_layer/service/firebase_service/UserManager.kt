@@ -14,7 +14,6 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
-import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.NotificationSendingManager
 import com.google.firebase.firestore.DocumentChange
@@ -26,7 +25,6 @@ import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -158,26 +156,27 @@ object UserManager {
 
     suspend fun getUserByIdAsync(userId: String): Flow<Resource<User>> {
         return callbackFlow {
-            firestore.collection(Constants.Table.User.name).document(userId).addSnapshotListener { value, error ->
-                if (error!=null){
-                    trySend(Resource.Error(error.message))
-                    return@addSnapshotListener
-                }
-                value?.let {documentSnapshot->
-                    try {
-                        val user = documentSnapshot.toObject(User::class.java)
+            firestore.collection(Constants.Table.User.name).document(userId)
+                .addSnapshotListener { value, error ->
+                    if (error != null) {
+                        trySend(Resource.Error(error.message))
+                        return@addSnapshotListener
+                    }
+                    value?.let { documentSnapshot ->
+                        try {
+                            val user = documentSnapshot.toObject(User::class.java)
 
-                        if (user != null) {
-                            trySend(Resource.Success(user))
-                        } else {
-                            trySend(Resource.Error("User document found but data is null!"))
+                            if (user != null) {
+                                trySend(Resource.Success(user))
+                            } else {
+                                trySend(Resource.Error("User document found but data is null!"))
+                            }
+
+                        } catch (e: Exception) {
+                            trySend(Resource.Error("Error getting user: ${e.message}"))
                         }
-
-                    } catch (e: Exception) {
-                        trySend(Resource.Error("Error getting user: ${e.message}"))
                     }
                 }
-            }
 
 
             awaitClose {
@@ -744,21 +743,31 @@ object UserManager {
                     value.documentChanges.forEach {
                         when (it.type) {
                             DocumentChange.Type.ADDED -> {
-                                trySend(
-                                    ListenerEmissionType(
-                                        Constants.ListenerEmitType.Added,
-                                        singleResponse = it.document.toObject<FriendCircleData>()
+                                launch {
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Added,
+                                            singleResponse = it.document.toObject<FriendCircleData>().run {
+                                                copy(user = this.userId?.let { it1 ->
+                                                    getUserById(
+                                                        it1
+                                                    )
+                                                })
+                                            }
+                                        )
                                     )
-                                )
+                                }
                             }
 
                             DocumentChange.Type.REMOVED -> {
-                                trySend(
-                                    ListenerEmissionType(
-                                        Constants.ListenerEmitType.Removed,
-                                        singleResponse = it.document.toObject<FriendCircleData>()
+
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Removed,
+                                            singleResponse = it.document.toObject<FriendCircleData>()
+                                        )
                                     )
-                                )
+
                             }
 
                             DocumentChange.Type.MODIFIED -> {}

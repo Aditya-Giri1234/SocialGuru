@@ -13,10 +13,31 @@
         <action
             android:id="@+id/action_recentChatFragment_to_startChatFragment"
             app:destination="@id/startChatFragment" />
+        <action
+            android:id="@+id/action_recentChatFragment_to_startGroupChatFragment"
+            app:destination="@id/startGroupChatFragment" />
     </fragment>
     <fragment
         android:id="@+id/startChatFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.StartChatFragment"
         android:label="fragment_start_chat"
         tools:layout="@layout/fragment_start_chat" />
+    <fragment
+        android:id="@+id/startGroupChatFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.StartGroupChatFragment"
+        android:label="fragment_start_group_chat"
+        tools:layout="@layout/fragment_start_group_chat" >
+        <action
+            android:id="@+id/action_startGroupChatFragment_to_makingGroupFragment"
+            app:destination="@id/makingGroupFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/makingGroupFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.MakingGroupFragment"
+        android:label="fragment_making_group"
+        tools:layout="@layout/fragment_making_group" >
+        <argument
+            android:name="users"
+            app:argType="com.aditya.socialguru.data_layer.model.Users" />
+    </fragment>
 </navigation>

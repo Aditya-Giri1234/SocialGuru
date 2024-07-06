@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/black"
+    tools:context=".ui_layer.fragment.chat_fragment_helper.StartGroupChatFragment">
+
+    <include
+        android:id="@+id/myToolbar"
+        layout="@layout/custom_toolbar" />
+
+    <View
+        android:id="@+id/view"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_1sdp"
+        android:layout_marginTop="?actionBarSize"
+        android:background="@color/lightWhite"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+    <TextView
+        android:id="@+id/tvSelectedUsers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Selected Friend"
+        android:textColor="@color/black"
+        android:background="@drawable/start_chat_header_bg"
+        android:includeFontPadding="true"
+        android:paddingHorizontal="@dimen/_6sdp"
+        android:paddingVertical="@dimen/_5sdp"
+        android:textSize="@dimen/_13ssp"
+        android:fontFamily="@font/poppin_medium"
+        android:layout_marginTop="@dimen/_10sdp"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"
+        app:layout_constraintTop_toTopOf="@id/view"/>
+
+    <TextView
+        android:id="@+id/tvNoDataViewForSelectedUser"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No User Selected."
+        android:textColor="@color/white"
+        android:includeFontPadding="true"
+        android:padding="@dimen/_6sdp"
+        android:textSize="@dimen/_14ssp"
+        android:gravity="center"
+        android:visibility="visible"
+        android:fontFamily="@font/poppin_medium"
+        android:layout_marginTop="@dimen/_10sdp"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+        app:layout_constraintTop_toBottomOf="@id/tvSelectedUsers"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"/>
+
+    <HorizontalScrollView
+        android:id="@+id/scrollChipGroup"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"
+        app:layout_constraintTop_toBottomOf="@id/tvNoDataViewForSelectedUser"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipSelectedUsers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleLine="true"
+            app:chipSpacing="@dimen/_6sdp"
+            android:orientation="horizontal"
+            app:chipSpacingHorizontal="@dimen/_6sdp"
+            app:chipSpacingVertical="@dimen/_6sdp"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:visibility="visible"/>
+    </HorizontalScrollView>
+
+
+    <TextView
+        android:id="@+id/tvAllUsers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="All Friend"
+        android:textColor="@color/black"
+        android:background="@drawable/start_chat_header_bg"
+        android:includeFontPadding="true"
+        android:paddingHorizontal="@dimen/_6sdp"
+        android:paddingVertical="@dimen/_5sdp"
+        android:textSize="@dimen/_13ssp"
+        android:fontFamily="@font/poppin_medium"
+        android:layout_marginTop="@dimen/_10sdp"
+        app:layout_constraintTop_toBottomOf="@id/scrollChipGroup"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"/>
+
+    <TextView
+        android:id="@+id/tvNoDataViewForAllUser"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No User Found."
+        android:textColor="@color/white"
+        android:includeFontPadding="true"
+        android:padding="@dimen/_6sdp"
+        android:textSize="@dimen/_14ssp"
+        android:gravity="center"
+        android:fontFamily="@font/poppin_medium"
+        android:layout_marginTop="@dimen/_10sdp"
+        app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+        app:layout_constraintTop_toBottomOf="@id/tvAllUsers"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"/>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvAllUsers"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        android:layout_marginTop="@dimen/_10sdp"
+        tools:listitem="@layout/sample_recent_chat_layout"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"
+        app:layout_constraintTop_toBottomOf="@id/tvAllUsers"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+        app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"/>
+
+    <ImageView
+        android:id="@+id/btnNext"
+        android:layout_width="@dimen/_50sdp"
+        android:layout_height="@dimen/_50sdp"
+        android:paddingHorizontal="@dimen/_10sdp"
+        android:layout_margin="@dimen/_10sdp"
+        android:src="@drawable/ic_right_arrow"
+        android:background="@drawable/circle_shape_bg"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+        app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"/>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineBottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_end="@dimen/_10sdp" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_begin="@dimen/_10sdp" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineEnd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_end="@dimen/_10sdp" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

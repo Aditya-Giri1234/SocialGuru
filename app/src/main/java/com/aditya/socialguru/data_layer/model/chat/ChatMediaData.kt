@@ -9,5 +9,5 @@ data class ChatMediaData(
     val mediaUploadingTimeInText:String?=null,
     @field:JvmField
     val isImage:Boolean?=null,
-    val date:String?=null // This is only for local
+    val date:String?=null // This is only for localtrue
 )

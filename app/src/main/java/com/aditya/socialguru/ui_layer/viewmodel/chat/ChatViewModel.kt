@@ -3,6 +3,8 @@ package com.aditya.socialguru.ui_layer.viewmodel.chat
 import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
@@ -21,6 +23,7 @@ import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.chat.ChatRepo
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
+import com.bumptech.glide.load.Transformation
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -91,6 +94,18 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
     private val _chatMedia = MutableSharedFlow<Resource<List<ChatMediaData>>>(1 , 64 ,BufferOverflow.DROP_OLDEST)
     val chatMedia  = _chatMedia.asSharedFlow()
+
+
+    val textCount: MutableLiveData<Int> = MutableLiveData(0)
+
+
+    fun onTextChanged(
+        s: CharSequence, start: Int, before: Int,
+        count: Int
+    ) {
+        textCount.postValue(s.length)
+    }
+
 
     //region:: Friend Operation
     fun getFriendListAndListenChange() = viewModelScope.myLaunch {
