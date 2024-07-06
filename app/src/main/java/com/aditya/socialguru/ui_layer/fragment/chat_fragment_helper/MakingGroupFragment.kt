@@ -187,6 +187,7 @@ class MakingGroupFragment : Fragment() , ProfilePicEditOption {
 
     private fun setData() {
        binding.apply {
+           tvMembers.text="Members : ${userList.size}"
            memberAdapter.submitList(userList)
        }
     }
