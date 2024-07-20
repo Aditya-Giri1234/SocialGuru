@@ -209,4 +209,14 @@
             android:name="chatRoomId"
             app:argType="string" />
     </fragment>
+    <fragment
+        android:id="@+id/groupChatFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.GroupChatFragment"
+        android:label="fragment_group_chat"
+        tools:layout="@layout/fragment_group_chat" >
+        <argument
+            android:name="chatRoomId"
+            app:argType="string" />
+    </fragment>
+    <action android:id="@+id/action_global_groupChatFragment" app:destination="@id/groupChatFragment" />
 </navigation>

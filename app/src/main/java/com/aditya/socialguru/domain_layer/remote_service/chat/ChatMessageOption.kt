@@ -6,8 +6,8 @@ import com.aditya.socialguru.data_layer.model.chat.Message
 interface ChatMessageOption {
     fun onImageClick() : (Uri)->Unit
     fun onVideoClick()  : (Uri) -> Unit
-    fun onMessageClick(message: Message)
-    fun onLongMessageClick(message: Message)
+    fun <T> onMessageClick(message: T)
+    fun <T> onLongMessageClick(message: T)
     fun onProfileClick()
 
 }

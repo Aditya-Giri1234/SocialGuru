@@ -13,6 +13,11 @@ import com.aditya.socialguru.data_layer.model.chat.LastMessage
 import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.data_layer.model.chat.UpdateChatResponse
 import com.aditya.socialguru.data_layer.model.chat.UserRecentModel
+import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
+import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMember
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMemberDetails
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
@@ -23,6 +28,7 @@ import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.chat.ChatRepo
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
+import com.aditya.socialguru.domain_layer.service.firebase_service.ChatManager
 import com.bumptech.glide.load.Transformation
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -94,6 +100,33 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
     private val _chatMedia = MutableSharedFlow<Resource<List<ChatMediaData>>>(1 , 64 ,BufferOverflow.DROP_OLDEST)
     val chatMedia  = _chatMedia.asSharedFlow()
+
+    //For Group
+    private val _sendGroupMessage =
+        MutableSharedFlow<Resource<UpdateChatResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
+    val sendGroupMessage get() = _sendGroupMessage.asSharedFlow()
+
+    private val _deleteGroupMessage =
+        MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
+    val deleteGroupMessage get() = _deleteGroupMessage.asSharedFlow()
+
+    private val _clearGroupChat =
+        MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
+    val clearGroupChat get() = _clearGroupChat.asSharedFlow()
+
+    private val _groupChatMessage =
+        MutableSharedFlow<Resource<List<GroupMessage>>>(1, 64, BufferOverflow.DROP_OLDEST)
+    val groupChatMessage get() = _groupChatMessage.asSharedFlow()
+
+    private val _groupMemberDetails=
+        MutableSharedFlow<Resource<List<GroupMemberDetails>>>(1, 64, BufferOverflow.DROP_OLDEST)
+    val groupMemberDetails get() = _groupMemberDetails.asSharedFlow()
+
+    private val _groupInfo=
+        MutableSharedFlow<Resource<GroupInfo>>(1, 64, BufferOverflow.DROP_OLDEST)
+    val groupInfo get() = _groupInfo.asSharedFlow()
+
+
 
 
     val textCount: MutableLiveData<Int> = MutableLiveData(0)
@@ -643,6 +676,253 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
         return messagesWithHeaders
     }
+
+    //endregion
+
+
+    //region:: Group Message
+
+     fun sendGroupMessage(
+         message: GroupMessage,
+         lastMessage: GroupLastMessage,
+         chatRoomId: String,
+         users: List<GroupMember>, // Just for add  message recent chat
+         action: Constants.InfoType? = null,
+         addedOrRemovedUserId: String? = null,
+         groupInfo: GroupInfo? = null
+     ) = viewModelScope.myLaunch {
+        val isImagePresent = message.imageUri != null
+        val isVideoPresent = message.videoUri != null
+
+        if (isVideoPresent || isImagePresent) {
+            _sendGroupMessage.tryEmit(Resource.Loading())
+        }
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.sentGroupMessage(
+                message,
+                lastMessage,
+                chatRoomId,
+                users,
+                action,
+                addedOrRemovedUserId,
+                groupInfo
+            ).onEach {
+                MyLogger.i(
+                    tagChat, msg = it, isJson = true, jsonTitle = "Message sent response come"
+                )
+                if (it.isSuccess || it.isSending) {
+                    _sendGroupMessage.tryEmit(Resource.Success(it))
+                } else {
+                    _sendGroupMessage.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+        } else {
+            _sendGroupMessage.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    fun getGroupChatMessage(chatRoomId: String) = viewModelScope.myLaunch {
+        _groupChatMessage.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.getGroupChatMessageAndListen(chatRoomId).onEach {
+                MyLogger.v(
+                    tagChat, msg = it, isJson = true, jsonTitle = "Current Chat Message Updated "
+                )
+                _groupChatMessage.tryEmit(handleGroupChatMessageResponse(it, chatRoomId))
+            }.launchIn(this)
+        } else {
+            _groupChatMessage.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    private fun handleGroupChatMessageResponse(
+        it: ListenerEmissionType<GroupMessage, GroupMessage>, chatRoomId: String
+    ): Resource<List<GroupMessage>> {
+
+        val chatMessageList = groupChatMessage.replayCache[0].data?.toMutableList() ?: mutableListOf()
+
+        when (it.emitChangeType) {
+            Constants.ListenerEmitType.Starting -> {
+                chatMessageList.clear()
+                it.responseList?.let {
+                    chatMessageList.addAll(it)
+                    chatMessageList.sortBy { it.messageSentTimeInTimeStamp }
+                }
+            }
+
+            Constants.ListenerEmitType.Added -> {
+                it.singleResponse?.let {
+                    chatMessageList.add(it)
+                    chatMessageList.sortBy { it.messageSentTimeInTimeStamp }
+                    if (it.senderId != senderId) {
+                        FirebaseManager.updateSeenStatus(
+                            Constants.SeenStatus.MessageSeen.status,
+                            it.messageId!!,
+                            chatRoomId,
+                            it.senderId!!
+                        )
+                    }
+                }
+            }
+
+            Constants.ListenerEmitType.Removed -> {
+                it.singleResponse?.messageId?.let { removedMessageId ->
+                    chatMessageList.forEach {
+                        val messageId = it.messageId
+                        if (messageId != null && messageId == removedMessageId) {
+                            chatMessageList.remove(it)
+                            chatMessageList.sortBy { it.messageSentTimeInTimeStamp }
+                            return@let
+                        }
+                    }
+                }
+            }
+
+            Constants.ListenerEmitType.Modify -> {
+                it.singleResponse?.let { modifiedMessage ->
+                    val existingMessage =
+                        chatMessageList.find { it.messageId == modifiedMessage.messageId }
+                    existingMessage?.apply {
+                        seenStatus = modifiedMessage.seenStatus
+                        // Ensure the list remains sorted by message timestamp
+                        chatMessageList.sortBy { message -> message.messageSentTimeInTimeStamp }
+                    }
+                }
+            }
+        }
+
+        return Resource.Success(addDateHeadersInGroup(chatMessageList.filter { it.messageType != Constants.MessageType.DateHeader.type }))
+
+    }
+
+    private fun addDateHeadersInGroup(messages: List<GroupMessage>): List<GroupMessage> {
+        if (messages.isEmpty()) return messages
+
+        val messagesWithHeaders = mutableListOf<GroupMessage>()
+        var lastDateHeader: String? = null
+
+        val today = Calendar.getInstance()
+        val yesterday = Calendar.getInstance().apply { add(Calendar.DATE, -1) }
+        val dateFormatter = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
+//        MyLogger.d(tagChat, msg = messages, isJson = true, jsonTitle = "Messages List")
+
+        messages.forEach { message ->
+            val messageDate = message.messageSentTimeInTimeStamp?.let {
+                Calendar.getInstance().apply { timeInMillis = it }
+            }
+            val currentDateHeader = when {
+                messageDate == null -> null
+                isSameDay(messageDate, today) -> "Today"
+                isSameDay(messageDate, yesterday) -> "Yesterday"
+                else -> dateFormatter.format(messageDate.time)
+            }
+
+            // Add new date header if currentDateHeader is different from lastDateHeader
+//            MyLogger.w(tagChat, msg = "lastDateHeader:- $lastDateHeader  and currentDateHeader:- $currentDateHeader , currentDateHeader != lastDateHeader :=> ${currentDateHeader != lastDateHeader}")
+            if (currentDateHeader != null && currentDateHeader != lastDateHeader) {
+                lastDateHeader = currentDateHeader
+                messagesWithHeaders.add(
+                    GroupMessage(
+                        messageType = Constants.MessageType.DateHeader.type,
+                        text = currentDateHeader
+                    )
+                )
+            }
+
+            messagesWithHeaders.add(message)
+        }
+
+        return messagesWithHeaders
+    }
+
+
+    fun getGroupMemberDetails(chatRoomId: String)= viewModelScope.myLaunch {
+        _groupMemberDetails.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.getGroupMemberInfo(chatRoomId).onEach {
+                _groupMemberDetails.tryEmit(Resource.Success(handleGroupMemberDetails(it)))
+            }.launchIn(this)
+        }else{
+            _groupMemberDetails.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    private fun handleGroupMemberDetails(it: ListenerEmissionType<GroupMemberDetails, GroupMemberDetails>): List<GroupMemberDetails>? {
+        val groupMemberDetails = groupMemberDetails.replayCache[0].data?.toMutableList() ?: mutableListOf()
+
+        when (it.emitChangeType) {
+            Constants.ListenerEmitType.Starting -> {
+                groupMemberDetails.clear()
+                it.responseList?.let {
+                    groupMemberDetails.addAll(it)
+                }
+            }
+
+            Constants.ListenerEmitType.Added -> {
+                it.singleResponse?.let {
+                    groupMemberDetails.add(it)
+
+                }
+            }
+
+            Constants.ListenerEmitType.Removed -> {
+                it.singleResponse?.member?.memberId?.let { memberId ->
+                    groupMemberDetails.forEach {
+                        if (it.member.memberId == memberId) {
+                            groupMemberDetails.remove(it)
+                            return@let
+                        }
+                    }
+                }
+            }
+
+            Constants.ListenerEmitType.Modify -> {
+                it.singleResponse?.member?.memberId?.let { memberId ->
+                    groupMemberDetails.forEach {details->
+                        if (details.member.memberId == memberId) {
+                             it.singleResponse.member.let { it1 ->
+                                details.member= details.member.copy(
+                                    isOnline = it1.isOnline
+                                )
+                            }
+                            return@let
+                        }
+                    }
+                }
+            }
+        }
+
+        return groupMemberDetails
+
+    }
+
+    fun getGroupInfo(chatRoomId: String) = viewModelScope.myLaunch {
+        _groupInfo.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.getGroupInfo(chatRoomId).onEach {
+                if (it!=null){
+                    _groupInfo.tryEmit(Resource.Success(it))
+                }else{
+                    _groupInfo.tryEmit(Resource.Error("Group Info Not Found !"))
+                }
+            }.launchIn(this)
+        }else{
+            _groupInfo.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+     fun updateGroupMemberOnlineStatus(chatRoomId: String,status:Boolean) = viewModelScope.myLaunch {
+         if (SoftwareManager.isNetworkAvailable(app)){
+             repository.updateGroupMemberOnlineStatus(chatRoomId,status)
+         }else{
+             MyLogger.e(tagChat, msg = "Internet Off so that user status update failed!")
+         }
+     }
+
 
     //endregion
 

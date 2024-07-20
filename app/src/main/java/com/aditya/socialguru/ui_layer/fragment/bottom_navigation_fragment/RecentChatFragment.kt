@@ -282,11 +282,23 @@ class RecentChatFragment : Fragment(), StartChatDialogOption {
     }
 
     private fun onItemClick(data: UserRecentModel) {
-        data.user?.userId?.let {
-            val direction: NavDirections =
-                BottomNavigationBarDirections.actionGlobalChatFragment(it)
-            navController.safeNavigate(direction, Helper.giveAnimationNavOption())
+        val isGroupChat=data.recentChat?.isGroupChat?.takeIf { it } ?: false
+        val chatRoomId=data.groupInfo?.chatRoomId
+        val userId=data.user?.userId
+         if (isGroupChat) {
+             chatRoomId?.let {
+                 val direction: NavDirections =BottomNavigationBarDirections.actionGlobalGroupChatFragment(chatRoomId)
+                 navController.safeNavigate(direction, Helper.giveAnimationNavOption())
+             }
+
+        }else{
+            userId?.let {
+                val direction: NavDirections = BottomNavigationBarDirections.actionGlobalChatFragment(it)
+                navController.safeNavigate(direction, Helper.giveAnimationNavOption())
+            }
+
         }
+
     }
 
     private fun onItemLongClick(data: UserRecentModel) {

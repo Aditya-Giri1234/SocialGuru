@@ -101,7 +101,10 @@ object Constants {
         LastMessage,
         RecentChat,
         Media,
-        ChatMuteNotification
+        ChatMuteNotification ,
+        GroupChat ,
+        GroupMember ,
+        GroupInfo
     }
 
     enum class FriendStatus {
@@ -206,11 +209,24 @@ object Constants {
 
     enum class MessageType(val type:String){
         Chat("Chat Message"),
-        DateHeader("Date Header")
+        DateHeader("Date Header"),
+        Info("Info Message")
     }
     enum class LastMessageType(val type:String){
         Text("TextMessage"),
-        Media("MediaMessage")
+        Media("MediaMessage"),
+        Info("InfoMessage")
+    }
+
+    // This is for group message where we need to extra info
+
+    enum class InfoType{
+        MemberAdded,
+        MemberRemoved,
+        GroupCreated,
+        GroupNameChange,
+        GroupDescChange,
+        GroupPicChange
     }
 
 

@@ -50,8 +50,72 @@ class RecentChatAdapter(
                         .placeholder(R.drawable.ic_user).error(R.drawable.ic_user)
                         .into(ivProfilePic)
                     tvUserName.text = userName
+                } ?: run{
+                    item.groupInfo?.run {
+                        Glide.with(ivProfilePic.context).load(groupPic)
+                            .placeholder(R.drawable.ic_user).error(R.drawable.ic_user)
+                            .into(ivProfilePic)
+                        tvUserName.text = groupName
+                    }
+
                 }
+
                 item.recentChat?.apply {
+                    val isSenderIsMe = AuthManager.currentUserId() == senderId
+                    val infoMessage = when (infoMessageType) {
+                        Constants.InfoType.GroupCreated.name -> {
+                            if (isSenderIsMe){
+                                "You created this group!"
+                            }else{
+                                "Someone added you in this group!"
+                            }
+
+                        }
+
+                        Constants.InfoType.GroupNameChange.name -> {
+                            if (isSenderIsMe){
+                                "You change group name !"
+                            }else{
+                                "Someone change group name !"
+                            }
+                        }
+
+                        Constants.InfoType.GroupDescChange.name -> {
+                            if (isSenderIsMe){
+                                "You change group description !"
+                            }else{
+                                "Someone change group description !"
+                            }
+                        }
+
+                        Constants.InfoType.GroupPicChange.name -> {
+                            if (isSenderIsMe){
+                                "You change group profile picture!"
+                            }else{
+                                "Someone change group profile picture!"
+                            }
+                        }
+
+                        Constants.InfoType.MemberAdded.name -> {
+                            if (isSenderIsMe){
+                                "You added someone in this group!"
+                            }else{
+                                "Someone added someone in this group!"
+                            }
+                        }
+
+                        Constants.InfoType.MemberRemoved.name -> {
+                            if (isSenderIsMe){
+                                "You removed someone from this group!"
+                            }else {
+                                "Someone removed from this group!"
+                            }
+                        }
+
+                        else -> {
+                            ""
+                        }
+                    }
                     tvLastMessageTime.text = Helper.getTimeForChat(lastMessageTimeInTimeStamp!!)
                     when (lastMessageSeen) {
                         Constants.SeenStatus.Sending.status -> {
@@ -91,8 +155,8 @@ class RecentChatAdapter(
                         tvLastMessageTime.setTextColor(tvLastMessageTime.context.giveMeColor(R.color.green))
                     }
 
-                    if (senderId == AuthManager.currentUserId()!!) {
-                        ivMessageSeenStatus.myShow()
+                    if (senderId == AuthManager.currentUserId()!!&&infoMessageType==null) {
+                            ivMessageSeenStatus.myShow()
                     } else {
                         ivMessageSeenStatus.gone()
                     }
@@ -103,7 +167,7 @@ class RecentChatAdapter(
                             "Media"
                         } else {
                             ivMedia.gone()
-                            message
+                            message ?: infoMessage
                         }
                 }
 

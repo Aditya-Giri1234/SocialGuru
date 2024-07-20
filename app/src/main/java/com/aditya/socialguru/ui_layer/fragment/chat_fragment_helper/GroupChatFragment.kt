@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
+import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,7 +17,6 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.isGone
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDirections
@@ -29,14 +29,18 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.chat.LastMessage
 import com.aditya.socialguru.data_layer.model.chat.Message
+import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
+import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMember
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMemberDetails
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
 import com.aditya.socialguru.databinding.FragmentChatBinding
+import com.aditya.socialguru.databinding.FragmentGroupChatBinding
 import com.aditya.socialguru.databinding.PopUpChatScreenBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.dialog.chat.AttachmentDialog
 import com.aditya.socialguru.domain_layer.helper.Constants
-import com.aditya.socialguru.domain_layer.helper.Constants.MessageType
-import com.aditya.socialguru.domain_layer.helper.Constants.SeenStatus
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.disabled
@@ -53,6 +57,7 @@ import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.OnAttachmentItemListener
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.chat.ChatMessageAdapter
+import com.aditya.socialguru.ui_layer.adapter.chat.GroupChatAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.bumptech.glide.Glide
 import com.vanniktech.emoji.EmojiPopup
@@ -69,13 +74,13 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 
-class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachmentItemListener {
-    private var _binding: FragmentChatBinding? = null
+class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
+    OnAttachmentItemListener {
+    private var _binding: FragmentGroupChatBinding? = null
     private val binding get() = _binding!!
 
     private val tagChat = Constants.LogTag.Chats
 
-    private lateinit var receiverId: String  //This is for receive userId
     private var dialogInvokeReason = Constants.ChatDialogInvokeAction.DeleteSingleChat
     private var isUserAppOpen = false
     private var isUserActiveOnCurrentChat = false
@@ -93,16 +98,14 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     private var myLoader: MyLoader? = null
     private var imageUri: String? = null
     private var videoUri: String? = null
-    private var deleteMessage: Message? = null
+    private var deleteMessage: GroupMessage? = null
 
-    private var _chatAdapter: ChatMessageAdapter? = null
+    private var _chatAdapter: GroupChatAdapter? = null
     private val chatAdapter get() = _chatAdapter!!
 
+    private val groupMembers= mutableListOf<GroupMember>()
 
-    private val isIAmUser1 by lazy {
-        val list = listOf(AuthManager.currentUserId()!!, receiverId).sorted()
-        list[0] == AuthManager.currentUserId()!!
-    }
+
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
     }
@@ -112,11 +115,9 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         AuthManager.currentUserId()!!
     }
 
-    private val args by navArgs<ChatFragmentArgs>()
+    private val args by navArgs<GroupChatFragmentArgs>()
 
-    private val chatRoomId by lazy {
-        Helper.getChatRoomId(receiverId)
-    }
+    private lateinit var chatRoomId:String
 
 
     private val cameraIntent =
@@ -172,7 +173,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        _binding = FragmentChatBinding.inflate(layoutInflater)
+        _binding = FragmentGroupChatBinding.inflate(layoutInflater)
         return binding.root
     }
 
@@ -182,8 +183,8 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     }
 
     private fun handleInitialization() {
-        receiverId = args.userId
-        _chatAdapter = ChatMessageAdapter(this@ChatFragment)
+        chatRoomId = args.chatRoomId
+        _chatAdapter = GroupChatAdapter(this@GroupChatFragment)
         initUi()
         subscribeToObserver()
         getData()
@@ -193,16 +194,34 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     private fun subscribeToObserver() {
         viewLifecycleOwner.observeFlow {
-            chatViewModel.userDetails.onEach { response ->
+            chatViewModel.groupChatMessage.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.data?.let {
+                            setChatMessageList(it)
+                        }
+                    }
+
+                    is Resource.Loading -> {
+                    }
+
+                    is Resource.Error -> {
+                        showSnackBar(response.message, isSuccess = false)
+                    }
+                }
+
+            }.launchIn(this)
+
+            chatViewModel.groupInfo.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()
                         response.data?.let {
-                            setUserProfile(it)
+                            setGroupInfo(it)
                         }
-                      if (!chatViewModel.isDataLoaded){
-                          getChatDataAndListen()
-                      }
+                        if (!chatViewModel.isDataLoaded){
+                            chatViewModel.getGroupMemberDetails(chatRoomId)
+                        }
                     }
 
                     is Resource.Loading -> {
@@ -216,21 +235,25 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                 }
 
             }.launchIn(this)
-            chatViewModel.lastMessage.onEach {
-                updateUserAvailability(it)
-            }.launchIn(this)
-            chatViewModel.chatMessage.onEach { response ->
+
+            chatViewModel.groupMemberDetails.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
+                        hideDialog()
                         response.data?.let {
-                            setChatMessageList(it)
+                            setGroupMemberDetails(it)
+                        }
+                        if (!chatViewModel.isDataLoaded){
+                            getChatDataAndListen()
                         }
                     }
 
                     is Resource.Loading -> {
+                        showDialog()
                     }
 
                     is Resource.Error -> {
+                        hideDialog()
                         showSnackBar(response.message, isSuccess = false)
                     }
                 }
@@ -315,7 +338,6 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         }
     }
 
-
     private fun initUi() {
         binding.apply {
             chatViewModel.imageUri?.apply {
@@ -334,7 +356,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         }
     }
 
-    private fun FragmentChatBinding.setListener() {
+    private fun FragmentGroupChatBinding.setListener() {
 
         ivProfileImage.setSafeOnClickListener {
             navigateToChatProfileScreen()
@@ -342,6 +364,8 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         linearUserStatus.setSafeOnClickListener {
             navigateToChatProfileScreen()
         }
+
+
 
         backToBottom.setSafeOnClickListener {
             rvChats.scrollToPosition(chatAdapter.itemCount - 1)
@@ -419,7 +443,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         }
 
         icAttachment.setSafeOnClickListener {
-            AttachmentDialog(this@ChatFragment).show(childFragmentManager, "My_Attchment_Dialog")
+            AttachmentDialog(this@GroupChatFragment).show(childFragmentManager, "My_Attchment_Dialog")
         }
 
         cardImageMessage.setSafeOnClickListener {
@@ -433,18 +457,17 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
 
     private fun getData() {
         if (!chatViewModel.isDataLoaded) {
-            chatViewModel.getUser(receiverId)
+            chatViewModel.getGroupInfo(chatRoomId)
         }
     }
     private fun getChatDataAndListen(){
-        chatViewModel.getChatMessage(chatRoomId)
-        chatViewModel.listenLastMessage(chatRoomId)
+        chatViewModel.getGroupChatMessage(chatRoomId)
 
         // Now set data loaded state to true
         chatViewModel.setDataLoadedStatus(true)
     }
 
-    private fun setChatMessageList(message: List<Message>) {
+    private fun setChatMessageList(message: List<GroupMessage>) {
         if (message.isNotEmpty()) {
             hideNoDataView()
             chatAdapter.submitList(message)
@@ -457,13 +480,45 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                 }
             }
             //Update seen status of message of receiver not my  message
-            chatViewModel.updateMessageSeenAvailability(
-                message.filter { it.seenStatus != Constants.SeenStatus.MessageSeen.status && it.senderId != senderId },
-                chatRoomId
-            )
+//            chatViewModel.updateMessageSeenAvailability(
+//                message.filter { it.seenStatus != Constants.SeenStatus.MessageSeen.status && it.senderId != senderId },
+//                chatRoomId
+//            )
         } else {
             showNoDataView()
         }
+    }
+
+    private fun setGroupMemberDetails(groupMembers: List<GroupMemberDetails>) {
+        //Clear list
+        this.groupMembers.clear()
+
+        val maxParticipants = 5
+        val maxChars = 50
+        var currentLength = 0
+        val participants = mutableListOf<String>()
+
+        for (member in groupMembers) {
+            val username = member.memberInfo.userName!!
+            if (participants.size < maxParticipants && currentLength + username.length <= maxChars) {
+                participants.add(username)
+                currentLength += username.length
+            } else {
+                break
+            }
+        }
+
+        val members= if (participants.size < groupMembers.size) {
+            participants.joinToString(", ") + "..."
+        } else {
+            participants.joinToString(", ")
+        }
+
+        MyLogger.d(tagChat, msg = members)
+        binding.tvGroupMember.text = members
+
+        this.groupMembers.addAll(groupMembers.map { it.member })
+        chatAdapter.submitUser(groupMembers.associateBy({it.member.memberId!!},{it.memberInfo}))
     }
 
     private fun sendMessage() {
@@ -475,35 +530,31 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         val timeStamp = System.currentTimeMillis()
         val timeInText = Helper.formatTimestampToDateAndTime(timeStamp)
         val chatType = getChatType(message)
-        val chatData = Message(
+        val chatData = GroupMessage(
             messageId = Helper.getMessageId(),
-            messageType = MessageType.Chat.type,
+            messageType = Constants.MessageType.Chat.type,
             chatType = chatType,
             text = message,
             imageUri = imageUri,
             videoUri = videoUri,
             senderId = senderId,
-            receiverId = receiverId,
             messageSentTimeInTimeStamp = timeStamp,
             messageSendTimeInText = timeInText,
-            seenStatus = SeenStatus.Sending.status
+            seenStatus = Constants.SeenStatus.Sending.status
         )
-        val lastMessage = LastMessage(
+        val lastMessage = GroupLastMessage(
             senderId = senderId,
-            receiverId = receiverId,
-            messageType = MessageType.Chat.type,
+            messageType = Constants.MessageType.Chat.type,
             chatType = chatType,
             message = message,
             lastMessageSentTimeInTimeStamp = timeStamp,
             lastMessageSentTimeInText = timeInText,
-            isUser1Online = findUserAvailability(true),
-            isUser2Online = findUserAvailability(false),
         )
-        chatViewModel.sendMessage(
+        chatViewModel.sendGroupMessage(
             chatData,
             lastMessage,
             chatRoomId,
-            isUserAppOpen && isUserActiveOnCurrentChat
+            groupMembers
         )
 
     }
@@ -538,7 +589,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
 
         bindingPopUp.linearItemDeleteAll.setSafeOnClickListener {
             dialogInvokeReason = Constants.ChatDialogInvokeAction.ClearChat
-            AlertDialog("Are your sure clear Chats ?", this@ChatFragment, true).show(
+            AlertDialog("Are your sure clear Chats ?", this@GroupChatFragment, true).show(
                 childFragmentManager,
                 "MY_Dialog"
             )
@@ -548,99 +599,18 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
 
     }
 
-    private fun setUserProfile(receiver: User) {
-        chatAdapter.submitUser(receiver)
+
+
+    private fun setGroupInfo(groupInfo: GroupInfo){
         binding.apply {
-            receiver.run {
-                Glide.with(ivProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user)
-                    .error(R.drawable.ic_user).into(ivProfileImage)
-                tvUserName.text = userName
-                isUserAppOpen = userAvailable ?: false
-            }
-        }
-    }
-
-    private fun updateUserAvailability(message: LastMessage) {
-        val userAvailable = if (isIAmUser1) {
-            message.isUser2Online ?: false
-        } else {
-            message.isUser1Online ?: false
-        }
-        updateOnlineStatus(userAvailable)
-    }
-
-    private fun updateOnlineStatus(userAvailable: Boolean) {
-        if (userAvailable) {
-            showOnline()
-        } else {
-            hideOnline()
-        }
-        isUserActiveOnCurrentChat = userAvailable
-    }
-
-    private fun showOnline() {
-
-        binding.tvOnlineStatus.animate().apply {
-            duration = 200
-            alpha(1f)
-            setListener(object : Animator.AnimatorListener {
-                override fun onAnimationStart(animation: Animator) {
-                }
-
-                override fun onAnimationEnd(animation: Animator) {
-                    binding.tvOnlineStatus.myShow()
-                }
-
-                override fun onAnimationCancel(animation: Animator) {
-                }
-
-                override fun onAnimationRepeat(animation: Animator) {
-                }
-            })
-        }
-
-    }
-
-    private fun hideOnline() {
-        binding.tvOnlineStatus.animate().apply {
-            duration = 200
-            alpha(0f)
-            setListener(object : Animator.AnimatorListener {
-                override fun onAnimationStart(animation: Animator) {
-                }
-
-                override fun onAnimationEnd(animation: Animator) {
-                    binding.tvOnlineStatus.gone()
-                }
-
-                override fun onAnimationCancel(animation: Animator) {
-                }
-
-                override fun onAnimationRepeat(animation: Animator) {
-                }
-            })
-        }
-
-    }
-
-    private fun findUserAvailability(forUser1: Boolean): Boolean {
-        return if (forUser1) {
-            if (isIAmUser1) {
-                true
-            } else {
-                isUserActiveOnCurrentChat
-            }
-        } else {
-            if (isIAmUser1) {
-                isUserActiveOnCurrentChat
-            } else {
-                true
-            }
+            tvGroupName.text = groupInfo.groupName
+            Glide.with(ivProfileImage).load(groupInfo.groupPic).placeholder(R.drawable.ic_user)
+                .error(R.drawable.ic_user).into(ivProfileImage)
         }
     }
 
     private fun clearChat() {
-        chatViewModel.clearChat(chatRoomId, receiverId)
+//        chatViewModel.clearChat(chatRoomId, receiverId)
     }
 
     private fun showDialog() {
@@ -684,8 +654,8 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         }
     }
 
-    private fun deleteThisMessage(deleteMessage: Message?) {
-        deleteMessage?.let {
+    private fun deleteThisMessage(deleteMessage: GroupMessage?) {
+      /*  deleteMessage?.let {
             if (chatAdapter.itemCount == 1) {
                 clearChat()
             } else {
@@ -693,7 +663,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                     chatAdapter.findMessageIndex(it) == chatAdapter.itemCount - 1 -> {
                         //User want to delete  last message so need to update last message on chat room and recent chat data in both parties
                         val secondLastMessage = chatAdapter.giveMeSecondLastMessage()
-                        val lastMessage = LastMessage(
+                        val lastMessage = GroupLastMessage(
                             senderId = secondLastMessage.senderId,
                             receiverId = secondLastMessage.receiverId,
                             messageType = secondLastMessage.messageType,
@@ -720,7 +690,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                     }
                 }
             }
-        }
+        }*/
     }
 
     private fun setImageOnAttachmentUi(data: Uri) {
@@ -874,8 +844,8 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     }
 
     private fun navigateToChatProfileScreen(){
-        val direction:NavDirections=ChatFragmentDirections.actionChatFragmentToUserChatProfileFragment(chatRoomId,receiverId)
-        navController.safeNavigate(direction,Helper.giveAnimationNavOption())
+//        val direction: NavDirections =ChatFragmentDirections.actionChatFragmentToUserChatProfileFragment(chatRoomId,receiverId)
+//        navController.safeNavigate(direction, Helper.giveAnimationNavOption())
     }
     private fun navigateToVideoViewScreen(attachmentVideoUri: Uri?) {
         attachmentVideoUri?.apply {
@@ -894,12 +864,12 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     }
 
     override fun onResume() {
-        chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId, isIAmUser1, true)
+        chatViewModel.updateGroupMemberOnlineStatus(chatRoomId, true)
         super.onResume()
     }
 
     override fun onStop() {
-        chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId, isIAmUser1, false)
+        chatViewModel.updateGroupMemberOnlineStatus(chatRoomId, false)
         super.onStop()
     }
 
@@ -932,7 +902,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     }
 
     override fun <T> onLongMessageClick(message: T) {
-        deleteMessage = message as Message
+        deleteMessage = message as GroupMessage
         dialogInvokeReason = Constants.ChatDialogInvokeAction.DeleteSingleChat
         AlertDialog("Are you sure delete this chat ?", this, true).show(
             childFragmentManager,
@@ -963,4 +933,3 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
 
 }
 
-typealias ChatType = Constants.PostType

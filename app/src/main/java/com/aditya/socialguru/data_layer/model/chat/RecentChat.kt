@@ -6,9 +6,15 @@ data class RecentChat(
     val lastMessageTimeInText:String?=null,
     val unSeenMessageCount:Int?=0,
     val message:String?=null,
-    val lastMessageType:String?=null,
     val receiverId:String?=null,
     val senderId:String?=null,
     val userId:String?=null,
-    val lastMessageSeen:String?=null
+    val lastMessageSeen:String?=null,
+    //This is help to determine the type of message
+    val lastMessageType:String?=null,
+    // This is for group Chat
+    @field:JvmField
+    val isGroupChat:Boolean?=false,
+    val infoMessageType:String?=null,
+    val addedOrRemovedUserId:String?=null
 )

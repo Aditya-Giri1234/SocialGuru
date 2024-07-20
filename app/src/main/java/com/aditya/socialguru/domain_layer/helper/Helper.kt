@@ -168,6 +168,7 @@ object Helper {
         return "Chat_${sortedUserIds[0]}_${sortedUserIds[1]}"
     }
 
+    fun getGroupChatId() : String = "${Constants.Table.GroupChat.name}_${AuthManager.currentUserId()!!}_${System.currentTimeMillis()}"
     fun getMessageId():String = "${Constants.Table.Messages.name}_${AuthManager.currentUserId()!!}_${System.currentTimeMillis()}"
     fun getNotificationId():String="${Constants.Table.Notification.name}_${generateUUID()}"
     fun getUserId():String=UUID.randomUUID().toString()

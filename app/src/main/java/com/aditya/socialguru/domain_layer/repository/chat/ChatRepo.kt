@@ -4,6 +4,11 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.chat.LastMessage
 import com.aditya.socialguru.data_layer.model.chat.Message
+import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
+import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMember
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
+import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.ChatManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.UserManager
@@ -35,5 +40,42 @@ class ChatRepo {
     suspend fun muteChatNotification(userId: String, isMute: Boolean) = FirebaseManager.muteChatNotification(userId, isMute)
 
     suspend fun getAllMediaOfChat(chatRoomId: String) = FirebaseManager.getAllMediaOfChat(chatRoomId)
+
+    suspend fun sentGroupMessage(
+        message: GroupMessage,
+        lastMessage: GroupLastMessage,
+        chatRoomId: String,
+        users: List<GroupMember>, // Just for add  message recent chat
+        action: Constants.InfoType? = null,
+        addedOrRemovedUserId: String? = null,
+        groupInfo: GroupInfo? = null
+    ) = FirebaseManager.sentGroupMessage(
+        message,
+        lastMessage,
+        chatRoomId,
+        users,
+        action,
+        addedOrRemovedUserId,
+        groupInfo
+    )
+
+    suspend fun deleteMessage(
+        message: GroupMessage,
+        chatRoomId: String,
+        users: List<String>,
+        lastMessage: GroupLastMessage?,
+        secondLastMessage: GroupMessage? = null
+    ) = FirebaseManager.deleteMessage(message, chatRoomId, users, lastMessage, secondLastMessage)
+
+    suspend fun clearChats(chatRoomId: String, users: List<String>) = FirebaseManager.clearChats(chatRoomId, users)
+
+    suspend fun getGroupChatMessageAndListen(chatRoomId: String) = FirebaseManager.getGroupChatMessageAndListen(chatRoomId)
+
+    suspend fun getGroupMemberInfo(chatRoomId: String) = FirebaseManager.getGroupMemberInfo(chatRoomId)
+
+    suspend fun getGroupInfo(chatRoomId: String) = FirebaseManager.getGroupInfo(chatRoomId)
+
+    suspend fun updateGroupMemberOnlineStatus(chatRoomId: String,status:Boolean) = FirebaseManager.updateGroupMemberOnlineStatus(chatRoomId,status)
+
 
 }

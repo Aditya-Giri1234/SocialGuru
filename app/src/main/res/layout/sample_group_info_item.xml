@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:gravity="center"
+    android:paddingHorizontal="@dimen/_20sdp"
+    android:layout_marginVertical="@dimen/_5sdp">
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_gravity="center_horizontal"
+        app:cardBackgroundColor="@color/blue"
+        app:cardElevation="@dimen/_4sdp"
+        app:cardCornerRadius="@dimen/_15sdp"
+        app:cardUseCompatPadding="true">
+        <TextView
+            android:id="@+id/tvInfoMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Aditya created group!"
+            android:textColor="@color/white"
+            android:maxLength="50"
+            android:ellipsize="end"
+            android:textSize="@dimen/_12ssp"
+            android:fontFamily="@font/poppins_semi_bold"
+            android:paddingHorizontal="@dimen/_12sdp"
+            android:paddingVertical="@dimen/_5sdp"/>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>

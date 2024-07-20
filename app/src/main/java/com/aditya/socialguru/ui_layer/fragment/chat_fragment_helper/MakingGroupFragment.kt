@@ -11,30 +11,41 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
+import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
+import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMember
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
 import com.aditya.socialguru.databinding.FragmentMakingGroupBinding
+import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.dialog.ProfilePicEditDialog
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
-import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.profile.ProfilePicEditOption
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.chat.GroupMemberChatAdapter
-import com.aditya.socialguru.ui_layer.adapter.chat.StartChatAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.bumptech.glide.Glide
+import com.google.rpc.Help
 import com.vanniktech.emoji.EmojiPopup
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 
-class MakingGroupFragment : Fragment() , ProfilePicEditOption {
+class MakingGroupFragment : Fragment(), ProfilePicEditOption {
 
     private var _binding: FragmentMakingGroupBinding? = null
     private val binding get() = _binding!!
@@ -49,10 +60,14 @@ class MakingGroupFragment : Fragment() , ProfilePicEditOption {
         )
     }
     private var groupProfileImage: String? = null
+    private val chatRoomId by lazy{
+        Helper.getGroupChatId()
+    }
 
     private var _memberAdapter: GroupMemberChatAdapter? = null
     private var userList = mutableListOf<User>()
     private val memberAdapter get() = _memberAdapter!!
+    private var myLoader: MyLoader? = null
 
     private val args by navArgs<MakingGroupFragmentArgs>()
 
@@ -63,18 +78,19 @@ class MakingGroupFragment : Fragment() , ProfilePicEditOption {
 
     private val chatViewModel by viewModels<ChatViewModel>()
 
-    private val pickImage = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        // Callback is invoked after the user selects a media item or closes the
-        // photo picker.
-        if (uri != null) {
-            MyLogger.v(tagChat, msg = "User select pic now set to profile :- $uri")
+    private val pickImage =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            // Callback is invoked after the user selects a media item or closes the
+            // photo picker.
+            if (uri != null) {
+                MyLogger.v(tagChat, msg = "User select pic now set to profile :- $uri")
 
-            setImageOnProfileView(uri)
+                setImageOnProfileView(uri)
 
-        } else {
-            MyLogger.v(tagChat, msg = "User revoke or cancel upload story !")
+            } else {
+                MyLogger.v(tagChat, msg = "User revoke or cancel upload story !")
+            }
         }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -91,20 +107,37 @@ class MakingGroupFragment : Fragment() , ProfilePicEditOption {
     }
 
     private fun handleInitialization() {
-        userList=args.users.users.toMutableList()
-        _memberAdapter= GroupMemberChatAdapter()
+        userList = args.users.users.toMutableList()
+        _memberAdapter = GroupMemberChatAdapter()
         initUi()
         subscribeToObserver()
         setData()
     }
 
 
-
     private fun subscribeToObserver() {
         viewLifecycleOwner.observeFlow {
+            chatViewModel.sendGroupMessage.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        showSnackBar("Group Created Successfully !", true)
+                        navigateToGroupChat()
+                    }
 
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        showSnackBar(response.message)
+                    }
+                }
+
+            }.launchIn(this)
         }
     }
+
+
 
     private fun initUi() {
         binding.apply {
@@ -112,10 +145,11 @@ class MakingGroupFragment : Fragment() , ProfilePicEditOption {
             chatViewModel = this@MakingGroupFragment.chatViewModel
 
             rvMember.apply {
-                layoutManager=GridLayoutManager(requireContext(),4,GridLayoutManager.VERTICAL,false)
-                adapter=memberAdapter
+                layoutManager =
+                    GridLayoutManager(requireContext(), 4, GridLayoutManager.VERTICAL, false)
+                adapter = memberAdapter
                 setHasFixedSize(true)
-                isMotionEventSplittingEnabled=false
+                isMotionEventSplittingEnabled = false
             }
 
             myToolbar.apply {
@@ -184,21 +218,22 @@ class MakingGroupFragment : Fragment() , ProfilePicEditOption {
     }
 
 
-
     private fun setData() {
-       binding.apply {
-           tvMembers.text="Members : ${userList.size}"
-           memberAdapter.submitList(userList)
-       }
+        binding.apply {
+            tvMembers.text = "Members : ${userList.size}"
+            memberAdapter.submitList(userList)
+        }
     }
 
     private fun setImageOnProfileView(uri: Uri) {
         binding.ivGroupImage.myShow()
         binding.ivAddImage.gone()
         groupProfileImage = uri.toString()
-        Glide.with(binding.ivGroupImage).load(groupProfileImage).placeholder(R.drawable.ic_user).into(binding.ivGroupImage)
+        Glide.with(binding.ivGroupImage).load(groupProfileImage).placeholder(R.drawable.ic_user)
+            .into(binding.ivGroupImage)
     }
-    private fun removeImageFromProfileView(){
+
+    private fun removeImageFromProfileView() {
         binding.apply {
             groupProfileImage = null  //Assure newImage should null and currentImage not change
             binding.ivGroupImage.gone()
@@ -207,11 +242,53 @@ class MakingGroupFragment : Fragment() , ProfilePicEditOption {
     }
 
     private fun createGroup() {
-        if (binding.etGroupName.text.isNullOrBlank()){
+        if (binding.etGroupName.text.isNullOrBlank()) {
             showSnackBar("Please Enter Group Name !")
-        }else{
-
+        } else {
+            val message = GroupMessage(
+                messageId = Helper.getMessageId(),
+                messageType = Constants.MessageType.Info.type,
+                senderId = AuthManager.currentUserId()!!,
+                infoMessageType = Constants.InfoType.GroupCreated.name
+            )
+            val lastMessage = GroupLastMessage(
+                senderId = AuthManager.currentUserId()!!,
+                messageType = Constants.MessageType.Info.type,
+                infoMessageType = Constants.InfoType.GroupCreated.name,
+            )
+            val groupInfo = GroupInfo(
+                chatRoomId = chatRoomId,
+                groupPic = groupProfileImage,
+                groupName = binding.etGroupName.text.toString(),
+                groupAdmins = listOf(AuthManager.currentUserId()!!)
+            )
+            chatViewModel.sendGroupMessage(
+                message = message,
+                lastMessage = lastMessage,
+                chatRoomId = chatRoomId,
+                userList.map { GroupMember(it.userId,false)}.toMutableList().apply {
+                    add(GroupMember(AuthManager.currentUserId()!!,true))
+                }.toList(),
+                Constants.InfoType.GroupCreated ,
+                groupInfo = groupInfo
+            )
         }
+    }
+
+    private fun navigateToGroupChat() {
+        val directions : NavDirections = BottomNavigationBarDirections.actionGlobalGroupChatFragment(chatRoomId = chatRoomId)
+        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
+    }
+
+    private fun showDialog() {
+        myLoader?.dismiss()
+        myLoader = MyLoader()
+        myLoader?.show(childFragmentManager, "My_Loader")
+    }
+
+    private fun hideDialog() {
+        myLoader?.dismiss()
+        myLoader = null
     }
 
     private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
@@ -237,6 +314,7 @@ class MakingGroupFragment : Fragment() , ProfilePicEditOption {
     override fun onUpload() {
         pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
+
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()

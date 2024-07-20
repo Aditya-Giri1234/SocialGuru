@@ -7,10 +7,16 @@ import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.data_layer.model.chat.RecentChat
 import com.aditya.socialguru.data_layer.model.chat.UpdateChatResponse
 import com.aditya.socialguru.data_layer.model.chat.UserRecentModel
+import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
+import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMember
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMemberDetails
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Constants.InfoType
 import com.aditya.socialguru.domain_layer.helper.Constants.NotificationType
 import com.aditya.socialguru.domain_layer.helper.Constants.Table
 import com.aditya.socialguru.domain_layer.helper.Helper
@@ -33,6 +39,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlin.system.measureTimeMillis
 
@@ -67,11 +74,15 @@ object ChatManager {
     private var recentChatListener: ListenerRegistration? = null
     private var isFirstTimeRecentChatListener = true
 
+    private var groupMemberListener: ListenerRegistration? = null
+    private var isFirstTimeGroupMemberListener = true
+
+
     suspend fun sentMessage(
         message: Message,
         lastMessage: LastMessage,
         chatRoomId: String,
-        isUserOnline: Boolean = false
+        isUserOnline: Boolean = false,
     ) = callbackFlow<UpdateChatResponse> {
 
         val isImagePresent = message.imageUri != null
@@ -139,7 +150,12 @@ object ChatManager {
                         videoUri = onlineVideoUri
                     )
                     if (isImagePresent) {
-                        uploadImage(updatedMessage, lastMessage, chatRoomId, isUserOnline).onEach {
+                        uploadImage(
+                            updatedMessage,
+                            lastMessage,
+                            chatRoomId,
+                            isUserOnline
+                        ).onEach {
                             trySend(it)
                         }.launchIn(this)
                     } else {
@@ -158,7 +174,7 @@ object ChatManager {
         message: Message,
         lastMessage: LastMessage,
         chatRoomId: String,
-        isUserOnline: Boolean = false
+        isUserOnline: Boolean = false,
     ) = callbackFlow<UpdateChatResponse> {
         trySend(UpdateChatResponse(true, "Image Uploading"))
         val imageUri = message.imageUri!!.convertParseUri()
@@ -186,11 +202,14 @@ object ChatManager {
                     val updatedMessage = message.copy(
                         imageUri = onlineImageUri
                     )
+
                     saveMessageToDatabase(
                         updatedMessage, lastMessage, chatRoomId, isUserOnline
                     ).onEach {
                         trySend(it)
                     }.launchIn(this)
+
+
                 }
             }
         }
@@ -544,40 +563,6 @@ object ChatManager {
             }
         }
 
-    fun updateSeenStatus(
-        status: String, messageId: String, chatRoomId: String, receiverId: String
-    ) {
-        launchCoroutineInIOThread {
-            val messageRef =
-                chatRef.document(chatRoomId).collection(Table.Messages.name).document(messageId)
-            val myRecentChatRef =
-                userRef.document(AuthManager.currentUserId()!!).collection(Table.RecentChat.name)
-                    .document(chatRoomId)
-            val receiverRecentChatRef =
-                userRef.document(receiverId).collection(Table.RecentChat.name).document(chatRoomId)
-            firestore.runBatch {
-                it.update(messageRef, Constants.MessageTable.SEEN_STATUS.fieldName, status)
-                it.update(
-                    myRecentChatRef, Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName, status
-                )
-                it.update(
-                    receiverRecentChatRef,
-                    Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName,
-                    status
-                )
-                if (status == Constants.SeenStatus.MessageSeen.status) {
-                    it.update(
-                        myRecentChatRef, Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName, 0
-                    )
-                    it.update(
-                        receiverRecentChatRef,
-                        Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName,
-                        0
-                    )
-                }
-            }.await()
-        }
-    }
 
     suspend fun getChatMessageAndListen(chatRoomId: String) =
         callbackFlow<ListenerEmissionType<Message, Message>> {
@@ -643,6 +628,41 @@ object ChatManager {
             }
         }
 
+    fun updateSeenStatus(
+        status: String, messageId: String, chatRoomId: String, receiverId: String
+    ) {
+        launchCoroutineInIOThread {
+            val messageRef =
+                chatRef.document(chatRoomId).collection(Table.Messages.name).document(messageId)
+            val myRecentChatRef =
+                userRef.document(AuthManager.currentUserId()!!).collection(Table.RecentChat.name)
+                    .document(chatRoomId)
+            val receiverRecentChatRef =
+                userRef.document(receiverId).collection(Table.RecentChat.name).document(chatRoomId)
+            firestore.runBatch {
+                it.update(messageRef, Constants.MessageTable.SEEN_STATUS.fieldName, status)
+                it.update(
+                    myRecentChatRef, Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName, status
+                )
+                it.update(
+                    receiverRecentChatRef,
+                    Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName,
+                    status
+                )
+                if (status == Constants.SeenStatus.MessageSeen.status) {
+                    it.update(
+                        myRecentChatRef, Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName, 0
+                    )
+                    it.update(
+                        receiverRecentChatRef,
+                        Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName,
+                        0
+                    )
+                }
+            }.await()
+        }
+    }
+
 
     suspend fun listenLastMessage(chatRoomId: String) = callbackFlow<LastMessage> {
         lastMessageListener?.remove()
@@ -688,9 +708,20 @@ object ChatManager {
             val recentList =
                 recentChatRef.get().await().toObjects(RecentChat::class.java).toMutableList()
             val userRecentModel = recentList.mapNotNull { recentChat ->
-                recentChat.userId?.let {
-                    UserManager.getUserById(it)?.let {
-                        UserRecentModel(it, recentChat)
+                recentChat.isGroupChat?.takeIf { it }?.run {
+                    recentChat.chatRoomId?.let {
+                        getGroupInfoWithoutAsync(it)?.let { groupInfo ->
+                            UserRecentModel(
+                                recentChat = recentChat,
+                                groupInfo = groupInfo
+                            )
+                        }
+                    }
+                } ?: run {
+                    recentChat.userId?.let {
+                        UserManager.getUserById(it)?.let { user ->
+                            UserRecentModel(user, recentChat)
+                        }
                     }
                 }
             }
@@ -709,51 +740,52 @@ object ChatManager {
                     return@addSnapshotListener
                 }
                 value?.documentChanges?.forEach {
-                    when (it.type) {
-                        DocumentChange.Type.ADDED -> {
-                            launchCoroutineInIOThread {
-                                val recentChat = it.document.toObject<RecentChat>()
+                    launchCoroutineInIOThread {
+                        val recentChat = it.document.toObject<RecentChat>()
+                        val userRecentModel =
+                            recentChat.isGroupChat?.takeIf { it }?.run {
+                                recentChat.chatRoomId?.let {
+                                    getGroupInfoWithoutAsync(it)?.let { groupInfo ->
+                                        UserRecentModel(
+                                            recentChat = recentChat,
+                                            groupInfo = groupInfo
+                                        )
+                                    }
+                                }
+                            } ?: run {
+                                recentChat.userId?.let {
+                                    UserManager.getUserById(it)?.let { user ->
+                                        UserRecentModel(user, recentChat)
+                                    }
+                                }
+                            }
+
+                        when (it.type) {
+                            DocumentChange.Type.ADDED -> {
                                 trySend(
-                                    ListenerEmissionType(Constants.ListenerEmitType.Added,
-                                        singleResponse = recentChat.userId?.let {
-                                            UserManager.getUserById(it)?.let { user ->
-                                                UserRecentModel(user, recentChat)
-                                            }
-                                        })
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Added,
+                                        singleResponse = userRecentModel
+                                    )
                                 )
                             }
-                        }
 
-                        DocumentChange.Type.MODIFIED -> {
-                            launchCoroutineInIOThread {
-                                val recentChat = it.document.toObject<RecentChat>()
+                            DocumentChange.Type.MODIFIED -> {
                                 trySend(
                                     ListenerEmissionType(Constants.ListenerEmitType.Modify,
-                                        singleResponse = recentChat.userId?.let {
-                                            UserManager.getUserById(it)?.let { user ->
-                                                UserRecentModel(user, recentChat)
-                                            }
-                                        })
+                                        singleResponse = userRecentModel)
                                 )
                             }
 
-                        }
+                            DocumentChange.Type.REMOVED -> {
 
-                        DocumentChange.Type.REMOVED -> {
-                            launchCoroutineInIOThread {
-                                val recentChat = it.document.toObject<RecentChat>()
                                 trySend(
                                     ListenerEmissionType(Constants.ListenerEmitType.Removed,
-                                        singleResponse = recentChat.userId?.let {
-                                            UserManager.getUserById(it)?.let { user ->
-                                                UserRecentModel(user, recentChat)
-                                            }
-                                        })
+                                        singleResponse = userRecentModel)
                                 )
                             }
 
                         }
-
                     }
                 }
             }
@@ -824,8 +856,721 @@ object ChatManager {
     }
 
     suspend fun getAllMediaOfChat(chatRoomId: String) = flow<List<ChatMediaData>> {
-        emit(chatRef.document(chatRoomId).collection(Table.Media.name).get().await().toObjects(ChatMediaData::class.java))
+        emit(
+            chatRef.document(chatRoomId).collection(Table.Media.name).get().await()
+                .toObjects(ChatMediaData::class.java)
+        )
     }
+
+
+    //region:: Group Chat
+
+    suspend fun sentGroupMessage(
+        message: GroupMessage,
+        lastMessage: GroupLastMessage,
+        chatRoomId: String,
+        users: List<GroupMember>,// Just for add  message recent chat
+        action: Constants.InfoType? = null,
+        addedOrRemovedUserId: String? = null,
+        groupInfo: GroupInfo? = null
+    ) = callbackFlow<UpdateChatResponse> {
+
+        val isImagePresent = message.imageUri != null || groupInfo?.groupPic != null
+        val isVideoPresent = message.videoUri != null
+
+        when {
+            isVideoPresent -> {
+                uploadGroupVideo(
+                    message,
+                    lastMessage,
+                    chatRoomId,
+                    isImagePresent,
+                    users,
+                    action,
+                    addedOrRemovedUserId
+                ).onEach {
+                    trySend(it)
+                }.launchIn(this)
+            }
+
+            isImagePresent -> {
+                uploadGroupImage(
+                    message,
+                    lastMessage,
+                    chatRoomId,
+                    users,
+                    action,
+                    addedOrRemovedUserId,
+                    groupInfo
+                ).onEach {
+                    trySend(it)
+                }.launchIn(this)
+            }
+
+            else -> {
+                saveGroupMessageToDatabase(
+                    message,
+                    lastMessage,
+                    chatRoomId,
+                    users,
+                    action,
+                    addedOrRemovedUserId,
+                    groupInfo = groupInfo
+                ).onEach {
+                    trySend(it)
+                }.launchIn(this)
+
+            }
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+    private suspend fun uploadGroupVideo(
+        message: GroupMessage,
+        lastMessage: GroupLastMessage,
+        chatRoomId: String,
+        isImagePresent: Boolean,
+        users: List<GroupMember>,
+        action: InfoType?,
+        addedOrRemovedUserId: String?
+    ) = callbackFlow<UpdateChatResponse> {
+        trySend(UpdateChatResponse(true, "Video  Uploading "))
+        val videoUri = message.videoUri!!.convertParseUri()
+        StorageManager.uploadVideoToServer(
+            Constants.Table.Chats.name,
+            "$chatRoomId/${Constants.FolderName.ChatVideo.name}",
+            videoUri
+        ).collect {
+            when (it.state) {
+                Constants.StorageManagerState.InProgress -> {
+                    trySend(UpdateChatResponse(true, "Video Uploading ", progress = it.progress))
+                }
+
+                Constants.StorageManagerState.Error -> {
+                    trySend(UpdateChatResponse(isSuccess = false, errorMessage = it.error))
+                }
+
+                Constants.StorageManagerState.UrlNotGet -> {
+                    trySend(UpdateChatResponse(isSuccess = false, errorMessage = it.error))
+                }
+
+                Constants.StorageManagerState.Success -> {
+                    trySend(UpdateChatResponse(true, "Video Uploaded"))
+                    val onlineVideoUri = it.url
+                    val updatedMessage = message.copy(
+                        videoUri = onlineVideoUri
+                    )
+                    if (isImagePresent) {
+                        uploadGroupImage(
+                            updatedMessage,
+                            lastMessage,
+                            chatRoomId,
+                            users,
+                            action,
+                            addedOrRemovedUserId
+                        ).onEach {
+                            trySend(it)
+                        }.launchIn(this)
+                    } else {
+                        saveGroupMessageToDatabase(
+                            updatedMessage,
+                            lastMessage,
+                            chatRoomId,
+                            users!!,
+                            action,
+                            addedOrRemovedUserId
+                        ).onEach {
+                            trySend(it)
+                        }.launchIn(this)
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun uploadGroupImage(
+        message: GroupMessage,
+        lastMessage: GroupLastMessage,
+        chatRoomId: String,
+        users: List<GroupMember>,
+        action: InfoType?,
+        addedOrRemovedUserId: String?,
+        groupInfo: GroupInfo? = null
+    ) = callbackFlow<UpdateChatResponse> {
+        trySend(UpdateChatResponse(true, "Image Uploading"))
+        val imageUri =
+            message.imageUri?.convertParseUri() ?: groupInfo?.groupPic!!.convertParseUri()
+        StorageManager.uploadImageToServer(
+            Constants.Table.Chats.name,
+            "$chatRoomId/${Constants.FolderName.ChatImage.name}",
+            imageUri
+        ).collect {
+            when (it.state) {
+                Constants.StorageManagerState.InProgress -> {
+                    trySend(UpdateChatResponse(true, "Image Uploading", progress = it.progress))
+                }
+
+                Constants.StorageManagerState.Error -> {
+                    trySend(UpdateChatResponse(isSuccess = false, errorMessage = it.error))
+                }
+
+                Constants.StorageManagerState.UrlNotGet -> {
+                    trySend(UpdateChatResponse(isSuccess = false, errorMessage = it.error))
+                }
+
+                Constants.StorageManagerState.Success -> {
+                    trySend(UpdateChatResponse(true, "Image Uploaded"))
+                    val onlineImageUri = it.url
+
+                    val updatedMessage = if (message.imageUri != null) {
+                        message.copy(
+                            imageUri = onlineImageUri
+                        )
+                    } else message
+
+                    val updatedGroupInfo = if (groupInfo?.groupPic != null) {
+                        groupInfo.copy(groupPic = onlineImageUri)
+                    } else groupInfo
+
+                    saveGroupMessageToDatabase(
+                        updatedMessage,
+                        lastMessage,
+                        chatRoomId,
+                        users,
+                        action,
+                        addedOrRemovedUserId,
+                        updatedGroupInfo
+                    ).onEach {
+                        trySend(it)
+                    }.launchIn(this)
+
+                }
+            }
+        }
+    }
+
+    private suspend fun saveGroupMessageToDatabase(
+        message: GroupMessage,
+        lastMessage: GroupLastMessage,
+        chatRoomId: String,
+        users: List<GroupMember>,
+        action: InfoType?,
+        addedOrRemovedUserId: String?,
+        groupInfo: GroupInfo? = null
+    ) = callbackFlow<UpdateChatResponse> {
+        val isImagePresent = message.imageUri != null
+        val isVideoPresent = message.videoUri != null
+        val timeStamp = System.currentTimeMillis()
+        val notificationId = Helper.getNotificationId()
+        val timeInText = Helper.formatTimestampToDateAndTime(timeStamp)
+        val isMessageContainText = !message.text.isNullOrBlank() || message.infoMessageType!=null
+        val type =
+            if (isMessageContainText) NotificationType.TextChat.name else NotificationType.MediaChat.name
+        val lastMessageType =
+            if (isMessageContainText) Constants.LastMessageType.Text.type else Constants.LastMessageType.Media.type
+        val notificationData = NotificationData(
+            notificationId = notificationId,
+            friendOrFollowerId = AuthManager.currentUserId()!!,
+            notificationTimeInText = timeInText,
+            notificationTimeInTimeStamp = timeStamp.toString(),
+            type = type,
+            chatRoomId = chatRoomId,
+            messageId = message.messageId,
+            isGroupMessage = true
+        )
+
+
+        // This is updated message
+        val updatedMessage = message.copy(
+            messageSentTimeInTimeStamp = timeStamp, messageSendTimeInText = timeInText
+        )
+        val updatedLastMessage = lastMessage.copy(
+            lastMessageSentTimeInTimeStamp = timeStamp, lastMessageSentTimeInText = timeInText
+        )
+        val updatedGroupInfo = groupInfo?.copy(
+            groupCreationDateInString = timeInText,
+            groupCreationDateInTimeStamp = timeStamp
+        )
+
+        val commonRecentChat = RecentChat(
+            chatRoomId = chatRoomId,
+            lastMessageTimeInTimeStamp = timeStamp,
+            lastMessageTimeInText = timeInText,
+            message = message.text,
+            lastMessageType = lastMessageType,
+            senderId = AuthManager.currentUserId()!!,
+            lastMessageSeen = Constants.SeenStatus.Sending.status,
+            isGroupChat = true,
+            infoMessageType = action?.name,
+            addedOrRemovedUserId = addedOrRemovedUserId
+        )
+
+
+        //For Media Reference
+        val imageMediaId = Helper.getImageMediaId(timeStamp)
+        val videoMediaId = Helper.getVideoMediaId(timeStamp)
+        val imageMediaData = ChatMediaData(
+            mediaId = imageMediaId,
+            mediaUri = message.imageUri,
+            mediaUploadingTimeInTimeStamp = timeStamp,
+            mediaUploadingTimeInText = timeInText,
+            isImage = true
+
+        )
+        val videoMediaData = ChatMediaData(
+            mediaId = videoMediaId,
+            mediaUri = message.videoUri,
+            mediaUploadingTimeInTimeStamp = timeStamp,
+            mediaUploadingTimeInText = timeInText,
+            isImage = false
+        )
+
+
+        val imageMediaRef =
+            chatRef.document(chatRoomId).collection(Table.Media.name).document(imageMediaId)
+        val videoMediaRef =
+            chatRef.document(chatRoomId).collection(Table.Media.name).document(videoMediaId)
+        val lastMessageRef = chatRef.document(chatRoomId)
+
+        val messageRef = chatRef.document(chatRoomId).collection(Table.Messages.name)
+            .document(message.messageId!!)
+        val groupInfoRef =
+            chatRef.document(chatRoomId).collection(Table.GroupInfo.name).document(chatRoomId)
+
+        val isLastMessageExist = lastMessageRef.get().await().exists()
+        val isChatRoomExist = chatRef.document(chatRoomId).get().await().exists()
+
+
+        //In transaction all read come first then after all write come
+        // Firebase firestore transaction is much slower then batch write because transaction run sequence
+
+        firestore.runBatch { batch ->
+            val timeTakingToCalculate = measureTimeMillis {
+                if (!isChatRoomExist) {
+                    users.mapNotNull { it.memberId }.forEach {
+                        batch.set(
+                            chatRef.document(chatRoomId).collection(Table.GroupMember.name)
+                                .document(it), GroupMember(it)
+                        )
+                    }
+                }
+
+                if (updatedGroupInfo != null) {
+                    batch.set(groupInfoRef, updatedGroupInfo)
+                }
+                if (isImagePresent) {
+                    batch.set(imageMediaRef, imageMediaData)
+                }
+                if (isVideoPresent) {
+                    batch.set(videoMediaRef, videoMediaData)
+                }
+                if (isLastMessageExist) {
+                    batch.update(
+                        lastMessageRef,
+                        updatedLastMessage.toNormalMap().filterValues { it != null })
+                } else {
+                    batch.set(lastMessageRef, updatedLastMessage)
+                }
+                batch.set(messageRef, updatedMessage)
+            }
+            MyLogger.v(tagChat, msg = "Time taken to calculate $timeTakingToCalculate")
+
+
+        }.addOnSuccessListener {
+
+            trySend(UpdateChatResponse(isSuccess = true, errorMessage = ""))
+
+            launch {
+                updateRecentChat(users.mapNotNull { it.memberId }, commonRecentChat, chatRoomId)
+            }
+            if (groupInfo==null){
+                launch {
+                    sendNotificationToAllOfflineMember(users,notificationData)
+                }
+            }
+
+
+        }.addOnFailureListener {
+            trySend(UpdateChatResponse(isSuccess = false, errorMessage = it.message))
+
+        }.await()
+
+        awaitClose {
+            close()
+        }
+    }
+
+    private suspend fun sendNotificationToAllOfflineMember(users: List<GroupMember>, notificationData: NotificationData) {
+       users.mapNotNull { if (it.isOnline==false) it else null }.forEach {
+           launchCoroutineInIOThread {
+               NotificationSendingManager.sendNotification(
+                   it.memberId!!, notificationData
+               )
+           }
+       }
+    }
+
+    private suspend fun updateRecentChat(
+        users: List<String>,
+        commonRecentChat: RecentChat,
+        chatRoomId: String
+    ) {
+        launchCoroutineInIOThread {
+            // Use supervisorScope to launch child coroutines in parallel and handle their exceptions independently
+            supervisorScope {
+                users.forEach { userId ->
+                    launch {
+                        try {
+                            val recentChatRef=userRef.document(userId).collection(Table.RecentChat.name)
+                                .document(chatRoomId)
+                            val previousRecentChatData=recentChatRef.get().await().toObject<RecentChat>()
+
+                           val updatedRecentChatData= if (previousRecentChatData == null) {
+                                //Document doesn't exist
+                                // Do nothing
+                               commonRecentChat
+                            } else {
+                                //Document exist
+                                val unSeenMessageCount = previousRecentChatData.unSeenMessageCount?.plus(1) ?: 0
+                                commonRecentChat.copy(
+                                    unSeenMessageCount = unSeenMessageCount
+                                )
+                            }
+                            val recentMessageRefForReceiver =recentChatRef
+                                .set(updatedRecentChatData).await()
+                            // Handle the result if needed
+                        } catch (e: Exception) {
+                            // Handle exceptions if needed
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    suspend fun deleteMessage(
+        message: GroupMessage,
+        chatRoomId: String,
+        users: List<String>,
+        lastMessage: GroupLastMessage?,
+        secondLastMessage: GroupMessage? = null
+    ) = callbackFlow<UpdateResponse> {
+
+        val isImagePresent = message.imageUri != null
+        val isVideoPresent = message.videoUri != null
+
+        val deleteImageUrl = message.imageUri?.let { firebaseStorage.getReferenceFromUrl(it) }
+        val deleteVideoUrl = message.videoUri?.let { firebaseStorage.getReferenceFromUrl(it) }
+
+        val timeStamp = message.messageSentTimeInTimeStamp!!
+        val imageMediaId = Helper.getImageMediaId(timeStamp)
+        val videoMediaId = Helper.getVideoMediaId(timeStamp)
+
+        val imageMediaRef =
+            chatRef.document(chatRoomId).collection(Table.Media.name).document(imageMediaId)
+        val videoMediaRef =
+            chatRef.document(chatRoomId).collection(Table.Media.name).document(videoMediaId)
+        val lastMessageRef = chatRef.document(chatRoomId)
+
+
+        if (secondLastMessage != null) {
+            // need to update last message , recent chat
+            //For My Recent Chat
+            val timeStamp = secondLastMessage.messageSentTimeInTimeStamp
+            val timeInText = secondLastMessage.messageSendTimeInText
+            val lastMessageType = secondLastMessage.messageType
+            val commonRecentChat = RecentChat(
+                chatRoomId = chatRoomId,
+                lastMessageTimeInTimeStamp = timeStamp,
+                lastMessageTimeInText = timeInText,
+                message = secondLastMessage.text,
+                lastMessageType = lastMessageType,
+                senderId = secondLastMessage.senderId,
+                lastMessageSeen = secondLastMessage.seenStatus,
+                infoMessageType = secondLastMessage.infoMessageType
+            )
+
+
+            val messageRef = chatRef.document(chatRoomId).collection(Table.Messages.name)
+                .document(message.messageId!!)
+            val lastMessageRef = chatRef.document(chatRoomId)
+
+            firestore.runBatch { batch ->
+                if (isImagePresent) {
+                    deleteImageUrl?.delete()
+                    batch.delete(imageMediaRef)
+                }
+                if (isVideoPresent) {
+                    deleteVideoUrl?.delete()
+                    batch.delete(videoMediaRef)
+                }
+
+                batch.delete(messageRef)
+                batch.update(lastMessageRef,
+                    lastMessage!!.toNormalMap().filterValues { it != null })
+            }.addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+                launch {
+                    updateRecentChat(users, commonRecentChat, chatRoomId)
+                }
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+
+
+        } else {
+            // just delete message no need to update any thing
+            val messageDeleteRef = chatRef.document(chatRoomId).collection(Table.Messages.name)
+                .document(message.messageId!!)
+            firestore.runBatch {
+                if (isImagePresent) {
+                    deleteImageUrl?.delete()
+                    it.delete(imageMediaRef)
+                }
+                if (isVideoPresent) {
+                    deleteVideoUrl?.delete()
+                    it.delete(videoMediaRef)
+                }
+
+                it.delete(messageDeleteRef)
+            }.addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun clearChats(chatRoomId: String, users: List<String>) = callbackFlow<UpdateResponse> {
+
+        StorageManager.deleteMediaOfChats(chatRoomId).onEach {
+            if (it.isSuccess) {
+                MyLogger.i(tagChat, msg = "All Media is deleted !!")
+            } else {
+                MyLogger.e(tagChat, msg = it.errorMessage)
+            }
+
+            val chatRoomIdRef = chatRef.document(chatRoomId)
+            val chatMediaRef = chatRoomIdRef.collection(Table.Media.name)
+            val chatMessageRef = chatRoomIdRef.collection(Table.Messages.name)
+
+
+            firestore.runBatch { batch ->
+                batch.delete(chatRoomIdRef)
+                users.forEach {
+                    batch.delete(
+                        userRef.document(it).collection(Table.RecentChat.name).document(chatRoomId)
+                    )
+                }
+            }.addOnSuccessListener {
+                launch {
+                    deleteCollection(listOf(chatMediaRef, chatMessageRef)).onEach {
+                        trySend(it)
+                    }.launchIn(this)
+                }
+
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+
+        }.launchIn(this)
+
+
+        awaitClose {
+            close()
+        }
+    }
+
+
+    suspend fun getGroupChatMessageAndListen(chatRoomId: String) =
+        callbackFlow<ListenerEmissionType<GroupMessage, GroupMessage>> {
+            val messageRef = chatRef.document(chatRoomId).collection(Table.Messages.name)
+
+            val messageList =
+                messageRef.get().await().toObjects(GroupMessage::class.java).toMutableList()
+
+            trySend(
+                ListenerEmissionType(
+                    Constants.ListenerEmitType.Starting, responseList = messageList.toList()
+                )
+            )
+
+            messageList.clear()
+            chatMessageListener?.remove()
+            isFirstTimeChatMessageListener =
+                true  // This is need because we listen this flow on viewmodel and view model not destroy until view not destroy properly
+            chatMessageListener = messageRef.addSnapshotListener { value, error ->
+                if (error != null) {
+                    return@addSnapshotListener
+                }
+                if (isFirstTimeChatMessageListener) {
+                    isFirstTimeChatMessageListener = false
+                    return@addSnapshotListener
+                }
+                value?.documentChanges?.forEach {
+                    when (it.type) {
+                        DocumentChange.Type.ADDED -> {
+                            trySend(
+                                ListenerEmissionType(
+                                    Constants.ListenerEmitType.Added,
+                                    singleResponse = it.document.toObject<GroupMessage>()
+                                )
+                            )
+                        }
+
+                        DocumentChange.Type.MODIFIED -> {
+                            trySend(
+                                ListenerEmissionType(
+                                    Constants.ListenerEmitType.Modify,
+                                    singleResponse = it.document.toObject<GroupMessage>()
+                                )
+                            )
+                        }
+
+                        DocumentChange.Type.REMOVED -> {
+                            trySend(
+                                ListenerEmissionType(
+                                    Constants.ListenerEmitType.Removed,
+                                    singleResponse = it.document.toObject<GroupMessage>()
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            awaitClose {
+                chatMessageListener?.remove()
+                isFirstTimeChatMessageListener = true
+                close()
+            }
+        }
+
+    suspend fun getGroupMemberInfo(chatRoomId: String) =
+        callbackFlow<ListenerEmissionType<GroupMemberDetails, GroupMemberDetails>> {
+            val memberRef = chatRef.document(chatRoomId).collection(Table.GroupMember.name)
+
+            val memberList =
+                memberRef.get().await().toObjects(GroupMember::class.java).mapNotNull {
+                    UserManager.getUserById(it.memberId!!)
+                        ?.let { it1 -> GroupMemberDetails(it, it1) }
+                }.toMutableList()
+
+            trySend(
+                ListenerEmissionType(
+                    Constants.ListenerEmitType.Starting, responseList = memberList.toList()
+                )
+            )
+
+            memberList.clear()
+            groupMemberListener?.remove()
+            isFirstTimeGroupMemberListener =
+                true  // This is need because we listen this flow on viewmodel and view model not destroy until view not destroy properly
+            groupMemberListener = memberRef.addSnapshotListener { value, error ->
+                if (error != null) {
+                    return@addSnapshotListener
+                }
+                if (isFirstTimeGroupMemberListener) {
+                    isFirstTimeGroupMemberListener = false
+                    return@addSnapshotListener
+                }
+                value?.documentChanges?.forEach {
+                    when (it.type) {
+                        DocumentChange.Type.ADDED -> {
+                            launch {
+                                trySend(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Added,
+                                        singleResponse = it.document.toObject<GroupMember>().run {
+                                            GroupMemberDetails(
+                                                this,
+                                                UserManager.getUserById(this.memberId!!)!!
+                                            )
+                                        }
+                                    )
+                                )
+                            }
+
+                        }
+
+                        DocumentChange.Type.REMOVED -> {
+                            launch {
+                                trySend(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Removed,
+                                        singleResponse = it.document.toObject<GroupMember>().run {
+                                            GroupMemberDetails(
+                                                this,
+                                                UserManager.getUserById(this.memberId!!)!!
+                                            )
+                                        }
+                                    )
+                                )
+                            }
+                        }
+
+                        DocumentChange.Type.MODIFIED -> {
+                            launch {
+                                trySend(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Modify,
+                                        singleResponse = it.document.toObject<GroupMember>().run {
+                                            GroupMemberDetails(
+                                                this,
+                                                UserManager.getUserById(this.memberId!!)!!
+                                            )
+                                        }
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            awaitClose {
+                groupMemberListener?.remove()
+                isFirstTimeGroupMemberListener = true
+                close()
+            }
+        }
+
+    suspend fun getGroupInfo(chatRoomId: String) =
+        callbackFlow<GroupInfo?> {
+            val groupInfoRef =
+                chatRef.document(chatRoomId).collection(Table.GroupInfo.name).document(chatRoomId)
+
+            groupInfoRef.addSnapshotListener { value, error ->
+                if (error != null) {
+                    return@addSnapshotListener
+                }
+                value?.let {
+                    trySend(
+                        it.toObject<GroupInfo>()
+                    )
+                }
+            }
+            awaitClose {
+                close()
+            }
+        }
+
+    suspend fun getGroupInfoWithoutAsync(chatRoomId: String) =
+        chatRef.document(chatRoomId).collection(Table.GroupInfo.name).document(chatRoomId).get()
+            .await().toObject<GroupInfo>()
+
+    suspend fun updateGroupMemberOnlineStatus(chatRoomId: String,status:Boolean){
+        chatRef.document(chatRoomId).collection(Table.GroupMember.name).document(AuthManager.currentUserId()!!).set(GroupMember(AuthManager.currentUserId()!!,status)).await()
+    }
+
+    //endregion
 
 }
 private typealias MessageType = Constants.PostType
