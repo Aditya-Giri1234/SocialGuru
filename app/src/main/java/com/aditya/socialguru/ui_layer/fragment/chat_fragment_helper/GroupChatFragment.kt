@@ -108,6 +108,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     private val onlyGroupMembers  get() = groupMembers.mapNotNull { it.memberId }.filter { it!=senderId }
 
 
+
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
     }
@@ -203,6 +204,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                             setChatMessageList(it)
                         }
                         chatViewModel.listenNewMessage(chatRoomId)
+
                     }
 
                     is Resource.Loading -> {
@@ -264,6 +266,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
             }.launchIn(this)
 
             chatViewModel.sendGroupMessage.onEach { response ->
+
                 when (response) {
                     is Resource.Success -> {
                         response.data?.let {
@@ -304,6 +307,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()
+
                     }
 
                     is Resource.Loading -> {
@@ -333,6 +337,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                     }
                 }
             }.launchIn(this)
+
 
             binding.etMessage.getQueryTextChangeStateFlow().debounce(100).distinctUntilChanged()
                 .flatMapLatest {
@@ -559,6 +564,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
             messageSendTimeInText = timeInText,
             seenStatus = Constants.SeenStatus.Sending.status,
             sendTimeUsers = onlyGroupMembers
+
         )
         val lastMessage = GroupLastMessage(
             senderId = senderId,
@@ -640,6 +646,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
             addedOrRemovedUserId = secondLastMessage.addedOrRemovedUserId
         )
         chatViewModel.clearGroupChat(chatRoomId, groupMembers.mapNotNull { it.memberId } ,lastMessage,secondLastMessage)
+
     }
 
     private fun showDialog() {

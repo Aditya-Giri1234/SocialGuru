@@ -988,6 +988,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
+
     //endregion
 
     fun setDataLoadedStatus(status: Boolean) {

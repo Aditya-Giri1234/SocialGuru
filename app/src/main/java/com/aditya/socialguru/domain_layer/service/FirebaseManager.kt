@@ -198,6 +198,7 @@ object FirebaseManager {
     suspend fun clearChats(chatRoomId: String, users: List<String>, lastMessage: GroupLastMessage,
                            secondLastMessage: GroupMessage) = ChatManager.clearChats(chatRoomId, users ,lastMessage,secondLastMessage)
 
+
     suspend fun getGroupChatMessageAndListen(chatRoomId: String) = ChatManager.getGroupChatMessageAndListen(chatRoomId)
 
     suspend fun getGroupMemberInfo(chatRoomId: String) = ChatManager.getGroupMemberInfo(chatRoomId)
@@ -212,6 +213,7 @@ object FirebaseManager {
         chatRoomId: String,
         senderId: String
     ) = ChatManager.updateGroupReceivedStatus(messageId,chatRoomId,senderId)
+
 
     //endregion
 }

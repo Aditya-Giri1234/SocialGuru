@@ -12,9 +12,7 @@ data class NotificationData(
     val chatRoomId:String?=null,
     val messageId:String?=null,
 
-
     //For Group Chat
     @field:JvmField
     val isGroupMessage:String?=null // Data in string when sending to fcm notification
-
 )

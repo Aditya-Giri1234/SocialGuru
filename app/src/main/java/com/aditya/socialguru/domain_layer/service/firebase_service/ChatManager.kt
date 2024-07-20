@@ -84,7 +84,6 @@ object ChatManager {
 
     private var listenNewMessageListener: ListenerRegistration? = null
 
-
     suspend fun sentMessage(
         message: Message,
         lastMessage: LastMessage,
@@ -795,13 +794,10 @@ object ChatManager {
                                     )
                                 )
                             }
-
                         }
                     }
                 }
             }
-
-
             awaitClose {
                 recentChatListener?.remove()
                 isFirstTimeRecentChatListener = true
@@ -1150,7 +1146,6 @@ object ChatManager {
             .document(message.messageId!!)
         val groupInfoRef =
             chatRef.document(chatRoomId).collection(Table.GroupInfo.name).document(chatRoomId)
-
         val isChatRoomExist = chatRef.document(chatRoomId).get().await().exists()
 
 
@@ -1178,6 +1173,7 @@ object ChatManager {
                     batch.set(videoMediaRef, videoMediaData)
                 }
                 if (isChatRoomExist) {
+
                     batch.update(
                         lastMessageRef,
                         updatedLastMessage.toNormalMap().filterValues { it != null })
@@ -1485,6 +1481,7 @@ object ChatManager {
                         deleteAllMessageFromGroup(chatRoomId).onEach {
                             trySend(it)
                         }.launchIn(this)
+
                     }.launchIn(this)
                 }
 
@@ -1552,6 +1549,7 @@ object ChatManager {
         }
         awaitClose { close() }
     }
+
 
 
     suspend fun getGroupChatMessageAndListen(chatRoomId: String) =
@@ -1907,6 +1905,7 @@ object ChatManager {
 
 
 //endregion
+
 
 }
 private typealias MessageType = Constants.PostType

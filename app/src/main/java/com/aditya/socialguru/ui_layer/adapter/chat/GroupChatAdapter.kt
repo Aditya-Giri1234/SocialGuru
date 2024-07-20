@@ -567,4 +567,5 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
         }
     }
 
+
 }

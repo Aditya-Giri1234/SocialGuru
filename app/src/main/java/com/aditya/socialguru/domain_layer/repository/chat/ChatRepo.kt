@@ -70,6 +70,7 @@ class ChatRepo {
     suspend fun clearChats(chatRoomId: String, users: List<String>, lastMessage: GroupLastMessage,
     secondLastMessage: GroupMessage) = FirebaseManager.clearChats(chatRoomId, users , lastMessage,secondLastMessage)
 
+
     suspend fun getGroupChatMessageAndListen(chatRoomId: String) = FirebaseManager.getGroupChatMessageAndListen(chatRoomId)
 
     suspend fun getGroupMemberInfo(chatRoomId: String) = FirebaseManager.getGroupMemberInfo(chatRoomId)
@@ -79,8 +80,6 @@ class ChatRepo {
     suspend fun updateGroupMemberOnlineStatus(chatRoomId: String,status:Boolean) = FirebaseManager.updateGroupMemberOnlineStatus(chatRoomId,status)
 
     suspend fun listenNewMessage(chatRoomId: String) = FirebaseManager.listenNewMessage(chatRoomId)
-
-
 
 
 }
