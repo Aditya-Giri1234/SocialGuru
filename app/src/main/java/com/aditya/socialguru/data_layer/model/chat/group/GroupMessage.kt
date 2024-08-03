@@ -12,5 +12,8 @@ data class GroupMessage(
     val messageSendTimeInText:String?=null,
     var seenStatus:String?=null,
     val infoMessageType:String?=null,
-    val addedOrRemovedUserId:String?=null
+    val addedOrRemovedUserId:String?=null,
+    val sendTimeUsers:List<String>?=null,
+    val messageReceivedByUsers:List<String>?=null,
+    val messageSeenByUsers:List<String>?=null
 )

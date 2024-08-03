@@ -46,6 +46,40 @@ object FcmDataHandling : HandleJsonData {
             Constants.NotificationType.MediaChat.name -> {
                 handleMediaChatMessage(notificationData,context)
             }
+            Constants.NotificationType.GroupTextChat.name -> {
+                handleGroupTextChatMessage(notificationData,context)
+            }
+            Constants.NotificationType.GroupMediaChat.name -> {
+                handleGroupMediaChatMessage(notificationData,context)
+            }
+        }
+    }
+
+    private fun handleGroupMediaChatMessage(notificationData: NotificationData, context: Context) {
+
+    }
+
+    private fun handleGroupTextChatMessage(notificationData: NotificationData, context: Context) {
+        val userId=notificationData.friendOrFollowerId!!   // senderId
+        val messageId=notificationData.messageId!!
+        val chatRoomId=notificationData.chatRoomId!!
+        launchCoroutineInIOThread {
+            val messageData=async {  FirebaseManager.getMessageById(chatRoomId,messageId).first()}
+            val userData=async {  FirebaseManager.getUser(userId).first().data }
+            val user=userData.await()
+            val message=messageData.await()
+            if (user!=null){
+                FirebaseManager.updateSeenStatus(Constants.SeenStatus.Received.status,messageId,chatRoomId ,notificationData.friendOrFollowerId)
+               /* if (!FirebaseManager.isUserMuted(userId)){
+                    MyNotificationManager.showTextChatMessage(user,notificationData ,message,context)
+                    MyNotificationManager.showGroupSummaryNotification(context)
+                }else{
+                    MyLogger.w(Constants.LogTag.Notification, msg = "Notification come of chat but sender is muted so that no notification show !")
+                }*/
+
+                MyNotificationManager.showTextChatMessage(user,notificationData ,message,context)
+            }
+
         }
     }
 
@@ -56,14 +90,11 @@ object FcmDataHandling : HandleJsonData {
         launchCoroutineInIOThread {
             val messageData=async {  FirebaseManager.getMessageById(chatRoomId,messageId).first()}
             val userData=async {  FirebaseManager.getUser(userId).first().data }
-
         }
-
-
     }
 
     private fun handleTextChatMessage(notificationData: NotificationData, context: Context) {
-        val userId=notificationData.friendOrFollowerId!!
+        val userId=notificationData.friendOrFollowerId!!   // senderId
         val messageId=notificationData.messageId!!
         val chatRoomId=notificationData.chatRoomId!!
         launchCoroutineInIOThread {

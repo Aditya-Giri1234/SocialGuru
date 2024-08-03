@@ -205,6 +205,24 @@ object Constants {
         USER_ID("userId")
     }
 
+    enum class GroupMessageTable(val fieldName: String){
+        MESSAGE_ID("messageId"),
+        MESSAGE_TYPE("messageType"),
+        CHAT_TYPE("chatType"),
+        TEXT("text"),
+        IMAGE_URI("imageUri"),
+        VIDEO_URI("videoUri"),
+        SENDER_ID("senderId"),
+        MESSAGE_SENT_TIME_IN_TIMESTAMP("messageSentTimeInTimeStamp"),
+        MESSAGE_SEND_TIME_IN_TEXT("messageSendTimeInText"),
+        SEEN_STATUS("seenStatus"),
+        INFO_MESSAGE_TYPE("infoMessageType"),
+        ADDED_OR_REMOVED_USER_ID("addedOrRemovedUserId"),
+        SEND_TIME_USERS("sendTimeUsers"),
+        MESSAGE_RECEIVED_BY_USERS("messageReceivedByUsers"),
+        MESSAGE_SEEN_BY_USERS("messageSeenByUsers")
+    }
+
     //Message Type in chat which help to differentiate between date header and message
 
     enum class MessageType(val type:String){
@@ -265,7 +283,9 @@ object Constants {
         LIKE_IN_POST,
         COMMENT_IN_POST,
         TextChat,
-        MediaChat
+        MediaChat,
+        GroupTextChat,
+        GroupMediaChat
     }
 
     // NotificationPriority

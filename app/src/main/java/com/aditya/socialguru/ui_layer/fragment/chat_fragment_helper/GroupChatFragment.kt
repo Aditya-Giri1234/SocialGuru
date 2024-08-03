@@ -540,7 +540,9 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
             senderId = senderId,
             messageSentTimeInTimeStamp = timeStamp,
             messageSendTimeInText = timeInText,
-            seenStatus = Constants.SeenStatus.Sending.status
+            seenStatus = Constants.SeenStatus.Sending.status,
+            sendTimeUsers = groupMembers.mapNotNull { it.memberId }
+
         )
         val lastMessage = GroupLastMessage(
             senderId = senderId,
