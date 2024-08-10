@@ -274,7 +274,6 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
 
             }.launchIn(this)
 
-
             chatViewModel.clearChat.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
@@ -292,6 +291,22 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                     }
                 }
 
+            }.launchIn(this)
+            chatViewModel.deleteMessage.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        showSnackBar(response.message, false)
+                    }
+                }
             }.launchIn(this)
 
             binding.etMessage.getQueryTextChangeStateFlow().debounce(100).distinctUntilChanged()
@@ -686,24 +701,29 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
 
     private fun deleteThisMessage(deleteMessage: Message?) {
         deleteMessage?.let {
-            if (chatAdapter.itemCount == 1) {
+            if (chatAdapter.countNonHeaderMessages() == 1) {
                 clearChat()
             } else {
                 when {
                     chatAdapter.findMessageIndex(it) == chatAdapter.itemCount - 1 -> {
                         //User want to delete  last message so need to update last message on chat room and recent chat data in both parties
                         val secondLastMessage = chatAdapter.giveMeSecondLastMessage()
-                        val lastMessage = LastMessage(
-                            senderId = secondLastMessage.senderId,
-                            receiverId = secondLastMessage.receiverId,
-                            messageType = secondLastMessage.messageType,
-                            chatType = secondLastMessage.chatType,
-                            message = secondLastMessage.text,
-                            lastMessageSentTimeInTimeStamp = secondLastMessage.messageSentTimeInTimeStamp,
-                            lastMessageSentTimeInText = secondLastMessage.messageSendTimeInText,
-                            isUser1Online = findUserAvailability(true),
-                            isUser2Online = findUserAvailability(false),
-                        )
+                        val lastMessage=if (secondLastMessage!=null){
+                            LastMessage(
+                                senderId = secondLastMessage.senderId,
+                                receiverId = secondLastMessage.receiverId,
+                                messageType = secondLastMessage.messageType,
+                                chatType = secondLastMessage.chatType,
+                                message = secondLastMessage.text,
+                                lastMessageSentTimeInTimeStamp = secondLastMessage.messageSentTimeInTimeStamp,
+                                lastMessageSentTimeInText = secondLastMessage.messageSendTimeInText,
+                                isUser1Online = findUserAvailability(true),
+                                isUser2Online = findUserAvailability(false),
+                            )
+                        }else{
+                            LastMessage()
+                        }
+
 
                         chatViewModel.deleteMessage(
                             it,

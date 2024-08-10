@@ -14,6 +14,7 @@ data class NotificationData(
 
 
     //For Group Chat
-    val isGroupMessage:Boolean?=null
+    @field:JvmField
+    val isGroupMessage:String?=null // Data in string when sending to fcm notification
 
 )

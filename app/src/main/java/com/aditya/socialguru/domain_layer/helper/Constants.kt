@@ -104,7 +104,8 @@ object Constants {
         ChatMuteNotification ,
         GroupChat ,
         GroupMember ,
-        GroupInfo
+        GroupInfo,
+        UnSeenMessage
     }
 
     enum class FriendStatus {

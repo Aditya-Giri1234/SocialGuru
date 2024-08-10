@@ -60,16 +60,16 @@ object FcmDataHandling : HandleJsonData {
     }
 
     private fun handleGroupTextChatMessage(notificationData: NotificationData, context: Context) {
-        val userId=notificationData.friendOrFollowerId!!   // senderId
+        val senderId=notificationData.friendOrFollowerId!!
         val messageId=notificationData.messageId!!
         val chatRoomId=notificationData.chatRoomId!!
         launchCoroutineInIOThread {
             val messageData=async {  FirebaseManager.getMessageById(chatRoomId,messageId).first()}
-            val userData=async {  FirebaseManager.getUser(userId).first().data }
+            val userData=async {  FirebaseManager.getUser(senderId).first().data }
             val user=userData.await()
             val message=messageData.await()
             if (user!=null){
-                FirebaseManager.updateSeenStatus(Constants.SeenStatus.Received.status,messageId,chatRoomId ,notificationData.friendOrFollowerId)
+                FirebaseManager.updateGroupReceivedStatus(messageId,chatRoomId,senderId)
                /* if (!FirebaseManager.isUserMuted(userId)){
                     MyNotificationManager.showTextChatMessage(user,notificationData ,message,context)
                     MyNotificationManager.showGroupSummaryNotification(context)

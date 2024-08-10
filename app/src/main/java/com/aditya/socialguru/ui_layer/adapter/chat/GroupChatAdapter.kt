@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
 import com.aditya.socialguru.data_layer.model.post.PostImageVideoModel
 import com.aditya.socialguru.databinding.ChatMessageDateHeaderBinding
@@ -518,13 +519,52 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
 
 
     fun findMessageIndex(message: GroupMessage) = differ.currentList.indexOf(message)
-    fun giveMeSecondLastMessage(): GroupMessage =
-        differ.currentList[differ.currentList.size - 2].let {
-            if (it.messageType == Constants.MessageType.DateHeader.type) {
-                differ.currentList[differ.currentList.size - 3]
-            } else {
-                it
+    fun giveMeSecondLastMessage(): GroupMessage? {
+        // Ensure the list has at least two messages
+        if (differ.currentList.size < 2) return null
+
+        // Start from the second-to-last position
+        var index = differ.currentList.size - 2
+
+        // Find the second-to-last non-date-header message
+        while (index >= 0) {
+            val message = differ.currentList[index]
+            if (message.messageType != Constants.MessageType.DateHeader.type) {
+                return message
             }
+            index--
         }
+
+        // If no valid message found, return null
+        return null
+    }
+
+    fun giveMeInfoMessageFromLast(): GroupMessage? {
+        // Ensure the list has at least two messages
+        if (differ.currentList.size < 2) return null
+
+        // Start from the second-to-last position
+        var index = differ.currentList.size - 2
+
+        // Find the second-to-last non-date-header message
+        while (index >= 0) {
+            val message = differ.currentList[index]
+            if (message.messageType == Constants.MessageType.Info.type) {
+                return message
+            }
+            index--
+        }
+
+        // If no valid message found, return null
+        return null
+    }
+
+
+    fun countNonHeaderAndNonInfoMessages(): Int {
+        // Filter out messages that are neither info nor date headers
+        return differ.currentList.count {
+            it.messageType == Constants.MessageType.Chat.type
+        }
+    }
 
 }

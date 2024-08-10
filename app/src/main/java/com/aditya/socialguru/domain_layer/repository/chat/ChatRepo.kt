@@ -67,7 +67,8 @@ class ChatRepo {
         secondLastMessage: GroupMessage? = null
     ) = FirebaseManager.deleteMessage(message, chatRoomId, users, lastMessage, secondLastMessage)
 
-    suspend fun clearChats(chatRoomId: String, users: List<String>) = FirebaseManager.clearChats(chatRoomId, users)
+    suspend fun clearChats(chatRoomId: String, users: List<String>, lastMessage: GroupLastMessage,
+    secondLastMessage: GroupMessage) = FirebaseManager.clearChats(chatRoomId, users , lastMessage,secondLastMessage)
 
     suspend fun getGroupChatMessageAndListen(chatRoomId: String) = FirebaseManager.getGroupChatMessageAndListen(chatRoomId)
 
@@ -76,6 +77,10 @@ class ChatRepo {
     suspend fun getGroupInfo(chatRoomId: String) = FirebaseManager.getGroupInfo(chatRoomId)
 
     suspend fun updateGroupMemberOnlineStatus(chatRoomId: String,status:Boolean) = FirebaseManager.updateGroupMemberOnlineStatus(chatRoomId,status)
+
+    suspend fun listenNewMessage(chatRoomId: String) = FirebaseManager.listenNewMessage(chatRoomId)
+
+
 
 
 }

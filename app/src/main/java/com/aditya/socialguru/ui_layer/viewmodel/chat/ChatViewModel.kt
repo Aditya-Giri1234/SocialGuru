@@ -25,6 +25,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
+import com.aditya.socialguru.domain_layer.manager.SoftwareManager.isNetworkAvailable
 import com.aditya.socialguru.domain_layer.repository.chat.ChatRepo
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
@@ -479,12 +480,6 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 it.singleResponse?.let { modifiedMessage ->
                     val existingMessage =
                         recentChatList.find { it.user?.userId == modifiedMessage.user?.userId }
-                    MyLogger.w(
-                        tagChat,
-                        msg = existingMessage,
-                        isJson = true,
-                        jsonTitle = "Existing Message"
-                    )
                     existingMessage?.apply {
                         recentChat = recentChat?.copy(
                             chatRoomId = modifiedMessage.recentChat?.chatRoomId,
@@ -496,7 +491,16 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                             receiverId = modifiedMessage.recentChat?.receiverId,
                             senderId = modifiedMessage.recentChat?.senderId,
                             userId = modifiedMessage.recentChat?.userId,
-                            lastMessageSeen = modifiedMessage.recentChat?.lastMessageSeen
+                            lastMessageSeen = modifiedMessage.recentChat?.lastMessageSeen,
+                            infoMessageType = modifiedMessage.recentChat?.infoMessageType,
+                            isGroupChat = modifiedMessage.recentChat?.isGroupChat,
+                            addedOrRemovedUserId = modifiedMessage.recentChat?.addedOrRemovedUserId
+                        )
+                        MyLogger.w(
+                            tagChat,
+                            msg = existingMessage,
+                            isJson = true,
+                            jsonTitle = "Existing Message"
                         )
                         // Ensure the list remains sorted by message timestamp
                         recentChatList.sortBy { recentChat -> recentChat.recentChat?.lastMessageTimeInTimeStamp }
@@ -528,7 +532,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 message, chatRoomId, userId, lastMessage, secondLastMessage
             ).onEach {
                 MyLogger.i(
-                    tagChat, msg = it, isJson = true, jsonTitle = "Message sent response come"
+                    tagChat, msg = it, isJson = true, jsonTitle = "Delete message response come"
                 )
                 if (it.isSuccess) {
                     _deleteMessage.tryEmit(Resource.Success(it))
@@ -923,6 +927,66 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
          }
      }
 
+     fun listenNewMessage(chatRoomId: String) = viewModelScope.myLaunch {
+         if (isNetworkAvailable(app)){
+             repository.listenNewMessage(chatRoomId).onEach {
+// Don't do anything here
+             }.launchIn(this)
+         }else{
+             MyLogger.e(tagChat, msg = "Internet Off so that user status update failed!")
+         }
+     }
+
+    fun deleteGroupMessage(
+        message: GroupMessage,
+        chatRoomId: String,
+        users: List<String>,
+        lastMessage: GroupLastMessage?,
+        secondLastMessage: GroupMessage? = null
+    ) = viewModelScope.myLaunch {
+        _deleteGroupMessage.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.deleteMessage(
+                message, chatRoomId, users, lastMessage, secondLastMessage
+            ).onEach {
+                MyLogger.i(
+                    tagChat, msg = it, isJson = true, jsonTitle = "Delete Message Response Come"
+                )
+                if (it.isSuccess) {
+                    _deleteGroupMessage.tryEmit(Resource.Success(it))
+                } else {
+                    _deleteGroupMessage.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+        } else {
+            _deleteGroupMessage.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    fun clearGroupChat(
+        chatRoomId: String, users: List<String>,lastMessage: GroupLastMessage,
+        secondLastMessage: GroupMessage
+    ) = viewModelScope.myLaunch {
+        _clearGroupChat.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.clearChats(
+                chatRoomId, users ,lastMessage,secondLastMessage
+            ).onEach {
+                MyLogger.i(
+                    tagChat, msg = it, isJson = true, jsonTitle = "Clear all message response come"
+                )
+                if (it.isSuccess) {
+                    _clearGroupChat.tryEmit(Resource.Success(it))
+                } else {
+                    _clearGroupChat.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+        } else {
+            _clearGroupChat.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
 
     //endregion
 

@@ -12,6 +12,7 @@ import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMember
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMemberDetails
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
+import com.aditya.socialguru.data_layer.model.chat.group.UnSeenMessageModel
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
@@ -32,9 +33,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
 import com.google.firebase.storage.FirebaseStorage
-import com.google.rpc.context.AttributeContext.Auth
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
@@ -78,6 +81,8 @@ object ChatManager {
 
     private var groupMemberListener: ListenerRegistration? = null
     private var isFirstTimeGroupMemberListener = true
+
+    private var listenNewMessageListener: ListenerRegistration? = null
 
 
     suspend fun sentMessage(
@@ -665,94 +670,6 @@ object ChatManager {
         }
     }
 
-    // This function handle update status of group message ( Receiving or Seen)
-    fun updateGroupSeenStatus(
-        status: String,
-        messageId: String,
-        chatRoomId: String,
-        senderId: String
-    ) {
-        launchCoroutineInIOThread {
-            val messageRef =
-                chatRef.document(chatRoomId).collection(Table.Messages.name).document(messageId)
-            val messageData = messageRef.get().await().toObject<GroupMessage>()
-                ?: return@launchCoroutineInIOThread
-            val myRecentChatRef =
-                userRef.document(AuthManager.currentUserId()!!).collection(Table.RecentChat.name)
-                    .document(chatRoomId)
-            val senderRecentChatRef =
-                userRef.document(senderId).collection(Table.RecentChat.name).document(chatRoomId)
-
-            val isRecentChatUpdateNeeded = async {
-                val senderRecentChatData =
-                    userRef.document(senderId).collection(Table.RecentChat.name)
-                        .document(chatRoomId).get().await().toObject<RecentChat>()
-                        ?: return@async false
-
-                return@async messageData.messageSentTimeInTimeStamp == senderRecentChatData.lastMessageTimeInTimeStamp
-            }.await()
-
-
-            val (seenStatus, updatedMessage) = if (status == Constants.SeenStatus.MessageSeen.status) {
-                val tempMessageSeenByUsers =
-                    messageData.messageSeenByUsers?.toMutableList() ?: mutableListOf()
-                tempMessageSeenByUsers.add(AuthManager.currentUserId()!!)
-
-                val isMessageSeenByAllMember =
-                    messageData.sendTimeUsers?.filter { it != senderId }?.all {
-                        tempMessageSeenByUsers.contains(it)
-                    } ?: false
-
-                val tempStatus =
-                    if (isMessageSeenByAllMember) Constants.SeenStatus.MessageSeen.status else messageData.seenStatus!!
-
-                val updatedMessageData = messageData.copy(
-                    messageReceivedByUsers = tempMessageSeenByUsers,
-                    seenStatus = tempStatus
-                )
-
-                Pair(tempStatus, updatedMessageData)
-            } else {
-                val tempMessageReceivedByUsers =
-                    messageData.messageReceivedByUsers?.toMutableList() ?: mutableListOf()
-                tempMessageReceivedByUsers.add(AuthManager.currentUserId()!!)
-
-                val isMessageSeenByAllMember =
-                    messageData.sendTimeUsers?.filter { it != senderId }?.all {
-                        tempMessageReceivedByUsers.contains(it)
-                    } ?: false
-
-                val tempStatus =
-                    if (isMessageSeenByAllMember) Constants.SeenStatus.Received.status else messageData.seenStatus!!
-
-                val updatedMessageData = messageData.copy(
-                    messageReceivedByUsers = tempMessageReceivedByUsers,
-                    seenStatus = tempStatus
-                )
-                Pair(tempStatus, updatedMessageData)
-            }
-
-
-
-            firestore.runBatch {
-                it.update(messageRef, updatedMessage.toNormalMap())
-                if (isRecentChatUpdateNeeded) {
-                    it.update(
-                        senderRecentChatRef,
-                        Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName,
-                        seenStatus
-                    )
-                }
-
-                if (status == Constants.SeenStatus.MessageSeen.status) {
-                    it.update(
-                        myRecentChatRef, Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName, 0
-                    )
-                }
-            }.await()
-        }
-    }
-
 
     suspend fun listenLastMessage(chatRoomId: String) = callbackFlow<LastMessage> {
         lastMessageListener?.remove()
@@ -964,7 +881,7 @@ object ChatManager {
         lastMessage: GroupLastMessage,
         chatRoomId: String,
         users: List<GroupMember>,// Just for add  message recent chat
-        action: Constants.InfoType? = null,
+        action: InfoType? = null,
         addedOrRemovedUserId: String? = null,
         groupInfo: GroupInfo? = null
     ) = callbackFlow<UpdateChatResponse> {
@@ -1173,7 +1090,7 @@ object ChatManager {
             type = type,
             chatRoomId = chatRoomId,
             messageId = message.messageId,
-            isGroupMessage = true
+            isGroupMessage = true.toString()
         )
 
 
@@ -1196,7 +1113,7 @@ object ChatManager {
             message = message.text,
             lastMessageType = lastMessageType,
             senderId = AuthManager.currentUserId()!!,
-            lastMessageSeen = Constants.SeenStatus.Sending.status,  //?
+            lastMessageSeen = Constants.SeenStatus.Sending.status,
             isGroupChat = true,
             infoMessageType = action?.name,
             addedOrRemovedUserId = addedOrRemovedUserId
@@ -1278,10 +1195,27 @@ object ChatManager {
 
             launch {
                 // Update to send status
-                messageRef.update(Constants.GroupMessageTable.SEEN_STATUS.fieldName,Constants.SeenStatus.Send.status)
+                messageRef.update(
+                    Constants.GroupMessageTable.SEEN_STATUS.fieldName,
+                    Constants.SeenStatus.Send.status
+                )
 
-                updateRecentChat(users.mapNotNull { it.memberId }, commonRecentChat.copy(lastMessageSeen = Constants.SeenStatus.Send.status), chatRoomId)
+                updateRecentChat(
+                    users.mapNotNull { it.memberId },
+                    commonRecentChat.copy(lastMessageSeen = Constants.SeenStatus.Send.status),
+                    chatRoomId
+                )
             }
+            if(groupInfo==null){
+                launchCoroutineInIOThread {
+                    updateUnSeenMessageList(
+                        users.mapNotNull { it.memberId }.filter { it!=AuthManager.currentUserId()!! },
+                        updatedMessage,
+                        chatRoomId
+                    )
+                }
+            }
+
             if (groupInfo == null) {
                 launch {
                     sendNotificationToAllOfflineMember(users, notificationData)
@@ -1295,6 +1229,54 @@ object ChatManager {
         }.await()
 
         awaitClose {
+            close()
+        }
+    }
+
+    private fun updateUnSeenMessageList(
+        userId: List<String>,
+        updatedMessage: GroupMessage,
+        chatRoomId: String
+    ) {
+        userId.forEach { id ->
+            launchCoroutineInIOThread {
+                userRef.document(id).collection(Table.UnSeenMessage.name).document(chatRoomId).get()
+                    .addOnSuccessListener {
+                        if (it.exists()) {
+                            val unSeenMessage = it.toObject<UnSeenMessageModel>()
+                            val tempUnSeenMessage =
+                                unSeenMessage?.unSeenMessage?.toMutableList() ?: mutableListOf()
+                            tempUnSeenMessage.add(updatedMessage)
+                            userRef.document(id).collection(Table.UnSeenMessage.name)
+                                .document(chatRoomId).set(UnSeenMessageModel(tempUnSeenMessage))
+                        } else {
+                            userRef.document(id).collection(Table.UnSeenMessage.name)
+                                .document(chatRoomId)
+                                .set(UnSeenMessageModel(unSeenMessage = listOf(updatedMessage)))
+                        }
+                    }
+            }
+        }
+    }
+
+    suspend fun listenNewMessage(chatRoomId: String) = callbackFlow<Unit> {
+        listenNewMessageListener?.remove()
+        listenNewMessageListener =
+            userRef.document(AuthManager.currentUserId()!!).collection(Table.UnSeenMessage.name)
+                .document(chatRoomId).addSnapshotListener { value, error ->
+                    if (error != null) return@addSnapshotListener
+
+                    if (value != null) {
+                        val unSeenMessageModel = value.toObject<UnSeenMessageModel>()
+                        unSeenMessageModel?.unSeenMessage?.let {
+                            updateUnseenMessagesToSeen(chatRoomId, it)
+                            userRef.document(AuthManager.currentUserId()!!)
+                                .collection(Table.UnSeenMessage.name).document(chatRoomId).delete()
+                        }
+                    }
+                }
+        awaitClose {
+            listenNewMessageListener?.remove()
             close()
         }
     }
@@ -1337,7 +1319,8 @@ object ChatManager {
                                 var unSeenMessageCount =
                                     previousRecentChatData.unSeenMessageCount?.plus(1) ?: 0
 
-                                unSeenMessageCount = if (AuthManager.currentUserId()!! == userId) 0 else unSeenMessageCount
+                                unSeenMessageCount =
+                                    if (AuthManager.currentUserId()!! == userId) 0 else unSeenMessageCount
 
                                 commonRecentChat.copy(
                                     unSeenMessageCount = unSeenMessageCount
@@ -1383,7 +1366,7 @@ object ChatManager {
 
         if (secondLastMessage != null) {
             // need to update last message , recent chat
-            //For My Recent Chat
+
             val timeStamp = secondLastMessage.messageSentTimeInTimeStamp
             val timeInText = secondLastMessage.messageSendTimeInText
             val lastMessageType = secondLastMessage.messageType
@@ -1395,7 +1378,7 @@ object ChatManager {
                 lastMessageType = lastMessageType,
                 senderId = secondLastMessage.senderId,
                 lastMessageSeen = secondLastMessage.seenStatus,
-                infoMessageType = secondLastMessage.infoMessageType
+                isGroupChat = true,
             )
 
 
@@ -1453,7 +1436,10 @@ object ChatManager {
         }
     }
 
-    suspend fun clearChats(chatRoomId: String, users: List<String>) = callbackFlow<UpdateResponse> {
+    suspend fun clearChats(
+        chatRoomId: String, users: List<String>, lastMessage: GroupLastMessage,
+        secondLastMessage: GroupMessage
+    ) = callbackFlow<UpdateResponse> {
 
         StorageManager.deleteMediaOfChats(chatRoomId).onEach {
             if (it.isSuccess) {
@@ -1466,18 +1452,39 @@ object ChatManager {
             val chatMediaRef = chatRoomIdRef.collection(Table.Media.name)
             val chatMessageRef = chatRoomIdRef.collection(Table.Messages.name)
 
+            val timeStamp = secondLastMessage.messageSentTimeInTimeStamp
+            val timeInText = secondLastMessage.messageSendTimeInText
+            val lastMessageType = secondLastMessage.messageType
+            val commonRecentChat = RecentChat(
+                chatRoomId = chatRoomId,
+                lastMessageTimeInTimeStamp = timeStamp,
+                lastMessageTimeInText = timeInText,
+                message = secondLastMessage.text,
+                lastMessageType = lastMessageType,
+                senderId = secondLastMessage.senderId,
+                lastMessageSeen = secondLastMessage.seenStatus,
+                isGroupChat = true,
+                addedOrRemovedUserId = secondLastMessage.addedOrRemovedUserId,
+                infoMessageType = secondLastMessage.infoMessageType,
+                unSeenMessageCount = 0
+            )
+
 
             firestore.runBatch { batch ->
-                batch.delete(chatRoomIdRef)
+                batch.set(chatRoomIdRef, lastMessage)
                 users.forEach {
-                    batch.delete(
-                        userRef.document(it).collection(Table.RecentChat.name).document(chatRoomId)
+                    batch.set(
+                        userRef.document(it).collection(Table.RecentChat.name).document(chatRoomId),
+                        commonRecentChat
                     )
                 }
             }.addOnSuccessListener {
                 launch {
-                    deleteCollection(listOf(chatMediaRef, chatMessageRef)).onEach {
-                        trySend(it)
+                    deleteCollection(listOf(chatMediaRef)).onEach {
+                        MyLogger.d(tagChat, msg = "Media Chat Collection is deleted!")
+                        deleteAllMessageFromGroup(chatRoomId).onEach {
+                            trySend(it)
+                        }.launchIn(this)
                     }.launchIn(this)
                 }
 
@@ -1491,6 +1498,59 @@ object ChatManager {
         awaitClose {
             close()
         }
+    }
+
+    private fun deleteAllMessageFromGroup(chatRoomId: String) = callbackFlow<UpdateResponse> {
+        val messagesRef = chatRef.document(chatRoomId).collection(Table.Messages.name)
+
+        val scope = CoroutineScope(Dispatchers.IO) // Use IO dispatcher for parallel tasks
+        val jobs = mutableListOf<Deferred<Unit>>()
+        val BATCH_SIZE = 500
+
+        try {
+            var query = messagesRef.whereEqualTo(
+                Constants.MessageTable.MESSAGE_TYPE.fieldName,
+                Constants.MessageType.Chat.type
+            )
+            var shouldContinue = true
+
+            while (shouldContinue) {
+                // Fetch a batch of chat-type messages
+                val querySnapshot = query.limit(BATCH_SIZE.toLong()).get().await()
+
+                // If no documents are returned, exit the loop
+                if (querySnapshot.isEmpty) {
+                    shouldContinue = false
+                    continue
+                }
+
+                // Create a batch for deletion
+                val batch = firestore.batch()
+
+                // Add each document to the batch for deletion
+                for (document in querySnapshot.documents) {
+                    batch.delete(document.reference)
+                }
+
+                // Launch the batch commit in parallel
+                jobs.add(scope.async {
+                    batch.commit().await()
+                    //Please below logger not removed else get error because await return Void and jobs.add need Unit. So by add this logger get Unit.
+                    MyLogger.i(tagChat, msg = "Deleted ${querySnapshot.size()} chat-type messages")
+                })
+
+                // Continue querying for the next batch
+                query = query.startAfter(querySnapshot.documents.last())
+            }
+
+            // Await completion of all batch operations
+            jobs.awaitAll()
+            trySend(UpdateResponse(true, "All messages deleted successfully"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            trySend(UpdateResponse(false, "Error deleting messages: ${e.message}"))
+        }
+        awaitClose { close() }
     }
 
 
@@ -1676,7 +1736,177 @@ object ChatManager {
             .set(GroupMember(AuthManager.currentUserId()!!, status)).await()
     }
 
-    //endregion
+    // This function handle update status of group message ( Receiving or Seen)
+    private fun updateUnseenMessagesToSeen(chatRoomId: String, unseenMessages: List<GroupMessage>) {
+        val currentUserId = AuthManager.currentUserId()!!
+
+        // Create a coroutine scope for parallel processing
+        val scope = CoroutineScope(Dispatchers.IO)
+
+        scope.launch {
+            // Split unseen messages into batches of 500
+            val batchSize = 250
+            val batches = unseenMessages.chunked(batchSize)
+
+            // Pre-fetch all senderRecentChatData
+            val senderRecentChatDataMap = unseenMessages.map { message ->
+                async {
+                    message.messageId to userRef.document(message.senderId!!)
+                        .collection(Table.RecentChat.name)
+                        .document(chatRoomId).get().await().toObject<RecentChat>()
+                }
+            }.awaitAll().toMap()
+
+            // Track all batch update jobs
+            val batchJobs = batches.map { batch ->
+                async {
+                    // Create a batch update
+                    firestore.runBatch { batchWrite ->
+                        batch.forEach { message ->
+                            val messageRef = chatRef.document(chatRoomId)
+                                .collection(Table.Messages.name).document(message.messageId!!)
+                            val updatedMessageData =
+                                createUpdatedMessageData(message, currentUserId, message.senderId!!)
+                            batchWrite.update(messageRef, updatedMessageData.toNormalMap())
+
+                            // Check if recent chat update is needed
+                            val senderRecentChatData = senderRecentChatDataMap[message.messageId]
+                            if (senderRecentChatData != null &&
+                                message.messageSentTimeInTimeStamp == senderRecentChatData.lastMessageTimeInTimeStamp
+                            ) {
+                                val senderRecentChatRef =
+                                    userRef.document(message.senderId)
+                                        .collection(Table.RecentChat.name).document(chatRoomId)
+                                batchWrite.update(
+                                    senderRecentChatRef,
+                                    Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName,
+                                    updatedMessageData.seenStatus
+                                )
+                            }
+                        }
+                    }.await() // Wait for the batch to complete
+                }
+            }
+
+            // Wait for all batch jobs to complete
+            batchJobs.awaitAll()
+
+            // Update UNSEEN_MESSAGE_COUNT after all batches are done
+            val myRecentChatRef = userRef.document(currentUserId)
+                .collection(Table.RecentChat.name).document(chatRoomId)
+
+            firestore.runBatch { batchWrite ->
+                batchWrite.update(
+                    myRecentChatRef,
+                    Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName,
+                    0
+                )
+            }.await() // Wait for the update to complete
+
+            println("All unseen messages updated and UNSEEN_MESSAGE_COUNT reset.")
+        }
+    }
+
+    private fun createUpdatedMessageData(
+        message: GroupMessage,
+        currentUserId: String,
+        senderId: String
+    ): GroupMessage {
+        val tempMessageReceivedByUsers =
+            message.messageReceivedByUsers?.toMutableList() ?: mutableListOf()
+        val tempMessageSeenByUsers = message.messageSeenByUsers?.toMutableList() ?: mutableListOf()
+
+        if (!tempMessageReceivedByUsers.contains(currentUserId)) {
+            tempMessageReceivedByUsers.add(currentUserId)
+        }
+
+        if (!tempMessageSeenByUsers.contains(currentUserId)) {
+            tempMessageSeenByUsers.add(currentUserId)
+        }
+
+        val isMessageSeenByAllMembers = message.sendTimeUsers?.filter { it != senderId }?.all {
+            tempMessageSeenByUsers.contains(it)
+        } ?: false
+
+        val tempStatus = when {
+            isMessageSeenByAllMembers -> Constants.SeenStatus.MessageSeen.status
+            tempMessageReceivedByUsers.contains(currentUserId) -> Constants.SeenStatus.Received.status
+            else -> message.seenStatus!!
+        }
+
+        return message.copy(
+            messageReceivedByUsers = tempMessageReceivedByUsers,
+            messageSeenByUsers = tempMessageSeenByUsers,
+            seenStatus = tempStatus
+        )
+    }
+
+
+    // This is only for receiving chat by fcm
+    fun updateGroupReceivedStatus(
+        messageId: String,
+        chatRoomId: String,
+        senderId: String
+    ) {
+        launchCoroutineInIOThread {
+            val messageRef =
+                chatRef.document(chatRoomId).collection(Table.Messages.name).document(messageId)
+            val messageData =
+                messageRef.get().await().toObject<GroupMessage>()
+                    ?: return@launchCoroutineInIOThread
+            val myRecentChatRef =
+                userRef.document(AuthManager.currentUserId()!!).collection(Table.RecentChat.name)
+                    .document(chatRoomId)
+            val senderRecentChatRef =
+                userRef.document(senderId).collection(Table.RecentChat.name).document(chatRoomId)
+
+            val isRecentChatUpdateNeeded = async {
+                val senderRecentChatData =
+                    userRef.document(senderId).collection(Table.RecentChat.name)
+                        .document(chatRoomId).get().await().toObject<RecentChat>()
+                        ?: return@async false
+
+                return@async messageData.messageSentTimeInTimeStamp == senderRecentChatData.lastMessageTimeInTimeStamp
+            }.await()
+
+            // Ensure the current user is in the received list if the status is Seen
+            val tempMessageReceivedByUsers =
+                messageData.messageReceivedByUsers?.toMutableList() ?: mutableListOf()
+            if (!tempMessageReceivedByUsers.contains(AuthManager.currentUserId()!!)) {
+                tempMessageReceivedByUsers.add(AuthManager.currentUserId()!!)
+            }
+
+
+            val isMessageReceivedByAllMembers =
+                messageData.sendTimeUsers?.filter { it != senderId }?.all {
+                    tempMessageReceivedByUsers.contains(it)
+                } ?: false
+
+            val tempStatus = when {
+                isMessageReceivedByAllMembers -> Constants.SeenStatus.Received.status
+                else -> messageData.seenStatus!!
+            }
+
+            val updatedMessageData = messageData.copy(
+                messageReceivedByUsers = tempMessageReceivedByUsers,
+                seenStatus = tempStatus
+            )
+
+            firestore.runBatch { batch ->
+                batch.update(messageRef, updatedMessageData.toNormalMap())
+                if (isRecentChatUpdateNeeded) {
+                    batch.update(
+                        senderRecentChatRef,
+                        Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName,
+                        tempStatus
+                    )
+                }
+            }.await()
+        }
+    }
+
+
+//endregion
 
 }
 private typealias MessageType = Constants.PostType

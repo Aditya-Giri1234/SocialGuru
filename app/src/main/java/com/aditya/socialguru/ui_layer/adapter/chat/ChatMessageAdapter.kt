@@ -431,12 +431,32 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
 
 
     fun findMessageIndex(message: Message) = differ.currentList.indexOf(message)
-    fun giveMeSecondLastMessage(): Message = differ.currentList[differ.currentList.size - 2].let {
-        if (it.messageType == Constants.MessageType.DateHeader.type) {
-            differ.currentList[differ.currentList.size - 3]
-        } else {
-            it
+    fun giveMeSecondLastMessage(): Message? {
+        // Ensure the list has at least two messages
+        if (differ.currentList.size < 2) return null
+
+        // Start from the second-to-last position
+        var index = differ.currentList.size - 2
+
+        // Find the second-to-last non-date-header message
+        while (index >= 0) {
+            val message = differ.currentList[index]
+            if (message.messageType != Constants.MessageType.DateHeader.type) {
+                return message
+            }
+            index--
+        }
+
+        // If no valid message found, return null
+        return null
+    }
+
+    fun countNonHeaderMessages(): Int {
+        // Filter out messages that are neither info nor date headers
+        return differ.currentList.count {
+            it.messageType == Constants.MessageType.Chat.type
         }
     }
+
 
 }

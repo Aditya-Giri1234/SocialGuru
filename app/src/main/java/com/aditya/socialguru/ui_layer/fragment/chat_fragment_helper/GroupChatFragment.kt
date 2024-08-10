@@ -56,6 +56,7 @@ import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.OnAttachmentItemListener
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
+import com.aditya.socialguru.domain_layer.service.firebase_service.ChatManager
 import com.aditya.socialguru.ui_layer.adapter.chat.ChatMessageAdapter
 import com.aditya.socialguru.ui_layer.adapter.chat.GroupChatAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
@@ -103,7 +104,8 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     private var _chatAdapter: GroupChatAdapter? = null
     private val chatAdapter get() = _chatAdapter!!
 
-    private val groupMembers= mutableListOf<GroupMember>()
+    private val groupMembers= mutableListOf<GroupMember>()  // This is list of all member including me
+    private val onlyGroupMembers  get() = groupMembers.mapNotNull { it.memberId }.filter { it!=senderId }
 
 
     private val navController by lazy {
@@ -200,6 +202,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                         response.data?.let {
                             setChatMessageList(it)
                         }
+                        chatViewModel.listenNewMessage(chatRoomId)
                     }
 
                     is Resource.Loading -> {
@@ -260,7 +263,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
 
             }.launchIn(this)
 
-            chatViewModel.sendMessage.onEach { response ->
+            chatViewModel.sendGroupMessage.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
                         response.data?.let {
@@ -297,12 +300,10 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
 
             }.launchIn(this)
 
-
-            chatViewModel.clearChat.onEach { response ->
+            chatViewModel.clearGroupChat.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()
-                        showNoDataView()
                     }
 
                     is Resource.Loading -> {
@@ -315,6 +316,22 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                     }
                 }
 
+            }.launchIn(this)
+            chatViewModel.deleteGroupMessage.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        showSnackBar(response.message, false)
+                    }
+                }
             }.launchIn(this)
 
             binding.etMessage.getQueryTextChangeStateFlow().debounce(100).distinctUntilChanged()
@@ -541,8 +558,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
             messageSentTimeInTimeStamp = timeStamp,
             messageSendTimeInText = timeInText,
             seenStatus = Constants.SeenStatus.Sending.status,
-            sendTimeUsers = groupMembers.mapNotNull { it.memberId }
-
+            sendTimeUsers = onlyGroupMembers
         )
         val lastMessage = GroupLastMessage(
             senderId = senderId,
@@ -612,7 +628,18 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     }
 
     private fun clearChat() {
-//        chatViewModel.clearChat(chatRoomId, receiverId)
+        val secondLastMessage = chatAdapter.giveMeInfoMessageFromLast()!!
+        val lastMessage= GroupLastMessage(
+            senderId = secondLastMessage.senderId,
+            messageType = secondLastMessage.messageType,
+            chatType = secondLastMessage.chatType,
+            message = secondLastMessage.text,
+            lastMessageSentTimeInTimeStamp = secondLastMessage.messageSentTimeInTimeStamp,
+            lastMessageSentTimeInText = secondLastMessage.messageSendTimeInText,
+            infoMessageType = secondLastMessage.messageType,
+            addedOrRemovedUserId = secondLastMessage.addedOrRemovedUserId
+        )
+        chatViewModel.clearGroupChat(chatRoomId, groupMembers.mapNotNull { it.memberId } ,lastMessage,secondLastMessage)
     }
 
     private fun showDialog() {
@@ -657,30 +684,34 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     }
 
     private fun deleteThisMessage(deleteMessage: GroupMessage?) {
-      /*  deleteMessage?.let {
-            if (chatAdapter.itemCount == 1) {
+        deleteMessage?.let {
+            if (chatAdapter.countNonHeaderAndNonInfoMessages() == 1) {
                 clearChat()
             } else {
                 when {
                     chatAdapter.findMessageIndex(it) == chatAdapter.itemCount - 1 -> {
                         //User want to delete  last message so need to update last message on chat room and recent chat data in both parties
                         val secondLastMessage = chatAdapter.giveMeSecondLastMessage()
-                        val lastMessage = GroupLastMessage(
-                            senderId = secondLastMessage.senderId,
-                            receiverId = secondLastMessage.receiverId,
-                            messageType = secondLastMessage.messageType,
-                            chatType = secondLastMessage.chatType,
-                            message = secondLastMessage.text,
-                            lastMessageSentTimeInTimeStamp = secondLastMessage.messageSentTimeInTimeStamp,
-                            lastMessageSentTimeInText = secondLastMessage.messageSendTimeInText,
-                            isUser1Online = findUserAvailability(true),
-                            isUser2Online = findUserAvailability(false),
-                        )
+                        val lastMessage=if (secondLastMessage!=null){
+                            GroupLastMessage(
+                                senderId = secondLastMessage.senderId,
+                                messageType = secondLastMessage.messageType,
+                                chatType = secondLastMessage.chatType,
+                                message = secondLastMessage.text,
+                                lastMessageSentTimeInTimeStamp = secondLastMessage.messageSentTimeInTimeStamp,
+                                lastMessageSentTimeInText = secondLastMessage.messageSendTimeInText,
+                                infoMessageType = secondLastMessage.infoMessageType,
+                                addedOrRemovedUserId = secondLastMessage.addedOrRemovedUserId
+                            )
+                        }else{
+                            GroupLastMessage()
+                        }
 
-                        chatViewModel.deleteMessage(
+
+                        chatViewModel.deleteGroupMessage(
                             it,
                             chatRoomId,
-                            receiverId,
+                            groupMembers.mapNotNull { it.memberId },
                             lastMessage,
                             secondLastMessage
                         )
@@ -688,11 +719,11 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                     }
 
                     else -> {
-                        chatViewModel.deleteMessage(it, chatRoomId, receiverId, null, null)
+                        chatViewModel.deleteGroupMessage(it, chatRoomId , groupMembers.mapNotNull { it.memberId }, null, null)
                     }
                 }
             }
-        }*/
+        }
     }
 
     private fun setImageOnAttachmentUi(data: Uri) {
