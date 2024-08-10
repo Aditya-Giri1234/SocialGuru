@@ -698,7 +698,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
         val isImagePresent = message.imageUri != null
         val isVideoPresent = message.videoUri != null
 
-        if (isVideoPresent || isImagePresent) {
+        if (isVideoPresent || isImagePresent|| groupInfo!=null) {
             _sendGroupMessage.tryEmit(Resource.Loading())
         }
 
@@ -715,7 +715,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 MyLogger.i(
                     tagChat, msg = it, isJson = true, jsonTitle = "Message sent response come"
                 )
-                if (it.isSuccess || it.isSending) {
+                if (it.isSuccess || it.isSending|| groupInfo!=null) {
                     _sendGroupMessage.tryEmit(Resource.Success(it))
                 } else {
                     _sendGroupMessage.tryEmit(Resource.Error(it.errorMessage))

@@ -120,8 +120,14 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
             chatViewModel.sendGroupMessage.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
-                        showSnackBar("Group Created Successfully !", true)
-                        navigateToGroupChat()
+                        hideDialog()
+                        response.data?.let {
+                            if (it.isSuccess){
+                                showSnackBar("Group Created Successfully !", true)
+                                navigateToGroupChat()
+                            }
+                        }
+
                     }
 
                     is Resource.Loading -> {
@@ -129,6 +135,7 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
                     }
 
                     is Resource.Error -> {
+                        hideDialog()
                         showSnackBar(response.message)
                     }
                 }
