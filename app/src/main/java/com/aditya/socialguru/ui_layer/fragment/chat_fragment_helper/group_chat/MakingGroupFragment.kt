@@ -1,4 +1,4 @@
-package com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper
+package com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.group_chat
 
 import android.net.Uri
 import android.os.Bundle
@@ -39,7 +39,6 @@ import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.chat.GroupMemberChatAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.bumptech.glide.Glide
-import com.google.rpc.Help
 import com.vanniktech.emoji.EmojiPopup
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -252,6 +251,8 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
         if (binding.etGroupName.text.isNullOrBlank()) {
             showSnackBar("Please Enter Group Name !")
         } else {
+            val timestamp=System.currentTimeMillis()
+            val timeStampInText=Helper.formatTimestampToDateAndTime(timestamp)
             val message = GroupMessage(
                 messageId = Helper.getMessageId(),
                 messageType = Constants.MessageType.Info.type,
@@ -267,14 +268,15 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
                 chatRoomId = chatRoomId,
                 groupPic = groupProfileImage,
                 groupName = binding.etGroupName.text.toString(),
-                groupAdmins = listOf(AuthManager.currentUserId()!!)
+                groupAdmins = listOf(AuthManager.currentUserId()!!),
+                creatorId = AuthManager.currentUserId()
             )
             chatViewModel.sendGroupMessage(
                 message = message,
                 lastMessage = lastMessage,
                 chatRoomId = chatRoomId,
                 userList.map { GroupMember(it.userId,false)}.toMutableList().apply {
-                    add(GroupMember(AuthManager.currentUserId()!!,true))
+                    add(GroupMember(AuthManager.currentUserId()!!,true , groupJoiningDateInTimeStamp = timestamp, groupJoiningDateInText = timeStampInText))
                 }.toList(),
                 Constants.InfoType.GroupCreated ,
                 groupInfo = groupInfo

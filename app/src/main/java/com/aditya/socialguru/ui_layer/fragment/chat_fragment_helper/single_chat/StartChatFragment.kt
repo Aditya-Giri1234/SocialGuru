@@ -1,6 +1,8 @@
-package com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper
+package com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.single_chat
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,40 +11,34 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
-import com.aditya.socialguru.data_layer.model.Users
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
-import com.aditya.socialguru.databinding.FragmentStartGroupChatBinding
-import com.aditya.socialguru.databinding.SampleStartGroupChatUserChipBinding
+import com.aditya.socialguru.databinding.FragmentStartChatBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.ui_layer.adapter.chat.StartChatAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
-import com.bumptech.glide.Glide
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
 
-class StartGroupChatFragment : Fragment() {
-
-
-    private var _binding: FragmentStartGroupChatBinding? = null
+class StartChatFragment : Fragment() {
+    private var _binding: FragmentStartChatBinding? = null
     private val binding get() = _binding!!
 
     private val tagChat = Constants.LogTag.Chats
-
-    private val allUser = mutableListOf<FriendCircleData>()
-    private val selectedUser = mutableListOf<User>()
-    private val notSelectedUser = mutableListOf<FriendCircleData>()
 
     private var _friendAdapter: StartChatAdapter? = null
     private val friendAdapter get() = _friendAdapter!!
@@ -53,12 +49,14 @@ class StartGroupChatFragment : Fragment() {
 
     private val chatViewModel by viewModels<ChatViewModel>()
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
-        _binding = FragmentStartGroupChatBinding.inflate(layoutInflater)
+        _binding = FragmentStartChatBinding.inflate(layoutInflater)
         return binding.root
     }
 
@@ -76,7 +74,6 @@ class StartGroupChatFragment : Fragment() {
         getData()
     }
 
-
     private fun subscribeToObserver() {
         viewLifecycleOwner.observeFlow {
             chatViewModel.friendList.onEach { response ->
@@ -86,7 +83,12 @@ class StartGroupChatFragment : Fragment() {
                         MyLogger.d(
                             tagChat, msg = response.data, isJson = true, jsonTitle = "Friend List"
                         )
-                        validateUserAndSetData(response.data)
+                        response.data?.let {
+                            setData(it)
+                        } ?: run {
+                            setData()
+                            MyLogger.w(tagChat, msg = "Friend list is empty !")
+                        }
                     }
 
                     is Resource.Loading -> {
@@ -110,80 +112,55 @@ class StartGroupChatFragment : Fragment() {
         }
     }
 
-
     private fun initUi() {
         binding.apply {
             myToolbar.apply {
                 profileImage.gone()
                 icBack.myShow()
-                tvHeaderUserName.text = "Choose Friends"
+                tvHeaderUserName.text = "Select Friend"
             }
 
-            rvAllUsers.apply {
+            rvFriend.apply {
                 layoutManager = LinearLayoutManager(requireContext())
                 adapter = friendAdapter
                 setHasFixedSize(true)
-                isMotionEventSplittingEnabled = false
+                isMotionEventSplittingEnabled=false
             }
             setListener()
         }
-
-        checkAndShowSelectedUser()
-
     }
 
+    private fun FragmentStartChatBinding.setListener() {
 
-    private fun FragmentStartGroupChatBinding.setListener() {
         myToolbar.icBack.setSafeOnClickListener {
             navController.navigateUp()
         }
-        btnNext.setOnClickListener {
-            handleNextClick()
+
+        linearBackToTop.setSafeOnClickListener {
+            rvFriend.smoothScrollToPosition(0)
         }
-    }
-
-
-    /**
-     * [checkAndShowSelectedUser] help me  when user navigate to other fragment then come back again then show previous selected user.
-     * */
-    private fun checkAndShowSelectedUser() {
-        selectedUser.forEach {
-            addIntoChip(it)
-        }
-    }
-
-    private fun validateUserAndSetData(data: List<FriendCircleData>?) {
-        allUser.clear()
-        notSelectedUser.clear()
-        if (data == null) {
-            selectedUser.clear()
-            setData()
-            MyLogger.w(tagChat, msg = "Friend list is empty !")
-        } else {
-            allUser.addAll(data)
-            selectedUser.forEachIndexed { index, user ->
-                // Just remove view which is not a friend now
-                if (data.none { it.user?.userId == user.userId }) {
-                    binding.chipSelectedUsers.removeViewAt(index)
-                    selectedUser.remove(user)
+        rvFriend.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    MyLogger.v(tagChat, msg = "Idle State")
+                    linearBackToTop.gone()
                 }
             }
-            notSelectedUser.addAll(
-                allUser.filter { user ->
-                    selectedUser.none { it.userId == user.user?.userId }
+
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                if (dy < 0) {
+                    MyLogger.v(tagChat, msg = "Up scroll")
+                    showBackToTopView()
+                } else {
+                    MyLogger.v(tagChat, msg = "Down scroll")
+                    linearBackToTop.gone()
                 }
-            )
-            setData(notSelectedUser)
-        }
+            }
+        })
     }
 
-    private fun setData(
-        list: List<FriendCircleData> = emptyList()
-    ) {
-        if (allUser.isEmpty()) {
-            showNoDataViewForChip()
-        }
-
+    private fun setData(list: List<FriendCircleData> = emptyList()) {
         if (list.isEmpty()) {
             showNoDataView()
         } else {
@@ -199,79 +176,33 @@ class StartGroupChatFragment : Fragment() {
         }
     }
 
-    private fun handleNextClick() {
-        if (selectedUser.isEmpty()) {
-            showSnackBar("At least 1 friend need to be selected !")
-        } else {
-            val directions: NavDirections =
-                StartGroupChatFragmentDirections.actionStartGroupChatFragmentToMakingGroupFragment(
-                    Users(selectedUser)
-                )
-            navController.navigate(directions, Helper.giveAnimationNavOption())
-        }
-    }
+    private fun showBackToTopView() {
+        binding.linearBackToTop.myShow()
 
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (this@StartChatFragment.isResumed) {
+                binding.linearBackToTop.gone()
+            }
+        }, 2000)
+
+    }
     private fun onItemClick(user: User) {
-        selectedUser.add(user)
-        notSelectedUser.remove(allUser.find { it.user?.userId == user.userId })
-        addIntoChip(user)
+        val directions:NavDirections=BottomNavigationBarDirections.actionGlobalChatFragment(user.userId!!)
+        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
     }
 
-    private fun addIntoChip(user: User) {
-        val chipBinding = SampleStartGroupChatUserChipBinding.inflate(layoutInflater)
-        chipBinding.apply {
-            chipText.text = user.userName
-            Glide.with(circularImage).load(user.userProfileImage).placeholder(R.drawable.ic_user)
-                .error(R.drawable.ic_user).into(circularImage)
-            binding.chipSelectedUsers.addView(this.root)
-            closeIcon.setOnClickListener {
-                selectedUser.remove(user)
-                allUser.find { it.user?.userId == user.userId }
-                    ?.let { it1 -> notSelectedUser.add(it1) }
-                binding.chipSelectedUsers.removeView(this.root)
-                updateSelectedView()
-            }
-        }
-        updateSelectedView()
-    }
-
-    private fun updateSelectedView() {
-        binding.apply {
-            if (selectedUser.isEmpty()) {
-                showNoDataViewForChip()
-            } else {
-                hideNoDataViewForChip()
-            }
-        }
-        setData(notSelectedUser)
-    }
-
-    private fun showNoDataViewForChip() {
-        binding.apply {
-            chipSelectedUsers.removeAllViews()
-            scrollChipGroup.gone()
-            tvNoDataViewForSelectedUser.myShow()
-        }
-    }
-
-    private fun hideNoDataViewForChip() {
-        binding.apply {
-            scrollChipGroup.myShow()
-            tvNoDataViewForSelectedUser.gone()
-        }
-    }
 
     private fun showNoDataView() {
         binding.apply {
-            rvAllUsers.gone()
-            tvNoDataViewForAllUser.myShow()
+            rvFriend.gone()
+            noDataView.myShow()
         }
     }
 
     private fun hideNoDataView() {
         binding.apply {
-            rvAllUsers.myShow()
-            tvNoDataViewForAllUser.gone()
+            rvFriend.myShow()
+            noDataView.gone()
         }
     }
 
@@ -291,11 +222,9 @@ class StartGroupChatFragment : Fragment() {
         }
     }
 
+
     override fun onDestroyView() {
-        _friendAdapter = null
         _binding = null
         super.onDestroyView()
     }
-
-
 }

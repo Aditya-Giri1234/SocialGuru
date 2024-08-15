@@ -32,6 +32,7 @@ object StorageManager {
 
 
     fun deleteImageFromServer(imageUri: String)= callbackFlow<UpdateResponse> {
+        MyLogger.i(Constants.LogTag.Chats, isFunctionCall = true)
         val deleteUrl= FirebaseStorage.getInstance().getReferenceFromUrl(imageUri)
         deleteUrl.delete().addOnCompleteListener {
             if(it.isSuccessful){
@@ -56,7 +57,7 @@ object StorageManager {
 
 
 
-            storageRef.putFile(imageUri)
+                storageRef.putFile(imageUri)
                 .addOnProgressListener { taskSnapshot ->
                     val progress = calculateProgress(taskSnapshot)
                     trySend(

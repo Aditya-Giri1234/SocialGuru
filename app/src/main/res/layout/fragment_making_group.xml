@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/black"
-        tools:context=".ui_layer.fragment.chat_fragment_helper.MakingGroupFragment">
+        tools:context=".ui_layer.fragment.chat_fragment_helper.group_chat.MakingGroupFragment">
 
         <include
             android:id="@+id/myToolbar"
@@ -56,7 +56,7 @@
                 android:textColorHint="@color/grey"
                 android:textSize="@dimen/_14ssp"
                 android:maxLines="1"
-                android:maxLength="100"
+                android:maxLength="75"
                 android:background="@android:color/transparent"
                 android:onTextChanged="@{chatViewModel::onTextChanged}"
                 android:textCursorDrawable="@null"
@@ -65,7 +65,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:text="@{chatViewModel.textCount + `/100`}"
+                android:text="@{chatViewModel.textCount + `/75`}"
                 android:textColor="@color/white"
                 android:textSize="@dimen/_12ssp"
                 android:gravity="center"

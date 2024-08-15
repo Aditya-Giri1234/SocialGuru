@@ -1,6 +1,5 @@
-package com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper
+package com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.group_chat
 
-import android.animation.Animator
 import android.content.Context
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
@@ -26,15 +25,12 @@ import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
-import com.aditya.socialguru.data_layer.model.User
-import com.aditya.socialguru.data_layer.model.chat.LastMessage
-import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
 import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMember
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMemberDetails
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMembersList
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
-import com.aditya.socialguru.databinding.FragmentChatBinding
 import com.aditya.socialguru.databinding.FragmentGroupChatBinding
 import com.aditya.socialguru.databinding.PopUpChatScreenBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
@@ -56,9 +52,8 @@ import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.OnAttachmentItemListener
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
-import com.aditya.socialguru.domain_layer.service.firebase_service.ChatManager
-import com.aditya.socialguru.ui_layer.adapter.chat.ChatMessageAdapter
 import com.aditya.socialguru.ui_layer.adapter.chat.GroupChatAdapter
+import com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.single_chat.ChatType
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.bumptech.glide.Glide
 import com.vanniktech.emoji.EmojiPopup
@@ -386,8 +381,6 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
         linearUserStatus.setSafeOnClickListener {
             navigateToChatProfileScreen()
         }
-
-
 
         backToBottom.setSafeOnClickListener {
             rvChats.scrollToPosition(chatAdapter.itemCount - 1)
@@ -884,8 +877,8 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     }
 
     private fun navigateToChatProfileScreen(){
-//        val direction: NavDirections =ChatFragmentDirections.actionChatFragmentToUserChatProfileFragment(chatRoomId,receiverId)
-//        navController.safeNavigate(direction, Helper.giveAnimationNavOption())
+        val direction: NavDirections =GroupChatFragmentDirections.actionGroupChatFragmentToGroupProfileFragment(chatRoomId , GroupMembersList(groupMembers) )
+        navController.safeNavigate(direction, Helper.giveAnimationNavOption())
     }
     private fun navigateToVideoViewScreen(attachmentVideoUri: Uri?) {
         attachmentVideoUri?.apply {

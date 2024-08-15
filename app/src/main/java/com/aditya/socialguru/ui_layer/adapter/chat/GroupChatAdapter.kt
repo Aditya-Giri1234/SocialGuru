@@ -357,31 +357,23 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
                         "$prefix$suffix"
                     }
 
-                    InfoType.GroupNameChange.name -> {
+                    InfoType.GroupDetailsChanged.name -> {
                         val prefix =
                             if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
-                        val suffix = " changed group name to ${message.text}"
-                        "$prefix$suffix"
-                    }
-
-                    InfoType.GroupDescChange.name -> {
-                        val prefix =
-                            if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
-                        val suffix = " changed group description to ${message.text}"
-                        "$prefix$suffix"
-                    }
-
-                    InfoType.GroupPicChange.name -> {
-                        val prefix =
-                            if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
-                        val suffix = " changed group profile picture !"
+                        val suffix = " changed  ${message.text}"
                         "$prefix$suffix"
                     }
 
                     InfoType.MemberAdded.name -> {
+                        val suf=message.newMembers?.mapNotNull {
+                            userDetails[it]?.userName
+                        }?.joinToString(
+                            separator = ", " ,
+                        )
+
                         val prefix =
                             if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
-                        val suffix = " added ${message.text} to group !"
+                        val suffix = " added $suf to group !"
                         "$prefix$suffix"
                     }
 
@@ -389,6 +381,33 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
                         val prefix =
                             if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
                         val suffix = " removed ${message.text} from group!"
+                        "$prefix$suffix"
+                    }
+
+                    InfoType.MakeAdmin.name->{
+                        val prefix =
+                            if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
+                        val suffix = " are now admin of this group!"
+                        "$prefix$suffix"
+                    }
+
+                    InfoType.RemoveFromAdmin.name->{
+                        val prefix =
+                            if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
+                        val suffix = " not longer admin of this group!"
+                        "$prefix$suffix"
+                    }
+                    InfoType.NewGroupCreator.name->{
+                        val prefix =
+                            if (isSenderIsMe) "You are" else "${userDetails[message.senderId]?.userName} is"
+                        val suffix = " now group creator!"
+                        "$prefix$suffix"
+                    }
+
+                    InfoType.MemberExit.name->{
+                        val prefix =
+                            if (isSenderIsMe) "You are" else "${userDetails[message.senderId]?.userName} is"
+                        val suffix = " exit from this group!"
                         "$prefix$suffix"
                     }
 

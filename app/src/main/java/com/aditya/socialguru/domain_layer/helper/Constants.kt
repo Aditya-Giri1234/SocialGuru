@@ -243,9 +243,11 @@ object Constants {
         MemberAdded,
         MemberRemoved,
         GroupCreated,
-        GroupNameChange,
-        GroupDescChange,
-        GroupPicChange
+        GroupDetailsChanged,
+        NewGroupCreator,
+        MakeAdmin,
+        RemoveFromAdmin,
+        MemberExit
     }
 
 

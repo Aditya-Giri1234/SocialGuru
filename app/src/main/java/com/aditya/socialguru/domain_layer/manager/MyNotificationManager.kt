@@ -20,7 +20,7 @@ import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
-import com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.ChatFragmentArgs
+import com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.single_chat.ChatFragmentArgs
 import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
 import com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragmentArgs
 import java.util.Random

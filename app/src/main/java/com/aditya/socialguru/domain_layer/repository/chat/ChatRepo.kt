@@ -81,5 +81,34 @@ class ChatRepo {
 
     suspend fun listenNewMessage(chatRoomId: String) = FirebaseManager.listenNewMessage(chatRoomId)
 
+    suspend fun updateGroupInfo(
+        message: GroupMessage,
+        lastMessage: GroupLastMessage,
+        chatRoomId: String,
+        users: List<GroupMember>, // Just for add  message recent chat
+        groupInfo: GroupInfo? = null ,
+        deleteImage:String?=null ,
+        uploadingImage:String?=null
+    ) = FirebaseManager.updateGroupInfo(
+        message,
+        lastMessage,
+        chatRoomId,
+        users,
+        groupInfo ,
+        deleteImage ,
+        uploadingImage
+    )
+
+    suspend fun sentGroupInfoMessage(
+        message: GroupMessage,
+        lastMessage: GroupLastMessage,
+        chatRoomId: String,
+        users: List<GroupMember>,// Just for add  message recent chat
+        action: Constants.InfoType,
+        addedOrRemovedUserId: String? = null,
+        newMembers:List<String>?=null,
+        groupInfo: GroupInfo? = null
+    ) = ChatManager.sentGroupInfoMessage(message, lastMessage, chatRoomId, users, action, addedOrRemovedUserId ,newMembers, groupInfo)
+
 
 }

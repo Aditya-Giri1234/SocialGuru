@@ -23,6 +23,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants.Table
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
+import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.helper.toNormalMap
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -881,7 +882,7 @@ object ChatManager {
         addedOrRemovedUserId: String? = null,
         groupInfo: GroupInfo? = null
     ) = callbackFlow<UpdateChatResponse> {
-
+        MyLogger.i(tagChat, isFunctionCall = true)
         val isImagePresent = message.imageUri != null || groupInfo?.groupPic != null
         val isVideoPresent = message.videoUri != null
 
@@ -1068,6 +1069,7 @@ object ChatManager {
         addedOrRemovedUserId: String?,
         groupInfo: GroupInfo? = null
     ) = callbackFlow<UpdateChatResponse> {
+        MyLogger.i(tagChat, isFunctionCall = true)
         val isImagePresent = message.imageUri != null
         val isVideoPresent = message.videoUri != null
         val timeStamp = System.currentTimeMillis()
@@ -1221,6 +1223,126 @@ object ChatManager {
 
         }.addOnFailureListener {
             trySend(UpdateChatResponse(isSuccess = false, errorMessage = it.message))
+
+        }.await()
+
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun sentGroupInfoMessage(
+        message: GroupMessage,
+        lastMessage: GroupLastMessage,
+        chatRoomId: String,
+        users: List<GroupMember>,
+        action: InfoType,
+        addedOrRemovedUserId: String?=null,
+        newMembers:List<String>?=null,
+        groupInfo: GroupInfo? = null
+    ) = callbackFlow<UpdateResponse> {
+        val timeStamp = System.currentTimeMillis()
+        val timeInText = Helper.formatTimestampToDateAndTime(timeStamp)
+        val isMessageContainText = !message.text.isNullOrBlank() || message.infoMessageType != null
+        val lastMessageType =
+            if (isMessageContainText) Constants.LastMessageType.Text.type else Constants.LastMessageType.Media.type
+
+
+        // This is updated message
+        val updatedMessage = message.copy(
+            messageSentTimeInTimeStamp = timeStamp, messageSendTimeInText = timeInText
+        )
+        val updatedLastMessage = lastMessage.copy(
+            lastMessageSentTimeInTimeStamp = timeStamp, lastMessageSentTimeInText = timeInText
+        )
+
+        val commonRecentChat = RecentChat(
+            chatRoomId = chatRoomId,
+            lastMessageTimeInTimeStamp = timeStamp,
+            lastMessageTimeInText = timeInText,
+            message = message.text,
+            lastMessageType = lastMessageType,
+            senderId = AuthManager.currentUserId()!!,
+            lastMessageSeen = Constants.SeenStatus.Sending.status,
+            isGroupChat = true,
+            infoMessageType = action?.name,
+            addedOrRemovedUserId = addedOrRemovedUserId
+        )
+
+        val lastMessageRef = chatRef.document(chatRoomId)
+
+        val messageRef = chatRef.document(chatRoomId).collection(Table.Messages.name)
+            .document(message.messageId!!)
+        val groupInfoRef =
+            chatRef.document(chatRoomId).collection(Table.GroupInfo.name).document(chatRoomId)
+        val isChatRoomExist = chatRef.document(chatRoomId).get().await().exists()
+        val isThisFunctionCallForRemoveMember=(action.name==InfoType.MemberRemoved.name || action.name==InfoType.MemberExit.name)
+        val isThisFunctionCallForAddNewMember=action.name==InfoType.MemberAdded.name
+        val newMemberData=GroupMember(
+            isOnline = false,
+            memberId = addedOrRemovedUserId,
+            groupJoiningDateInText = timeInText,
+            groupJoiningDateInTimeStamp = timeStamp
+        )
+
+
+        //In transaction all read come first then after all write come
+        // Firebase firestore transaction is much slower then batch write because transaction run sequence
+
+        firestore.runBatch { batch ->
+            val timeTakingToCalculate = measureTimeMillis {
+                if (!isChatRoomExist) {
+                    users.mapNotNull { it.memberId }.forEach {
+                        batch.set(
+                            chatRef.document(chatRoomId).collection(Table.GroupMember.name)
+                                .document(it), GroupMember(it)
+                        )
+                    }
+                }
+
+                if (groupInfo != null) {
+                    batch.set(groupInfoRef, groupInfo)
+                }
+                if (isChatRoomExist) {
+                    batch.update(
+                        lastMessageRef,
+                        updatedLastMessage.toNormalMap().filterValues { it != null })
+                } else {
+                    batch.set(lastMessageRef, updatedLastMessage)
+                }
+
+                // This is for when new user added
+                if(isThisFunctionCallForAddNewMember){
+
+                    batch.set(chatRef.document(chatRoomId).collection(Table.GroupMember.name).document(addedOrRemovedUserId!!),newMemberData)
+                }
+
+                //This is for when user exit or remove from group
+                if(isThisFunctionCallForRemoveMember){
+                    batch.delete(chatRef.document(chatRoomId).collection(Table.GroupMember.name).document(addedOrRemovedUserId!!))
+                    batch.delete(userRef.document(addedOrRemovedUserId!!).collection(Table.RecentChat.name).document(chatRoomId))
+                }
+
+                batch.set(messageRef, updatedMessage)
+            }
+            MyLogger.v(tagChat, msg = "Time taken to calculate $timeTakingToCalculate")
+
+
+        }.addOnSuccessListener {
+
+            trySend(UpdateResponse(isSuccess = true, errorMessage = ""))
+
+            launch {
+                updateRecentChat(
+                    users.mapNotNull { it.memberId },
+                    commonRecentChat,
+                    chatRoomId
+                )
+            }
+
+
+        }.addOnFailureListener {
+            trySend(UpdateResponse(isSuccess = false, errorMessage = it.message))
 
         }.await()
 
@@ -1723,6 +1845,91 @@ object ChatManager {
                 close()
             }
         }
+
+    suspend fun updateGroupInfo( message: GroupMessage,
+                                 lastMessage: GroupLastMessage,
+                                 chatRoomId: String,
+                                 users: List<GroupMember>,// Just for add  message recent chat
+                                 groupInfo: GroupInfo? = null , deleteImage:String?=null , uploadingImage:String?=null) = callbackFlow<UpdateResponse> {
+MyLogger.i(tagChat, isFunctionCall = true)
+        if (deleteImage != null) {
+            StorageManager.deleteImageFromServer(deleteImage).onEach {
+                if (it.isSuccess) {
+                    MyLogger.i(tagChat, msg = "Image Delete Successfully !")
+                } else {
+                    MyLogger.e(
+                        tagChat,
+                        msg = giveMeErrorMessage(
+                            "Delete Group Profile Pic",
+                            it.errorMessage?.toString() ?: ""
+                        )
+                    )
+                }
+
+            }.launchIn(this)
+        }
+
+        if (uploadingImage != null) {
+            StorageManager.uploadImageToServer(
+                Table.Chats.name
+                ,
+                "$chatRoomId/${Constants.FolderName.ChatImage.name}",
+                imageUri = uploadingImage.convertParseUri()
+            ).onEach {
+                when (it.state) {
+                    Constants.StorageManagerState.InProgress -> {
+
+                    }
+
+                    Constants.StorageManagerState.Error -> {
+                        trySend(UpdateResponse(false, it.error))
+                    }
+
+                    Constants.StorageManagerState.UrlNotGet -> {
+                        trySend(UpdateResponse(false, it.error))
+                    }
+
+                    Constants.StorageManagerState.Success -> {
+                        val onlineImageUri = it.url
+                        val _groupInfo = groupInfo?.copy(
+                            groupPic = onlineImageUri
+                        )
+                        saveGroupMessageToDatabase(message,lastMessage, chatRoomId, users,InfoType.GroupDetailsChanged, null,groupInfo = _groupInfo).onEach {
+                            if(it.isSuccess){
+                                trySend(UpdateResponse(true,""))
+                                return@onEach
+                            }
+                            if (it.errorMessage!=null){
+                                trySend(UpdateResponse(false, it.errorMessage))
+                                return@onEach
+                            }
+                        }.launchIn(this)
+                    }
+                }
+
+            }.launchIn(this)
+        } else{
+            saveGroupMessageToDatabase(message,lastMessage, chatRoomId, users,InfoType.GroupDetailsChanged ,null, groupInfo = groupInfo).onEach {
+                if(it.isSuccess){
+                    trySend(UpdateResponse(true,""))
+                    return@onEach
+                }
+                if (it.errorMessage!=null){
+                    trySend(UpdateResponse(false, it.errorMessage))
+                    return@onEach
+                }
+            }.launchIn(this)
+        }
+
+
+
+
+        awaitClose {
+            close()
+        }
+    }
+
+
 
     suspend fun getGroupInfoWithoutAsync(chatRoomId: String) =
         chatRef.document(chatRoomId).collection(Table.GroupInfo.name).document(chatRoomId).get()

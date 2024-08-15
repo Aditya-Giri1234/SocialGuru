@@ -106,6 +106,9 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     private val _sendGroupMessage =
         MutableSharedFlow<Resource<UpdateChatResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
     val sendGroupMessage get() = _sendGroupMessage.asSharedFlow()
+    private val _sendGroupInfoMessage =
+        MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
+    val sendGroupInfoMessage get() = _sendGroupInfoMessage.asSharedFlow()
 
     private val _deleteGroupMessage =
         MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
@@ -127,10 +130,18 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
         MutableSharedFlow<Resource<GroupInfo>>(1, 64, BufferOverflow.DROP_OLDEST)
     val groupInfo get() = _groupInfo.asSharedFlow()
 
+    private val _updateGroupDetails=
+        MutableSharedFlow<Resource<UpdateResponse>>(1, 64, BufferOverflow.DROP_OLDEST)
+    val updateGroupDetails get() = _updateGroupDetails.asSharedFlow()
+
+
+
 
 
 
     val textCount: MutableLiveData<Int> = MutableLiveData(0)
+    val groupNameTextCount: MutableLiveData<Int> = MutableLiveData(0)
+    val groupDescTextCount: MutableLiveData<Int> = MutableLiveData(0)
 
 
     fun onTextChanged(
@@ -138,6 +149,18 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
         count: Int
     ) {
         textCount.postValue(s.length)
+    }
+    fun onGroupNameTextChanged(
+        s: CharSequence, start: Int, before: Int,
+        count: Int
+    ) {
+        groupNameTextCount.postValue(s.length)
+    }
+    fun onGroupDescTextChanged(
+        s: CharSequence, start: Int, before: Int,
+        count: Int
+    ) {
+        groupDescTextCount.postValue(s.length)
     }
 
 
@@ -622,23 +645,24 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
     private fun handleMediaResponse(media: List<ChatMediaData>, category: Int): List<ChatMediaData> {
         if (media.isEmpty()) return emptyList()
+        val sortedMedia=media.sortedByDescending { it.mediaUploadingTimeInTimeStamp}
 
         return when(category){
             0->{
                 // All Media
-                giveMeMediaWithDate(media)
+                giveMeMediaWithDate(sortedMedia)
             }
             1->{
                 // Only Image
-                giveMeMediaWithDate(media.filter { it.isImage==true })
+                giveMeMediaWithDate(sortedMedia.filter { it.isImage==true })
             }
             2->{
                 //Only Video
-                giveMeMediaWithDate(media.filter { it.isImage==false })
+                giveMeMediaWithDate(sortedMedia.filter { it.isImage==false })
             }
             else->{
                 //By default All Media
-                giveMeMediaWithDate(media)
+                giveMeMediaWithDate(sortedMedia)
             }
         }
     }
@@ -908,6 +932,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
         if (SoftwareManager.isNetworkAvailable(app)){
             repository.getGroupInfo(chatRoomId).onEach {
+                MyLogger.i(tagChat, msg = it, isJson = true , jsonTitle = "Group Profile Update response come !")
                 if (it!=null){
                     _groupInfo.tryEmit(Resource.Success(it))
                 }else{
@@ -988,6 +1013,56 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun updateGroupDetails( message: GroupMessage,
+                            lastMessage: GroupLastMessage,
+                            chatRoomId: String,
+                            users: List<GroupMember>, // Just for add  message recent chat
+                            groupInfo: GroupInfo? = null ,
+                            deleteImage:String?=null ,
+                            uploadingImage:String?=null) = viewModelScope.myLaunch {
+                                MyLogger.d(tagChat, isFunctionCall = true)
+                                _updateGroupDetails.tryEmit(Resource.Loading())
+        if(isNetworkAvailable(app)){
+            MyLogger.d(tagChat, msg = "Network Available so that api call !")
+            repository.updateGroupInfo(message, lastMessage, chatRoomId, users, groupInfo, deleteImage , uploadingImage).onEach {
+                MyLogger.d(tagChat, msg = it , isJson = true)
+                if (it.isSuccess){
+                    _updateGroupDetails.tryEmit(Resource.Success(it))
+                }else{
+                    _updateGroupDetails.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+        }else{
+            _updateGroupDetails.tryEmit(Resource.Error("Internet Not Available !"))
+        }
+    }
+
+     fun sentGroupInfoMessage(
+        message: GroupMessage,
+        lastMessage: GroupLastMessage,
+        chatRoomId: String,
+        users: List<GroupMember>,// Just for add  message recent chat
+        action: Constants.InfoType,
+        addedOrRemovedUserId: String? = null,
+        newMembers:List<String>?=null,
+        groupInfo: GroupInfo? = null
+    ) = viewModelScope.myLaunch {
+             _sendGroupInfoMessage.tryEmit(Resource.Loading())
+         if(isNetworkAvailable(app)){
+             repository.sentGroupInfoMessage(message, lastMessage, chatRoomId, users,action,addedOrRemovedUserId,newMembers ,groupInfo).onEach {
+                 MyLogger.i(
+                     tagChat, msg = it, isJson = true, jsonTitle = "Message sent response come"
+                 )
+                 if (it.isSuccess) {
+                     _sendGroupInfoMessage.tryEmit(Resource.Success(it))
+                 } else {
+                     _sendGroupInfoMessage.tryEmit(Resource.Error(it.errorMessage))
+                 }
+             }.launchIn(this)
+         }else{
+             _sendGroupInfoMessage.tryEmit(Resource.Error("Internet Not Available !"))
+         }
+     }
 
     //endregion
 

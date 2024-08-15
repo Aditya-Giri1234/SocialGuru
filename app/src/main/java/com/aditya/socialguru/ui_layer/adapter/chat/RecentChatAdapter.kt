@@ -10,6 +10,7 @@ import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.chat.UserRecentModel
 import com.aditya.socialguru.databinding.SampleRecentChatLayoutBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Constants.InfoType
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
@@ -72,29 +73,14 @@ class RecentChatAdapter(
 
                         }
 
-                        Constants.InfoType.GroupNameChange.name -> {
+                        Constants.InfoType.GroupDetailsChanged.name -> {
                             if (isSenderIsMe){
-                                "You change group name !"
+                                "You change group details !"
                             }else{
-                                "Someone change group name !"
+                                "Someone change group details !"
                             }
                         }
 
-                        Constants.InfoType.GroupDescChange.name -> {
-                            if (isSenderIsMe){
-                                "You change group description !"
-                            }else{
-                                "Someone change group description !"
-                            }
-                        }
-
-                        Constants.InfoType.GroupPicChange.name -> {
-                            if (isSenderIsMe){
-                                "You change group profile picture!"
-                            }else{
-                                "Someone change group profile picture!"
-                            }
-                        }
 
                         Constants.InfoType.MemberAdded.name -> {
                             if (isSenderIsMe){
@@ -109,6 +95,37 @@ class RecentChatAdapter(
                                 "You removed someone from this group!"
                             }else {
                                 "Someone removed from this group!"
+                            }
+                        }
+                        InfoType.MakeAdmin.name->{
+                            if (isSenderIsMe){
+                                "You are now admin of this group!"
+                            }else {
+                                "Someone is now admin of this group!"
+                            }
+                        }
+
+                        InfoType.RemoveFromAdmin.name->{
+                            if (isSenderIsMe){
+                                "You not longer admin of this group!"
+                            }else {
+                                "Someone not longer admin of this group!"
+                            }
+                        }
+                        InfoType.NewGroupCreator.name->{
+                            if (isSenderIsMe){
+                                "You are now group creator!"
+                            }else {
+                                "Someone is now group creator!"
+                            }
+                        }
+
+                        //These never run because when user exist then recent chat will be removed
+                        InfoType.MemberExit.name->{
+                            if (isSenderIsMe){
+                                "You exit from this group!"
+                            }else {
+                                "Someone is exit from this group!"
                             }
                         }
 

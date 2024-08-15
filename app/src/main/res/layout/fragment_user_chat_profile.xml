@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/black"
-    tools:context=".ui_layer.fragment.chat_fragment_helper.UserChatProfileFragment">
+    tools:context=".ui_layer.fragment.chat_fragment_helper.single_chat.UserChatProfileFragment">
 
     <include
         android:id="@+id/myToolbar"

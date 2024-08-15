@@ -1,4 +1,4 @@
-package com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper
+package com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.single_chat
 
 import android.animation.Animator
 import android.content.Context
