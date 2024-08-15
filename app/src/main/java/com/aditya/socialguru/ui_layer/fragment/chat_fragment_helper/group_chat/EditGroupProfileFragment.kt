@@ -236,7 +236,7 @@ class EditGroupProfileFragment : Fragment() , ProfilePicEditOption {
         val updatedGroupInfo=groupInfo.copy(
             groupPic = updatedImage,
             groupDescription = binding.etGroupDesc.text.toString(),
-            groupName = binding.etGroupDesc.text.toString(),
+            groupName = binding.etGroupName.text.toString(),
         )
 
         if(isProfilePicDeleted()){
