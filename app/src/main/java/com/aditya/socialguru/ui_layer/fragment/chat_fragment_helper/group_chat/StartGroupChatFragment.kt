@@ -8,23 +8,33 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavDirections
+import androidx.navigation.fragment.navArgs
+import androidx.navigation.navOptions
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.Users
+import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
+import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMembersList
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.FragmentStartGroupChatBinding
 import com.aditya.socialguru.databinding.SampleStartGroupChatUserChipBinding
+import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Constants.MembersAddType
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.chat.StartChatAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.bumptech.glide.Glide
@@ -43,8 +53,14 @@ class StartGroupChatFragment : Fragment() {
     private val allUser = mutableListOf<FriendCircleData>()
     private val selectedUser = mutableListOf<User>()
     private val notSelectedUser = mutableListOf<FriendCircleData>()
+    private var isCreatorOfGroupIsRemoveApiCall = false
+    private lateinit var memberAddType: String
+    private var groupInfo: GroupInfo? = null
+    private var groupAlreadyMembers: GroupMembersList? = null
+    private var chatRoomId: String? = null
 
     private var _friendAdapter: StartChatAdapter? = null
+    private var myLoader: MyLoader? = null
     private val friendAdapter get() = _friendAdapter!!
 
     private val navController by lazy {
@@ -52,6 +68,15 @@ class StartGroupChatFragment : Fragment() {
     }
 
     private val chatViewModel by viewModels<ChatViewModel>()
+    private val args by navArgs<StartGroupChatFragmentArgs>()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        memberAddType = args.type
+        groupInfo = args.groupInfo
+        groupAlreadyMembers = args.groupAlreadyMembers
+        chatRoomId = args.chatRoomId
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -82,18 +107,21 @@ class StartGroupChatFragment : Fragment() {
             chatViewModel.friendList.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
+                        hideDialog()
                         MyLogger.i(tagChat, msg = "Friend List response come !")
                         MyLogger.d(
                             tagChat, msg = response.data, isJson = true, jsonTitle = "Friend List"
                         )
-                        validateUserAndSetData(response.data)
+                        handleFriendList(response.data)
                     }
 
                     is Resource.Loading -> {
                         MyLogger.v(tagChat, msg = "Friend List is fetching ...")
+                        showDialog()
                     }
 
                     is Resource.Error -> {
+                        hideDialog()
                         MyLogger.e(
                             tagChat, msg = giveMeErrorMessage(
                                 "Fetching Friend List", response.message.toString()
@@ -107,6 +135,75 @@ class StartGroupChatFragment : Fragment() {
                     }
                 }
             }.launchIn(this)
+            chatViewModel.userDetailsByIds.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        MyLogger.i(tagChat, msg = "Friend List response come !")
+                        handleFriendList(response.data)
+                    }
+
+                    is Resource.Loading -> {
+                        MyLogger.v(tagChat, msg = "Friend List is fetching ...")
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        MyLogger.e(
+                            tagChat, msg = giveMeErrorMessage(
+                                "Fetching Friend List", response.message.toString()
+                            )
+                        )
+
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            showSnackBar(response.message?.toString())
+                        }
+                    }
+                }
+            }.launchIn(this)
+
+            chatViewModel.sendGroupInfoMessage.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        MyLogger.i(tagChat, msg = "Add member or choose creator response come !")
+                        if (memberAddType == MembersAddType.MembersAdd.name) {
+                            showSnackBar("Members Added Successfully !", isSuccess = true)
+                            navController.navigateUp()
+                        } else {
+                            if (isCreatorOfGroupIsRemoveApiCall) {
+                                showSnackBar("Successfully Exit From Group!", isSuccess = true)
+                                navController.navigateUp()
+                            } else {
+                                performExitUser()
+                            }
+                        }
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                        MyLogger.v(tagChat, msg = "Add member or choose creator ongoing ...")
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        MyLogger.e(
+                            tagChat, msg = giveMeErrorMessage(
+                                "Add member or choose creator", response.message.toString()
+                            )
+                        )
+
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            showSnackBar(response.message?.toString())
+                        }
+                    }
+                }
+            }.launchIn(this)
+
+
         }
     }
 
@@ -116,7 +213,7 @@ class StartGroupChatFragment : Fragment() {
             myToolbar.apply {
                 profileImage.gone()
                 icBack.myShow()
-                tvHeaderUserName.text = "Choose Friends"
+                tvHeaderUserName.text = getScreenTitle()
             }
 
             rvAllUsers.apply {
@@ -130,6 +227,28 @@ class StartGroupChatFragment : Fragment() {
 
         checkAndShowSelectedUser()
 
+    }
+
+    private fun getScreenTitle(): String {
+        return when (memberAddType) {
+            MembersAddType.StartGroup.name -> {
+                "Choose Friends"
+            }
+
+            MembersAddType.MembersAdd.name -> {
+                binding.btnNext.setImageResource(R.drawable.ic_message_sent)
+                "Add Friends"
+            }
+
+            MembersAddType.CreatorChoose.name -> {
+                binding.btnNext.setImageResource(R.drawable.ic_message_sent)
+                "Choose Creator"
+            }
+
+            else -> {
+                "Choose Friends"
+            }
+        }
     }
 
 
@@ -177,6 +296,51 @@ class StartGroupChatFragment : Fragment() {
         }
     }
 
+    private fun handleFriendList(data: List<FriendCircleData>?) {
+        if (data != null) {
+            val validData = when (memberAddType) {
+                Constants.MembersAddType.StartGroup.name -> {
+                    // Show all friend list
+                    data
+                }
+
+                Constants.MembersAddType.MembersAdd.name -> {
+                    // Only show who is not participant of group
+                    val alreadyMemberUserId =
+                        groupAlreadyMembers?.members?.mapNotNull { it.memberId }
+                    data.filter {
+                        if (it.userId != null) {
+                            (alreadyMemberUserId?.contains(it.userId) == false) ?: true
+                        } else {
+                            false
+                        }
+                    }
+                }
+
+                Constants.MembersAddType.CreatorChoose.name -> {
+                    // Only show who is participant of group
+                    val alreadyMemberUserId =
+                        groupAlreadyMembers?.members?.mapNotNull { it.memberId }
+                    data.filter {
+                        if (it.userId != null) {
+                            alreadyMemberUserId?.contains(it.userId) ?: false
+                        } else {
+                            false
+                        }
+                    }
+                }
+
+                else -> {
+                    // As default case  go for new group
+                    data
+                }
+            }
+            validateUserAndSetData(validData)
+        } else {
+            validateUserAndSetData(data)
+        }
+    }
+
     private fun setData(
         list: List<FriendCircleData> = emptyList()
     ) {
@@ -194,24 +358,134 @@ class StartGroupChatFragment : Fragment() {
 
     private fun getData() {
         if (!chatViewModel.isDataLoaded) {
-            chatViewModel.getFriendListAndListenChange()
+            if (memberAddType == MembersAddType.CreatorChoose.name) {
+                chatViewModel.getAllUserByIds(groupAlreadyMembers!!.members.mapNotNull { it.memberId })
+            } else {
+                chatViewModel.getFriendListAndListenChange()
+            }
             chatViewModel.setDataLoadedStatus(true)
         }
     }
 
     private fun handleNextClick() {
-        if (selectedUser.isEmpty()) {
-            showSnackBar("At least 1 friend need to be selected !")
-        } else {
-            val directions: NavDirections =
-                StartGroupChatFragmentDirections.actionStartGroupChatFragmentToMakingGroupFragment(
-                    Users(selectedUser)
-                )
-            navController.navigate(directions, Helper.giveAnimationNavOption())
+        try {
+            if (selectedUser.isEmpty()) {
+                showSnackBar("At least 1 friend need to be selected !")
+            } else {
+                when (memberAddType) {
+                    MembersAddType.StartGroup.name -> {
+                        navigateToGroupMakingScreen()
+                    }
+
+                    MembersAddType.MembersAdd.name -> {
+                        performAddMember()
+                    }
+
+                    MembersAddType.CreatorChoose.name -> {
+                        performCreateChooser()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            showSnackBar("Some error occurred , Please try after some time !")
         }
+
+    }
+
+    private fun performAddMember() {
+        val message = GroupMessage(
+            messageId = Helper.getMessageId(),
+            messageType = Constants.MessageType.Info.type,
+            senderId = AuthManager.currentUserId()!!,
+            infoMessageType = Constants.InfoType.MemberAdded.name,
+            newMembers = selectedUser.mapNotNull { it.userId }
+        )
+        val lastMessage = GroupLastMessage(
+            senderId = AuthManager.currentUserId()!!,
+            messageType = Constants.MessageType.Info.type,
+            infoMessageType = Constants.InfoType.MemberAdded.name
+        )
+
+
+        chatViewModel.sentGroupInfoMessage(
+            message,
+            lastMessage,
+            chatRoomId!!,
+            groupAlreadyMembers!!.members,
+            action = Constants.InfoType.MemberAdded,
+            groupInfo = groupInfo,
+            newMembers = selectedUser.mapNotNull { it.userId }
+        )
+    }
+
+    private fun performCreateChooser() {
+        val message = GroupMessage(
+            messageId = Helper.getMessageId(),
+            messageType = Constants.MessageType.Info.type,
+            senderId = AuthManager.currentUserId()!!,
+            infoMessageType = Constants.InfoType.NewGroupCreator.name,
+            addedOrRemovedUserId = selectedUser[0].userId
+        )
+        val lastMessage = GroupLastMessage(
+            senderId = AuthManager.currentUserId()!!,
+            messageType = Constants.MessageType.Info.type,
+            infoMessageType = Constants.InfoType.GroupDetailsChanged.name,
+        )
+
+        val updatedGroupInfo = groupInfo?.copy(
+            creatorId = selectedUser[0].userId
+        )
+        chatViewModel.sentGroupInfoMessage(
+            message,
+            lastMessage,
+            chatRoomId!!,
+            groupAlreadyMembers!!.members,
+            action = Constants.InfoType.NewGroupCreator,
+            groupInfo = updatedGroupInfo,
+        )
+    }
+
+    private fun performExitUser() {
+        isCreatorOfGroupIsRemoveApiCall=true
+        val message = GroupMessage(
+            messageId = Helper.getMessageId(),
+            messageType = Constants.MessageType.Info.type,
+            senderId = AuthManager.currentUserId()!!,
+            infoMessageType = Constants.InfoType.MemberExit.name,
+        )
+        val lastMessage = GroupLastMessage(
+            senderId = AuthManager.currentUserId()!!,
+            messageType = Constants.MessageType.Info.type,
+            infoMessageType = Constants.InfoType.MemberExit.name,
+        )
+
+        chatViewModel.sentGroupInfoMessage(
+            message,
+            lastMessage,
+            chatRoomId!!,
+            groupAlreadyMembers!!.members,
+            action = Constants.InfoType.MemberExit,
+            addedOrRemovedUserId = AuthManager.currentUserId()!!
+        )
+    }
+
+    private fun navigateToGroupMakingScreen() {
+        val directions: NavDirections =
+            StartGroupChatFragmentDirections.actionStartGroupChatFragmentToMakingGroupFragment(
+                Users(selectedUser)
+            )
+        navController.navigate(directions, Helper.giveAnimationNavOption())
     }
 
     private fun onItemClick(user: User) {
+        if (memberAddType == MembersAddType.CreatorChoose.name) {
+            if (selectedUser.size == 1) {
+                showSnackBar("Only one friend can be chosen as creator !")
+                return
+            }
+        }
+
         selectedUser.add(user)
         notSelectedUser.remove(allUser.find { it.user?.userId == user.userId })
         addIntoChip(user)
@@ -273,6 +547,17 @@ class StartGroupChatFragment : Fragment() {
             rvAllUsers.myShow()
             tvNoDataViewForAllUser.gone()
         }
+    }
+
+    private fun showDialog() {
+        myLoader?.dismiss()
+        myLoader = MyLoader()
+        myLoader?.show(childFragmentManager, "My_Loader")
+    }
+
+    private fun hideDialog() {
+        myLoader?.dismiss()
+        myLoader = null
     }
 
     private fun showSnackBar(message: String?, isSuccess: Boolean = false) {

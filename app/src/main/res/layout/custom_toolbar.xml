@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/black"
     android:layout_width="match_parent"
     android:layout_height="?actionBarSize"
@@ -22,7 +23,9 @@
         android:layout_height="@dimen/_30sdp"
         android:layout_marginStart="@dimen/_5sdp"
         android:visibility="visible"
-        android:src="@drawable/person"/>
+        android:src="@drawable/ic_user"
+        app:civ_border_width="@dimen/_1sdp"
+        app:civ_border_color="@color/blue"/>
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/tvHeaderUserName"
@@ -45,10 +48,13 @@
     <ImageView
         android:id="@+id/icDone"
         android:layout_width="@dimen/_24sdp"
-        android:layout_height="match_parent"
+        android:layout_height="@dimen/_24sdp"
         android:src="@drawable/ic_message_sent"
+        android:layout_gravity="center"
+        android:scaleType="centerCrop"
         android:visibility="gone"
-        android:paddingEnd="@dimen/_10sdp"/>
+        android:layout_marginEnd="@dimen/_10sdp"
+        />
 
 
 

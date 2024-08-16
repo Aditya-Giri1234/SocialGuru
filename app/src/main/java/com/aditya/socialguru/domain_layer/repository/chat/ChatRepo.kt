@@ -111,4 +111,6 @@ class ChatRepo {
     ) = ChatManager.sentGroupInfoMessage(message, lastMessage, chatRoomId, users, action, addedOrRemovedUserId ,newMembers, groupInfo)
 
 
+    suspend fun getAllUserByIds(userIds:List<String>) = FirebaseManager.getAllUserByIds(userIds)
+
 }

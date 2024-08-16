@@ -30,6 +30,8 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDirections
 import androidx.navigation.NavOptions
 import androidx.recyclerview.widget.RecyclerView
+import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.google.android.gms.tasks.Task
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.Gson
@@ -427,3 +429,7 @@ fun <T:Any> T.toMapWithSerializedName(): Map<String, Any> {
 }
 
 
+// For Group Extension
+
+ fun GroupInfo.isIAmCreatorOfThisGroup() = creatorId == AuthManager.currentUserId()
+ fun GroupInfo.isIAmAdminOfThisGroup() = groupAdmins?.contains(AuthManager.currentUserId()) ?: false

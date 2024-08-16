@@ -25,6 +25,7 @@
             android:ellipsize="end"
             android:textSize="@dimen/_12ssp"
             android:fontFamily="@font/poppins_semi_bold"
+            android:textAlignment="center"
             android:paddingHorizontal="@dimen/_12sdp"
             android:paddingVertical="@dimen/_5sdp"/>
 

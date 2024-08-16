@@ -21,7 +21,7 @@
             android:id="@+id/ivUserProfileImage"
             android:layout_width="@dimen/_40sdp"
             android:layout_height="@dimen/_40sdp"
-            android:src="@drawable/person"
+            android:src="@drawable/ic_user"
             app:civ_border_width="@dimen/_1sdp"
             app:civ_border_color="@color/blue"
             app:civ_border_overlay="true"/>
@@ -35,6 +35,39 @@
             android:layout_weight="1"
             android:layout_marginStart="@dimen/_10sdp"
             android:fontFamily="@font/poppin_medium"/>
+
+        <TextView
+            android:id="@+id/tvCreator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_white_border_bg"
+            android:paddingHorizontal="@dimen/_10sdp"
+            android:paddingVertical="@dimen/_4sdp"
+            android:text="Creator"
+            android:backgroundTint="@color/red"
+            android:textSize="@dimen/_14ssp"
+            android:textColor="@color/white"
+            android:layout_marginHorizontal="@dimen/_5sdp"
+            android:gravity="center"
+            android:visibility="gone"
+            android:fontFamily="@font/poppin_medium"/>
+
+        <TextView
+            android:id="@+id/tvAdmin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_white_border_bg"
+            android:paddingHorizontal="@dimen/_10sdp"
+            android:paddingVertical="@dimen/_4sdp"
+            android:text="Admin"
+            android:backgroundTint="@color/green"
+            android:textSize="@dimen/_14ssp"
+            android:textColor="@color/black"
+            android:visibility="gone"
+            android:layout_marginHorizontal="@dimen/_5sdp"
+            android:gravity="center"
+            android:fontFamily="@font/poppin_medium"/>
+
 
     </LinearLayout>
 

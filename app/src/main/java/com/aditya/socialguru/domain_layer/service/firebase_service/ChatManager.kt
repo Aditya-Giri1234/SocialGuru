@@ -1278,12 +1278,7 @@ object ChatManager {
         val isChatRoomExist = chatRef.document(chatRoomId).get().await().exists()
         val isThisFunctionCallForRemoveMember=(action.name==InfoType.MemberRemoved.name || action.name==InfoType.MemberExit.name)
         val isThisFunctionCallForAddNewMember=action.name==InfoType.MemberAdded.name
-        val newMemberData=GroupMember(
-            isOnline = false,
-            memberId = addedOrRemovedUserId,
-            groupJoiningDateInText = timeInText,
-            groupJoiningDateInTimeStamp = timeStamp
-        )
+
 
 
         //In transaction all read come first then after all write come
@@ -1300,9 +1295,12 @@ object ChatManager {
                     }
                 }
 
+                //Set Group Info
                 if (groupInfo != null) {
                     batch.set(groupInfoRef, groupInfo)
                 }
+
+                //Set or update last message
                 if (isChatRoomExist) {
                     batch.update(
                         lastMessageRef,
@@ -1313,8 +1311,14 @@ object ChatManager {
 
                 // This is for when new user added
                 if(isThisFunctionCallForAddNewMember){
-
-                    batch.set(chatRef.document(chatRoomId).collection(Table.GroupMember.name).document(addedOrRemovedUserId!!),newMemberData)
+                    newMembers?.forEach() {
+                        batch.set(chatRef.document(chatRoomId).collection(Table.GroupMember.name).document(it),GroupMember(
+                            isOnline = false,
+                            memberId = it,
+                            groupJoiningDateInText = timeInText,
+                            groupJoiningDateInTimeStamp = timeStamp
+                        ))
+                    }
                 }
 
                 //This is for when user exit or remove from group
@@ -1323,6 +1327,7 @@ object ChatManager {
                     batch.delete(userRef.document(addedOrRemovedUserId!!).collection(Table.RecentChat.name).document(chatRoomId))
                 }
 
+                //Add new info message in chat
                 batch.set(messageRef, updatedMessage)
             }
             MyLogger.v(tagChat, msg = "Time taken to calculate $timeTakingToCalculate")
@@ -1671,8 +1676,6 @@ object ChatManager {
         }
         awaitClose { close() }
     }
-
-
 
     suspend fun getGroupChatMessageAndListen(chatRoomId: String) =
         callbackFlow<ListenerEmissionType<GroupMessage, GroupMessage>> {

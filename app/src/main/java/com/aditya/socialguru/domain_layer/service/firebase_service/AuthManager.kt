@@ -7,6 +7,10 @@ import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 
 /**
@@ -61,12 +65,17 @@ object AuthManager {
         return auth.currentUser != null
     }
 
-    fun signOutUser(): UpdateResponse {
-        return if (auth.currentUser != null) {
-            auth.signOut()
-            UpdateResponse(true, "")
+    suspend fun signOutUser()= callbackFlow<UpdateResponse> {
+         if (auth.currentUser != null) {
+            UserManager.logoutUser().onEach {
+                auth.signOut()
+                trySend(UpdateResponse(true, ""))
+            }.launchIn(this)
         } else {
-            UpdateResponse(false, "User not found !")
+             trySend(UpdateResponse(false, "User not found !"))
+        }
+        awaitClose{
+            close()
         }
     }
 

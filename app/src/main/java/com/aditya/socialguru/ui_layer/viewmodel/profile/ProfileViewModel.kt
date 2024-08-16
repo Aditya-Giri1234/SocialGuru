@@ -158,7 +158,9 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _userSignOut.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            _userSignOut.tryEmit(Resource.Success(repository.signOut()))
+            repository.signOut().onEach {
+                _userSignOut.tryEmit(Resource.Success(it))
+            }.launchIn(this)
         } else {
             _userSignOut.tryEmit(Resource.Error("No Internet Available !"))
         }

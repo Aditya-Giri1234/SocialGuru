@@ -5,7 +5,7 @@
 
     <data>
         <variable
-            name="chatViewModel"
+            name="dataChatViewModel"
             type="com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel" />
     </data>
 
@@ -94,14 +94,14 @@
                 android:layout_marginHorizontal="@dimen/_5sdp"
                 android:inputType="textPersonName|textMultiLine"
                 android:layout_marginVertical="@dimen/_10sdp"
-                android:onTextChanged="@{chatViewModel::onGroupNameTextChanged}"
+                android:onTextChanged="@{dataChatViewModel::onGroupNameTextChanged}"
                 android:textCursorDrawable="@null"
                 android:background="@drawable/create_post_text_bg"
                 android:minHeight="@dimen/_100sdp"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@{chatViewModel.groupNameTextCount + `/75`}"
+                android:text="@{dataChatViewModel.groupNameTextCount + `/75`}"
                 android:paddingHorizontal="@dimen/_10sdp"
                 android:paddingVertical="@dimen/_2sdp"
                 android:gravity="end"
@@ -149,14 +149,14 @@
                 android:layout_marginHorizontal="@dimen/_5sdp"
                 android:inputType="textPersonName|textMultiLine"
                 android:layout_marginVertical="@dimen/_10sdp"
-                android:onTextChanged="@{chatViewModel::onGroupDescTextChanged}"
+                android:onTextChanged="@{dataChatViewModel::onGroupDescTextChanged}"
                 android:textCursorDrawable="@null"
                 android:background="@drawable/create_post_text_bg"
                 android:minHeight="@dimen/_150sdp"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@{chatViewModel.groupDescTextCount + `/150`}"
+                android:text="@{dataChatViewModel.groupDescTextCount + `/150`}"
                 android:paddingHorizontal="@dimen/_10sdp"
                 android:paddingVertical="@dimen/_2sdp"
                 android:gravity="end"

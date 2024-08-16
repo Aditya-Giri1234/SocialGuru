@@ -126,6 +126,7 @@
         android:layout_height="@dimen/_50sdp"
         android:paddingHorizontal="@dimen/_10sdp"
         android:layout_margin="@dimen/_10sdp"
+        app:tint="@color/white"
         android:src="@drawable/ic_right_arrow"
         android:background="@drawable/circle_shape_bg"
         app:layout_constraintEnd_toEndOf="@id/guidelineEnd"

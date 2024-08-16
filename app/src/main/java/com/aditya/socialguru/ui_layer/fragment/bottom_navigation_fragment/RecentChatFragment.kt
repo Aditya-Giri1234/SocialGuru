@@ -277,7 +277,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption {
 
     override fun onGroupChatClick() {
         val direction: NavDirections =
-            RecentChatFragmentDirections.actionRecentChatFragmentToStartGroupChatFragment()
+            BottomNavigationBarDirections.actionGlobalStartGroupChatFragment(Constants.MembersAddType.StartGroup.name , chatRoomId = null)
         navController.safeNavigate(direction, Helper.giveAnimationNavOption())
     }
 

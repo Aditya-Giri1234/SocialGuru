@@ -308,6 +308,14 @@ object Constants {
         FCM
     }
 
+    //For Members Add , Creator Choose , Start Group Chat
+
+    enum class MembersAddType{
+        StartGroup,
+        CreatorChoose,
+        MembersAdd
+    }
+
     // LogLevel
     enum class LogLevel {
         Error,

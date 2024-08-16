@@ -12,6 +12,8 @@ data class User(
     val userProfileImage:String?=null ,
     val loginTimeInText:String?=null,
     val loginTimeInTimeStamp:Long?=null,
+    val logoutTimeInText:String?=null,
+    val logoutTimeInTimeStamp:Long?=null,
     val fcmToken:String?=null,
     val postCount:Int?=null,
     val userAvailable:Boolean?=false

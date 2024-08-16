@@ -242,6 +242,8 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                         hideDialog()
                         response.data?.let {
                             setGroupMemberDetails(it)
+                            val isIAmExitFromGroup = it.all{it.member.memberId!=AuthManager.currentUserId()}
+                            if(isIAmExitFromGroup) navController.navigateUp()
                         }
                         if (!chatViewModel.isDataLoaded){
                             getChatDataAndListen()
@@ -572,7 +574,9 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
             lastMessage,
             chatRoomId,
             groupMembers
-        )
+        ){
+            resetUiScreen()
+        }
 
     }
 

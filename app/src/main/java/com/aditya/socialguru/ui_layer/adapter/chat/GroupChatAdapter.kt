@@ -21,6 +21,7 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.PostImageVideoAdapter
@@ -371,6 +372,10 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
                             separator = ", " ,
                         )
 
+                        MyLogger.d(tagChat , msg = "suf :-> $suf")
+                        MyLogger.d(tagChat , msg =message.newMembers , isJson = true)
+                        MyLogger.d(tagChat ,msg = userDetails , isJson = true)
+
                         val prefix =
                             if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
                         val suffix = " added $suf to group !"
@@ -380,26 +385,23 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
                     InfoType.MemberRemoved.name -> {
                         val prefix =
                             if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
-                        val suffix = " removed ${message.text} from group!"
+                        val suffix = " removed ${message.text ?: "Someone"} from group!"
                         "$prefix$suffix"
                     }
 
                     InfoType.MakeAdmin.name->{
-                        val prefix =
-                            if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
+                        val prefix = userDetails[message.addedOrRemovedUserId]?.userName ?: "Someone"
                         val suffix = " are now admin of this group!"
                         "$prefix$suffix"
                     }
 
                     InfoType.RemoveFromAdmin.name->{
-                        val prefix =
-                            if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
+                        val prefix = userDetails[message.addedOrRemovedUserId]?.userName ?: "Someone"
                         val suffix = " not longer admin of this group!"
                         "$prefix$suffix"
                     }
                     InfoType.NewGroupCreator.name->{
-                        val prefix =
-                            if (isSenderIsMe) "You are" else "${userDetails[message.senderId]?.userName} is"
+                        val prefix ="${userDetails[message.addedOrRemovedUserId]?.userName} is"
                         val suffix = " now group creator!"
                         "$prefix$suffix"
                     }

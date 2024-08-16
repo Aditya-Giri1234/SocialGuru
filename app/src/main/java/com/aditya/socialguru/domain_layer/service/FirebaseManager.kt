@@ -91,6 +91,8 @@ object FirebaseManager {
 
     suspend fun setFcmToken(token: String?) = UserManager.setFcmToken(token)
 
+    suspend fun getAllUserByIds(userIds:List<String>) = UserManager.getAllUserByIds(userIds)
+
 
     //endregion
 

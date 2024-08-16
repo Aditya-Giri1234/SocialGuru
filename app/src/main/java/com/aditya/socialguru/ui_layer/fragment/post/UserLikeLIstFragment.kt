@@ -121,7 +121,7 @@ class UserLikeLIstFragment : Fragment() {
     }
 
     private fun initUi() {
-        _userAdapter = UserAdapter {
+        _userAdapter = UserAdapter {it,view ->
             navigateToProfileViewScreen(it)
         }
         binding.apply {

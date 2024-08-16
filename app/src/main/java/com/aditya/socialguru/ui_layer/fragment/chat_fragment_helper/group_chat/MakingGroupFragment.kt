@@ -119,9 +119,9 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
             chatViewModel.sendGroupMessage.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
-                        hideDialog()
                         response.data?.let {
                             if (it.isSuccess){
+                                hideDialog()
                                 showSnackBar("Group Created Successfully !", true)
                                 navigateToGroupChat()
                             }
@@ -130,6 +130,7 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
                     }
 
                     is Resource.Loading -> {
+                        MyLogger.d(tagChat , msg = "Group is making ...")
                         showDialog()
                     }
 
@@ -268,7 +269,7 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
                 chatRoomId = chatRoomId,
                 groupPic = groupProfileImage,
                 groupName = binding.etGroupName.text.toString(),
-                groupAdmins = listOf(AuthManager.currentUserId()!!),
+                groupAdmins = listOf(),
                 creatorId = AuthManager.currentUserId()
             )
             chatViewModel.sendGroupMessage(
@@ -278,15 +279,16 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
                 userList.map { GroupMember(it.userId,false)}.toMutableList().apply {
                     add(GroupMember(AuthManager.currentUserId()!!,true , groupJoiningDateInTimeStamp = timestamp, groupJoiningDateInText = timeStampInText))
                 }.toList(),
-                Constants.InfoType.GroupCreated ,
-                groupInfo = groupInfo
-            )
+                Constants.InfoType.GroupCreated ,groupInfo = groupInfo
+            ){
+                // Do Nothing
+            }
         }
     }
 
     private fun navigateToGroupChat() {
         val directions : NavDirections = BottomNavigationBarDirections.actionGlobalGroupChatFragment(chatRoomId = chatRoomId)
-        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
+        navController.safeNavigate(directions,Helper.giveAnimationNavOption(R.id.startGroupChatFragment,true))
     }
 
     private fun showDialog() {

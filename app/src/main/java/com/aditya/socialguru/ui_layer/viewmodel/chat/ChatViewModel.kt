@@ -134,14 +134,31 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
         MutableSharedFlow<Resource<UpdateResponse>>(1, 64, BufferOverflow.DROP_OLDEST)
     val updateGroupDetails get() = _updateGroupDetails.asSharedFlow()
 
+    private val _userListDetailsByIds = MutableSharedFlow<Resource<List<FriendCircleData>>>(1,64, BufferOverflow.DROP_OLDEST)
+    val userDetailsByIds get() = _userListDetailsByIds.asSharedFlow()
 
 
 
 
 
-    val textCount: MutableLiveData<Int> = MutableLiveData(0)
-    val groupNameTextCount: MutableLiveData<Int> = MutableLiveData(0)
-    val groupDescTextCount: MutableLiveData<Int> = MutableLiveData(0)
+
+    val textCount: MutableLiveData<Int> = MutableLiveData(0)  // type :-> 0
+    val groupNameTextCount: MutableLiveData<Int> = MutableLiveData(0) // type :-> 1
+    val groupDescTextCount: MutableLiveData<Int> = MutableLiveData(0) // type :-> 2
+
+    fun setDefaultTextCount(count:Int, type:Int){
+        when(type){
+            0->{
+                textCount.postValue(count)
+            }
+            1-> {
+                groupNameTextCount.postValue(count)
+            }
+            2-> {
+                groupDescTextCount.postValue(count)
+            }
+        }
+    }
 
 
     fun onTextChanged(
@@ -475,14 +492,14 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 recentChatList.clear()
                 it.responseList?.let {
                     recentChatList.addAll(it)
-                    recentChatList.sortBy { it.recentChat?.lastMessageTimeInTimeStamp }
+                    recentChatList.sortByDescending { it.recentChat?.lastMessageTimeInTimeStamp }
                 }
             }
 
             Constants.ListenerEmitType.Added -> {
                 it.singleResponse?.let {
                     recentChatList.add(it)
-                    recentChatList.sortBy { it.recentChat?.lastMessageTimeInTimeStamp }
+                    recentChatList.sortByDescending { it.recentChat?.lastMessageTimeInTimeStamp }
                 }
             }
 
@@ -492,7 +509,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                         val userId = it.user?.userId
                         if (userId != null && userId == removedMessageId) {
                             recentChatList.remove(it)
-                            recentChatList.sortBy { it.recentChat?.lastMessageTimeInTimeStamp }
+                            recentChatList.sortByDescending { it.recentChat?.lastMessageTimeInTimeStamp }
                             return@let
                         }
                     }
@@ -526,7 +543,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                             jsonTitle = "Existing Message"
                         )
                         // Ensure the list remains sorted by message timestamp
-                        recentChatList.sortBy { recentChat -> recentChat.recentChat?.lastMessageTimeInTimeStamp }
+                        recentChatList.sortByDescending { recentChat -> recentChat.recentChat?.lastMessageTimeInTimeStamp }
                     }
                 }
             }
@@ -708,25 +725,47 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     //endregion
 
 
+    //region:: Get User List by ids
+
+     fun getAllUserByIds(userIds:List<String>) = viewModelScope.myLaunch {
+        _userListDetailsByIds.tryEmit(Resource.Loading())
+
+        if (isNetworkAvailable(app)){
+            repository.getAllUserByIds(userIds).onEach {
+                _userListDetailsByIds.tryEmit(Resource.Success(it))
+            }.launchIn(this)
+        }else{
+            _userListDetailsByIds.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    //endregion
+
+
     //region:: Group Message
 
      fun sendGroupMessage(
          message: GroupMessage,
          lastMessage: GroupLastMessage,
          chatRoomId: String,
-         users: List<GroupMember>, // Just for add  message recent chat
+         users: List<GroupMember>,// Just for add  message recent chat
          action: Constants.InfoType? = null,
          addedOrRemovedUserId: String? = null,
-         groupInfo: GroupInfo? = null
+         groupInfo: GroupInfo? = null ,
+         callback:()->Unit,
      ) = viewModelScope.myLaunch {
         val isImagePresent = message.imageUri != null
         val isVideoPresent = message.videoUri != null
 
-        if (isVideoPresent || isImagePresent|| groupInfo!=null) {
-            _sendGroupMessage.tryEmit(Resource.Loading())
-        }
-
         if (SoftwareManager.isNetworkAvailable(app)) {
+            if (isVideoPresent || isImagePresent|| groupInfo!=null) {
+                MyLogger.d(tagChat, msg = "Now Loading state is set !")
+                _sendGroupMessage.tryEmit(Resource.Loading())
+            }else{
+                MyLogger.d(tagChat, msg = "call back is call !")
+                callback.invoke()
+            }
+
             repository.sentGroupMessage(
                 message,
                 lastMessage,

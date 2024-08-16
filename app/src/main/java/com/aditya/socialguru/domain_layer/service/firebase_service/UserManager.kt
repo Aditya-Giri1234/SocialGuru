@@ -22,6 +22,8 @@ import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -194,7 +196,21 @@ object UserManager {
         } catch (e: Exception) {
             null
         }
+    }
 
+    suspend fun getAllUserByIds(userIds:List<String>) = callbackFlow<List<FriendCircleData>>{
+        val userListWork = userIds.map {
+           async {
+               getUserById(it)
+           }
+        }
+        val userList = userListWork.awaitAll().filterNotNull().map {
+            FriendCircleData(it.userId!!, user = it)
+        }
+        trySend(userList)
+        awaitClose{
+            close()
+        }
     }
 
     private suspend fun getAllUser(): Flow<List<User>> {
@@ -231,6 +247,27 @@ object UserManager {
 
 
         awaitClose {
+            close()
+        }
+    }
+
+    suspend fun logoutUser()= callbackFlow<UpdateResponse>{
+        getUserById(AuthManager.currentUserId()!!)?.let {
+            val timestamp=System.currentTimeMillis()
+            val timeInText=Helper.formatTimestampToDateAndTime(timestamp)
+            val updatedUser=it.copy(
+                fcmToken = "",
+                userAvailable = false ,
+                logoutTimeInText = timeInText,
+                logoutTimeInTimeStamp = timestamp
+            )
+            userRef.document(AuthManager.currentUserId()!!).set(updatedUser).addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+        } ?: trySend(UpdateResponse(false , "User Not Found"))
+        awaitClose{
             close()
         }
     }
