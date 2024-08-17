@@ -132,8 +132,10 @@ class SearchUserGlobalFragment : Fragment() {
         }
         binding.apply {
             if (lastSearch.isNotEmpty()){
-                showExpandedState()
+                initialStateLayout.gone()
+                expandedStateLayout.myShow()
                 etSearch.setText(lastSearch)
+                etSearch.requestFocus()
             }
             rvSearchUser.apply {
                 layoutManager = LinearLayoutManager(requireContext())

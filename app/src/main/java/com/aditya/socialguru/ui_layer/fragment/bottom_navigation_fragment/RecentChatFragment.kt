@@ -60,6 +60,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
 
     private val tagChat = Constants.LogTag.Chats
     private var isFilterModeOn = false
+    private var lastSearch =""
 
     private var _recentChatAdapter: RecentChatAdapter? = null
     private val recentChatAdaptper get() = _recentChatAdapter!!
@@ -169,6 +170,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                 }.onEach {
                 val filteredList = recentChatAdaptper.giveMeFilterList(it, recentChatList)
                 runOnUiThread {
+                    lastSearch=it
                     if (it.isEmpty()) {
                         binding.icClose.gone()
                         isFilterModeOn = false
@@ -191,6 +193,12 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
 
     private fun initUi() {
         binding.apply {
+            if(lastSearch.isNotEmpty()){
+                initialStateLayout.gone()
+                expandedStateLayout.myShow()
+                etSearch.setText(lastSearch)
+                etSearch.requestFocus()
+            }
             rvRecentChat.apply {
                 layoutManager = LinearLayoutManager(requireContext())
                 adapter = recentChatAdaptper
@@ -440,6 +448,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
 
     //endregion
     override fun onDestroyView() {
+        binding.etSearch.hideKeyboardAndFocus()
         _binding = null
         super.onDestroyView()
     }
