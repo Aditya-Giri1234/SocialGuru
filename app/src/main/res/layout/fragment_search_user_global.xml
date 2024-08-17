@@ -6,20 +6,31 @@
     android:layout_height="match_parent"
     android:background="@color/black"
     android:focusableInTouchMode="true"
-    tools:context=".ui_layer.fragment.bottom_navigation_fragment.RecentChatFragment">
+    tools:context=".ui_layer.fragment.profile_part.SearchUserGlobalFragment">
+
+    <ImageView
+        android:id="@+id/ivBack"
+        android:layout_width="@dimen/_30sdp"
+        android:layout_height="@dimen/_30sdp"
+        android:layout_marginHorizontal="@dimen/_5sdp"
+        android:src="@drawable/ic_left_arrow"
+        app:layout_constraintBottom_toBottomOf="@id/linearHeaderSearch"
+        app:layout_constraintEnd_toStartOf="@id/linearHeaderSearch"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/linearHeaderSearch" />
 
     <LinearLayout
         android:id="@+id/linearHeaderSearch"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="?actionBarSize"
         android:layout_marginHorizontal="@dimen/_10sdp"
-        android:layout_marginVertical="@dimen/_5sdp"
+        android:layout_marginVertical="@dimen/_10sdp"
         android:background="@drawable/shape_fab_bg"
         android:gravity="center"
         android:orientation="horizontal"
         android:paddingHorizontal="@dimen/_10sdp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@id/ivBack"
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
@@ -38,29 +49,29 @@
                 app:tint="@color/lightWhite" />
 
             <TextView
-                android:id="@+id/tvRecentChat"
+                android:id="@+id/tvSearchUser"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="@dimen/_16ssp"
                 android:fontFamily="@font/poppin_medium"
-                android:text="Recent Chat"
-                android:textColor="@color/white" />
+                android:text="Search User"
+                android:textColor="@color/white"
+                android:textSize="@dimen/_16ssp" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/expandedStateLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone"
             android:gravity="center"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <EditText
                 android:id="@+id/etSearch"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
                 android:layout_marginHorizontal="@dimen/_5sdp"
+                android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:hint="Search User"
                 android:inputType="textPersonName"
@@ -75,8 +86,8 @@
                 android:layout_width="@dimen/_24sdp"
                 android:layout_height="@dimen/_24sdp"
                 android:contentDescription="Close Icon"
-                android:visibility="gone"
-                android:src="@drawable/ic_close" />
+                android:src="@drawable/ic_close"
+                android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
 
@@ -85,7 +96,7 @@
         android:id="@+id/noDataView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="No Chat Available."
+        android:text="No User Found."
         android:textColor="@color/white"
         android:textSize="@dimen/_16ssp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -96,27 +107,27 @@
         app:layout_constraintVertical_bias="0.5" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvRecentChat"
+        android:id="@+id/rvSearchUser"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:visibility="gone"
-        tools:listitem="@layout/sample_recent_chat_layout"
         android:layout_marginTop="@dimen/_10sdp"
         android:layout_marginBottom="@dimen/_30sdp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/linearHeaderSearch"
-        app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        tools:listitem="@layout/sample_recent_chat_layout" />
 
     <LinearLayout
         android:id="@+id/linearBackToTop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginVertical="@dimen/_20sdp"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="gone"
         android:alpha=".8"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/fBtnStartChat"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -138,28 +149,27 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:fontFamily="@font/poppin_medium"
+            android:includeFontPadding="false"
             android:text="BACK TO TOP"
             android:textColor="@color/white"
-            android:includeFontPadding="false"
-            android:fontFamily="@font/poppin_medium"
-            android:layout_marginTop="@dimen/_10sdp"
-            android:textSize="@dimen/_13ssp"/>
+            android:textSize="@dimen/_13ssp" />
 
 
     </LinearLayout>
 
-
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/fBtnStartChat"
+    <ProgressBar
+        android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="@dimen/_20sdp"
-        android:layout_marginVertical="@dimen/_40sdp"
-        android:backgroundTint="@color/lightBlack"
-        app:icon="@drawable/ic_add"
-        app:iconTint="@color/white"
+        android:indeterminate="true"
+        android:visibility="gone"
+        android:indeterminateTint="@color/white"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/linearHeaderSearch"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"/>
 
 
     <androidx.constraintlayout.widget.Guideline

@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.R
+import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.SampleUserListBinding
@@ -15,7 +16,7 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.bumptech.glide.Glide
 
-class UserAdapter(val itemClick: (userId: String , view: View) -> Unit) :
+class UserAdapter(val itemClick: (user: User, view: View) -> Unit) :
     RecyclerView.Adapter<UserAdapter.ViewHolder>() {
         private var groupInfo: GroupInfo? = null
 
@@ -55,8 +56,11 @@ class UserAdapter(val itemClick: (userId: String , view: View) -> Unit) :
                     ).into(ivUserProfileImage)
                     tvUserName.text = data.user?.userName
                     root.setSafeOnClickListener {
-                        itemClick(userId!! , it)
+                        data.user?.let {user->
+                            itemClick(user, it)
+                        }
                     }
+
 
                     val isThisUserCreator = groupInfo?.creatorId == userId
                     if(isThisUserCreator){

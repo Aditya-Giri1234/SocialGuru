@@ -20,6 +20,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
+import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
@@ -107,7 +108,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
     }
-    private val chatViewModel by viewModels<ChatViewModel>()
+    private val chatViewModel by navGraphViewModels<ChatViewModel>(R.id.groupChatFragment)
 
     private val senderId by lazy {
         AuthManager.currentUserId()!!
@@ -237,6 +238,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
             }.launchIn(this)
 
             chatViewModel.groupMemberDetails.onEach { response ->
+                MyLogger.w(tagChat , msg = "GroupMemberDetails response come !")
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()

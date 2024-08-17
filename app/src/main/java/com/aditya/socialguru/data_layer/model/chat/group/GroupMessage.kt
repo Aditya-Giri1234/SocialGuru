@@ -17,4 +17,5 @@ data class GroupMessage(
     val messageReceivedByUsers:List<String>?=null,
     val messageSeenByUsers:List<String>?=null ,
     val newMembers:List<String>?=null,
+    val newMembersName: List<String>?=null
 )

@@ -5,62 +5,49 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.Gravity
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.PopupWindow
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
+import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
 import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMember
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMemberDetails
-import com.aditya.socialguru.data_layer.model.chat.group.GroupMembersList
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
-import com.aditya.socialguru.databinding.FragmentEditGroupProfileBinding
 import com.aditya.socialguru.databinding.FragmentGroupMembersBinding
 import com.aditya.socialguru.databinding.PopUpGroupMemberActivityBinding
-import com.aditya.socialguru.databinding.PopUpProfileSettingBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
-import com.aditya.socialguru.domain_layer.custom_class.dialog.ProfilePicEditDialog
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
-import com.aditya.socialguru.domain_layer.helper.disabled
-import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
-import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
-import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myShow
-import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.UserAdapter
-import com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.ProfileFragmentDirections
-import com.aditya.socialguru.ui_layer.fragment.post.UserLikeLIstFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
-import com.bumptech.glide.Glide
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -74,7 +61,7 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
     private val groupMembers: MutableList<FriendCircleData> = mutableListOf()
     private var groupMembersList : MutableList<GroupMember> = mutableListOf()
     private var defaultAlertDialogOption = GroupMemberScreenAlertDialogOption.REMOVE_USER
-    private var currentUserId:String ?=null // This store which user  current tap
+    private var currentUser:User ?=null // This store which user  current tap
     private var myLoader: MyLoader? = null
     private var groupInfo: GroupInfo? = null
 
@@ -82,6 +69,7 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
     private val userAdapter get() = _userAdapter!!
 
     private val chatViewModel by viewModels<ChatViewModel>()
+    private val listenChatViewModel by navGraphViewModels<ChatViewModel>(R.id.groupChatFragment)
     private val args by navArgs<GroupChatFragmentArgs>()
 
     private val navController by lazy {
@@ -117,9 +105,11 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     private fun subscribeToObserver() {
         observeFlow {
-            chatViewModel.groupInfo.onEach { response ->
+            // group info and group member details already call in group chat fragment so don't need call here just listen
+            listenChatViewModel.groupInfo.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
+                        hideDialog()
                         response.data?.let {
                             groupInfo = it
                             handleGroupInfo(it)
@@ -127,16 +117,19 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
                     }
 
                     is Resource.Loading -> {
+                        showDialog()
                     }
 
                     is Resource.Error -> {
+                        hideDialog()
                         showSnackBar(response.message)
                     }
                 }
 
             }.launchIn(this)
 
-            chatViewModel.groupMemberDetails.onEach { response ->
+            listenChatViewModel.groupMemberDetails.onEach { response ->
+                MyLogger.w(tagChat , msg = "GroupMemberDetails response come !")
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()
@@ -161,7 +154,18 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()
-                        showSnackBar("Successfully Exit From Group!", isSuccess = true)
+                        val message = when(defaultAlertDialogOption){
+                            GroupMemberScreenAlertDialogOption.MAKE_ADMIN -> {
+                                "${currentUser?.userName ?: "this member"} is now admin !"
+                            }
+                            GroupMemberScreenAlertDialogOption.REMOVE_USER -> {
+                                "${currentUser?.userName ?: "this member"} is removed from group !"
+                            }
+                            GroupMemberScreenAlertDialogOption.DISMISS_AS_ADMIN -> {
+                                "${currentUser?.userName ?: "this member"} is dismissed as admin !"
+                            }
+                        }
+                        showSnackBar(message, isSuccess = true)  // Need to updated
 
                     }
 
@@ -204,8 +208,8 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
 
 
     private fun initUi(){
-        _userAdapter = UserAdapter {id,view ->
-            handleUserClick(id, view)
+        _userAdapter = UserAdapter {user,view ->
+            handleUserClick(user, view)
         }
         binding.apply {
             myToolbar.apply {
@@ -229,8 +233,7 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
 
     private fun getData() {
         if(!chatViewModel.isDataLoaded){
-            chatViewModel.getGroupMemberDetails(chatRoomId)
-            chatViewModel.getGroupInfo(chatRoomId)
+            showDialog()  // Initial Dialog
             chatViewModel.setDataLoadedStatus(true)
         }
     }
@@ -300,10 +303,10 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
 
     }
 
-    private fun handleUserClick(id: String, view: View) {
-        if (id == AuthManager.currentUserId() !!) return
+    private fun handleUserClick(user: User, view: View) {
+        if (user.userId!! == AuthManager.currentUserId() !!) return
 
-        currentUserId = id
+        currentUser = user
 
         // Pop up menu take two thing first one context and second  is in which view is parent so it adjust size accordingly
         val layoutInflater =
@@ -318,10 +321,11 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
         popUp.isOutsideTouchable = true
         popUp.setBackgroundDrawable(ColorDrawable())
         popUp.animationStyle = R.style.popup_window_animation
-        popUp.showAsDropDown(view)
+        popUp.showAsDropDown(view ,0 ,-(view.height
+        *50/100) , Gravity.END)
 
         bindingPopUp.apply {
-            if (isCreatorOfGroup(id)){
+            if (isCreatorOfGroup(user.userId)){
                 tvMakeAdmin.gone()
                 viewBelowMakeAdmin.gone()
                 tvDismissAsAdmin.gone()
@@ -330,7 +334,7 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
                 viewBelowRemoveUser.gone()
             }
 
-            if (isAdminOfGroup(id)){
+            if (isAdminOfGroup(user.userId!!)){
                 tvMakeAdmin.gone()
                 viewBelowMakeAdmin.gone()
                 if (!(isCreatorOfGroup(AuthManager.currentUserId()!!) ||isAdminOfGroup(AuthManager.currentUserId()!!)) ){
@@ -355,11 +359,11 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
         try {
             bindingPopUp.apply {
 
-                tvMakeAdmin.setSafeOnClickListener {
+                tvMakeAdmin.setOnClickListener {
                     defaultAlertDialogOption = GroupMemberScreenAlertDialogOption.MAKE_ADMIN
                     popUp.dismiss()
                     AlertDialog(
-                        "Are you sure to make this member as admin ?",
+                        "Are you sure to make ${user.userName ?: "this member"} as admin ?",
                         this@GroupMembersFragment,
                         isForShowDelete = false
                     ).show(
@@ -367,11 +371,11 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
                         "MyAlertDialog"
                     )
                 }
-                tvDismissAsAdmin.setSafeOnClickListener {
+                tvDismissAsAdmin.setOnClickListener {
                     defaultAlertDialogOption = GroupMemberScreenAlertDialogOption.DISMISS_AS_ADMIN
                     popUp.dismiss()
                     AlertDialog(
-                        "Are you sure to dismiss this member as admin ?",
+                        "Are you sure to dismiss ${user.userName ?: "this member"} as admin ?",
                         this@GroupMembersFragment,
                         isForShowDelete = false
                     ).show(
@@ -380,11 +384,11 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
                     )
 
                 }
-                tvRemoveUser.setSafeOnClickListener {
+                tvRemoveUser.setOnClickListener {
                     defaultAlertDialogOption = GroupMemberScreenAlertDialogOption.REMOVE_USER
                     popUp.dismiss()
                     AlertDialog(
-                        "Are you sure to remove this member from group ?",
+                        "Are you sure to remove ${user.userName ?: "this member"} from group ?",
                         this@GroupMembersFragment,
                         isForShowDelete = false
                     ).show(
@@ -392,13 +396,13 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
                         "MyAlertDialog"
                     )
                 }
-                tvSendMessage.setSafeOnClickListener {
+                tvSendMessage.setOnClickListener {
                     popUp.dismiss()
-                    navigateToChatScreen(id)
+                    navigateToChatScreen(user.userId)
                 }
-                tvViewUser.setSafeOnClickListener {
+                tvViewUser.setOnClickListener {
                     popUp.dismiss()
-                    navigateToProfileScreen(id)
+                    navigateToProfileScreen(user.userId)
                 }
 
             }
@@ -469,7 +473,9 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
     }
 
     private fun performMakeAdmin() {
-        if (currentUserId==null) return
+        if (currentUser==null) return
+
+        val currentUserId = currentUser!!.userId!!
 
         MyLogger.d(tagChat , isFunctionCall = true)
 
@@ -503,7 +509,9 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
         )
     }
     private fun performDismissAsAdmin() {
-        if (currentUserId==null) return
+        if (currentUser==null) return
+
+        val currentUserId = currentUser!!.userId!!
 
 
         MyLogger.d(tagChat , isFunctionCall = true)
@@ -539,7 +547,9 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
     }
 
     private fun performRemoveUser() {
-        if (currentUserId==null) return
+        if (currentUser==null) return
+
+        val currentUserId = currentUser!!.userId!!
 
         MyLogger.d(tagChat , isFunctionCall = true)
         val message = GroupMessage(

@@ -121,8 +121,8 @@ class UserLikeLIstFragment : Fragment() {
     }
 
     private fun initUi() {
-        _userAdapter = UserAdapter {it,view ->
-            navigateToProfileViewScreen(it)
+        _userAdapter = UserAdapter {user,_ ->
+            navigateToProfileViewScreen(user.userId!!)
         }
         binding.apply {
             myToolbar.apply {

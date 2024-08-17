@@ -501,12 +501,25 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         popUp.animationStyle = R.style.popup_window_animation
         popUp.showAsDropDown(binding.myToolbar.icSetting)
 
-        bindingPopUp.linearItemStatus.setSafeOnClickListener {
+        bindingPopUp.linearItemStatus.setOnClickListener {
             navigateToShowMyStatus()
             popUp.dismiss()
         }
 
+        bindingPopUp.linearSearchUser.setOnClickListener {
+            navigateToSearchUserScreen()
+            popUp.dismiss()
+        }
 
+
+    }
+
+    private fun navigateToSearchUserScreen() {
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalSearchUserGlobalFragment()
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
     private fun navigateToShowMyStatus() {

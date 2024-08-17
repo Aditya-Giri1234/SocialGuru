@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
 import androidx.navigation.navOptions
@@ -34,12 +35,15 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.chat.StartChatAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 
 class StartGroupChatFragment : Fragment() {
@@ -69,6 +73,10 @@ class StartGroupChatFragment : Fragment() {
 
     private val chatViewModel by viewModels<ChatViewModel>()
     private val args by navArgs<StartGroupChatFragmentArgs>()
+
+    private val pref by lazy {
+        SharePref(requireContext())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -163,7 +171,6 @@ class StartGroupChatFragment : Fragment() {
                     }
                 }
             }.launchIn(this)
-
             chatViewModel.sendGroupInfoMessage.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
@@ -202,8 +209,6 @@ class StartGroupChatFragment : Fragment() {
                     }
                 }
             }.launchIn(this)
-
-
         }
     }
 
@@ -261,7 +266,6 @@ class StartGroupChatFragment : Fragment() {
         }
     }
 
-
     /**
      * [checkAndShowSelectedUser] help me  when user navigate to other fragment then come back again then show previous selected user.
      * */
@@ -308,6 +312,7 @@ class StartGroupChatFragment : Fragment() {
                     // Only show who is not participant of group
                     val alreadyMemberUserId =
                         groupAlreadyMembers?.members?.mapNotNull { it.memberId }
+                    MyLogger.i(tagChat , msg = alreadyMemberUserId , isJson = true , jsonTitle = "Already Member Ids")
                     data.filter {
                         if (it.userId != null) {
                             (alreadyMemberUserId?.contains(it.userId) == false) ?: true
@@ -399,7 +404,8 @@ class StartGroupChatFragment : Fragment() {
             messageType = Constants.MessageType.Info.type,
             senderId = AuthManager.currentUserId()!!,
             infoMessageType = Constants.InfoType.MemberAdded.name,
-            newMembers = selectedUser.mapNotNull { it.userId }
+            newMembers = selectedUser.mapNotNull { it.userId } ,
+            newMembersName = selectedUser.mapNotNull { it.userName }
         )
         val lastMessage = GroupLastMessage(
             senderId = AuthManager.currentUserId()!!,
@@ -448,26 +454,30 @@ class StartGroupChatFragment : Fragment() {
 
     private fun performExitUser() {
         isCreatorOfGroupIsRemoveApiCall=true
-        val message = GroupMessage(
-            messageId = Helper.getMessageId(),
-            messageType = Constants.MessageType.Info.type,
-            senderId = AuthManager.currentUserId()!!,
-            infoMessageType = Constants.InfoType.MemberExit.name,
-        )
-        val lastMessage = GroupLastMessage(
-            senderId = AuthManager.currentUserId()!!,
-            messageType = Constants.MessageType.Info.type,
-            infoMessageType = Constants.InfoType.MemberExit.name,
-        )
+        lifecycleScope.launch {
+            val message = GroupMessage(
+                messageId = Helper.getMessageId(),
+                messageType = Constants.MessageType.Info.type,
+                senderId = AuthManager.currentUserId()!!,
+                infoMessageType = Constants.InfoType.MemberExit.name,
+                text = pref.getPrefUser().first()?.userName
+            )
+            val lastMessage = GroupLastMessage(
+                senderId = AuthManager.currentUserId()!!,
+                messageType = Constants.MessageType.Info.type,
+                infoMessageType = Constants.InfoType.MemberExit.name,
+            )
 
-        chatViewModel.sentGroupInfoMessage(
-            message,
-            lastMessage,
-            chatRoomId!!,
-            groupAlreadyMembers!!.members,
-            action = Constants.InfoType.MemberExit,
-            addedOrRemovedUserId = AuthManager.currentUserId()!!
-        )
+            chatViewModel.sentGroupInfoMessage(
+                message,
+                lastMessage,
+                chatRoomId!!,
+                groupAlreadyMembers!!.members.filter { it.memberId !=AuthManager.currentUserId()!! },
+                action = Constants.InfoType.MemberExit,
+                addedOrRemovedUserId = AuthManager.currentUserId()!!
+            )
+        }
+
     }
 
     private fun navigateToGroupMakingScreen() {

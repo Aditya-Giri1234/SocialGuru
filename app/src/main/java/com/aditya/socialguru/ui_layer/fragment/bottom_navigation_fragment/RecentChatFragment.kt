@@ -1,5 +1,8 @@
 package com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ObjectAnimator
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -19,37 +22,52 @@ import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.chat.UserRecentModel
 import com.aditya.socialguru.databinding.FragmentRecentChatBinding
+import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.dialog.SelectStartChatDialog
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
+import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
+import com.aditya.socialguru.domain_layer.helper.showKeyboard
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.StartChatDialogOption
 import com.aditya.socialguru.ui_layer.adapter.chat.RecentChatAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.vanniktech.ui.hideKeyboardAndFocus
 import com.vanniktech.ui.smoothScrollTo
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 
-class RecentChatFragment : Fragment(), StartChatDialogOption {
+class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption {
 
     private var _binding: FragmentRecentChatBinding? = null
     private val binding get() = _binding!!
 
     private val tagChat = Constants.LogTag.Chats
+    private var isFilterModeOn = false
 
     private var _recentChatAdapter: RecentChatAdapter? = null
+    private val recentChatAdaptper get() = _recentChatAdapter!!
+
     private var myLoader: MyLoader? = null
-    private val recentChatAdatper get() = _recentChatAdapter!!
+    private var currentRecentChatDelete: UserRecentModel? = null
+
+    private val recentChatList = mutableListOf<UserRecentModel>()
 
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
@@ -91,20 +109,40 @@ class RecentChatFragment : Fragment(), StartChatDialogOption {
     }
 
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun subscribeToObserver() {
         viewLifecycleOwner.observeFlow {
-            chatViewModel.recentChat.onEach {response->
-                when(response){
+            chatViewModel.recentChat.onEach { response ->
+                when (response) {
                     is Resource.Success -> {
                         response.data?.let {
                             setData(it)
                         }
                     }
+
                     is Resource.Loading -> {
 
                     }
+
                     is Resource.Error -> {
 
+                    }
+                }
+
+            }.launchIn(this)
+            chatViewModel.deleteRecentChat.onEach { response->
+
+                when(response){
+                    is Resource.Success -> {
+                        hideDialog()
+                        showSnackBar("Deleted Successfully !" , isSuccess = true)
+                    }
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+                    is Resource.Error -> {
+                        hideDialog()
+                        showSnackBar(response.message)
                     }
                 }
 
@@ -124,17 +162,39 @@ class RecentChatFragment : Fragment(), StartChatDialogOption {
                     binding.rvRecentChat.smoothScrollTo(0)
                 }
             }.launchIn(this)
+
+            binding.etSearch.getQueryTextChangeStateFlow().debounce(100).distinctUntilChanged()
+                .flatMapLatest { query ->
+                    return@flatMapLatest flowOf(query.trim())
+                }.onEach {
+                val filteredList = recentChatAdaptper.giveMeFilterList(it, recentChatList)
+                runOnUiThread {
+                    if (it.isEmpty()) {
+                        binding.icClose.gone()
+                        isFilterModeOn = false
+                    } else {
+                        binding.icClose.myShow()
+                        isFilterModeOn = true
+                    }
+
+                    if (filteredList.isEmpty()) {
+                        showNoDataView()
+                    } else {
+                        hideNoDataView()
+                        recentChatAdaptper.submitList(filteredList)
+                    }
+                }
+            }.launchIn(this)
         }
     }
-
 
 
     private fun initUi() {
         binding.apply {
             rvRecentChat.apply {
                 layoutManager = LinearLayoutManager(requireContext())
-                adapter = recentChatAdatper
-                setHasFixedSize(true)
+                adapter = recentChatAdaptper
+//                setHasFixedSize(true)
                 isMotionEventSplittingEnabled = false
             }
             setListener()
@@ -142,16 +202,12 @@ class RecentChatFragment : Fragment(), StartChatDialogOption {
     }
 
 
-
     private fun FragmentRecentChatBinding.setListener() {
 
-        /* etSearch.setOnTouchListener { v, event ->
-             etSearch.focusable = EditText.FOCUSABLE
-             etSearch.requestFocus()
-             MyLogger.v(tagChat, msg = "Touch on search  view occurred !")
-
-             return@setOnTouchListener true
-         }*/
+        root.setOnTouchListener { v, event ->
+            etSearch.hideKeyboardAndFocus()
+            false
+        }
 
         linearBackToTop.setSafeOnClickListener {
             AppBroadcastHelper.setHomeScrollBackToTopClick(true)
@@ -185,12 +241,26 @@ class RecentChatFragment : Fragment(), StartChatDialogOption {
                 }
             }
 
+            icClose.setOnClickListener {
+                etSearch.text.clear()
+                etSearch.hideKeyboardAndFocus()
+            }
+
         }
 
+        initialStateLayout.setOnClickListener {
+            showExpandedState()
+        }
 
-        icClose.setSafeOnClickListener {
+        icClose.setOnClickListener {
             etSearch.text.clear()
             etSearch.hideKeyboardAndFocus()
+        }
+
+        etSearch.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                hideExpandedState()
+            }
         }
         fBtnStartChat.setSafeOnClickListener {
             SelectStartChatDialog(this@RecentChatFragment).show(
@@ -219,12 +289,53 @@ class RecentChatFragment : Fragment(), StartChatDialogOption {
     }
 
     private fun setData(list: List<UserRecentModel>) {
-        if (list.isEmpty()) {
-            showNoDataView()
-        } else {
-            hideNoDataView()
-            recentChatAdatper.submitList(list)
+        recentChatList.clear()
+        recentChatList.addAll(list)
+        if (!isFilterModeOn) {
+            if (list.isEmpty()) {
+                showNoDataView()
+            } else {
+                hideNoDataView()
+                recentChatAdaptper.submitList(list)
+            }
         }
+    }
+
+    private fun FragmentRecentChatBinding.showExpandedState() {
+        val animIn = ObjectAnimator.ofFloat(
+            expandedStateLayout,
+            "translationX",
+            expandedStateLayout.width.toFloat(),
+            0f
+        )
+        animIn.duration = 300
+        animIn.start()
+
+        initialStateLayout.visibility = View.GONE
+        expandedStateLayout.visibility = View.VISIBLE
+
+        etSearch.requestFocus()
+        etSearch.showKeyboard()
+    }
+
+    private fun FragmentRecentChatBinding.hideExpandedState() {
+        val animOut = ObjectAnimator.ofFloat(
+            expandedStateLayout,
+            "translationX",
+            0f,
+            expandedStateLayout.width.toFloat()
+        )
+        animOut.duration = 300
+        animOut.start()
+
+        animOut.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                initialStateLayout.visibility = View.VISIBLE
+                expandedStateLayout.visibility = View.GONE
+            }
+        })
+
+        etSearch.clearFocus()
     }
 
     private fun showDialog() {
@@ -277,23 +388,28 @@ class RecentChatFragment : Fragment(), StartChatDialogOption {
 
     override fun onGroupChatClick() {
         val direction: NavDirections =
-            BottomNavigationBarDirections.actionGlobalStartGroupChatFragment(Constants.MembersAddType.StartGroup.name , chatRoomId = null)
+            BottomNavigationBarDirections.actionGlobalStartGroupChatFragment(
+                Constants.MembersAddType.StartGroup.name,
+                chatRoomId = null
+            )
         navController.safeNavigate(direction, Helper.giveAnimationNavOption())
     }
 
     private fun onItemClick(data: UserRecentModel) {
-        val isGroupChat=data.recentChat?.isGroupChat?.takeIf { it } ?: false
-        val chatRoomId=data.groupInfo?.chatRoomId
-        val userId=data.user?.userId
-         if (isGroupChat) {
-             chatRoomId?.let {
-                 val direction: NavDirections =BottomNavigationBarDirections.actionGlobalGroupChatFragment(chatRoomId)
-                 navController.safeNavigate(direction, Helper.giveAnimationNavOption())
-             }
+        val isGroupChat = data.recentChat?.isGroupChat?.takeIf { it } ?: false
+        val chatRoomId = data.groupInfo?.chatRoomId
+        val userId = data.user?.userId
+        if (isGroupChat) {
+            chatRoomId?.let {
+                val direction: NavDirections =
+                    BottomNavigationBarDirections.actionGlobalGroupChatFragment(chatRoomId)
+                navController.safeNavigate(direction, Helper.giveAnimationNavOption())
+            }
 
-        }else{
+        } else {
             userId?.let {
-                val direction: NavDirections = BottomNavigationBarDirections.actionGlobalChatFragment(it)
+                val direction: NavDirections =
+                    BottomNavigationBarDirections.actionGlobalChatFragment(it)
                 navController.safeNavigate(direction, Helper.giveAnimationNavOption())
             }
 
@@ -302,7 +418,24 @@ class RecentChatFragment : Fragment(), StartChatDialogOption {
     }
 
     private fun onItemLongClick(data: UserRecentModel) {
+        currentRecentChatDelete = data
         //Show Pop or Dialog
+        AlertDialog(
+            "Are you sure to delete this chat ?",
+            this@RecentChatFragment,
+            isForShowDelete = true
+        ).show(
+            childFragmentManager,
+            "MyAlertDialog"
+        )
+    }
+
+    override fun onResult(isYes: Boolean) {
+        if (isYes) {
+            if (currentRecentChatDelete!=null){
+                chatViewModel.deleteRecentChat(currentRecentChatDelete!!.recentChat!!.chatRoomId!!)
+            }
+        }
     }
 
     //endregion

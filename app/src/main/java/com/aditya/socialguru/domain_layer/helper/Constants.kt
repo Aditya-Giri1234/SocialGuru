@@ -190,7 +190,9 @@ object Constants {
         LAST_MESSAGE_SENT_TIME_IN_TIMESTAMP("lastMessageSentTimeInTimeStamp"),
         LAST_MESSAGE_SENT_TIME_IN_TEXT("lastMessageSentTimeInText"),
         IS_USER_1_ONLINE("isUser1Online"),
-        IS_USER_2_ONLINE("isUser2Online")
+        IS_USER_2_ONLINE("isUser2Online") ,
+        USER_1_LAST_ONLINE_TIMESTAMP("user1LastOnlineTimeStamp"),
+        USER_2_LAST_ONLINE_TIMESTAMP("user2LastOnlineTimeStamp")
     }
 
     enum class RecentChatTable(val fieldName:String){

@@ -7,17 +7,21 @@ import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.isGone
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
+import androidx.navigation.navGraphViewModels
 import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
 import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
+import com.aditya.socialguru.data_layer.model.chat.group.GroupMemberDetails
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMembersList
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
+import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.FragmentGroupProfileBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
@@ -56,6 +60,7 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
     private var groupInfo: GroupInfo? = null
 
     private val args by navArgs<GroupProfileFragmentArgs>()
+    private val listenChatViewModel by navGraphViewModels<ChatViewModel>(R.id.groupChatFragment)
     private val chatViewModel by viewModels<ChatViewModel>()
 
 
@@ -91,7 +96,7 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
 
     private fun subscribeToObserver() {
         observeFlow {
-            chatViewModel.groupInfo.onEach { response ->
+            listenChatViewModel.groupInfo.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()
@@ -111,11 +116,11 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
                 }
 
             }.launchIn(this)
-
-            chatViewModel.groupMemberDetails.onEach { response ->
+            listenChatViewModel
+                .groupMemberDetails.onEach { response ->
+                MyLogger.w(tagChat , msg = "GroupMemberDetails response come !")
                 when (response) {
                     is Resource.Success -> {
-                        hideDialog()
                         response.data?.let {
                             groupMembers = GroupMembersList(members = it.map { it.member })
                             val isIAmExitFromGroup =
@@ -125,17 +130,14 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
                     }
 
                     is Resource.Loading -> {
-                        showDialog()
                     }
 
                     is Resource.Error -> {
-                        hideDialog()
                         showSnackBar(response.message, isSuccess = false)
                     }
                 }
 
             }.launchIn(this)
-
             chatViewModel.sendGroupInfoMessage.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
@@ -160,7 +162,6 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
                     }
                 }
             }.launchIn(this)
-
             chatViewModel.isMuted.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
@@ -201,6 +202,7 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
                 }
 
             }.launchIn(this)
+
 
         }
     }
@@ -356,8 +358,6 @@ navigateToGroupMembersScreen()
 
     private fun getData() {
         if (!chatViewModel.isDataLoaded) {
-            chatViewModel.getGroupInfo(chatRoomId)
-            chatViewModel.getGroupMemberDetails(chatRoomId)
             chatViewModel.isUserMutedAndListen(chatRoomId)
             chatViewModel.setDataLoadedStatus(true)
         }

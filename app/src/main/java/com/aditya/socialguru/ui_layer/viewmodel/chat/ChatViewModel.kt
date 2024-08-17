@@ -137,6 +137,9 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     private val _userListDetailsByIds = MutableSharedFlow<Resource<List<FriendCircleData>>>(1,64, BufferOverflow.DROP_OLDEST)
     val userDetailsByIds get() = _userListDetailsByIds.asSharedFlow()
 
+    private val _deleteRecentChat = MutableSharedFlow<Resource<UpdateResponse>>(0, 64, BufferOverflow.DROP_OLDEST)
+    val deleteRecentChat = _deleteRecentChat.asSharedFlow()
+
 
 
 
@@ -276,16 +279,17 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     //region:: Send Message
 
     fun sendMessage(
-        message: Message, lastMessage: LastMessage, charRoomId: String, isUserOnline: Boolean
+        message: Message, lastMessage: LastMessage, charRoomId: String, isUserOnline: Boolean , onSend:()->Unit
     ) = viewModelScope.myLaunch {
         val isImagePresent = message.imageUri != null
         val isVideoPresent = message.videoUri != null
 
-        if (isVideoPresent || isImagePresent) {
-            _sendMessage.tryEmit(Resource.Loading())
-        }
-
         if (SoftwareManager.isNetworkAvailable(app)) {
+            if (isVideoPresent || isImagePresent) {
+                _sendMessage.tryEmit(Resource.Loading())
+            }else{
+                onSend.invoke()
+            }
             repository.sendMessage(message, lastMessage, charRoomId, isUserOnline).onEach {
                 MyLogger.i(
                     tagChat, msg = it, isJson = true, jsonTitle = "Message sent response come"
@@ -504,16 +508,28 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
             }
 
             Constants.ListenerEmitType.Removed -> {
-                it.singleResponse?.recentChat?.receiverId?.let { removedMessageId ->
-                    recentChatList.forEach {
-                        val userId = it.user?.userId
-                        if (userId != null && userId == removedMessageId) {
-                            recentChatList.remove(it)
-                            recentChatList.sortByDescending { it.recentChat?.lastMessageTimeInTimeStamp }
-                            return@let
+                if (it.singleResponse?.groupInfo!=null){
+                    //For Group Chat
+                    val groupInfo = it.singleResponse.groupInfo!!
+                    val deleteRecentChat: UserRecentModel? = recentChatList.find { it.groupInfo?.chatRoomId == groupInfo.chatRoomId }
+                    if(deleteRecentChat!=null){
+                        recentChatList.remove(deleteRecentChat)
+                        recentChatList.sortByDescending { it.recentChat?.lastMessageTimeInTimeStamp }
+                    }
+                }else{
+                    //For Single chat
+                    it.singleResponse?.recentChat?.receiverId?.let { removedMessageId ->
+                        recentChatList.forEach {
+                            val userId = it.user?.userId
+                            if (userId != null && userId == removedMessageId) {
+                                recentChatList.remove(it)
+                                recentChatList.sortByDescending { it.recentChat?.lastMessageTimeInTimeStamp }
+                                return@let
+                            }
                         }
                     }
                 }
+
             }
 
             Constants.ListenerEmitType.Modify -> {
@@ -910,14 +926,15 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
         if (SoftwareManager.isNetworkAvailable(app)){
             repository.getGroupMemberInfo(chatRoomId).onEach {
-                _groupMemberDetails.tryEmit(Resource.Success(handleGroupMemberDetails(it)))
+                MyLogger.i(tagChat, msg = it, isJson = true , jsonTitle = "Group Member Details response come !")
+                _groupMemberDetails.tryEmit(handleGroupMemberDetails(it))
             }.launchIn(this)
         }else{
             _groupMemberDetails.tryEmit(Resource.Error("No Internet Available !"))
         }
     }
 
-    private fun handleGroupMemberDetails(it: ListenerEmissionType<GroupMemberDetails, GroupMemberDetails>): List<GroupMemberDetails>? {
+    private fun handleGroupMemberDetails(it: ListenerEmissionType<GroupMemberDetails, GroupMemberDetails>): Resource<List<GroupMemberDetails>> {
         val groupMemberDetails = groupMemberDetails.replayCache[0].data?.toMutableList() ?: mutableListOf()
 
         when (it.emitChangeType) {
@@ -931,7 +948,6 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
             Constants.ListenerEmitType.Added -> {
                 it.singleResponse?.let {
                     groupMemberDetails.add(it)
-
                 }
             }
 
@@ -962,7 +978,9 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
             }
         }
 
-        return groupMemberDetails
+        MyLogger.i(tagChat, msg = groupMemberDetails, isJson = true , jsonTitle = "Group Member Details updated !")
+
+        return Resource.Success(groupMemberDetails)
 
     }
 
@@ -1100,6 +1118,26 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
              }.launchIn(this)
          }else{
              _sendGroupInfoMessage.tryEmit(Resource.Error("Internet Not Available !"))
+         }
+     }
+
+    //endregion
+
+
+    //region :: Recent Chat
+
+     fun deleteRecentChat(chatRoomId: String) = viewModelScope.myLaunch {
+         _deleteRecentChat.tryEmit(Resource.Loading())
+         if (isNetworkAvailable(app)){
+             repository.deleteRecentChat(chatRoomId).onEach {
+                 if (it.isSuccess){
+                     _deleteRecentChat.tryEmit(Resource.Success(it))
+                 }else{
+                     _deleteRecentChat.tryEmit(Resource.Error(it.errorMessage))
+                 }
+             }.launchIn(this)
+         }else{
+             _deleteRecentChat.tryEmit(Resource.Error("Internet Not Available !"))
          }
      }
 

@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
@@ -127,6 +128,13 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         BufferOverflow.DROP_OLDEST
     )
     val userRelationshipStatusUpdate get() = _userRelationshipStatusUpdate.asSharedFlow()
+
+    private val _findUsers = MutableSharedFlow<Resource<List<FriendCircleData>>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val findUsers get() = _findUsers.asSharedFlow()
 
 
     fun subscribeToFollowerCount(userId: String) = viewModelScope.myLaunch{
@@ -310,6 +318,17 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
             _userDetails.tryEmit(Resource.Error("No Internet Available !"))
         }
 
+    }
+
+    fun findUser(query: String) = viewModelScope.myLaunch {
+        _findUsers.tryEmit(Resource.Loading())
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.findUser(query).onEach {
+                _findUsers.tryEmit(Resource.Success(it))
+            }.launchIn(this)
+        }else{
+            _findUsers.tryEmit(Resource.Error("No Internet Available !"))
+        }
     }
 
     override fun onCleared() {

@@ -113,4 +113,9 @@ class ChatRepo {
 
     suspend fun getAllUserByIds(userIds:List<String>) = FirebaseManager.getAllUserByIds(userIds)
 
+
+    //region :: Recent Chat
+    suspend fun deleteRecentChat(chatRoomId: String) = ChatManager.deleteRecentChat(chatRoomId)
+    //endregion
+
 }

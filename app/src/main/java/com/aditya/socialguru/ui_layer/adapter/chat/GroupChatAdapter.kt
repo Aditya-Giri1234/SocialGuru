@@ -366,8 +366,8 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
                     }
 
                     InfoType.MemberAdded.name -> {
-                        val suf=message.newMembers?.mapNotNull {
-                            userDetails[it]?.userName
+                        val suf=message.newMembers?.mapIndexed { index, userId->
+                            (userId==AuthManager.currentUserId()).takeIf { it }?.let { "You" } ?: userDetails[userId]?.userName ?: message.newMembersName?.get(index) ?: "Someone"
                         }?.joinToString(
                             separator = ", " ,
                         )
@@ -401,7 +401,11 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
                         "$prefix$suffix"
                     }
                     InfoType.NewGroupCreator.name->{
-                        val prefix ="${userDetails[message.addedOrRemovedUserId]?.userName} is"
+                        val prefix = if (message.addedOrRemovedUserId == AuthManager.currentUserId()){
+                            "You are"
+                        }else{
+                            "${userDetails[message.addedOrRemovedUserId]?.userName} is"
+                        }
                         val suffix = " now group creator!"
                         "$prefix$suffix"
                     }

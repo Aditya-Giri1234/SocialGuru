@@ -16,6 +16,9 @@ data class LastMessage(
     @field:JvmField
     var isUser2Online:Boolean?=null,
 
+    var user1LastOnlineTimeStamp:Long?=null,
+    var user2LastOnlineTimeStamp:Long?=null,
+
     //This is help to determine the type of message
     val messageType:String?=null,  // Message or Date or Info
 

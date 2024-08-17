@@ -519,7 +519,9 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
             lastMessage,
             chatRoomId,
             isUserAppOpen && isUserActiveOnCurrentChat
-        )
+        ){
+            resetUiScreen()
+        }
 
     }
 
@@ -581,19 +583,34 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         } else {
             message.isUser1Online ?: false
         }
-        updateOnlineStatus(userAvailable)
+        updateOnlineStatus(userAvailable , message)
     }
 
-    private fun updateOnlineStatus(userAvailable: Boolean) {
+    private fun updateOnlineStatus(userAvailable: Boolean, message: LastMessage) {
         if (userAvailable) {
             showOnline()
         } else {
-            hideOnline()
+            val lastTimeForReceiver = if (isIAmUser1) {
+                message.user1LastOnlineTimeStamp
+            } else {
+                message.user2LastOnlineTimeStamp
+            }
+            if(lastTimeForReceiver==null){
+                hideOnline()
+            }else{
+                showOnline(Helper.getTimeAgo(lastTimeForReceiver))
+            }
+
         }
         isUserActiveOnCurrentChat = userAvailable
     }
 
-    private fun showOnline() {
+    private fun showOnline(timeAgo: String? =null) {
+        if(timeAgo!=null){
+            binding.tvOnlineStatus.text = timeAgo
+        }else{
+            binding.tvOnlineStatus.text = "Online"
+        }
 
         binding.tvOnlineStatus.animate().apply {
             duration = 200

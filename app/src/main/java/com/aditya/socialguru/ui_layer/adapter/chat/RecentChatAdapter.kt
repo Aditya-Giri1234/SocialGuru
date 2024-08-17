@@ -16,6 +16,7 @@ import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.bumptech.glide.Glide
 
@@ -51,7 +52,7 @@ class RecentChatAdapter(
                         .placeholder(R.drawable.ic_user).error(R.drawable.ic_user)
                         .into(ivProfilePic)
                     tvUserName.text = userName
-                } ?: run{
+                } ?: run {
                     item.groupInfo?.run {
                         Glide.with(ivProfilePic.context).load(groupPic)
                             .placeholder(R.drawable.ic_user).error(R.drawable.ic_user)
@@ -65,72 +66,80 @@ class RecentChatAdapter(
                     val isSenderIsMe = AuthManager.currentUserId() == senderId
                     val infoMessage = when (infoMessageType) {
                         Constants.InfoType.GroupCreated.name -> {
-                            if (isSenderIsMe){
+                            if (isSenderIsMe) {
                                 "You created this group!"
-                            }else{
+                            } else {
                                 "Someone added you in this group!"
                             }
 
                         }
 
                         Constants.InfoType.GroupDetailsChanged.name -> {
-                            if (isSenderIsMe){
+                            if (isSenderIsMe) {
                                 "You change group details !"
-                            }else{
+                            } else {
                                 "Someone change group details !"
                             }
                         }
 
 
                         Constants.InfoType.MemberAdded.name -> {
-                            if (isSenderIsMe){
-                                "You added someone in this group!"
-                            }else{
-                                "Someone added someone in this group!"
-                            }
+                            val suf = newMembers?.mapIndexed { index, id ->
+                                if (id == AuthManager.currentUserId()!!) "You" else newMembers[index]
+                            }?.joinToString(
+                                separator = ", ",
+                            ) ?: "someone"
+
+
+                            val prefix =
+                                if (isSenderIsMe) "You" else "Someone"
+                            val suffix = " added $suf to group !"
+                            "$prefix$suffix"
                         }
 
                         Constants.InfoType.MemberRemoved.name -> {
-                            if (isSenderIsMe){
-                                "You removed someone from this group!"
-                            }else {
-                                "Someone removed from this group!"
+                            if (isSenderIsMe) {
+                                "You removed ${message ?: "someone"} from this group!"
+                            } else {
+                                "${message ?: "Someone"} removed from this group!"
                             }
                         }
-                        InfoType.MakeAdmin.name->{
-                            if (isSenderIsMe){
+
+                        InfoType.MakeAdmin.name -> {
+                            if (isSenderIsMe) {
                                 "You are now admin of this group!"
-                            }else {
+                            } else {
                                 "Someone is now admin of this group!"
                             }
                         }
 
-                        InfoType.RemoveFromAdmin.name->{
-                            if (isSenderIsMe){
+                        InfoType.RemoveFromAdmin.name -> {
+                            if (isSenderIsMe) {
                                 "You not longer admin of this group!"
-                            }else {
+                            } else {
                                 "Someone not longer admin of this group!"
                             }
                         }
-                        InfoType.NewGroupCreator.name->{
-                            if (isSenderIsMe){
+
+                        InfoType.NewGroupCreator.name -> {
+                            if (addedOrRemovedUserId == AuthManager.currentUserId()) {
                                 "You are now group creator!"
-                            }else {
+                            } else {
                                 "Someone is now group creator!"
                             }
                         }
 
                         //These never run because when user exist then recent chat will be removed
-                        InfoType.MemberExit.name->{
-                            if (isSenderIsMe){
+                        InfoType.MemberExit.name -> {
+                            if (isSenderIsMe) {
                                 "You exit from this group!"
-                            }else {
+                            } else {
                                 "Someone is exit from this group!"
                             }
                         }
 
                         else -> {
-                            ""
+                            null
                         }
                     }
                     tvLastMessageTime.text = Helper.getTimeForChat(lastMessageTimeInTimeStamp!!)
@@ -172,8 +181,8 @@ class RecentChatAdapter(
                         tvLastMessageTime.setTextColor(tvLastMessageTime.context.giveMeColor(R.color.green))
                     }
 
-                    if (senderId == AuthManager.currentUserId()!!&&infoMessageType==null) {
-                            ivMessageSeenStatus.myShow()
+                    if (senderId == AuthManager.currentUserId()!! && infoMessageType == null) {
+                        ivMessageSeenStatus.myShow()
                     } else {
                         ivMessageSeenStatus.gone()
                     }
@@ -184,20 +193,27 @@ class RecentChatAdapter(
                             "Media"
                         } else {
                             ivMedia.gone()
-                            message ?: infoMessage
+                            if (infoMessageType != null) infoMessage else message
                         }
                 }
 
-                if (absoluteAdapterPosition == differ.currentList.size - 1) {
-                    root.context.apply {
-                        root.setMargin(
-                            com.intuit.sdp.R.dimen._1sdp,
-                            com.intuit.sdp.R.dimen._1sdp,
-                            com.intuit.sdp.R.dimen._1sdp,
-                            com.intuit.sdp.R.dimen._10sdp
-                        )
-                    }
-                }
+               /* MyLogger.w(msg = "bindingAdapterPosition $bindingAdapterPosition  -- ${differ.currentList.size}  -- ${item.recentChat?.chatRoomId } - ${item.user?.userName} - ${item.groupInfo?.groupName}")
+                if (bindingAdapterPosition == differ.currentList.size - 1) {
+
+                    root.setMargin(
+                        com.intuit.sdp.R.dimen._1sdp,
+                        com.intuit.sdp.R.dimen._1sdp,
+                        com.intuit.sdp.R.dimen._1sdp,
+                        com.intuit.sdp.R.dimen._10sdp
+                    )
+                }else{
+                    root.setMargin(
+                        com.intuit.sdp.R.dimen._1sdp,
+                        com.intuit.sdp.R.dimen._1sdp,
+                        com.intuit.sdp.R.dimen._1sdp,
+                        com.intuit.sdp.R.dimen._1sdp
+                    )
+                }*/
 
                 root.setSafeOnClickListener {
                     onItemClick(item)
@@ -239,6 +255,27 @@ class RecentChatAdapter(
                 resources.getDimensionPixelSize(bottom)
             )
             this.layoutParams = layoutParams
+        }
+    }
+
+    fun giveMeFilterList(
+        query: String,
+        recentChatList: List<UserRecentModel>
+    ): List<UserRecentModel> {
+        return recentChatList.filter { item ->
+            when {
+                item.groupInfo != null -> {
+                    // If item has groupInfo, check for a match with groupName
+                    item.groupInfo?.groupName?.contains(query, ignoreCase = true) == true
+                }
+
+                item.user != null -> {
+                    // If item has user, check for a match with userName
+                    item.user.userName?.contains(query, ignoreCase = true) == true
+                }
+
+                else -> false
+            }
         }
     }
 

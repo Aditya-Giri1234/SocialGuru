@@ -93,6 +93,8 @@ object FirebaseManager {
 
     suspend fun getAllUserByIds(userIds:List<String>) = UserManager.getAllUserByIds(userIds)
 
+    suspend fun findUser(query: String) = UserManager.findUser(query)
+
 
     //endregion
 
@@ -246,5 +248,9 @@ object FirebaseManager {
     ) = ChatManager.updateGroupReceivedStatus(messageId,chatRoomId,senderId)
 
 
+    //endregion
+
+    //region :: Recent Chat
+    suspend fun deleteRecentChat(chatRoomId: String) = ChatManager.deleteRecentChat(chatRoomId)
     //endregion
 }

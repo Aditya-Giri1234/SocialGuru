@@ -1222,4 +1222,36 @@ object UserManager {
     //endregion
 
 
+    //region :: Search User
+
+    suspend fun findUser(query: String) = callbackFlow<List<FriendCircleData>> {
+
+
+        val resultList = mutableListOf<FriendCircleData>()
+
+        userRef
+            .whereGreaterThanOrEqualTo(Constants.UserTable.USERNAME.fieldName, query)
+            .whereLessThanOrEqualTo(Constants.UserTable.USERNAME.fieldName, query + "\uf8ff")
+            .get()
+            .addOnSuccessListener { documents ->
+                for (document in documents) {
+                    document.toObject(User::class.java).let {
+                        resultList.add(FriendCircleData(it.userId , user = it))
+                    }
+                }
+                resultList.sortBy { it.user?.userName }
+                trySend(resultList)
+            }
+            .addOnFailureListener { exception ->
+                // Handle the error here
+                trySend(emptyList())
+            }
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
+
+
 }

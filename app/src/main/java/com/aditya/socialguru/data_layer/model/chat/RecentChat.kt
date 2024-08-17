@@ -17,5 +17,6 @@ data class RecentChat(
     val isGroupChat:Boolean?=false,
     val infoMessageType:String?=null,
     val addedOrRemovedUserId:String?=null ,
-    val newMembers:List<String>?=null
+    val newMembers:List<String>?=null ,
+    val newMembersName: List<String>? = null,
 )

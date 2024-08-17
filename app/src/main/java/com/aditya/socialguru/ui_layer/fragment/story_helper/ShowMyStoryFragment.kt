@@ -176,7 +176,9 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
             rvStatus.apply {
                 layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
                 adapter = myStoryAdapter
-                setItemTouchListener()
+                if (userId  == AuthManager.currentUserId()!!) {
+                    setItemTouchListener()
+                }
             }
 
 
@@ -236,6 +238,9 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
     }
 
     private fun setData() {
+        if(userId != AuthManager.currentUserId()){
+            binding.tvHeader.text = user.userName ?: "Stories"
+        }
         binding.apply {
             if (stories.isNotEmpty()) {
                 hideNoStatusView()

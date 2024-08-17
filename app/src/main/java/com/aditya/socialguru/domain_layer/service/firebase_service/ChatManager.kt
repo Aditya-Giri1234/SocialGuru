@@ -695,10 +695,13 @@ object ChatManager {
         chatRoomId: String, isIAmUser1: Boolean, status: Boolean
     ) {
         val lastMessageRef = chatRef.document(chatRoomId)
+        val timestamp  = System.currentTimeMillis()
         if (isIAmUser1) {
             lastMessageRef.update(Constants.LastMessageTable.IS_USER_1_ONLINE.fieldName, status)
+            lastMessageRef.update(Constants.LastMessageTable.USER_1_LAST_ONLINE_TIMESTAMP.fieldName, timestamp)
         } else {
             lastMessageRef.update(Constants.LastMessageTable.IS_USER_2_ONLINE.fieldName, status)
+            lastMessageRef.update(Constants.LastMessageTable.USER_2_LAST_ONLINE_TIMESTAMP.fieldName, timestamp)
         }
     }
 
@@ -869,6 +872,30 @@ object ChatManager {
                 .toObjects(ChatMediaData::class.java)
         )
     }
+
+    //region:: Recent Chat
+
+    suspend fun deleteRecentChat(chatRoomId: String) = callbackFlow<UpdateResponse> {
+
+        try {
+            userRef.document(AuthManager.currentUserId()!!).collection(Table.RecentChat.name).document(chatRoomId).delete().addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener{
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+
+        } catch (e:Exception){
+            e.printStackTrace()
+            trySend(UpdateResponse(false, e.message))
+        }
+
+
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
 
 
     //region:: Group Chat
@@ -1266,7 +1293,10 @@ object ChatManager {
             lastMessageSeen = Constants.SeenStatus.Sending.status,
             isGroupChat = true,
             infoMessageType = action?.name,
-            addedOrRemovedUserId = addedOrRemovedUserId
+            addedOrRemovedUserId = addedOrRemovedUserId ,
+            newMembersName = message.newMembersName,
+            newMembers = message.newMembers ,
+            receiverId = chatRoomId
         )
 
         val lastMessageRef = chatRef.document(chatRoomId)
