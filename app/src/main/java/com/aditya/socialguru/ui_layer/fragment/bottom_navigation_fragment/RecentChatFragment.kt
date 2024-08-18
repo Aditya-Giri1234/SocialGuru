@@ -231,7 +231,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                     MyLogger.v(tagChat, msg = "Down scroll")
                     AppBroadcastHelper.setHomeFragmentBackToTopShow(false)
                     if(!etSearch.isFocused){
-                        reduceMarginFromRoot()
+//                        reduceMarginFromRoot()
                         AppBroadcastHelper.setMainActivityBottomNavHideByScroll(true)
                     }
 
@@ -241,7 +241,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                     MyLogger.v(tagChat, msg = "Up scroll")
                     AppBroadcastHelper.setHomeFragmentBackToTopShow(true)
                     if(!etSearch.isFocused){
-                        resetMarginFromRoot()
+//                        resetMarginFromRoot()
                         AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
                     }
 
@@ -252,7 +252,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                     MyLogger.v(tagChat, msg = "Top Scroll")
                     AppBroadcastHelper.setHomeFragmentBackToTopShow(false)
                     if(!etSearch.isFocused){
-                        resetMarginFromRoot()
+//                        resetMarginFromRoot()
                         AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
 
                     }
@@ -276,11 +276,11 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
 
         etSearch.setOnFocusChangeListener { _, hasFocus ->
             if(hasFocus){
-                reduceMarginFromRoot()
-                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(true)
+//                reduceMarginFromRoot()
+//                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(true)
             }else{
-                resetMarginFromRoot()
-                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
+//                resetMarginFromRoot()
+//                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
                 hideExpandedState()
             }
 
