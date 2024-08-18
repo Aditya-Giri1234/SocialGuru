@@ -155,7 +155,7 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
                             viewPagerAdapter.submitList(postImageVideoModel)
                         }
                         tvMessage.text = text
-                        tvTime.text = Helper.getTimeForChat(messageSentTimeInTimeStamp!!)
+                        tvTime.text = Helper.getTimeForChatMessage(messageSentTimeInTimeStamp!!)
 
                         when (seenStatus) {
                             Constants.SeenStatus.Sending.status -> {
@@ -301,7 +301,7 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
                             viewPagerAdapter.submitList(postImageVideoModel)
                         }
                         tvMessage.text = text
-                        tvTime.text = Helper.getTimeForChat(messageSentTimeInTimeStamp!!)
+                        tvTime.text = Helper.getTimeForChatMessage(messageSentTimeInTimeStamp!!)
 
                         user?.let {
                             it.userProfileImage?.let { profilePic ->

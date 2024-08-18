@@ -426,7 +426,6 @@ class AddPostFragment : Fragment() {
                 addPostViewModel.uploadPost(
                     Post(
                         postId = postId,
-                        commentId = Helper.getCommentId(postId),
                         userId = user.userId,
                         postType = getPostType(),
                         text = binding.etCreatePost.text.toString(),

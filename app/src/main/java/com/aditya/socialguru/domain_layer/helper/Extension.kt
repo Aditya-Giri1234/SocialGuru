@@ -40,6 +40,7 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -132,6 +133,11 @@ fun View.showKeyboard() {
         myDelay(200)
         inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
     }
+}
+
+fun Fragment.hideKeyboard() {
+    val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    imm.hideSoftInputFromWindow(requireView().windowToken, 0)
 }
 
 fun Fragment.isResume(): Boolean {
@@ -358,8 +364,8 @@ fun Context.sspToPx(ssp: Float): Float {
 * This function launch coroutine on IO thread.
 * @param run This function run on IO Thread.
 * */
-fun CoroutineScope.myLaunch(run:suspend CoroutineScope.()->Unit){
-    launch(Dispatchers.IO) {
+fun CoroutineScope.myLaunch(run:suspend CoroutineScope.()->Unit) : Job{
+   return  launch(Dispatchers.IO) {
         run()
     }
 }

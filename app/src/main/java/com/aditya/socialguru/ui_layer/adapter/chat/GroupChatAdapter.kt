@@ -1,5 +1,6 @@
 package com.aditya.socialguru.ui_layer.adapter.chat
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
@@ -36,8 +37,8 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
     private val DATE_HEADER_VIEW_TYPE = 2
     private val INFO_VIEW_TYPE = 3
     private val tagChat = Constants.LogTag.Chats
-    private var user: User? = null
     private var userDetails: Map<String, User> = emptyMap()
+    private var userProfileColor:Map<String,Int> = emptyMap()
 
     private val differ = AsyncListDiffer(this, object : DiffUtil.ItemCallback<GroupMessage>() {
         override fun areItemsTheSame(oldItem: GroupMessage, newItem: GroupMessage): Boolean {
@@ -56,8 +57,10 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
 
     fun submitUser(user: Map<String, User>) {
         this.userDetails = user
+        setUserProfileColor(user)
         notifyDataSetChanged()
     }
+
 
     inner class SenderMessageViewHolder(val binding: SampleSenderMessageViewBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -193,9 +196,6 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
 
 //                    MyLogger.v(tagChat, msg = "${message.text}  , Time taken to set is :-> $time ")
 
-                    root.setSafeOnClickListener {
-                        chatMessageOption.onMessageClick(this)
-                    }
 
                     root.setOnLongClickListener {
                         chatMessageOption.onLongMessageClick(this)
@@ -311,15 +311,23 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
                         tvMessage.text = text
                         tvTime.text = Helper.getTimeForChat(messageSentTimeInTimeStamp!!)
 
-                        user?.let {
+                        userDetails[senderId]?.let {
                             it.userProfileImage?.let { profilePic ->
                                 Glide.with(ivProfileImage.context).load(profilePic)
                                     .placeholder(R.drawable.ic_user).error(R.drawable.ic_user)
                                     .into(ivProfileImage)
                             }
+                            tvSenderName.text = "~ ${it.userName ?: ""}"
                         } ?: run {
                             Glide.with(ivProfileImage.context).load(R.drawable.ic_user)
                                 .into(ivProfileImage)
+                            tvSenderName.text = "~ ${senderUserName ?: ""}"
+                        }
+
+                        userProfileColor[senderId]?.let {
+                            tvSenderName.setTextColor(it)
+                        } ?: run{
+                            tvSenderName.setTextColor(Color.WHITE)
                         }
 
                         //This help to recalculate text view width which is current text base
@@ -330,9 +338,9 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
 
 
                     ivProfileImage.setSafeOnClickListener {
-                        chatMessageOption.onProfileClick()
+                        chatMessageOption.onMessageClick(this)
                     }
-                    root.setSafeOnClickListener {
+                    tvSenderName.setSafeOnClickListener {
                         chatMessageOption.onMessageClick(this)
                     }
                     root.setOnLongClickListener {
@@ -590,6 +598,32 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
         return differ.currentList.count {
             it.messageType == Constants.MessageType.Chat.type
         }
+    }
+
+    private fun setUserProfileColor(user: Map<String, User>) {
+        val colorMap = mutableMapOf<String, Int>()
+        for ((key, userDetails) in user) {
+            val color = generateColorFromUserId(key)
+            colorMap[key] = color
+        }
+        userProfileColor = colorMap
+    }
+
+    private fun generateColorFromUserId(userId: String): Int {
+        val hash = userId.hashCode()
+
+        // Generate RGB values
+        val red = (hash and 0xFF0000 shr 16) % 256
+        val green = (hash and 0x00FF00 shr 8) % 256
+        val blue = (hash and 0x0000FF) % 256
+
+        // Adjust the color to ensure it's not too dark
+        val minBrightness = 100 // Minimum brightness to avoid dark colors
+        val adjustedRed = red.coerceAtLeast(minBrightness)
+        val adjustedGreen = green.coerceAtLeast(minBrightness)
+        val adjustedBlue = blue.coerceAtLeast(minBrightness)
+
+        return Color.rgb(adjustedRed, adjustedGreen, adjustedBlue)
     }
 
 

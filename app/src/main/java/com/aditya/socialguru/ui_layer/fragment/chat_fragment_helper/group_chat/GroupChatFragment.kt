@@ -52,6 +52,7 @@ import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.OnAttachmentItemListener
+import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.chat.GroupChatAdapter
 import com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.single_chat.ChatType
@@ -63,6 +64,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
@@ -115,6 +117,9 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     }
 
     private val args by navArgs<GroupChatFragmentArgs>()
+    private val perf by lazy {
+        SharePref(requireContext())
+    }
 
     private lateinit var chatRoomId:String
 
@@ -541,45 +546,49 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     }
 
     private fun sendMessage() {
-        isFirstTimeDataSetOnUi = true
-        imageUri = chatViewModel.imageUri?.toString()
-        videoUri = chatViewModel.videoUri?.toString()
-        val message = binding.etMessage.text.toString()
+        lifecycleScope.launch {
+            isFirstTimeDataSetOnUi = true
+            imageUri = chatViewModel.imageUri?.toString()
+            videoUri = chatViewModel.videoUri?.toString()
+            val message = binding.etMessage.text.toString()
 
-        val timeStamp = System.currentTimeMillis()
-        val timeInText = Helper.formatTimestampToDateAndTime(timeStamp)
-        val chatType = getChatType(message)
-        val chatData = GroupMessage(
-            messageId = Helper.getMessageId(),
-            messageType = Constants.MessageType.Chat.type,
-            chatType = chatType,
-            text = message,
-            imageUri = imageUri,
-            videoUri = videoUri,
-            senderId = senderId,
-            messageSentTimeInTimeStamp = timeStamp,
-            messageSendTimeInText = timeInText,
-            seenStatus = Constants.SeenStatus.Sending.status,
-            sendTimeUsers = onlyGroupMembers
+            val timeStamp = System.currentTimeMillis()
+            val timeInText = Helper.formatTimestampToDateAndTime(timeStamp)
+            val chatType = getChatType(message)
+            val chatData = GroupMessage(
+                messageId = Helper.getMessageId(),
+                messageType = Constants.MessageType.Chat.type,
+                chatType = chatType,
+                text = message,
+                imageUri = imageUri,
+                videoUri = videoUri,
+                senderId = senderId,
+                messageSentTimeInTimeStamp = timeStamp,
+                messageSendTimeInText = timeInText,
+                seenStatus = Constants.SeenStatus.Sending.status,
+                sendTimeUsers = onlyGroupMembers ,
+                senderUserName = perf.getPrefUser().first()?.userName
 
-        )
-        val lastMessage = GroupLastMessage(
-            senderId = senderId,
-            messageType = Constants.MessageType.Chat.type,
-            chatType = chatType,
-            message = message,
-            lastMessageSentTimeInTimeStamp = timeStamp,
-            lastMessageSentTimeInText = timeInText,
-        )
-        chatViewModel.sendGroupMessage(
-            chatData,
-            lastMessage,
-            chatRoomId,
-            groupMembers
-        ){
-            resetUiScreen()
+            )
+            val lastMessage = GroupLastMessage(
+                senderId = senderId,
+                messageType = Constants.MessageType.Chat.type,
+                chatType = chatType,
+                message = message,
+                lastMessageSentTimeInTimeStamp = timeStamp,
+                lastMessageSentTimeInText = timeInText,
+            )
+            chatViewModel.sendGroupMessage(
+                chatData,
+                lastMessage,
+                chatRoomId,
+                groupMembers
+            ){
+                runOnUiThread {
+                    resetUiScreen()
+                }
+            }
         }
-
     }
 
     private fun getChatType(message: String): String {
@@ -937,7 +946,9 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     }
 
     override fun <T> onMessageClick(message: T) {
-
+        val groupMessage = message as GroupMessage
+        val direction :NavDirections = BottomNavigationBarDirections.actionGlobalProfileViewFragment(groupMessage.senderId!!)
+        navController.safeNavigate(direction, Helper.giveAnimationNavOption())
     }
 
     override fun <T> onLongMessageClick(message: T) {

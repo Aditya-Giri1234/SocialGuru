@@ -61,17 +61,37 @@
                         android:layout_weight=".5"
                         android:src="@drawable/person" />
 
-                    <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/tvPostUserName"
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="@dimen/_5sdp"
+                        android:layout_height="wrap_content"
                         android:layout_weight="3"
-                        android:fontFamily="@font/poppin_medium"
-                        android:gravity="center_vertical|start"
-                        android:text="Aditya Giri"
-                        android:textColor="@color/white"
-                        android:textSize="@dimen/_15ssp" />
+                        android:orientation="vertical">
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/tvPostUserName"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_weight="2"
+                            android:layout_marginStart="@dimen/_5sdp"
+                            android:fontFamily="@font/poppin_medium"
+                            android:gravity="center_vertical|start"
+                            android:text="Aditya Giri"
+                            android:textColor="@color/white"
+                            android:textSize="@dimen/_15ssp" />
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/tvPostTime"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:drawableStart="@drawable/ic_single_dot"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:fontFamily="@font/poppins_regular"
+                            android:gravity="center_vertical|start"
+                            android:text="1d"
+                            android:visibility="gone"
+                            android:textColor="@color/white"
+                            android:textSize="@dimen/_12ssp" />
+
+                    </LinearLayout>
 
                     <ImageView
                         android:id="@+id/ivSetting"
@@ -113,6 +133,7 @@
                         android:id="@+id/constMedia"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
+                        android:visibility="visible"
                         android:layout_marginVertical="@dimen/_10sdp"
                         android:minHeight="@dimen/_150sdp">
 
@@ -246,12 +267,64 @@
                 android:text="No Data Available !"
                 android:textColor="@color/white"
                 android:textSize="@dimen/_16ssp"
+                android:visibility="visible"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias="0.5" />
+                <View
+                    android:id="@+id/dividerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/_1sdp"
+                    android:background="@color/lightWhite"
+                    android:layout_marginVertical="@dimen/_10sdp"
+                    android:visibility="gone"
+                    app:layout_constraintStart_toStartOf="@id/linearParent"
+                    app:layout_constraintEnd_toEndOf="@id/linearParent"
+                    app:layout_constraintTop_toBottomOf="@id/linearParent"/>
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvComment"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/_5sdp"
+                    android:layout_gravity="start"
+                    android:visibility="gone"
+                    tools:itemCount="2"
+                    tools:listitem="@layout/sample_comment_layout"
+                    app:layout_constraintStart_toStartOf="@id/linearParent"
+                    app:layout_constraintEnd_toEndOf="@id/linearParent"
+                    app:layout_constraintTop_toBottomOf="@id/dividerView"/>
+
+                <ProgressBar
+                    android:id="@+id/progressBar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:indeterminateTint="@color/white"
+                    android:visibility="gone"
+                    android:indeterminate="true"
+                    app:layout_constraintStart_toStartOf="@id/linearParent"
+                    app:layout_constraintEnd_toEndOf="@id/linearParent"
+                    app:layout_constraintTop_toBottomOf="@id/dividerView"
+                    app:layout_constraintBottom_toBottomOf="@id/guideLineBottom"/>
+
+                <TextView
+                    android:id="@+id/noCommentDataView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No Comment Available !"
+                    android:textAlignment="center"
+                    android:textColor="@color/white"
+                    android:visibility="gone"
+                    android:textSize="@dimen/_16ssp"
+                    android:fontFamily="@font/poppin_medium"
+                    app:layout_constraintStart_toStartOf="@id/linearParent"
+                    app:layout_constraintEnd_toEndOf="@id/linearParent"
+                    app:layout_constraintTop_toBottomOf="@id/dividerView"
+                    app:layout_constraintBottom_toBottomOf="@id/guideLineBottom"/>
+
+
 
 
             <androidx.constraintlayout.widget.Guideline
@@ -284,18 +357,252 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
+    <LinearLayout
+        android:id="@+id/linearBackToTop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="@dimen/_60sdp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:alpha=".8"
+        app:layout_constraintBottom_toTopOf="@id/linearFooter"
+        app:layout_constraintEnd_toEndOf="parent">
 
+        <LinearLayout
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:background="@drawable/circle_shape_for_button"
+            android:backgroundTint="@color/blue">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:rotation="90"
+                android:src="@drawable/ic_left_arrow_without_line" />
+
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BACK TO TOP"
+            android:textColor="@color/white"
+            android:includeFontPadding="false"
+            android:fontFamily="@font/poppin_medium"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:textSize="@dimen/_13ssp"/>
+
+
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/linearFooter"
         android:layout_width="0dp"
-        android:layout_height="?actionBarSize"
-        android:layout_marginBottom="@dimen/_2sdp"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
+        app:layout_constrainedWidth="true"
+        android:paddingHorizontal="@dimen/_2sdp"
+        android:paddingVertical="@dimen/_5sdp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintEnd_toEndOf="parent">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_gravity="bottom"
+            android:orientation="vertical">
+            <LinearLayout
+                android:id="@+id/linearAttachment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@drawable/create_post_text_bg"
+                android:padding="@dimen/_10sdp"
+                android:visibility="gone"
+                android:layout_marginStart="@dimen/_5sdp"
+                android:layout_marginBottom="@dimen/_10sdp">
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardImageMessage"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/_125sdp"
+                    app:strokeColor="@color/lightWhite"
+                    app:strokeWidth="@dimen/_1sdp"
+                    android:visibility="gone"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="@color/black"
+                    app:cardCornerRadius="@dimen/_15sdp">
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/constImageSendMessage"
+                        android:layout_width="match_parent"
+                        android:maxWidth="@dimen/_150sdp"
+                        android:layout_height="match_parent">
 
+                        <ImageView
+                            android:id="@+id/ivImageSendMessage"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/user1"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintHorizontal_bias="0.5"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintVertical_bias="0.5" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:alpha=".2"
+                            android:background="@color/lightBlack" />
+
+                        <ImageView
+                            android:id="@+id/ivCancleImage"
+                            android:layout_width="@dimen/_30sdp"
+                            android:layout_height="@dimen/_30sdp"
+                            android:src="@drawable/ic_close"
+                            android:padding="@dimen/_5sdp"
+                            android:background="@drawable/shape_cross_bg"
+                            android:layout_margin="@dimen/_5sdp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+                </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardVideoMessage"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/_125sdp"
+                    app:strokeColor="@color/lightWhite"
+                    android:layout_weight="1"
+                    app:strokeWidth="@dimen/_1sdp"
+                    android:visibility="gone"
+                    android:layout_marginStart="@dimen/_10sdp"
+                    app:cardBackgroundColor="@color/black"
+                    app:cardCornerRadius="@dimen/_15sdp">
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/constVideoSendMessage"
+                        android:layout_width="match_parent"
+                        android:maxWidth="@dimen/_150sdp"
+                        android:layout_height="match_parent">
+
+                        <ImageView
+                            android:id="@+id/ivVideoSendMessage"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/user1"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintHorizontal_bias="0.5"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintVertical_bias="0.5" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:alpha=".3"
+                            android:background="@color/lightBlack" />
+
+                        <ImageView
+                            android:id="@+id/ivCancleVideo"
+                            android:layout_width="@dimen/_30sdp"
+                            android:layout_height="@dimen/_30sdp"
+                            android:src="@drawable/ic_close"
+                            android:padding="@dimen/_5sdp"
+                            android:background="@drawable/shape_cross_bg"
+                            android:layout_margin="@dimen/_5sdp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <ImageView
+                            android:id="@+id/ivPlayVideo"
+                            android:layout_width="@dimen/_50sdp"
+                            android:layout_height="@dimen/_50sdp"
+                            android:src="@drawable/ic_play"
+                            android:layout_margin="@dimen/_5sdp"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/chat_message_bg"
+                android:paddingVertical="@dimen/_8sdp"
+                android:paddingHorizontal="@dimen/_10sdp"
+                android:layout_marginEnd="@dimen/_5sdp"
+                android:layout_gravity="bottom"
+                android:gravity="bottom"
+                android:orientation="horizontal">
+                <ImageView
+                    android:id="@+id/icEmoji"
+                    android:layout_width="@dimen/_20sdp"
+                    android:layout_height="@dimen/_20sdp"
+                    android:contentDescription="Emoji Selector Button"
+                    android:tag="0"
+                    android:layout_gravity="bottom"
+                    app:tint="@color/lightWhite"
+                    android:src="@drawable/emoji"/>
+                <EditText
+                    android:id="@+id/etMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Send Comment ..."
+                    android:textColorHint="@color/lightWhite"
+                    android:textColor="@color/white"
+                    android:background="@android:color/transparent"
+                    android:maxLines="5"
+                    android:inputType="textMultiLine|text"
+                    android:layout_weight="1"
+                    android:justificationMode="inter_word"
+                    android:layout_marginHorizontal="@dimen/_5sdp"
+                    android:textSize="@dimen/_14ssp"
+                    android:fontFamily="@font/poppin_medium"/>
+
+                <!--                <ImageView
+                                    android:id="@+id/icCamera"
+                                    android:layout_width="@dimen/_20sdp"
+                                    android:layout_height="@dimen/_20sdp"
+                                    android:contentDescription="Emoji Selector Button"
+                                    android:layout_gravity="bottom"
+                                    app:tint="@color/lightWhite"
+                                    android:layout_marginHorizontal="@dimen/_5sdp"
+                                    android:src="@drawable/ic_camera"/>-->
+                <ImageView
+                    android:id="@+id/icAttachment"
+                    android:layout_width="@dimen/_20sdp"
+                    android:layout_height="@dimen/_20sdp"
+                    android:contentDescription="Emoji Selector Button"
+                    android:layout_gravity="bottom"
+                    app:tint="@color/lightWhite"
+                    android:src="@drawable/ic_attachment"/>
+
+            </LinearLayout>
+        </LinearLayout>
+
+
+        <ImageButton
+            android:id="@+id/btnSend"
+            android:layout_width="@dimen/_35sdp"
+            android:layout_height="@dimen/_35sdp"
+            android:layout_marginTop="@dimen/_5sdp"
+            android:layout_gravity="bottom"
+            android:backgroundTint="@color/green"
+            android:paddingStart="@dimen/_2sdp"
+            app:tint="@color/black"
+            android:background="@drawable/circular_shape_button"
+            android:src="@drawable/ic_send" />
 
     </LinearLayout>
 

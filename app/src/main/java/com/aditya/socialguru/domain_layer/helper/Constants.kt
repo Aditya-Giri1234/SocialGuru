@@ -41,9 +41,10 @@ object Constants {
         PostVideo,
         ProfilePic,
         ChatImage,
-        ChatVideo
+        ChatVideo ,
+        CommentVideo,
+        CommentImage
     }
-
 
 
 
@@ -89,6 +90,8 @@ object Constants {
         Post,
         Like,
         Comment,
+        Commenters,
+        CommentedPost,
         Follower,
         Following,
         Friend,
@@ -156,7 +159,23 @@ object Constants {
         POST_UPLOADING_TIME_IN_TIMESTAMP("postUploadingTimeInTimeStamp"),
         COMMENT_COUNT("commentCount"),
         LIKE_COUNT("likeCount"),
-        LIKED_USER_LIST("likedUserList")
+        LIKED_USER_LIST("likedUserList"),
+        IS_CREATOR_ONLINE("isCreatorOnline")
+    }
+
+    enum class CommentTable(val fieldName: String) {
+        COMMENT_ID("commentId"),
+        USER_ID("userId"),
+        POST_COMMENT_ID("postCommentId"),
+        POST_ID("postId"),
+        POST_CREATOR_ID("postCreatorId"),
+        COMMENT_TYPE("commentType"),
+        TEXT("text"),
+        IMAGE_URI("imageUri"),
+        VIDEO_URI("videoUri"),
+        USER_NAME("userName"),
+        COMMENT_UPLOADING_TIME_IN_TIMESTAMP("commentUploadingTimeInTimestamp"),
+        COMMENT_UPLOADING_TIME_IN_TEXT("commentUploadingTimeInText")
     }
 
     enum class MessageTable(val fieldName: String){
@@ -223,7 +242,8 @@ object Constants {
         ADDED_OR_REMOVED_USER_ID("addedOrRemovedUserId"),
         SEND_TIME_USERS("sendTimeUsers"),
         MESSAGE_RECEIVED_BY_USERS("messageReceivedByUsers"),
-        MESSAGE_SEEN_BY_USERS("messageSeenByUsers")
+        MESSAGE_SEEN_BY_USERS("messageSeenByUsers") ,
+        SENDER_USER_NAME("senderUserName")
     }
 
     //Message Type in chat which help to differentiate between date header and message
@@ -367,6 +387,7 @@ object Constants {
         Story("📸"),
         Post("✍️"),
         Chats("💬"),
-        Notification("🔔")
+        Notification("🔔"),
+        Comment("💭")
     }
 }

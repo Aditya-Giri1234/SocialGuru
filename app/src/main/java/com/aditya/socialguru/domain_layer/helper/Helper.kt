@@ -33,9 +33,11 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 object Helper {
 
@@ -147,7 +149,7 @@ object Helper {
 
     fun getPostId():String="${Constants.Table.Post.name}_${generateUUID()}"
     fun getStoryId():String="${Constants.Table.Stories.name}_${generateUUID()}"
-    fun getCommentId(post_id:String):String="${Constants.Table.Post.name}_${post_id}"
+    fun getCommentId(post_id:String):String="${Constants.Table.Post.name}_${post_id}_${generateUUID()}_${System.currentTimeMillis()}"
    private fun getMediaId(timestamp: Long):String="${Constants.Table.Media.name}_$timestamp"
 
 
@@ -196,17 +198,61 @@ object Helper {
 
         return when {
             duration.toMinutes() < 1 -> "just now"
-            duration.toMinutes() < 60 -> "${duration.toMinutes()} minute(s) ago"
-            duration.toHours() < 24 -> "${duration.toHours()} hour(s) ago"
+            duration.toMinutes() < 60 -> "${duration.toMinutes()} minute ago"
+            duration.toHours() < 24 -> "${duration.toHours()} hour ago"
             duration.toDays() == 1L -> "yesterday"
-            else -> "${duration.toDays()} day(s) ago"
+            else -> "${duration.toDays()} day ago"
+        }
+    }
+
+    fun getTimeForPostAndComment(timestamp: Long): String {
+        val now = System.currentTimeMillis()
+        val timeDiff = now - timestamp
+
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(timeDiff)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(timeDiff)
+        val hours = TimeUnit.MILLISECONDS.toHours(timeDiff)
+        val days = TimeUnit.MILLISECONDS.toDays(timeDiff)
+
+        return when {
+            seconds < 60 -> "Just now"
+            minutes < 60 -> "${minutes}m"
+            hours < 24 -> "${hours}h"
+            days < 30 -> "${days}d"
+            days < 365 -> "${days / 30}mo"
+            else -> "${days / 365}y"
         }
     }
 
     fun getTimeForChat(timestamp: Long): String {
+        val calendar = Calendar.getInstance()
+        val currentCalendar = Calendar.getInstance()
+
+        // Set the calendar to the timestamp provided
+        calendar.timeInMillis = timestamp
+
+        // Case 1: Check if the timestamp is today
+        if (calendar.get(Calendar.YEAR) == currentCalendar.get(Calendar.YEAR) &&
+            calendar.get(Calendar.DAY_OF_YEAR) == currentCalendar.get(Calendar.DAY_OF_YEAR)) {
+            val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+            return sdf.format(Date(timestamp))
+        }
+
+        // Case 2: Check if the timestamp is yesterday
+        currentCalendar.add(Calendar.DAY_OF_YEAR, -1)
+        if (calendar.get(Calendar.YEAR) == currentCalendar.get(Calendar.YEAR) &&
+            calendar.get(Calendar.DAY_OF_YEAR) == currentCalendar.get(Calendar.DAY_OF_YEAR)) {
+            return "Yesterday"
+        }
+
+        // Case 3: Any other day (before yesterday)
+        val sdf = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+        return sdf.format(Date(timestamp))
+    }
+
+    fun getTimeForChatMessage(timestamp: Long): String {
         val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
-        val date = Date(timestamp)
-        return sdf.format(date)
+        return sdf.format(Date(timestamp))
     }
 
     fun getChatDateHeaderTime(timestamp: Long): String {

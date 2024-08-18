@@ -9,11 +9,13 @@ import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
 import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMember
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
+import com.aditya.socialguru.data_layer.model.post.Comment
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.story.StoryText
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.ChatManager
+import com.aditya.socialguru.domain_layer.service.firebase_service.CommentManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.PostManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.StoryManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.UserManager
@@ -252,5 +254,20 @@ object FirebaseManager {
 
     //region :: Recent Chat
     suspend fun deleteRecentChat(chatRoomId: String) = ChatManager.deleteRecentChat(chatRoomId)
+    //endregion
+
+    //region:: Comment related work
+
+    suspend fun sendComment(
+        comment: Comment, isCreatorOnline: Boolean
+    ) = CommentManager.sendComment(comment, isCreatorOnline)
+
+    suspend fun deleteComment(comment: Comment) = CommentManager.deleteComment(comment)
+
+    suspend fun getCommentAndListen(postId: String) = CommentManager.getCommentAndListen(postId)
+
+    suspend fun getCommentersAndListen(postId: String) = CommentManager.getCommentersAndListen(postId)
+    suspend fun updateMyOnlineStatus(postId: String, status:Boolean,post: Post?=null) = CommentManager.updateMyOnlineStatus(postId,status ,post)
+
     //endregion
 }

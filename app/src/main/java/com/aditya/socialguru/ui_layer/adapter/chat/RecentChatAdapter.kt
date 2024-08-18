@@ -142,7 +142,10 @@ class RecentChatAdapter(
                             null
                         }
                     }
+
                     tvLastMessageTime.text = Helper.getTimeForChat(lastMessageTimeInTimeStamp!!)
+
+
                     when (lastMessageSeen) {
                         Constants.SeenStatus.Sending.status -> {
                             Glide.with(ivMessageSeenStatus.context)

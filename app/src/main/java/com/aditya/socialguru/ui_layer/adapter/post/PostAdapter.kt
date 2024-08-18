@@ -11,6 +11,7 @@ import com.aditya.socialguru.data_layer.model.post.PostImageVideoModel
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.databinding.SamplePostLayoutBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -18,6 +19,7 @@ import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.bumptech.glide.Glide
+import com.google.rpc.Help
 
 class PostAdapter(val onClick: OnPostClick , val isIAmCurrentSeeingOtherPost:Boolean=false) :
     RecyclerView.Adapter<PostAdapter.ViewHolder>() {
@@ -193,6 +195,14 @@ class PostAdapter(val onClick: OnPostClick , val isIAmCurrentSeeingOtherPost:Boo
                         val countExceptLoginUser=if (isLiked) (likeCount?.let { it - 1 } ?: 0) else likeCount ?: 0
 
                         ivLike.setImageResource(if (isLiked) R.drawable.like else R.drawable.not_like)
+
+                        // set time
+                        if(postUploadingTimeInTimeStamp!=null){
+                            tvPostTime.myShow()
+                            tvPostTime.text= Helper.getTimeForPostAndComment(postUploadingTimeInTimeStamp)
+                        }else{
+                            tvPostTime.gone()
+                        }
 
 
                         ivLike.setSafeOnClickListener {

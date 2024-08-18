@@ -222,8 +222,12 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
             chatViewModel.chatMessage.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
-                        response.data?.let {
-                            setChatMessageList(it)
+                        launch {
+                            runOnUiThread {
+                                response.data?.let {
+                                    setChatMessageList(it)
+                                }
+                            }
                         }
                     }
 
@@ -520,7 +524,9 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
             chatRoomId,
             isUserAppOpen && isUserActiveOnCurrentChat
         ){
-            resetUiScreen()
+            runOnUiThread {
+                resetUiScreen()
+            }
         }
 
     }

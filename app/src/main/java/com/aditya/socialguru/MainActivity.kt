@@ -100,10 +100,10 @@ class MainActivity : AppCompatActivity() {
         //region:: This prevent to os not  to update ui your self when key board open
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
-            @Suppress("DEPRECATION")
-            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-        }
+//        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+//            @Suppress("DEPRECATION")
+//            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+//        }
 
         //endregion
 

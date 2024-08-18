@@ -230,14 +230,20 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                     //Scroll Down
                     MyLogger.v(tagChat, msg = "Down scroll")
                     AppBroadcastHelper.setHomeFragmentBackToTopShow(false)
-                    AppBroadcastHelper.setMainActivityBottomNavHideByScroll(true)
+                    if(!etSearch.isFocused){
+                        reduceMarginFromRoot()
+                        AppBroadcastHelper.setMainActivityBottomNavHideByScroll(true)
+                    }
 
                 }
                 if (scrollY < oldScrollY) {
                     //Scroll Up
                     MyLogger.v(tagChat, msg = "Up scroll")
                     AppBroadcastHelper.setHomeFragmentBackToTopShow(true)
-                    AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
+                    if(!etSearch.isFocused){
+                        resetMarginFromRoot()
+                        AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
+                    }
 
                 }
 
@@ -245,15 +251,18 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                     //Top Scroll
                     MyLogger.v(tagChat, msg = "Top Scroll")
                     AppBroadcastHelper.setHomeFragmentBackToTopShow(false)
-                    AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
+                    if(!etSearch.isFocused){
+                        resetMarginFromRoot()
+                        AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
+
+                    }
                 }
             }
+        }
 
-            icClose.setOnClickListener {
-                etSearch.text.clear()
-                etSearch.hideKeyboardAndFocus()
-            }
-
+        icClose.setOnClickListener {
+            etSearch.text.clear()
+            etSearch.hideKeyboardAndFocus()
         }
 
         initialStateLayout.setOnClickListener {
@@ -266,9 +275,15 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
         }
 
         etSearch.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) {
+            if(hasFocus){
+                reduceMarginFromRoot()
+                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(true)
+            }else{
+                resetMarginFromRoot()
+                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
                 hideExpandedState()
             }
+
         }
         fBtnStartChat.setSafeOnClickListener {
             SelectStartChatDialog(this@RecentChatFragment).show(
@@ -345,6 +360,19 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
 
         etSearch.clearFocus()
     }
+
+    private fun reduceMarginFromRoot(){
+        val params = binding.root.layoutParams as ViewGroup.MarginLayoutParams
+        params.setMargins(params.leftMargin,params.topMargin,params.rightMargin, com.intuit.sdp.R.dimen._5sdp)
+        binding.root.layoutParams = params
+    }
+
+    private fun resetMarginFromRoot(){
+        val params = binding.root.layoutParams as ViewGroup.MarginLayoutParams
+        params.setMargins(params.leftMargin,params.topMargin,params.rightMargin, com.intuit.sdp.R.dimen._30sdp)
+        binding.root.layoutParams = params
+    }
+
 
     private fun showDialog() {
         myLoader?.dismiss()
