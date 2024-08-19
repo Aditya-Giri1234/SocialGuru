@@ -131,7 +131,7 @@ class StoryAdapter(
         RecyclerView.ViewHolder(view.root) {
         fun bind(data: UserStories) {
             view.apply {
-                data.user?.let {
+               /* data.user?.let {
                     if (it.userProfileImage==null){
                         tvInitial.myShow()
                         profileImage.gone()
@@ -142,7 +142,7 @@ class StoryAdapter(
                         profileImage.myShow()
                         Glide.with(profileImage).load(it.userProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(profileImage)
                     }
-                }
+                }*/
                 root.setOnClickListener {
                     MyLogger.w(msg = "Story Adapter is clicked!")
                 }
@@ -185,7 +185,7 @@ class StoryAdapter(
 
     override fun getItemViewType(position: Int): Int {
         differ.currentList[position].apply {
-            return if (position ==0)
+            return if (user == null)
                 TYPE_UPLOAD
             else
                 TYPE_AVAIBLE

@@ -243,20 +243,18 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                             is Resource.Success -> {
                                 response.hasBeenMessagedToUser = true
                                 userData.clear()
-                                lifecycleScope.launch {
-                                    delay(200)
-                                    response.data?.let {
-                                        setData(it)
-                                    } ?: run {
-                                        setData()
-                                        if (isUserStorySnackBarShouldShow) {
-                                            Helper.showSnackBar(
-                                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                                response.message.toString()
-                                            )
-                                        }
+                                response.data?.let {
+                                    setData(it)
+                                } ?: run {
+                                    setData()
+                                    if (isUserStorySnackBarShouldShow) {
+                                        Helper.showSnackBar(
+                                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                                            response.message.toString()
+                                        )
                                     }
                                 }
+
 
                                 isUserStorySnackBarShouldShow = false
 
@@ -496,17 +494,17 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     private fun setData(userStories: List<UserStories> = mutableListOf()) {
         MyLogger.v(isFunctionCall = true)
 
-        lifecycleScope.launch {
-            val user = pref.getPrefUser().first()
+//        lifecycleScope.launch {
+//            val user = pref.getPrefUser().first()
 
             if (userData.isEmpty()) {
-                userData.add(0, UserStories(user, null))
+                userData.add(0, UserStories(null,null))
                 userData.addAll(userStories)
             }
 
             MyLogger.v(msg = "Now data is set into homeFragment !")
             storyAdapter.submitList(userData.toList())
-        }
+//        }
 
     }
 
