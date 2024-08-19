@@ -154,7 +154,7 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
                         is Resource.Success->{
                             hideDialog()
                             response.hasBeenMessagedToUser=true
-                            showSnackBar(response.message , isSuccess =
+                            showSnackBar(response.data?.errorMessage, isSuccess =
                             true)
                         }
                         is Resource.Loading->{

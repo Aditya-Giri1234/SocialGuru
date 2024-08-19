@@ -54,6 +54,7 @@ class StoryAdapter(
 
     fun submitList(list: List<UserStories>) {
         differ.submitList(list)
+        notifyDataSetChanged()
     }
 
     private inner class AvailableStoryViewHolder(val binding: SampleStoriesLayoutBinding) :
@@ -184,7 +185,7 @@ class StoryAdapter(
 
     override fun getItemViewType(position: Int): Int {
         differ.currentList[position].apply {
-            return if (user!=null &&stories == null&&position ==0)
+            return if (position ==0)
                 TYPE_UPLOAD
             else
                 TYPE_AVAIBLE

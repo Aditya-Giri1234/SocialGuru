@@ -141,7 +141,7 @@ class MySavedPostFragment : Fragment(), OnPostClick {
                         hideDialog()
                         response.hasBeenMessagedToUser = true
                         showSnackBar(
-                            response.message, isSuccess =
+                            response.data?.errorMessage, isSuccess =
                             true
                         )
                     }

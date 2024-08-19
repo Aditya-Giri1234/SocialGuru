@@ -828,7 +828,7 @@ object PostManager {
                     )
                 }
             }.addOnSuccessListener {
-                trySend(UpdateResponse(true , if(isPostPresentInMyPostSaveList) "Post Un-Save Successfully !" else "Post Save Succefully !"))
+                trySend(UpdateResponse(true , if(isPostPresentInMyPostSaveList) "Post Un-Save Successfully !" else "Post Save Successfully !"))
             }.addOnFailureListener {
                 trySend(UpdateResponse(false, it.message))
             }.await()

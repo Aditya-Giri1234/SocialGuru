@@ -243,17 +243,21 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                             is Resource.Success -> {
                                 response.hasBeenMessagedToUser = true
                                 userData.clear()
-                                response.data?.let {
-                                    setData(it)
-                                } ?: run {
-                                    setData()
-                                    if (isUserStorySnackBarShouldShow) {
-                                        Helper.showSnackBar(
-                                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                            response.message.toString()
-                                        )
+                                lifecycleScope.launch {
+                                    delay(200)
+                                    response.data?.let {
+                                        setData(it)
+                                    } ?: run {
+                                        setData()
+                                        if (isUserStorySnackBarShouldShow) {
+                                            Helper.showSnackBar(
+                                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                                                response.message.toString()
+                                            )
+                                        }
                                     }
                                 }
+
                                 isUserStorySnackBarShouldShow = false
 
                             }
