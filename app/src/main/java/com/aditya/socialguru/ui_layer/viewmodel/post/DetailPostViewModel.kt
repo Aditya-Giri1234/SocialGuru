@@ -13,6 +13,7 @@ import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.post.DetailPostRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -24,6 +25,7 @@ class DetailPostViewModel(val app: Application) : AndroidViewModel(app) {
     private val tagPost = Constants.LogTag.Post
 
     private val repository = DetailPostRepository()
+    private val jobList: MutableList<Job> = mutableListOf()
 
     private var _isDataLoaded = false
     val isDataLoaded get() = _isDataLoaded
@@ -45,18 +47,29 @@ class DetailPostViewModel(val app: Application) : AndroidViewModel(app) {
     )
     val likePost get() = _likePost.asSharedFlow()
 
-    fun getPostById(postId: String) = viewModelScope.myLaunch {
-        _postDetail.tryEmit(Resource.Loading())
-        if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.getPostById(postId).onEach {
-                MyLogger.i(tagPost, msg = "Post event come in detail view model !")
-                it.singleResponse?.let {
-                    _postDetail.tryEmit(Resource.Success(it))
-                }
-            }.launchIn(this)
-        } else {
-            _postDetail.tryEmit(Resource.Error("No Internet Available !"))
+    private val _savePost = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val savePost get() = _savePost.asSharedFlow()
+
+
+    fun getPostById(postId: String) {
+        val job = viewModelScope.myLaunch {
+            _postDetail.tryEmit(Resource.Loading())
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                repository.getPostById(postId).onEach {
+                    MyLogger.i(tagPost, msg = "Post event come in detail view model !")
+                    it.singleResponse?.let {
+                        _postDetail.tryEmit(Resource.Success(it))
+                    }
+                }.launchIn(this)
+            } else {
+                _postDetail.tryEmit(Resource.Error("No Internet Available !"))
+            }
         }
+        jobList.add(job)
     }
 
     // region:: Update like post count
@@ -83,19 +96,24 @@ class DetailPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     // region:: Get User List In Post given post id
 
-    fun getPostLikeUser(postId: String) = viewModelScope.myLaunch {
-        _userList.tryEmit(Resource.Loading())
+    fun getPostLikeUser(postId: String) {
+        val job = viewModelScope.myLaunch {
+            _userList.tryEmit(Resource.Loading())
 
-        if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.getPostLikeUser(postId).onEach {
-                MyLogger.v(tagPost, msg = it, isJson = true)
-                _userList.tryEmit(Resource.Success(handleLikePostUser(it)))
-            }.launchIn(this)
-        } else {
-            _userList.tryEmit(Resource.Error("No Internet Available !"))
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                repository.getPostLikeUser(postId).onEach {
+                    MyLogger.v(tagPost, msg = it, isJson = true)
+                    _userList.tryEmit(Resource.Success(handleLikePostUser(it)))
+                }.launchIn(this)
+            } else {
+                _userList.tryEmit(Resource.Error("No Internet Available !"))
+            }
+
         }
+        jobList.add(job)
 
     }
+
 
     private fun handleLikePostUser(postLikedHandling: ListenerEmissionType<FriendCircleData, FriendCircleData>): List<FriendCircleData> {
 
@@ -129,39 +147,66 @@ class DetailPostViewModel(val app: Application) : AndroidViewModel(app) {
 
                 MyLogger.d(tagPost, msg = userList, isJson = true)
 
-        }
+            }
 
-        Constants.ListenerEmitType.Removed -> {
-            MyLogger.v(tagPost, msg = "This is removed user like type")
+            Constants.ListenerEmitType.Removed -> {
+                MyLogger.v(tagPost, msg = "This is removed user like type")
 
-            postLikedHandling.singleResponse?.let { user ->
-                user.userId?.let { userId ->
-                    userList.forEach { userPost ->
-                        val currentPostId = userPost.user?.userId
-                        if (currentPostId != null && currentPostId == userId) {
-                            userList.remove(userPost)
-                            return@let
+                postLikedHandling.singleResponse?.let { user ->
+                    user.userId?.let { userId ->
+                        userList.forEach { userPost ->
+                            val currentPostId = userPost.user?.userId
+                            if (currentPostId != null && currentPostId == userId) {
+                                userList.remove(userPost)
+                                return@let
+                            }
                         }
                     }
                 }
+                MyLogger.d(tagPost, msg = userList, isJson = true)
+
             }
-            MyLogger.d(tagPost, msg = userList, isJson = true)
 
+            Constants.ListenerEmitType.Modify -> {
+                // For Future
+            }
         }
 
-        Constants.ListenerEmitType.Modify -> {
-            // For Future
-        }
+        return userList.toList()
     }
-
-    return userList.toList()
-}
 
 
 //endregion
 
-fun setDataLoadedStatus(status: Boolean) {
-    _isDataLoaded = status
-}
+//region:: Update post saved state
+
+    fun updatePostSaveStatus(postId: String) =
+        viewModelScope.myLaunch {
+            _savePost.tryEmit(Resource.Loading())
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                repository.updatePostSaveStatus(postId).onEach {
+                    if (it.isSuccess) {
+                        _savePost.tryEmit(Resource.Success(it))
+                    } else {
+                        _savePost.tryEmit(Resource.Error("Some error occurred !"))
+                    }
+                }.launchIn(this)
+            } else {
+                _savePost.tryEmit(Resource.Error("No Internet Available !"))
+            }
+        }
+
+//endregion
+
+    fun setDataLoadedStatus(status: Boolean) {
+        _isDataLoaded = status
+    }
+
+    fun removeAllListener() {
+        _isDataLoaded = false
+        jobList.forEach {
+            it.cancel()
+        }
+    }
 
 }

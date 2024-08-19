@@ -138,6 +138,11 @@ object FirebaseManager {
 
     suspend fun getPostLikeUser(postId: String) = PostManager.getPostLikeUser(postId)
 
+    suspend fun updatePostSaveStatus(postId: String) = PostManager.updatePostSaveStatus(postId)
+    suspend fun listenMySavedPost() = PostManager.listenMySavedPost()
+    suspend fun listenCommentedPost(userId: String) = PostManager.listenCommentedPost(userId)
+    suspend fun listenMySavedPostForScreenView() = PostManager.listenMySavedPostForScreenView()
+
     //endregion
 
     //region:: Notification related work here

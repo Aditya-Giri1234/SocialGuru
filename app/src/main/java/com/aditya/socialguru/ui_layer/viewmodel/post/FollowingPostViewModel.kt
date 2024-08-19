@@ -46,6 +46,13 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
     )
     val likePost get() = _likePost.asSharedFlow()
 
+    private val _savePost = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val savePost get() = _savePost.asSharedFlow()
+
 
     //region:: Get Discover Post
 
@@ -166,6 +173,26 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
              _likePost.tryEmit(Resource.Error("No Internet Available !"))
          }
      }
+
+    //endregion
+
+    //region:: Update post saved state
+
+    fun updatePostSaveStatus(postId: String) =
+        viewModelScope.myLaunch {
+            _savePost.tryEmit(Resource.Loading())
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                repository.updatePostSaveStatus(postId).onEach {
+                    if (it.isSuccess) {
+                        _savePost.tryEmit(Resource.Success(it))
+                    } else {
+                        _savePost.tryEmit(Resource.Error("Some error occurred !"))
+                    }
+                }.launchIn(this)
+            } else {
+                _savePost.tryEmit(Resource.Error("No Internet Available !"))
+            }
+        }
 
     //endregion
 

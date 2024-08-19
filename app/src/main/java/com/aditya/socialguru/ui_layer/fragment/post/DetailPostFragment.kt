@@ -23,8 +23,6 @@ import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
-import com.aditya.socialguru.data_layer.model.chat.group.GroupLastMessage
-import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
 import com.aditya.socialguru.data_layer.model.post.Comment
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.PostImageVideoModel
@@ -33,6 +31,7 @@ import com.aditya.socialguru.databinding.FragmentDetailPostBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.dialog.chat.AttachmentDialog
+import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
@@ -41,8 +40,11 @@ import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.resizeActivate
+import com.aditya.socialguru.domain_layer.helper.resizeStop
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
@@ -52,11 +54,12 @@ import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.CommentAdapter
 import com.aditya.socialguru.ui_layer.adapter.post.PostImageVideoAdapter
+import com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.single_chat.ChatType
 import com.aditya.socialguru.ui_layer.viewmodel.comment.CommentViewModel
 import com.aditya.socialguru.ui_layer.viewmodel.post.DetailPostViewModel
-import com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.single_chat.ChatType
 import com.bumptech.glide.Glide
 import com.vanniktech.emoji.EmojiPopup
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -181,6 +184,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
     private fun handleInitialization() {
         MyLogger.w(tagPost, msg = "Post Id := ${args.postId}")
         postId = args.postId
+        requireActivity().resizeActivate()
         initUi()
         subscribeToObserver()
         getData()
@@ -333,6 +337,39 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
                     }
                 }
             }.launchIn(this)
+            detailPostViewModel.savePost.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        response.hasBeenMessagedToUser = true
+                        showSnackBar(
+                            response.message, isSuccess =
+                            true
+                        )
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        response.hasBeenMessagedToUser = true
+                        showSnackBar(response.message)
+                    }
+
+                }
+            }.launchIn(this)
+            AppBroadcastHelper.savedPost.onEach {
+                val isISavedThisPost = it.any { it.postId == postId }
+                binding.icSave.setImageResource(
+                    if (isISavedThisPost) {
+                        R.drawable.ic_save
+                    } else {
+                        R.drawable.ic_un_save
+                    }
+                )
+            }.launchIn(this)
 
             binding.etMessage.getQueryTextChangeStateFlow().debounce(100).distinctUntilChanged()
                 .flatMapLatest {
@@ -416,7 +453,8 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
         ivSend.setSafeOnClickListener {
         }
 
-        ivSetting.setSafeOnClickListener {
+        icSave.setSafeOnClickListener {
+            detailPostViewModel.updatePostSaveStatus(postId)
         }
 
         linearBackToTop.setSafeOnClickListener {
@@ -501,8 +539,6 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
             detailPostViewModel.getPostById(postId)
             detailPostViewModel.setDataLoadedStatus(true)
         }
-
-
     }
 
     private fun setData(it: UserPostModel) {
@@ -512,7 +548,16 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
                 it.userId?.let {
                     userId = it
                 }
-                Glide.with(ivPostUserImage).load(it.userProfileImage).into(ivPostUserImage)
+                if (it.userProfileImage==null){
+                    ivPostUserImage.gone()
+                    tvInitialMain.myShow()
+                    tvInitialMain.text = it.userName?.get(0).toString()
+                    tvInitialMain.setCircularBackground(Helper.setUserProfileColor(it))
+                }else{
+                    ivPostUserImage.myShow()
+                    tvInitialMain.gone()
+                    Glide.with(ivPostUserImage).load(it.userProfileImage).into(ivPostUserImage)
+                }
                 tvPostUserName.text = it.userName
             }
             it.post?.let {
@@ -983,19 +1028,22 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
         }
     }
 
-    private fun initialHideCommentView(){
+    private fun initialHideCommentView() {
         binding.apply {
             noCommentDataView.gone()
-            dividerView.gone()
             progressBar.gone()
             rvComment.gone()
         }
     }
 
-    private fun initialShowCommentView(){
+    private fun initialShowCommentView() {
         binding.apply {
-            noCommentDataView.myShow()
-            dividerView.myShow()
+
+            // This is for when data is loaded and user perform ( add comment or remove comment which trigger post listener and event come in viewmodel and call this method which now to hide or show noCommentDataView base on how much item present . And one more thing this process might go fast and adapter may slow to change list this why i give some delay.
+            lifecycleScope.launch {
+                delay(100)
+                noCommentDataView.isGone = commentAdapter.itemCount != 0
+            }
         }
     }
 
@@ -1055,7 +1103,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
 
     override fun <T> onLongMessageClick(message: T) {
         val tempDelete = message as Comment
-        if(tempDelete.userId == AuthManager.currentUserId()){
+        if (tempDelete.userId == AuthManager.currentUserId()) {
             _currentDeletedComment = tempDelete
             AlertDialog("Are you sure delete this Comment ?", this, true).show(
                 childFragmentManager,
@@ -1100,7 +1148,9 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
     }
 
     override fun onDestroyView() {
+        requireActivity().resizeStop()
         commentViewModel.removeAllListener()
+        detailPostViewModel.removeAllListener()
         _binding = null
         super.onDestroyView()
     }

@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.PostListenerEmissionType
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
+import com.aditya.socialguru.data_layer.model.post.post_meta_data.CommentedUserPostModel
+import com.aditya.socialguru.data_layer.model.post.post_meta_data.SavedUserPostModel
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
@@ -13,6 +15,7 @@ import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.profile.MyPostRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,6 +31,8 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     private var _isDataLoaded = false
     val isDataLoaded get() = _isDataLoaded
+
+    private val jobList = mutableListOf<Job>()
 
 
     private val _myPost = MutableSharedFlow<Resource<List<UserPostModel>>>(
@@ -51,25 +56,49 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
     )
     val likePost get() = _likePost.asSharedFlow()
 
+    private val _savePost = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val savePost get() = _savePost.asSharedFlow()
+
+    private val _commentedPost = MutableSharedFlow<Resource<List<CommentedUserPostModel>>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val commentedPost get() = _commentedPost.asSharedFlow()
+
+    private val _savedPostList = MutableSharedFlow<Resource<List<SavedUserPostModel>>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val savedPostList get() = _savedPostList.asSharedFlow()
+
 
     //region:: Get My Post
 
-    fun getMyPost(userId: String) = viewModelScope.myLaunch {
-        _myPost.tryEmit(Resource.Loading())
-        MyLogger.v(tagProfile, msg = "Request sending ....")
-        if (SoftwareManager.isNetworkAvailable(app)) {
-            MyLogger.v(tagProfile, msg = "Network available !")
-            repository.getMyPost(userId).onEach {
-                MyLogger.d(tagProfile, msg = it.userPostList, isJson = true)
-                _myPost.tryEmit(handelMyPost(it))
-            }.launchIn(this)
-        } else {
-            MyLogger.v(tagProfile, msg = "Network not available !")
-            _myPost.tryEmit(Resource.Error(message = "Internet not available ."))
+    fun getMyPost(userId: String) {
+        val job = viewModelScope.myLaunch {
+            _myPost.tryEmit(Resource.Loading())
+            MyLogger.v(tagProfile, msg = "Request sending ....")
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                MyLogger.v(tagProfile, msg = "Network available !")
+                repository.getMyPost(userId).onEach {
+                    MyLogger.d(tagProfile, msg = it.userPostList, isJson = true)
+                    _myPost.tryEmit(handelMyPost(it))
+                }.launchIn(this)
+            } else {
+                MyLogger.v(tagProfile, msg = "Network not available !")
+                _myPost.tryEmit(Resource.Error(message = "Internet not available ."))
+            }
         }
+        jobList.add(job)
     }
 
-    private  fun handelMyPost(postHandling: PostListenerEmissionType): Resource<List<UserPostModel>> {
+    private fun handelMyPost(postHandling: PostListenerEmissionType): Resource<List<UserPostModel>> {
 
         MyLogger.v(tagProfile, isFunctionCall = true)
 
@@ -109,9 +138,9 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
                 MyLogger.v(tagProfile, msg = "My Post Modify event come !")
 
                 postHandling.userPostModel?.let { post ->
-                    post.userId?.let { userId ->
+                    post.postId?.let { postId ->
                         userPostList.forEachIndexed { index, userPost ->
-                            if (userPost.user?.userId == userId) {
+                            if (userPost.post?.postId == postId) {
                                 userPostList[index].post = userPostList[index].post?.copy(
                                     likeCount = post.likeCount,
                                     commentCount = post.commentCount,
@@ -137,18 +166,21 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     //region:: Get My Liked Post
 
-    fun getMyLikedPost(userId: String) = viewModelScope.myLaunch {
-        _myLikedPost.tryEmit(Resource.Loading())
-        MyLogger.v(tagProfile, msg = "Request sending ....")
-        if (SoftwareManager.isNetworkAvailable(app)) {
-            MyLogger.v(tagProfile, msg = "Network available !")
-            repository.getMyLikedPost(userId).onEach {
-                _myLikedPost.tryEmit(handelMyLikedPost(it))
-            }.launchIn(this)
-        } else {
-            MyLogger.v(tagProfile, msg = "Network not available !")
-            _myLikedPost.tryEmit(Resource.Error(message = "Internet not available ."))
+    fun getMyLikedPost(userId: String) {
+        val job = viewModelScope.myLaunch {
+            _myLikedPost.tryEmit(Resource.Loading())
+            MyLogger.v(tagProfile, msg = "Request sending ....")
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                MyLogger.v(tagProfile, msg = "Network available !")
+                repository.getMyLikedPost(userId).onEach {
+                    _myLikedPost.tryEmit(handelMyLikedPost(it))
+                }.launchIn(this)
+            } else {
+                MyLogger.v(tagProfile, msg = "Network not available !")
+                _myLikedPost.tryEmit(Resource.Error(message = "Internet not available ."))
+            }
         }
+        jobList.add(job)
     }
 
     private suspend fun handelMyLikedPost(postHandling: ListenerEmissionType<UserPostModel, UserPostModel>): Resource<List<UserPostModel>> {
@@ -174,9 +206,9 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
                 MyLogger.v(tagProfile, msg = "My Liked Post Modify event come !")
 
                 postHandling.singleResponse?.post?.let { post ->
-                    post.userId?.let { userId ->
+                    post.postId?.let { postId ->
                         userPostList.forEachIndexed { index, userPost ->
-                            if (userPost.user?.userId == userId) {
+                            if (userPost.post?.postId == postId) {
                                 userPostList[index].post = userPostList[index].post?.copy(
                                     likeCount = post.likeCount,
                                     commentCount = post.commentCount,
@@ -250,9 +282,162 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     //endregion
 
+    //region:: Update post saved state
+
+    fun updatePostSaveStatus(postId: String) =
+        viewModelScope.myLaunch {
+            _savePost.tryEmit(Resource.Loading())
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                repository.updatePostSaveStatus(postId).onEach {
+                    if (it.isSuccess) {
+                        _savePost.tryEmit(Resource.Success(it))
+                    } else {
+                        _savePost.tryEmit(Resource.Error("Some error occurred !"))
+                    }
+                }.launchIn(this)
+            } else {
+                _savePost.tryEmit(Resource.Error("No Internet Available !"))
+            }
+        }
+
+    //endregion
+
+    //region:: Commented Post
+
+
+    fun getCommentedPost(userId: String) {
+        val job = viewModelScope.myLaunch {
+            _commentedPost.tryEmit(Resource.Loading())
+
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                repository.listenCommentedPost(userId).onEach {
+                    _commentedPost.tryEmit(handleCommentedPostResponse(it))
+                }.launchIn(this)
+            } else {
+                _commentedPost.tryEmit(Resource.Error("No Internet Available !"))
+            }
+        }
+    }
+
+    private fun handleCommentedPostResponse(response: List<ListenerEmissionType<CommentedUserPostModel, CommentedUserPostModel>>): Resource<List<CommentedUserPostModel>> {
+
+        val updatedCommentedPost =
+            commentedPost.replayCache[0].data?.toMutableList() ?: mutableListOf()
+
+        response.forEach {
+            when (it.emitChangeType) {
+                Constants.ListenerEmitType.Starting -> {}
+                Constants.ListenerEmitType.Added -> {
+                    updatedCommentedPost.add(it.singleResponse!!)
+                    updatedCommentedPost.sortByDescending { it.commentModel?.updatedCommentdPostTimeInTimeStamp }
+                }
+
+                Constants.ListenerEmitType.Removed -> {
+                    val removePostId = it.singleResponse?.userPostModel?.post?.postId
+                    removePostId ?: return@forEach
+                    val removeItem =
+                        updatedCommentedPost.find { it.commentModel?.postId == removePostId }
+                    if (removeItem != null) {
+                        updatedCommentedPost.remove(removeItem)
+                        updatedCommentedPost.sortByDescending { it.commentModel?.updatedCommentdPostTimeInTimeStamp }
+                    }
+                }
+
+                Constants.ListenerEmitType.Modify -> {
+                    val updatedPostId = it.singleResponse?.commentModel?.postId
+                    updatedPostId ?: return@forEach
+                    val updatedItem =
+                        updatedCommentedPost.find { it.commentModel?.postId == updatedPostId }
+                    if (updatedItem != null) {
+                        val updatedIemIndex = updatedCommentedPost.indexOf(updatedItem)
+                        updatedCommentedPost[updatedIemIndex] =
+                            updatedCommentedPost[updatedIemIndex].copy(
+                                commentModel = updatedItem.commentModel,
+                                userPostModel = updatedItem.userPostModel
+                            )
+                        updatedCommentedPost.sortByDescending { it.commentModel?.updatedCommentdPostTimeInTimeStamp }
+                    }
+                }
+            }
+        }
+
+        return Resource.Success(updatedCommentedPost)
+    }
+
+    //endregion
+
+    //region:: My Saved Post
+
+
+    fun getMySavedPost() {
+        val job = viewModelScope.myLaunch {
+            _savedPostList.tryEmit(Resource.Loading())
+
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                repository.listenMySavedPostForScreenView().onEach {
+                    _savedPostList.tryEmit(handleMySavedPostResponse(it))
+                }.launchIn(this)
+            } else {
+                _savedPostList.tryEmit(Resource.Error("No Internet Available !"))
+            }
+        }
+    }
+
+    private fun handleMySavedPostResponse(response: List<ListenerEmissionType<SavedUserPostModel, SavedUserPostModel>>): Resource<List<SavedUserPostModel>> {
+        val updatedSavedPostList =
+            savedPostList.replayCache[0].data?.toMutableList() ?: mutableListOf()
+
+        response.forEach {
+            when(it.emitChangeType){
+                Constants.ListenerEmitType.Starting -> {}
+                Constants.ListenerEmitType.Added -> {
+                    updatedSavedPostList.add(it.singleResponse!!)
+                    updatedSavedPostList.sortByDescending { it.savedPost?.savedPostTimeInTimeStamp}
+                }
+                Constants.ListenerEmitType.Removed -> {
+                    val removePostId = it.singleResponse?.userPostModel?.post?.postId
+                    removePostId ?: return@forEach
+                    val removeItem = updatedSavedPostList.find { it.savedPost?.postId == removePostId }
+                    if (removeItem!=null){
+                        updatedSavedPostList.remove(removeItem)
+                        updatedSavedPostList.sortByDescending { it.savedPost?.savedPostTimeInTimeStamp}
+                    }
+                }
+                Constants.ListenerEmitType.Modify ->{
+                    val updatedPostId = it.singleResponse?.savedPost?.postId
+                    updatedPostId ?: return@forEach
+                    val updatedItem = updatedSavedPostList.find { it.savedPost?.postId == updatedPostId }
+                    if (updatedItem!=null){
+                        val updatedIemIndex = updatedSavedPostList.indexOf(updatedItem)
+                        updatedSavedPostList[updatedIemIndex] = updatedSavedPostList[updatedIemIndex].copy(
+                            savedPost  =updatedItem.savedPost,
+                            userPostModel = updatedItem.userPostModel
+                        )
+                        updatedSavedPostList.sortByDescending { it.savedPost?.savedPostTimeInTimeStamp}
+                    }
+                }
+            }
+        }
+
+        return Resource.Success(updatedSavedPostList)
+    }
+
+
+
+    //endregion
+
+
+
 
     fun setDataLoadedStatus(status: Boolean) {
         _isDataLoaded = status
+    }
+
+    fun removeAllListener() {
+        _isDataLoaded = false
+        jobList.forEach {
+            it.cancel()
+        }
     }
 
 }

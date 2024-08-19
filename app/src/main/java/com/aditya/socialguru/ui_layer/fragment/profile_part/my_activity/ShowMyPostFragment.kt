@@ -7,6 +7,7 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -22,6 +23,7 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.databinding.FragmentShowMyPostBinding
+import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
@@ -48,6 +50,7 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
     private var _postAdapter: PostAdapter? = null
     private val postAdapter get() = _postAdapter!!
 
+    private var myLoader: MyLoader? = null
     private val tagProfile = Constants.LogTag.Profile
     private val myPostViewModel by viewModels<MyPostViewModel>()
 
@@ -143,6 +146,26 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
                                 response.message.toString()
                             )
                         }
+                    }
+                }.launchIn(this)
+                myPostViewModel.savePost.onEach {
+                    response->
+                    when(response){
+                        is Resource.Success->{
+                            hideDialog()
+                            response.hasBeenMessagedToUser=true
+                            showSnackBar(response.message , isSuccess =
+                            true)
+                        }
+                        is Resource.Loading->{
+                            showDialog()
+                        }
+                        is Resource.Error->{
+                            hideDialog()
+                            response.hasBeenMessagedToUser=true
+                            showSnackBar(response.message)
+                        }
+
                     }
                 }.launchIn(this)
             }
@@ -249,7 +272,8 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
         navigateToDetailPostScreen(postId)
     }
 
-    override fun onSettingClick() {
+    override fun onSettingClick(postId: String) {
+        myPostViewModel.updatePostSaveStatus(postId)
     }
 
     override fun onSendClick(post: Post) {
@@ -270,9 +294,36 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
         )
     }
 
+    private fun showDialog() {
+        myLoader?.dismiss()
+        myLoader = MyLoader()
+        myLoader?.show(childFragmentManager, "My_Loader")
+    }
+
+    private fun hideDialog() {
+        myLoader?.dismiss()
+        myLoader = null
+    }
+
+    private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
+        if (isSuccess) {
+            Helper.showSuccessSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        } else {
+            Helper.showSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        }
+    }
 
     override fun onDestroyView() {
         MyLogger.v(isFunctionCall = true)
+        myPostViewModel.removeAllListener()
         _binding = null
         super.onDestroyView()
     }

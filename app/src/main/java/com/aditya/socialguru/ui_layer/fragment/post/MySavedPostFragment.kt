@@ -1,4 +1,4 @@
-package com.aditya.socialguru.ui_layer.fragment.profile_part.my_activity
+package com.aditya.socialguru.ui_layer.fragment.post
 
 import android.net.Uri
 import android.os.Bundle
@@ -10,9 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,8 +19,8 @@ import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
+import com.aditya.socialguru.databinding.FragmentMySavedPostBinding
 import com.aditya.socialguru.databinding.FragmentShowMyCommentPostBinding
-import com.aditya.socialguru.databinding.FragmentShowMyLikedPostBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
@@ -39,12 +36,10 @@ import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.profile.MyPostViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
+class MySavedPostFragment : Fragment(), OnPostClick {
 
-class ShowMyCommentPostFragment(val userId: String) : Fragment(), OnPostClick {
-
-    private var _binding: FragmentShowMyCommentPostBinding? = null
+    private var _binding: FragmentMySavedPostBinding? = null
     private val binding get() = _binding!!
 
     private var _postAdapter: PostAdapter? = null
@@ -68,7 +63,7 @@ class ShowMyCommentPostFragment(val userId: String) : Fragment(), OnPostClick {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        _binding = FragmentShowMyCommentPostBinding.inflate(layoutInflater)
+        _binding = FragmentMySavedPostBinding.inflate(layoutInflater)
         return binding.root
     }
 
@@ -89,7 +84,7 @@ class ShowMyCommentPostFragment(val userId: String) : Fragment(), OnPostClick {
     private fun subscribeToObservation() {
         MyLogger.v(isFunctionCall = true)
         observeFlow {
-            myPostViewModel.commentedPost.onEach { response ->
+            myPostViewModel.savedPostList.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
                         response.hasBeenMessagedToUser = true
@@ -167,9 +162,14 @@ class ShowMyCommentPostFragment(val userId: String) : Fragment(), OnPostClick {
     }
 
     private fun initUi() {
-        _postAdapter = PostAdapter(this@ShowMyCommentPostFragment)
+        _postAdapter = PostAdapter(this@MySavedPostFragment)
         binding.apply {
-            rvCommentedPost.apply {
+            myToolbar.apply {
+                this.profileImage.gone()
+                this.icBack.myShow()
+                this.tvHeaderUserName.text = "My Saved Post"
+            }
+            rvSavedPost.apply {
                 layoutManager = LinearLayoutManager(requireContext())
                 adapter = postAdapter
                 setHasFixedSize(true)
@@ -179,11 +179,14 @@ class ShowMyCommentPostFragment(val userId: String) : Fragment(), OnPostClick {
         }
     }
 
-    private fun FragmentShowMyCommentPostBinding.setListener() {
-        linearBackToTop.setSafeOnClickListener {
-            rvCommentedPost.smoothScrollToPosition(0)
+    private fun FragmentMySavedPostBinding.setListener() {
+        myToolbar.icBack.setSafeOnClickListener {
+            navController.navigateUp()
         }
-        rvCommentedPost.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+        linearBackToTop.setSafeOnClickListener {
+            rvSavedPost.smoothScrollToPosition(0)
+        }
+        rvSavedPost.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
 //                    MyLogger.v(tagProfile, msg = "Idle State")
@@ -208,7 +211,7 @@ class ShowMyCommentPostFragment(val userId: String) : Fragment(), OnPostClick {
         binding.linearBackToTop.myShow()
 
         Handler(Looper.getMainLooper()).postDelayed({
-            if (this@ShowMyCommentPostFragment.isResumed) {
+            if (this@MySavedPostFragment.isResumed) {
                 binding.linearBackToTop.gone()
             }
         }, 2000)
@@ -217,7 +220,7 @@ class ShowMyCommentPostFragment(val userId: String) : Fragment(), OnPostClick {
 
     private fun getData() {
         MyLogger.v(isFunctionCall = true)
-        myPostViewModel.getCommentedPost(userId)
+        myPostViewModel.getMySavedPost()
     }
 
     private fun setData(userPosts: List<UserPostModel> = mutableListOf()) {
@@ -236,14 +239,14 @@ class ShowMyCommentPostFragment(val userId: String) : Fragment(), OnPostClick {
     private fun showNoDataView() {
         binding.apply {
             tvNoDataView.myShow()
-            rvCommentedPost.gone()
+            rvSavedPost.gone()
         }
     }
 
     private fun hideNoDataView() {
         binding.apply {
             tvNoDataView.gone()
-            rvCommentedPost.myShow()
+            rvSavedPost.myShow()
         }
     }
 
@@ -319,6 +322,4 @@ class ShowMyCommentPostFragment(val userId: String) : Fragment(), OnPostClick {
         _binding = null
         super.onDestroyView()
     }
-
-
 }

@@ -1,23 +1,24 @@
 package com.aditya.socialguru.domain_layer.helper
 
-import android.app.PendingIntent
-import android.app.TaskStackBuilder
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
+import android.graphics.drawable.GradientDrawable
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
-import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
@@ -34,6 +35,10 @@ import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.google.android.gms.tasks.Task
 import com.google.android.material.textfield.TextInputLayout
+import com.google.common.base.Objects
+import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.WriteBatch
+import com.google.firebase.firestore.core.UserData.ParsedUpdateData
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
@@ -52,7 +57,7 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.tasks.await
 import java.lang.reflect.Field
 import kotlin.coroutines.resumeWithException
 import kotlin.system.measureTimeMillis
@@ -371,13 +376,13 @@ fun CoroutineScope.myLaunch(run:suspend CoroutineScope.()->Unit) : Job{
 }
 
 
-fun launchCoroutineInIOThread(run:suspend CoroutineScope.()->Unit){
-    CoroutineScope(Dispatchers.IO).launch {
+fun launchCoroutineInIOThread(run:suspend CoroutineScope.()->Unit) : Job{
+   return CoroutineScope(Dispatchers.IO).launch {
         run()
     }
 }
-fun launchCoroutineInDefaultThread(run:suspend CoroutineScope.()->Unit){
-    CoroutineScope(Dispatchers.Default).launch {
+fun launchCoroutineInDefaultThread(run:suspend CoroutineScope.()->Unit) : Job{
+    return CoroutineScope(Dispatchers.Default).launch {
         run()
     }
 }
@@ -439,3 +444,48 @@ fun <T:Any> T.toMapWithSerializedName(): Map<String, Any> {
 
  fun GroupInfo.isIAmCreatorOfThisGroup() = creatorId == AuthManager.currentUserId()
  fun GroupInfo.isIAmAdminOfThisGroup() = groupAdmins?.contains(AuthManager.currentUserId()) ?: false
+
+
+// For Resize Screen When keyboard open
+
+fun Activity.resizeActivate() {
+    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+        @Suppress("DEPRECATION")
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+    }
+}
+
+fun Activity.resizeStop() {
+    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+        @Suppress("DEPRECATION")
+        // Set it back to its default mode, e.g., SOFT_INPUT_ADJUST_PAN
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN)
+    }
+}
+
+
+fun WriteBatch.safeUpdate(documentReference: DocumentReference, data: Map<String, Any> , isExist:Boolean): WriteBatch? {
+    return  if (isExist) update(documentReference ,data) else null
+}
+
+fun WriteBatch.safeUpdate(documentReference: DocumentReference , isExist:Boolean, field: String ,value : Any? ): WriteBatch? {
+    return  if (isExist) update(documentReference , field ,value) else null
+}
+suspend fun DocumentReference.safeUpdate(field: String ,value: Any?) : Task<Void>?{
+    return if(this.isExist()){
+        update(field ,value)
+    } else null
+}
+
+
+suspend fun DocumentReference.isExist(): Boolean {
+    return get().await().exists()
+}
+
+fun View.setCircularBackground(color: Int) {
+    // Create a GradientDrawable
+    val drawable = GradientDrawable()
+    drawable.shape = GradientDrawable.OVAL // Set shape to oval to make it circular
+    drawable.setColor(color) // Set the dynamic color
+    background = drawable // Apply the drawable as the background
+}

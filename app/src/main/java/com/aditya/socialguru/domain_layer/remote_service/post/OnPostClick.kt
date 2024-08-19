@@ -8,7 +8,7 @@ interface OnPostClick {
     fun onVideoClick():(Uri)->Unit
     fun onLikeClick(post: Post)
     fun onCommentClick(postId: String)
-    fun onSettingClick()
+    fun onSettingClick(post:String)
     fun onSendClick(post: Post)
     fun onPostClick(postId:String)
 

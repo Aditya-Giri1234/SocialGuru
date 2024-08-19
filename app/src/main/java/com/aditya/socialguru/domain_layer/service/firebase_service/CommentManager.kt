@@ -20,6 +20,7 @@ import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.toObject
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.async
@@ -223,7 +224,6 @@ object CommentManager {
 
                 if (!isMyUserIdPresentInCommenters) {
                     it.set(myUserIdExistInCommentersRef, CommentersModel(comment.userId!!))
-                    it.set(myCommentedPostRef, CommentedPost(comment.postId!!))
                 }
 
                 it.update(
@@ -231,6 +231,7 @@ object CommentManager {
                     Constants.PostTable.COMMENT_COUNT.fieldName,
                     FieldValue.increment(1)
                 )
+                it.set(myCommentedPostRef, CommentedPost(comment.postId , timeStamp ,timeInText))
                 it.set(commentRef, updatedComment)
             }
             MyLogger.v(tagComment, msg = "Time taken to calculate $timeTakingToCalculate")
@@ -279,9 +280,12 @@ object CommentManager {
             postRef.document(comment.postId!!).collection(Constants.Table.Comment.name)
                 .whereEqualTo(Constants.CommentTable.USER_ID.fieldName, comment.userId!!).get()
                 .await().size() == 1
+
         val postIdRef = postRef.document(comment.postId!!)
         val isPostCountZero =
             postIdRef.get().await().getLong(Constants.PostTable.COMMENT_COUNT.fieldName) == 0L
+
+
 
         firestore.runBatch { batch ->
             if (isImagePresent) {
@@ -307,6 +311,23 @@ object CommentManager {
 
         }.addOnSuccessListener {
             trySend(UpdateResponse(true, ""))
+            launchCoroutineInIOThread {
+
+                //This is for update latest comment in my commented post collection database for showing latest comment post
+                if (!isMyLastComment){
+                    val previousComment = postRef.document(comment.postId!!)
+                        .collection(Constants.Table.Comment.name)
+                        .whereEqualTo(Constants.CommentTable.USER_ID.fieldName, comment.userId!!)
+                        .orderBy(Constants.CommentTable.COMMENT_UPLOADING_TIME_IN_TIMESTAMP.fieldName, Query.Direction.DESCENDING)  // Replace "timestamp" with your actual timestamp field name
+                        .limit(1)
+                        .get().await().toObjects(Comment::class.java)
+                    if (previousComment.size>0){
+                        myCommentedPostRef.set(
+                            previousComment[0]
+                        )
+                    }
+                }
+            }
         }.addOnFailureListener {
             trySend(UpdateResponse(false, it.message))
         }.await()

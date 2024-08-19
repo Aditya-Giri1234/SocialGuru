@@ -14,9 +14,11 @@ import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.databinding.AddStoryLayoutBinding
 import com.aditya.socialguru.databinding.SampleStoriesLayoutBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.hide
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.bumptech.glide.Glide
@@ -128,6 +130,18 @@ class StoryAdapter(
         RecyclerView.ViewHolder(view.root) {
         fun bind(data: UserStories) {
             view.apply {
+                data.user?.let {
+                    if (it.userProfileImage==null){
+                        tvInitial.myShow()
+                        profileImage.gone()
+                        tvInitial.text = it.userName?.get(0).toString()
+                        tvInitial.setCircularBackground(Helper.setUserProfileColor(it))
+                    }else{
+                        tvInitial.gone()
+                        profileImage.myShow()
+                        Glide.with(profileImage).load(it.userProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(profileImage)
+                    }
+                }
                 root.setOnClickListener {
                     MyLogger.w(msg = "Story Adapter is clicked!")
                 }
@@ -170,7 +184,7 @@ class StoryAdapter(
 
     override fun getItemViewType(position: Int): Int {
         differ.currentList[position].apply {
-            return if (user == null)
+            return if (user!=null &&stories == null&&position ==0)
                 TYPE_UPLOAD
             else
                 TYPE_AVAIBLE

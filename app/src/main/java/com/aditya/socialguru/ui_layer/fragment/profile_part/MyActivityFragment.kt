@@ -9,11 +9,13 @@ import androidx.navigation.fragment.navArgs
 import androidx.navigation.ui.navigateUp
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
+import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.databinding.FragmentHomeBinding
 import com.aditya.socialguru.databinding.FragmentMyActivityBinding
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.NormalPagerAdapter
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeDiscoverPostFragment
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeFollowingPostFragment
@@ -35,6 +37,7 @@ class MyActivityFragment : Fragment() {
 
     private val args by navArgs<MyActivityFragmentArgs>()
     private lateinit var userId:String
+    private lateinit var userDetails:User
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +60,7 @@ class MyActivityFragment : Fragment() {
 
     private fun handleInitialization() {
         userId=args.userId
+        userDetails = args.userDetail
         initUi()
     }
 
@@ -66,7 +70,7 @@ class MyActivityFragment : Fragment() {
             myToolbar.apply {
                 icBack.myShow()
                 profileImage.gone()
-                tvHeaderUserName.text="My Activity"
+                tvHeaderUserName.text= if (userId==AuthManager.currentUserId()!!)"My Activity" else userDetails.userName
             }
 
             setUpViewPager()

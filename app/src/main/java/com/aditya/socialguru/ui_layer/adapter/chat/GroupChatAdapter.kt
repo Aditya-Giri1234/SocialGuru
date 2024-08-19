@@ -21,12 +21,14 @@ import com.aditya.socialguru.domain_layer.helper.Constants.MessageType
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.PostImageVideoAdapter
 import com.bumptech.glide.Glide
+import com.google.rpc.Help
 import kotlin.system.measureTimeMillis
 
 class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
@@ -57,7 +59,7 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
 
     fun submitUser(user: Map<String, User>) {
         this.userDetails = user
-        setUserProfileColor(user)
+        userProfileColor = Helper.setUserProfileColor(user)
         notifyDataSetChanged()
     }
 
@@ -318,16 +320,39 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
                                     .into(ivProfileImage)
                             }
                             tvSenderName.text = "~ ${it.userName ?: ""}"
+                            tvInitial.text = it.userName?.get(0).toString()
                         } ?: run {
                             Glide.with(ivProfileImage.context).load(R.drawable.ic_user)
                                 .into(ivProfileImage)
                             tvSenderName.text = "~ ${senderUserName ?: ""}"
+                            tvInitial.text = senderUserName?.get(0).toString()
                         }
+
+                        when{
+                            userDetails[senderId]==null ->{
+                                // profile pic available then show
+                                ivProfileImage.myShow()
+                                tvInitial.gone()
+                            }
+                            userDetails[senderId]?.userProfileImage==null ->{
+                                // Profile Pic not available show initial
+                                ivProfileImage.gone()
+                                tvInitial.myShow()
+                            }
+                            else ->{
+                                // profile pic available then show
+                                ivProfileImage.myShow()
+                                tvInitial.gone()
+                            }
+                        }
+
 
                         userProfileColor[senderId]?.let {
                             tvSenderName.setTextColor(it)
+                            tvInitial.setCircularBackground(it)
                         } ?: run{
                             tvSenderName.setTextColor(Color.WHITE)
+                            tvInitial.setCircularBackground(Color.GREEN)
                         }
 
                         //This help to recalculate text view width which is current text base
@@ -598,32 +623,6 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
         return differ.currentList.count {
             it.messageType == Constants.MessageType.Chat.type
         }
-    }
-
-    private fun setUserProfileColor(user: Map<String, User>) {
-        val colorMap = mutableMapOf<String, Int>()
-        for ((key, userDetails) in user) {
-            val color = generateColorFromUserId(key)
-            colorMap[key] = color
-        }
-        userProfileColor = colorMap
-    }
-
-    private fun generateColorFromUserId(userId: String): Int {
-        val hash = userId.hashCode()
-
-        // Generate RGB values
-        val red = (hash and 0xFF0000 shr 16) % 256
-        val green = (hash and 0x00FF00 shr 8) % 256
-        val blue = (hash and 0x0000FF) % 256
-
-        // Adjust the color to ensure it's not too dark
-        val minBrightness = 100 // Minimum brightness to avoid dark colors
-        val adjustedRed = red.coerceAtLeast(minBrightness)
-        val adjustedGreen = green.coerceAtLeast(minBrightness)
-        val adjustedBlue = blue.coerceAtLeast(minBrightness)
-
-        return Color.rgb(adjustedRed, adjustedGreen, adjustedBlue)
     }
 
 

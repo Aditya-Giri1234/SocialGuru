@@ -8,17 +8,17 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.User
-import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.data_layer.model.post.Comment
 import com.aditya.socialguru.data_layer.model.post.PostImageVideoModel
 import com.aditya.socialguru.databinding.SampleCommentLayoutBinding
-import com.aditya.socialguru.databinding.SampleReceiverMessageViewBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.bumptech.glide.Glide
 import kotlin.system.measureTimeMillis
 
@@ -27,7 +27,7 @@ class CommentAdapter(val chatMessageOption: ChatMessageOption) :
 
     private val tagComment = Constants.LogTag.Comment
     private var userDetails: Map<String, User> = emptyMap()
-    private var userProfileColor:Map<String,Int> = emptyMap()
+    private var userProfileColor: Map<String, Int> = emptyMap()
 
     private val differ = AsyncListDiffer(this, object : DiffUtil.ItemCallback<Comment>() {
         override fun areItemsTheSame(oldItem: Comment, newItem: Comment): Boolean {
@@ -46,7 +46,7 @@ class CommentAdapter(val chatMessageOption: ChatMessageOption) :
 
     fun submitUser(user: Map<String, User>) {
         this.userDetails = user
-        setUserProfileColor(user)
+        userProfileColor = Helper.setUserProfileColor(user)
         notifyDataSetChanged()
     }
 
@@ -154,7 +154,14 @@ class CommentAdapter(val chatMessageOption: ChatMessageOption) :
                         tvMessage.text = text
                         tvTime.text =
                             Helper.getTimeForPostAndComment(commentUploadingTimeInTimestamp!!)
-                        tvSenderName.text = userDetails[userId]?.userName ?: userName
+                        val userName = userDetails[userId]?.userName ?: userName
+                        tvSenderName.text = if (userId == AuthManager.currentUserId()!!){
+                                "~ $userName (You) "
+                            } else {
+                                "~ $userName"
+                            }
+                        tvInitial.text = userName?.first().toString()
+
 
                         if (userDetails[userId]?.userProfileImage != null) {
                             Glide.with(ivProfileImage.context)
@@ -166,10 +173,30 @@ class CommentAdapter(val chatMessageOption: ChatMessageOption) :
                                 .into(ivProfileImage)
                         }
 
+                        when{
+                            userDetails[userId]==null ->{
+                                // profile pic available then show
+                                ivProfileImage.myShow()
+                                tvInitial.gone()
+                            }
+                            userDetails[userId]?.userProfileImage==null ->{
+                                // Profile Pic not available show initial
+                                ivProfileImage.gone()
+                                tvInitial.myShow()
+                            }
+                            else ->{
+                                // profile pic available then show
+                                ivProfileImage.myShow()
+                                tvInitial.gone()
+                            }
+                        }
+
                         userProfileColor[userId]?.let {
                             tvSenderName.setTextColor(it)
-                        } ?: run{
+                            tvInitial.setCircularBackground(it)
+                        } ?: run {
                             tvSenderName.setTextColor(Color.WHITE)
+                            tvInitial.setCircularBackground(Color.GREEN)
                         }
 
                         //This help to recalculate text view width which is current text base
@@ -216,31 +243,6 @@ class CommentAdapter(val chatMessageOption: ChatMessageOption) :
         }
     }
 
-    private fun setUserProfileColor(user: Map<String, User>) {
-        val colorMap = mutableMapOf<String, Int>()
-        for ((key, userDetails) in user) {
-            val color = generateColorFromUserId(key)
-            colorMap[key] = color
-        }
-        userProfileColor = colorMap
-    }
-
-    private fun generateColorFromUserId(userId: String): Int {
-        val hash = userId.hashCode()
-
-        // Generate RGB values
-        val red = (hash and 0xFF0000 shr 16) % 256
-        val green = (hash and 0x00FF00 shr 8) % 256
-        val blue = (hash and 0x0000FF) % 256
-
-        // Adjust the color to ensure it's not too dark
-        val minBrightness = 100 // Minimum brightness to avoid dark colors
-        val adjustedRed = red.coerceAtLeast(minBrightness)
-        val adjustedGreen = green.coerceAtLeast(minBrightness)
-        val adjustedBlue = blue.coerceAtLeast(minBrightness)
-
-        return Color.rgb(adjustedRed, adjustedGreen, adjustedBlue)
-    }
 
 
 }

@@ -108,7 +108,8 @@ object Constants {
         GroupChat ,
         GroupMember ,
         GroupInfo,
-        UnSeenMessage
+        UnSeenMessage ,
+        SavedPost
     }
 
     enum class FriendStatus {

@@ -167,6 +167,9 @@
         <argument
             android:name="userId"
             app:argType="string" />
+        <argument
+            android:name="userDetail"
+            app:argType="com.aditya.socialguru.data_layer.model.User" />
     </fragment>
     <action android:id="@+id/action_global_showMyStoryFragment" app:destination="@id/showMyStoryFragment" />
     <action android:id="@+id/action_global_profileViewFragment" app:destination="@id/profileViewFragment" /><action android:id="@+id/action_global_detailPostFragment" app:destination="@id/detailPostFragment"/><action android:id="@+id/action_global_addPostFragment" app:destination="@id/addPostFragment"/><action android:id="@+id/action_global_myActivityFragment" app:destination="@id/myActivityFragment"/><action android:id="@+id/action_global_storyShowFragment" app:destination="@id/storyShowFragment"/>
@@ -308,4 +311,9 @@
         android:label="fragment_search_user_global"
         tools:layout="@layout/fragment_search_user_global" />
     <action android:id="@+id/action_global_searchUserGlobalFragment" app:destination="@id/searchUserGlobalFragment" />
+    <fragment
+        android:id="@+id/mySavedPostFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.post.MySavedPostFragment"
+        android:label="fragment_my_saved_post"
+        tools:layout="@layout/fragment_my_saved_post" /><action android:id="@+id/action_global_mySavedPostFragment" app:destination="@id/mySavedPostFragment"/>
 </navigation>

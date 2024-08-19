@@ -1,10 +1,15 @@
 package com.aditya.socialguru.domain_layer.service.firebase_service
 
+import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.PostListenerEmissionType
 import com.aditya.socialguru.data_layer.model.post.PostUploadingResponse
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
+import com.aditya.socialguru.data_layer.model.post.comment.CommentedPost
+import com.aditya.socialguru.data_layer.model.post.post_meta_data.CommentedUserPostModel
+import com.aditya.socialguru.data_layer.model.post.post_meta_data.SavedPostModel
+import com.aditya.socialguru.data_layer.model.post.post_meta_data.SavedUserPostModel
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
@@ -22,6 +27,8 @@ import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
@@ -61,7 +68,10 @@ object PostManager {
     private var myLikedPostistener: ListenerRegistration? = null
     private var isFirstTimeMyLikePostListenerCall = true
 
-    //region:: Like or Unlike a post
+    private var listenMySavedPostListener: ListenerRegistration? = null
+    private var listenMyCommentedPost: ListenerRegistration? = null
+
+    //region:: Like or Unlike a post or MyLiked Post or Update Like count
 
     suspend fun updateLikeCount(postId: String, postCreatorUserId: String, isLiked: Boolean) =
         callbackFlow<UpdateResponse>
@@ -789,5 +799,207 @@ object PostManager {
     }
 
     //endregion
+
+
+    //region:: Update Post Save
+
+    suspend fun updatePostSaveStatus(postId: String) = callbackFlow<UpdateResponse> {
+        try {
+            val timestamp = System.currentTimeMillis()
+            val timeInText = Helper.formatTimestampToDateAndTime(timestamp)
+            val savedPostRef =
+                userRef.document(AuthManager.currentUserId()!!).collection(Table.SavedPost.name)
+                    .document(postId)
+            val isPostPresentInMyPostSaveList = savedPostRef.get().await().exists()
+
+            firestore.runBatch {
+                if (isPostPresentInMyPostSaveList) {
+                    //Un Save
+                    savedPostRef.delete()
+
+                } else {
+                    //Save
+                    savedPostRef.set(
+                        SavedPostModel(
+                            postId,
+                            timestamp,
+                            timeInText
+                        )
+                    )
+                }
+            }.addOnSuccessListener {
+                trySend(UpdateResponse(true , if(isPostPresentInMyPostSaveList) "Post Un-Save Successfully !" else "Post Save Succefully !"))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            trySend(UpdateResponse(false, e.message))
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+
+    //endregion
+
+    //region:: Get And Listen Saved Post
+
+    suspend fun listenMySavedPost() =
+        callbackFlow<List<ListenerEmissionType<SavedPostModel, SavedPostModel>>> {
+            try {
+                val savedPostRef =
+                    userRef.document(AuthManager.currentUserId()!!).collection(Table.SavedPost.name)
+                listenMySavedPostListener = savedPostRef.addSnapshotListener { value, error ->
+                    if (error != null) return@addSnapshotListener
+
+                    value?.documentChanges?.let { data ->
+
+                        val savedList =
+                            mutableListOf<ListenerEmissionType<SavedPostModel, SavedPostModel>>()
+
+                        data.forEach {
+                            val changeType = when (it.type) {
+                                DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                            }
+                            savedList.add(
+                                ListenerEmissionType(
+                                    changeType, singleResponse = it.document
+                                        .toObject()
+                                )
+                            )
+                        }
+
+                        trySend(savedList)
+                    }
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            awaitClose {
+                listenMySavedPostListener?.remove()
+                close()
+            }
+        }
+
+    //endregion
+
+    //region:: Get And Listen Commented Post
+
+    suspend fun listenCommentedPost(userId: String) =
+        callbackFlow<List<ListenerEmissionType<CommentedUserPostModel, CommentedUserPostModel>>> {
+            try {
+                val myCommentedRef = userRef.document(userId)
+                    .collection(Table.CommentedPost.name)
+                listenMyCommentedPost = myCommentedRef.addSnapshotListener { value, error ->
+                    if (error != null) return@addSnapshotListener
+
+                    value?.documentChanges?.let { data ->
+                        launch {
+                            val commentedList = data.map {
+                                async {
+                                    val commentedPost = it.document.toObject<CommentedPost>()
+                                    val changeType = when (it.type) {
+                                        DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                        DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                        DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                    }
+
+                                    val postTask =
+                                        postRef.document(commentedPost.postId!!).get().await()
+                                    if (!postTask.exists()) return@async null
+
+                                    val post = postTask.toObject<Post>() ?: return@async null
+
+                                    val userTask = userRef.document(post.userId!!).get().await()
+                                    if (!userTask.exists()) return@async null
+
+                                    val user = userTask.toObject<User>()
+                                    ListenerEmissionType<CommentedUserPostModel, CommentedUserPostModel>(
+                                        changeType, singleResponse = CommentedUserPostModel(
+                                            commentedPost , UserPostModel(user,post)
+                                        )
+                                    )
+                                }
+                            }.awaitAll().filterNotNull()
+
+                            trySend(commentedList)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            awaitClose {
+                listenMyCommentedPost?.remove()
+                close()
+            }
+        }
+
+//endregion
+
+    //region:: Get And Listen My Save Post For Screen View (UserPostModel Type)
+
+    suspend fun listenMySavedPostForScreenView() =
+        callbackFlow<List<ListenerEmissionType<SavedUserPostModel, SavedUserPostModel>>> {
+            try {
+                val myCommentedRef = userRef.document(AuthManager.currentUserId()!!)
+                    .collection(Table.SavedPost.name)
+                listenMyCommentedPost = myCommentedRef.addSnapshotListener { value, error ->
+                    if (error != null) return@addSnapshotListener
+
+                    value?.documentChanges?.let { data ->
+                        launch {
+                            val savedPostList = data.map {
+                                async {
+                                    val savedPost = it.document.toObject<SavedPostModel>()
+                                    val changeType = when (it.type) {
+                                        DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                        DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                        DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                    }
+
+                                    val postTask =
+                                        postRef.document(savedPost.postId!!).get().await()
+                                    if (!postTask.exists()) return@async null
+
+                                    val post = postTask.toObject<Post>() ?: return@async null
+
+                                    val userTask = userRef.document(post.userId!!).get().await()
+                                    if (!userTask.exists()) return@async null
+
+                                    val user = userTask.toObject<User>()
+                                    ListenerEmissionType<SavedUserPostModel, SavedUserPostModel>(
+                                        changeType, singleResponse = SavedUserPostModel( savedPost,UserPostModel(
+                                            user, post
+                                        ))
+                                    )
+                                }
+                            }.awaitAll().filterNotNull()
+
+                            trySend(savedPostList)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            awaitClose {
+                listenMyCommentedPost?.remove()
+                close()
+            }
+        }
+
+//endregion
 
 }

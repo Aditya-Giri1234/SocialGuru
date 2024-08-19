@@ -78,6 +78,23 @@
                     app:civ_border_width="@dimen/_1sdp" />
 
                 <TextView
+                    android:id="@+id/tvInitialMain"
+                    android:layout_width="@dimen/_90sdp"
+                    android:layout_height="@dimen/_90sdp"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginStart="@dimen/_5sdp"
+                    android:text="A"
+                    android:textAlignment="center"
+                    android:gravity="center"
+                    android:background="@drawable/circle_shape_bg"
+                    android:visibility="gone"
+                    android:maxLength="1"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/white"
+                    android:textSize="@dimen/_30ssp"/>
+
+
+                <TextView
                     android:id="@+id/tvUserName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

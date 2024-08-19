@@ -194,20 +194,26 @@ object UserManager {
         return try {
             docRef.get().await().toObject(User::class.java)
         } catch (e: Exception) {
+            e.printStackTrace()
             null
         }
     }
 
     suspend fun getAllUserByIds(userIds:List<String>) = callbackFlow<List<FriendCircleData>>{
-        val userListWork = userIds.map {
-           async {
-               getUserById(it)
-           }
+        try {
+            val userListWork = userIds.map {
+                async {
+                    getUserById(it)
+                }
+            }
+            val userList = userListWork.awaitAll().filterNotNull().map {
+                FriendCircleData(it.userId!!, user = it)
+            }
+            trySend(userList)
+        }catch (e : Exception){
+            e.printStackTrace()
         }
-        val userList = userListWork.awaitAll().filterNotNull().map {
-            FriendCircleData(it.userId!!, user = it)
-        }
-        trySend(userList)
+
         awaitClose{
             close()
         }

@@ -9,4 +9,11 @@ class MyPostRepository {
     suspend fun getMyLikedPost(userId: String) = FirebaseManager.getMyLikedPost(userId)
 
     suspend fun updateLikeCount(postId: String ,postCreatorUserId:String, isLiked: Boolean) = FirebaseManager.updateLikeCount(postId ,postCreatorUserId,isLiked)
+
+    suspend fun updatePostSaveStatus(postId: String) = FirebaseManager.updatePostSaveStatus(postId)
+    suspend fun listenCommentedPost(userId: String) = FirebaseManager.listenCommentedPost(userId)
+
+    suspend fun listenMySavedPostForScreenView() = FirebaseManager.listenMySavedPostForScreenView()
+
+
 }

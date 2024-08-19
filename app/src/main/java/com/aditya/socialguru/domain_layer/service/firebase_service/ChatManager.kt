@@ -24,13 +24,16 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
+import com.aditya.socialguru.domain_layer.helper.isExist
 import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
+import com.aditya.socialguru.domain_layer.helper.safeUpdate
 import com.aditya.socialguru.domain_layer.helper.toNormalMap
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.NotificationSendingManager
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
 import com.google.firebase.storage.FirebaseStorage
@@ -92,29 +95,37 @@ object ChatManager {
         isUserOnline: Boolean = false,
     ) = callbackFlow<UpdateChatResponse> {
 
-        val isImagePresent = message.imageUri != null
-        val isVideoPresent = message.videoUri != null
+        try {
 
-        when {
-            isVideoPresent -> {
-                uploadVideo(
-                    message, lastMessage, chatRoomId, isUserOnline, isImagePresent
-                ).onEach {
-                    trySend(it)
-                }.launchIn(this)
-            }
 
-            isImagePresent -> {
-                uploadImage(message, lastMessage, chatRoomId, isUserOnline).onEach {
-                    trySend(it)
-                }.launchIn(this)
-            }
+            val isImagePresent = message.imageUri != null
+            val isVideoPresent = message.videoUri != null
 
-            else -> {
-                saveMessageToDatabase(message, lastMessage, chatRoomId, isUserOnline).onEach {
-                    trySend(it)
-                }.launchIn(this)
+            when {
+                isVideoPresent -> {
+                    uploadVideo(
+                        message, lastMessage, chatRoomId, isUserOnline, isImagePresent
+                    ).onEach {
+                        trySend(it)
+                    }.launchIn(this)
+                }
+
+                isImagePresent -> {
+                    uploadImage(message, lastMessage, chatRoomId, isUserOnline).onEach {
+                        trySend(it)
+                    }.launchIn(this)
+                }
+
+                else -> {
+                    saveMessageToDatabase(message, lastMessage, chatRoomId, isUserOnline).onEach {
+                        trySend(it)
+                    }.launchIn(this)
+                }
             }
+        } catch (e: FirebaseFirestoreException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
 
         awaitClose {
@@ -316,13 +327,14 @@ object ChatManager {
                 .document(chatRoomId)
 
 
-        val recentChatData = recentMessageRefForReceiver.get().await().toObject<RecentChat>()
-        if (recentChatData == null) {
+        val recentChatData = recentMessageRefForReceiver.get().await()
+        if (!recentChatData.exists()) {
             //Document doesn't exist
             // Do nothing
         } else {
             //Document exist
-            val unSeenMessageCount = recentChatData.unSeenMessageCount?.plus(1) ?: 0
+            val unSeenMessageCount =
+                recentChatData.toObject<RecentChat>()?.unSeenMessageCount?.plus(1) ?: 0
             forReceiverRecentData = forReceiverRecentData.copy(
                 unSeenMessageCount = unSeenMessageCount
             )
@@ -383,106 +395,127 @@ object ChatManager {
         secondLastMessage: Message? = null
     ) = callbackFlow<UpdateResponse> {
 
-        val isImagePresent = message.imageUri != null
-        val isVideoPresent = message.videoUri != null
+        try {
+            val isImagePresent = message.imageUri != null
+            val isVideoPresent = message.videoUri != null
 
-        val deleteImageUrl = message.imageUri?.let { firebaseStorage.getReferenceFromUrl(it) }
-        val deleteVideoUrl = message.videoUri?.let { firebaseStorage.getReferenceFromUrl(it) }
+            val deleteImageUrl = message.imageUri?.let { firebaseStorage.getReferenceFromUrl(it) }
+            val deleteVideoUrl = message.videoUri?.let { firebaseStorage.getReferenceFromUrl(it) }
 
-        val timeStamp = message.messageSentTimeInTimeStamp!!
-        val imageMediaId = Helper.getImageMediaId(timeStamp)
-        val videoMediaId = Helper.getVideoMediaId(timeStamp)
+            val timeStamp = message.messageSentTimeInTimeStamp!!
+            val imageMediaId = Helper.getImageMediaId(timeStamp)
+            val videoMediaId = Helper.getVideoMediaId(timeStamp)
 
-        val imageMediaRef =
-            chatRef.document(chatRoomId).collection(Table.Media.name).document(imageMediaId)
-        val videoMediaRef =
-            chatRef.document(chatRoomId).collection(Table.Media.name).document(videoMediaId)
-        val lastMessageRef = chatRef.document(chatRoomId)
-
-
-        if (secondLastMessage != null) {
-            // need to update last message , recent chat
-            //For My Recent Chat
-            val timeStamp = secondLastMessage.messageSentTimeInTimeStamp
-            val timeInText = secondLastMessage.messageSendTimeInText
-            val lastMessageType = secondLastMessage.messageType
-            val forMyRecentData = RecentChat(
-                chatRoomId = chatRoomId,
-                lastMessageTimeInTimeStamp = timeStamp,
-                lastMessageTimeInText = timeInText,
-                message = secondLastMessage.text,
-                lastMessageType = lastMessageType,
-                senderId = secondLastMessage.senderId,
-                receiverId = secondLastMessage.receiverId,
-                userId = userId,
-                lastMessageSeen = secondLastMessage.seenStatus
-            )
-
-            //For Receiver Recent Chat
-            val forReceiverRecentData = RecentChat(
-                chatRoomId = chatRoomId,
-                lastMessageTimeInTimeStamp = timeStamp,
-                lastMessageTimeInText = timeInText,
-                message = secondLastMessage.text,
-                lastMessageType = lastMessageType,
-                senderId = secondLastMessage.senderId,
-                receiverId = secondLastMessage.receiverId,
-                userId = AuthManager.currentUserId()!!,
-                lastMessageSeen = secondLastMessage.seenStatus
-            )
-
-            val messageRef = chatRef.document(chatRoomId).collection(Table.Messages.name)
-                .document(message.messageId!!)
+            val imageMediaRef =
+                chatRef.document(chatRoomId).collection(Table.Media.name).document(imageMediaId)
+            val videoMediaRef =
+                chatRef.document(chatRoomId).collection(Table.Media.name).document(videoMediaId)
             val lastMessageRef = chatRef.document(chatRoomId)
-            val receiverRecentRef =
-                userRef.document(userId).collection(Table.RecentChat.name).document(chatRoomId)
-            val myRecentChatRef =
-                userRef.document(AuthManager.currentUserId()!!).collection(Table.RecentChat.name)
-                    .document(chatRoomId)
-
-            firestore.runBatch { batch ->
-                if (isImagePresent) {
-                    deleteImageUrl?.delete()
-                    batch.delete(imageMediaRef)
-                }
-                if (isVideoPresent) {
-                    deleteVideoUrl?.delete()
-                    batch.delete(videoMediaRef)
-                }
-
-                batch.delete(messageRef)
-                batch.update(lastMessageRef,
-                    lastMessage!!.toNormalMap().filterValues { it != null })
-                batch.update(receiverRecentRef, forReceiverRecentData.toNormalMap())
-                batch.update(myRecentChatRef, forMyRecentData.toNormalMap())
-            }.addOnSuccessListener {
-                trySend(UpdateResponse(true, ""))
-            }.addOnFailureListener {
-                trySend(UpdateResponse(false, it.message))
-            }.await()
 
 
-        } else {
-            // just delete message no need to update any thing
-            val messageDeleteRef = chatRef.document(chatRoomId).collection(Table.Messages.name)
-                .document(message.messageId!!)
-            firestore.runBatch {
-                if (isImagePresent) {
-                    deleteImageUrl?.delete()
-                    it.delete(imageMediaRef)
-                }
-                if (isVideoPresent) {
-                    deleteVideoUrl?.delete()
-                    it.delete(videoMediaRef)
-                }
+            if (secondLastMessage != null) {
+                // need to update last message , recent chat
+                //For My Recent Chat
+                val timeStamp = secondLastMessage.messageSentTimeInTimeStamp
+                val timeInText = secondLastMessage.messageSendTimeInText
+                val lastMessageType = secondLastMessage.messageType
+                val forMyRecentData = RecentChat(
+                    chatRoomId = chatRoomId,
+                    lastMessageTimeInTimeStamp = timeStamp,
+                    lastMessageTimeInText = timeInText,
+                    message = secondLastMessage.text,
+                    lastMessageType = lastMessageType,
+                    senderId = secondLastMessage.senderId,
+                    receiverId = secondLastMessage.receiverId,
+                    userId = userId,
+                    lastMessageSeen = secondLastMessage.seenStatus
+                )
 
-                it.delete(messageDeleteRef)
-            }.addOnSuccessListener {
-                trySend(UpdateResponse(true, ""))
-            }.addOnFailureListener {
-                trySend(UpdateResponse(false, it.message))
-            }.await()
+                //For Receiver Recent Chat
+                val forReceiverRecentData = RecentChat(
+                    chatRoomId = chatRoomId,
+                    lastMessageTimeInTimeStamp = timeStamp,
+                    lastMessageTimeInText = timeInText,
+                    message = secondLastMessage.text,
+                    lastMessageType = lastMessageType,
+                    senderId = secondLastMessage.senderId,
+                    receiverId = secondLastMessage.receiverId,
+                    userId = AuthManager.currentUserId()!!,
+                    lastMessageSeen = secondLastMessage.seenStatus
+                )
+
+                val messageRef = chatRef.document(chatRoomId).collection(Table.Messages.name)
+                    .document(message.messageId!!)
+                val lastMessageRef = chatRef.document(chatRoomId)
+                val isLastMessageExist = lastMessageRef.isExist()
+                val receiverRecentRef =
+                    userRef.document(userId).collection(Table.RecentChat.name).document(chatRoomId)
+                val isReceiverRecentRefExist = receiverRecentRef.isExist()
+                val myRecentChatRef =
+                    userRef.document(AuthManager.currentUserId()!!)
+                        .collection(Table.RecentChat.name)
+                        .document(chatRoomId)
+                val isMyRecentChatRef = myRecentChatRef.isExist()
+
+                firestore.runBatch { batch ->
+                    if (isImagePresent) {
+                        deleteImageUrl?.delete()
+                        batch.delete(imageMediaRef)
+                    }
+                    if (isVideoPresent) {
+                        deleteVideoUrl?.delete()
+                        batch.delete(videoMediaRef)
+                    }
+
+                    batch.delete(messageRef)
+                    batch.safeUpdate(lastMessageRef,
+                        lastMessage!!.toNormalMap().filterValues { it != null }, isLastMessageExist)
+                    batch.safeUpdate(
+                        receiverRecentRef,
+                        forReceiverRecentData.toNormalMap(),
+                        isReceiverRecentRefExist
+                    )
+                    batch.safeUpdate(
+                        myRecentChatRef,
+                        forMyRecentData.toNormalMap(),
+                        isMyRecentChatRef
+                    )
+
+                }.addOnSuccessListener {
+                    trySend(UpdateResponse(true, ""))
+                }.addOnFailureListener {
+                    trySend(UpdateResponse(false, it.message))
+                }.await()
+
+
+            } else {
+                // just delete message no need to update any thing
+                val messageDeleteRef = chatRef.document(chatRoomId).collection(Table.Messages.name)
+                    .document(message.messageId!!)
+                firestore.runBatch {
+                    if (isImagePresent) {
+                        deleteImageUrl?.delete()
+                        it.delete(imageMediaRef)
+                    }
+                    if (isVideoPresent) {
+                        deleteVideoUrl?.delete()
+                        it.delete(videoMediaRef)
+                    }
+
+                    it.delete(messageDeleteRef)
+                }.addOnSuccessListener {
+                    trySend(UpdateResponse(true, ""))
+                }.addOnFailureListener {
+                    trySend(UpdateResponse(false, it.message))
+                }.await()
+            }
+        } catch (e: FirebaseFirestoreException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+
+
 
         awaitClose {
             close()
@@ -560,6 +593,9 @@ object ChatManager {
                         }
                     }
                     trySend(UpdateResponse(true, "")) // All documents deleted successfully
+                } catch (e: FirebaseFirestoreException) {
+                    e.printStackTrace()
+                    trySend(UpdateResponse(false, e.message)) // Failed to delete all documents
                 } catch (e: Exception) {
                     e.printStackTrace()
                     trySend(UpdateResponse(false, e.message)) // Failed to delete all documents
@@ -646,22 +682,35 @@ object ChatManager {
                     .document(chatRoomId)
             val receiverRecentChatRef =
                 userRef.document(receiverId).collection(Table.RecentChat.name).document(chatRoomId)
+
+            val isMessageRefExist = messageRef.isExist()
+            val isMyRecentChatRefExist = myRecentChatRef.isExist()
+            val isReceiverRecentChatRefExist = receiverRecentChatRef.isExist()
+
+
             firestore.runBatch {
-                it.update(messageRef, Constants.MessageTable.SEEN_STATUS.fieldName, status)
-                it.update(
-                    myRecentChatRef, Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName, status
-                )
-                it.update(
-                    receiverRecentChatRef,
+                it.safeUpdate(messageRef , isMessageRefExist, Constants.MessageTable.SEEN_STATUS.fieldName, status)
+                it.safeUpdate(
+                    myRecentChatRef,
+                    isMyRecentChatRefExist,
                     Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName,
                     status
                 )
+                it.safeUpdate(
+                    receiverRecentChatRef,
+                    isReceiverRecentChatRefExist,
+                    Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName,
+                    status
+                )
+
+
                 if (status == Constants.SeenStatus.MessageSeen.status) {
-                    it.update(
-                        myRecentChatRef, Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName, 0
+                    it.safeUpdate(
+                        myRecentChatRef , isMyRecentChatRefExist, Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName, 0
                     )
-                    it.update(
+                    it.safeUpdate(
                         receiverRecentChatRef,
+                        isReceiverRecentChatRefExist,
                         Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName,
                         0
                     )
@@ -694,15 +743,34 @@ object ChatManager {
     suspend fun updateUserAvailabilityForChatRoom(
         chatRoomId: String, isIAmUser1: Boolean, status: Boolean
     ) {
-        val lastMessageRef = chatRef.document(chatRoomId)
-        val timestamp  = System.currentTimeMillis()
-        if (isIAmUser1) {
-            lastMessageRef.update(Constants.LastMessageTable.IS_USER_1_ONLINE.fieldName, status)
-            lastMessageRef.update(Constants.LastMessageTable.USER_1_LAST_ONLINE_TIMESTAMP.fieldName, timestamp)
-        } else {
-            lastMessageRef.update(Constants.LastMessageTable.IS_USER_2_ONLINE.fieldName, status)
-            lastMessageRef.update(Constants.LastMessageTable.USER_2_LAST_ONLINE_TIMESTAMP.fieldName, timestamp)
+        try {
+            val lastMessageRef = chatRef.document(chatRoomId)
+            val timestamp = System.currentTimeMillis()
+            if (isIAmUser1) {
+                lastMessageRef.safeUpdate(
+                    Constants.LastMessageTable.IS_USER_1_ONLINE.fieldName,
+                    status
+                )
+                lastMessageRef.safeUpdate(
+                    Constants.LastMessageTable.USER_1_LAST_ONLINE_TIMESTAMP.fieldName,
+                    timestamp
+                )
+            } else {
+                lastMessageRef.safeUpdate(
+                    Constants.LastMessageTable.IS_USER_2_ONLINE.fieldName,
+                    status
+                )
+                lastMessageRef.safeUpdate(
+                    Constants.LastMessageTable.USER_2_LAST_ONLINE_TIMESTAMP.fieldName,
+                    timestamp
+                )
+            }
+        } catch (e: FirebaseFirestoreException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+
     }
 
     suspend fun getMessageById(chatRoomId: String, messageId: String) = flow<Message> {
@@ -878,15 +946,19 @@ object ChatManager {
     suspend fun deleteRecentChat(chatRoomId: String) = callbackFlow<UpdateResponse> {
 
         try {
-            userRef.document(AuthManager.currentUserId()!!).collection(Table.RecentChat.name).document(chatRoomId).delete().addOnSuccessListener {
-                trySend(UpdateResponse(true, ""))
-            }.addOnFailureListener{
-                trySend(UpdateResponse(false, it.message))
-            }.await()
+            userRef.document(AuthManager.currentUserId()!!).collection(Table.RecentChat.name)
+                .document(chatRoomId).delete().addOnSuccessListener {
+                    trySend(UpdateResponse(true, ""))
+                }.addOnFailureListener {
+                    trySend(UpdateResponse(false, it.message))
+                }.await()
 
-        } catch (e:Exception){
+        } catch (e: FirebaseFirestoreException) {
             e.printStackTrace()
             trySend(UpdateResponse(false, e.message))
+        } catch (e: Exception) {
+            e.printStackTrace()
+
         }
 
 
@@ -909,54 +981,61 @@ object ChatManager {
         addedOrRemovedUserId: String? = null,
         groupInfo: GroupInfo? = null
     ) = callbackFlow<UpdateChatResponse> {
-        MyLogger.i(tagChat, isFunctionCall = true)
-        val isImagePresent = message.imageUri != null || groupInfo?.groupPic != null
-        val isVideoPresent = message.videoUri != null
+        try {
+            MyLogger.i(tagChat, isFunctionCall = true)
+            val isImagePresent = message.imageUri != null || groupInfo?.groupPic != null
+            val isVideoPresent = message.videoUri != null
 
-        when {
-            isVideoPresent -> {
-                uploadGroupVideo(
-                    message,
-                    lastMessage,
-                    chatRoomId,
-                    isImagePresent,
-                    users,
-                    action,
-                    addedOrRemovedUserId
-                ).onEach {
-                    trySend(it)
-                }.launchIn(this)
+            when {
+                isVideoPresent -> {
+                    uploadGroupVideo(
+                        message,
+                        lastMessage,
+                        chatRoomId,
+                        isImagePresent,
+                        users,
+                        action,
+                        addedOrRemovedUserId
+                    ).onEach {
+                        trySend(it)
+                    }.launchIn(this)
+                }
+
+                isImagePresent -> {
+                    uploadGroupImage(
+                        message,
+                        lastMessage,
+                        chatRoomId,
+                        users,
+                        action,
+                        addedOrRemovedUserId,
+                        groupInfo
+                    ).onEach {
+                        trySend(it)
+                    }.launchIn(this)
+                }
+
+                else -> {
+                    saveGroupMessageToDatabase(
+                        message,
+                        lastMessage,
+                        chatRoomId,
+                        users,
+                        action,
+                        addedOrRemovedUserId,
+                        groupInfo = groupInfo
+                    ).onEach {
+                        trySend(it)
+                    }.launchIn(this)
+
+                }
             }
-
-            isImagePresent -> {
-                uploadGroupImage(
-                    message,
-                    lastMessage,
-                    chatRoomId,
-                    users,
-                    action,
-                    addedOrRemovedUserId,
-                    groupInfo
-                ).onEach {
-                    trySend(it)
-                }.launchIn(this)
-            }
-
-            else -> {
-                saveGroupMessageToDatabase(
-                    message,
-                    lastMessage,
-                    chatRoomId,
-                    users,
-                    action,
-                    addedOrRemovedUserId,
-                    groupInfo = groupInfo
-                ).onEach {
-                    trySend(it)
-                }.launchIn(this)
-
-            }
+        } catch (e: FirebaseFirestoreException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+
 
         awaitClose {
             close()
@@ -1220,7 +1299,7 @@ object ChatManager {
 
             launch {
                 // Update to send status
-                messageRef.update(
+                messageRef.safeUpdate(
                     Constants.GroupMessageTable.SEEN_STATUS.fieldName,
                     Constants.SeenStatus.Send.status
                 )
@@ -1231,10 +1310,11 @@ object ChatManager {
                     chatRoomId
                 )
             }
-            if(groupInfo==null){
+            if (groupInfo == null) {
                 launchCoroutineInIOThread {
                     updateUnSeenMessageList(
-                        users.mapNotNull { it.memberId }.filter { it!=AuthManager.currentUserId()!! },
+                        users.mapNotNull { it.memberId }
+                            .filter { it != AuthManager.currentUserId()!! },
                         updatedMessage,
                         chatRoomId
                     )
@@ -1264,8 +1344,8 @@ object ChatManager {
         chatRoomId: String,
         users: List<GroupMember>,
         action: InfoType,
-        addedOrRemovedUserId: String?=null,
-        newMembers:List<String>?=null,
+        addedOrRemovedUserId: String? = null,
+        newMembers: List<String>? = null,
         groupInfo: GroupInfo? = null
     ) = callbackFlow<UpdateResponse> {
         val timeStamp = System.currentTimeMillis()
@@ -1293,9 +1373,9 @@ object ChatManager {
             lastMessageSeen = Constants.SeenStatus.Sending.status,
             isGroupChat = true,
             infoMessageType = action?.name,
-            addedOrRemovedUserId = addedOrRemovedUserId ,
+            addedOrRemovedUserId = addedOrRemovedUserId,
             newMembersName = message.newMembersName,
-            newMembers = message.newMembers ,
+            newMembers = message.newMembers,
             receiverId = chatRoomId
         )
 
@@ -1306,9 +1386,9 @@ object ChatManager {
         val groupInfoRef =
             chatRef.document(chatRoomId).collection(Table.GroupInfo.name).document(chatRoomId)
         val isChatRoomExist = chatRef.document(chatRoomId).get().await().exists()
-        val isThisFunctionCallForRemoveMember=(action.name==InfoType.MemberRemoved.name || action.name==InfoType.MemberExit.name)
-        val isThisFunctionCallForAddNewMember=action.name==InfoType.MemberAdded.name
-
+        val isThisFunctionCallForRemoveMember =
+            (action.name == InfoType.MemberRemoved.name || action.name == InfoType.MemberExit.name)
+        val isThisFunctionCallForAddNewMember = action.name == InfoType.MemberAdded.name
 
 
         //In transaction all read come first then after all write come
@@ -1340,21 +1420,30 @@ object ChatManager {
                 }
 
                 // This is for when new user added
-                if(isThisFunctionCallForAddNewMember){
+                if (isThisFunctionCallForAddNewMember) {
                     newMembers?.forEach() {
-                        batch.set(chatRef.document(chatRoomId).collection(Table.GroupMember.name).document(it),GroupMember(
-                            isOnline = false,
-                            memberId = it,
-                            groupJoiningDateInText = timeInText,
-                            groupJoiningDateInTimeStamp = timeStamp
-                        ))
+                        batch.set(
+                            chatRef.document(chatRoomId).collection(Table.GroupMember.name)
+                                .document(it), GroupMember(
+                                isOnline = false,
+                                memberId = it,
+                                groupJoiningDateInText = timeInText,
+                                groupJoiningDateInTimeStamp = timeStamp
+                            )
+                        )
                     }
                 }
 
                 //This is for when user exit or remove from group
-                if(isThisFunctionCallForRemoveMember){
-                    batch.delete(chatRef.document(chatRoomId).collection(Table.GroupMember.name).document(addedOrRemovedUserId!!))
-                    batch.delete(userRef.document(addedOrRemovedUserId!!).collection(Table.RecentChat.name).document(chatRoomId))
+                if (isThisFunctionCallForRemoveMember) {
+                    batch.delete(
+                        chatRef.document(chatRoomId).collection(Table.GroupMember.name)
+                            .document(addedOrRemovedUserId!!)
+                    )
+                    batch.delete(
+                        userRef.document(addedOrRemovedUserId!!).collection(Table.RecentChat.name)
+                            .document(chatRoomId)
+                    )
                 }
 
                 //Add new info message in chat
@@ -1413,21 +1502,30 @@ object ChatManager {
     }
 
     suspend fun listenNewMessage(chatRoomId: String) = callbackFlow<Unit> {
-        listenNewMessageListener?.remove()
-        listenNewMessageListener =
-            userRef.document(AuthManager.currentUserId()!!).collection(Table.UnSeenMessage.name)
-                .document(chatRoomId).addSnapshotListener { value, error ->
-                    if (error != null) return@addSnapshotListener
+        try {
+            listenNewMessageListener?.remove()
+            listenNewMessageListener =
+                userRef.document(AuthManager.currentUserId()!!).collection(Table.UnSeenMessage.name)
+                    .document(chatRoomId).addSnapshotListener { value, error ->
+                        if (error != null) return@addSnapshotListener
 
-                    if (value != null) {
-                        val unSeenMessageModel = value.toObject<UnSeenMessageModel>()
-                        unSeenMessageModel?.unSeenMessage?.let {
-                            updateUnseenMessagesToSeen(chatRoomId, it)
-                            userRef.document(AuthManager.currentUserId()!!)
-                                .collection(Table.UnSeenMessage.name).document(chatRoomId).delete()
+                        if (value != null) {
+                            val unSeenMessageModel = value.toObject<UnSeenMessageModel>()
+                            unSeenMessageModel?.unSeenMessage?.let {
+                                updateUnseenMessagesToSeen(chatRoomId, it)
+                                userRef.document(AuthManager.currentUserId()!!)
+                                    .collection(Table.UnSeenMessage.name).document(chatRoomId)
+                                    .delete()
+                            }
                         }
                     }
-                }
+        } catch (e: FirebaseFirestoreException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+
         awaitClose {
             listenNewMessageListener?.remove()
             close()
@@ -1482,8 +1580,9 @@ object ChatManager {
                             val recentMessageRefForReceiver = recentChatRef
                                 .set(updatedRecentChatData).await()
                             // Handle the result if needed
+                        } catch (e: FirebaseFirestoreException) {
+                            e.printStackTrace()
                         } catch (e: Exception) {
-                            // Handle exceptions if needed
                             e.printStackTrace()
                         }
                     }
@@ -1538,6 +1637,7 @@ object ChatManager {
             val messageRef = chatRef.document(chatRoomId).collection(Table.Messages.name)
                 .document(message.messageId!!)
             val lastMessageRef = chatRef.document(chatRoomId)
+            val isLastMessageRefExist = lastMessageRef.isExist()
 
             firestore.runBatch { batch ->
                 if (isImagePresent) {
@@ -1550,8 +1650,8 @@ object ChatManager {
                 }
 
                 batch.delete(messageRef)
-                batch.update(lastMessageRef,
-                    lastMessage!!.toNormalMap().filterValues { it != null })
+                batch.safeUpdate(lastMessageRef,
+                    lastMessage!!.toNormalMap().filterValues { it != null } ,isLastMessageRefExist)
             }.addOnSuccessListener {
                 trySend(UpdateResponse(true, ""))
                 launch {
@@ -1700,6 +1800,9 @@ object ChatManager {
             // Await completion of all batch operations
             jobs.awaitAll()
             trySend(UpdateResponse(true, "All messages deleted successfully"))
+        } catch (e: FirebaseFirestoreException) {
+            e.printStackTrace()
+            trySend(UpdateResponse(false, "Error deleting messages: ${e.message}"))
         } catch (e: Exception) {
             e.printStackTrace()
             trySend(UpdateResponse(false, "Error deleting messages: ${e.message}"))
@@ -1879,12 +1982,14 @@ object ChatManager {
             }
         }
 
-    suspend fun updateGroupInfo( message: GroupMessage,
-                                 lastMessage: GroupLastMessage,
-                                 chatRoomId: String,
-                                 users: List<GroupMember>,// Just for add  message recent chat
-                                 groupInfo: GroupInfo? = null , deleteImage:String?=null , uploadingImage:String?=null) = callbackFlow<UpdateResponse> {
-MyLogger.i(tagChat, isFunctionCall = true)
+    suspend fun updateGroupInfo(
+        message: GroupMessage,
+        lastMessage: GroupLastMessage,
+        chatRoomId: String,
+        users: List<GroupMember>,// Just for add  message recent chat
+        groupInfo: GroupInfo? = null, deleteImage: String? = null, uploadingImage: String? = null
+    ) = callbackFlow<UpdateResponse> {
+        MyLogger.i(tagChat, isFunctionCall = true)
         if (deleteImage != null) {
             StorageManager.deleteImageFromServer(deleteImage).onEach {
                 if (it.isSuccess) {
@@ -1904,8 +2009,7 @@ MyLogger.i(tagChat, isFunctionCall = true)
 
         if (uploadingImage != null) {
             StorageManager.uploadImageToServer(
-                Table.Chats.name
-                ,
+                Table.Chats.name,
                 "$chatRoomId/${Constants.FolderName.ChatImage.name}",
                 imageUri = uploadingImage.convertParseUri()
             ).onEach {
@@ -1927,12 +2031,20 @@ MyLogger.i(tagChat, isFunctionCall = true)
                         val _groupInfo = groupInfo?.copy(
                             groupPic = onlineImageUri
                         )
-                        saveGroupMessageToDatabase(message,lastMessage, chatRoomId, users,InfoType.GroupDetailsChanged, null,groupInfo = _groupInfo).onEach {
-                            if(it.isSuccess){
-                                trySend(UpdateResponse(true,""))
+                        saveGroupMessageToDatabase(
+                            message,
+                            lastMessage,
+                            chatRoomId,
+                            users,
+                            InfoType.GroupDetailsChanged,
+                            null,
+                            groupInfo = _groupInfo
+                        ).onEach {
+                            if (it.isSuccess) {
+                                trySend(UpdateResponse(true, ""))
                                 return@onEach
                             }
-                            if (it.errorMessage!=null){
+                            if (it.errorMessage != null) {
                                 trySend(UpdateResponse(false, it.errorMessage))
                                 return@onEach
                             }
@@ -1941,13 +2053,21 @@ MyLogger.i(tagChat, isFunctionCall = true)
                 }
 
             }.launchIn(this)
-        } else{
-            saveGroupMessageToDatabase(message,lastMessage, chatRoomId, users,InfoType.GroupDetailsChanged ,null, groupInfo = groupInfo).onEach {
-                if(it.isSuccess){
-                    trySend(UpdateResponse(true,""))
+        } else {
+            saveGroupMessageToDatabase(
+                message,
+                lastMessage,
+                chatRoomId,
+                users,
+                InfoType.GroupDetailsChanged,
+                null,
+                groupInfo = groupInfo
+            ).onEach {
+                if (it.isSuccess) {
+                    trySend(UpdateResponse(true, ""))
                     return@onEach
                 }
-                if (it.errorMessage!=null){
+                if (it.errorMessage != null) {
                     trySend(UpdateResponse(false, it.errorMessage))
                     return@onEach
                 }
@@ -1961,7 +2081,6 @@ MyLogger.i(tagChat, isFunctionCall = true)
             close()
         }
     }
-
 
 
     suspend fun getGroupInfoWithoutAsync(chatRoomId: String) =
@@ -2032,10 +2151,12 @@ MyLogger.i(tagChat, isFunctionCall = true)
             // Update UNSEEN_MESSAGE_COUNT after all batches are done
             val myRecentChatRef = userRef.document(currentUserId)
                 .collection(Table.RecentChat.name).document(chatRoomId)
+            val isMyRecentChatRefExist = myRecentChatRef.isExist()
 
             firestore.runBatch { batchWrite ->
-                batchWrite.update(
+                batchWrite.safeUpdate(
                     myRecentChatRef,
+                    isMyRecentChatRefExist,
                     Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName,
                     0
                 )
@@ -2086,61 +2207,71 @@ MyLogger.i(tagChat, isFunctionCall = true)
         chatRoomId: String,
         senderId: String
     ) {
-        launchCoroutineInIOThread {
-            val messageRef =
-                chatRef.document(chatRoomId).collection(Table.Messages.name).document(messageId)
-            val messageData =
-                messageRef.get().await().toObject<GroupMessage>()
-                    ?: return@launchCoroutineInIOThread
-            val myRecentChatRef =
-                userRef.document(AuthManager.currentUserId()!!).collection(Table.RecentChat.name)
-                    .document(chatRoomId)
-            val senderRecentChatRef =
-                userRef.document(senderId).collection(Table.RecentChat.name).document(chatRoomId)
-
-            val isRecentChatUpdateNeeded = async {
-                val senderRecentChatData =
+        try {
+            launchCoroutineInIOThread {
+                val messageRef =
+                    chatRef.document(chatRoomId).collection(Table.Messages.name).document(messageId)
+                val isMessageRefExist = messageRef.isExist()
+                val messageData =
+                    messageRef.get().await().toObject<GroupMessage>()
+                        ?: return@launchCoroutineInIOThread
+                val myRecentChatRef =
+                    userRef.document(AuthManager.currentUserId()!!)
+                        .collection(Table.RecentChat.name)
+                        .document(chatRoomId)
+                val senderRecentChatRef =
                     userRef.document(senderId).collection(Table.RecentChat.name)
-                        .document(chatRoomId).get().await().toObject<RecentChat>()
-                        ?: return@async false
+                        .document(chatRoomId)
 
-                return@async messageData.messageSentTimeInTimeStamp == senderRecentChatData.lastMessageTimeInTimeStamp
-            }.await()
+                val isRecentChatUpdateNeeded = async {
+                    val senderRecentChatData =
+                        userRef.document(senderId).collection(Table.RecentChat.name)
+                            .document(chatRoomId).get().await().toObject<RecentChat>()
+                            ?: return@async false
 
-            // Ensure the current user is in the received list if the status is Seen
-            val tempMessageReceivedByUsers =
-                messageData.messageReceivedByUsers?.toMutableList() ?: mutableListOf()
-            if (!tempMessageReceivedByUsers.contains(AuthManager.currentUserId()!!)) {
-                tempMessageReceivedByUsers.add(AuthManager.currentUserId()!!)
-            }
+                    return@async messageData.messageSentTimeInTimeStamp == senderRecentChatData.lastMessageTimeInTimeStamp
+                }.await()
 
-
-            val isMessageReceivedByAllMembers =
-                messageData.sendTimeUsers?.filter { it != senderId }?.all {
-                    tempMessageReceivedByUsers.contains(it)
-                } ?: false
-
-            val tempStatus = when {
-                isMessageReceivedByAllMembers -> Constants.SeenStatus.Received.status
-                else -> messageData.seenStatus!!
-            }
-
-            val updatedMessageData = messageData.copy(
-                messageReceivedByUsers = tempMessageReceivedByUsers,
-                seenStatus = tempStatus
-            )
-
-            firestore.runBatch { batch ->
-                batch.update(messageRef, updatedMessageData.toNormalMap())
-                if (isRecentChatUpdateNeeded) {
-                    batch.update(
-                        senderRecentChatRef,
-                        Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName,
-                        tempStatus
-                    )
+                // Ensure the current user is in the received list if the status is Seen
+                val tempMessageReceivedByUsers =
+                    messageData.messageReceivedByUsers?.toMutableList() ?: mutableListOf()
+                if (!tempMessageReceivedByUsers.contains(AuthManager.currentUserId()!!)) {
+                    tempMessageReceivedByUsers.add(AuthManager.currentUserId()!!)
                 }
-            }.await()
+
+
+                val isMessageReceivedByAllMembers =
+                    messageData.sendTimeUsers?.filter { it != senderId }?.all {
+                        tempMessageReceivedByUsers.contains(it)
+                    } ?: false
+
+                val tempStatus = when {
+                    isMessageReceivedByAllMembers -> Constants.SeenStatus.Received.status
+                    else -> messageData.seenStatus!!
+                }
+
+                val updatedMessageData = messageData.copy(
+                    messageReceivedByUsers = tempMessageReceivedByUsers,
+                    seenStatus = tempStatus
+                )
+
+                firestore.runBatch { batch ->
+                    batch.safeUpdate(messageRef, updatedMessageData.toNormalMap() , isMessageRefExist)
+                    if (isRecentChatUpdateNeeded) {
+                        batch.update(
+                            senderRecentChatRef,
+                            Constants.RecentChatTable.LAST_MESSAGE_SEEN.fieldName,
+                            tempStatus
+                        )
+                    }
+                }.await()
+            }
+        } catch (e: FirebaseFirestoreException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+
     }
 
 

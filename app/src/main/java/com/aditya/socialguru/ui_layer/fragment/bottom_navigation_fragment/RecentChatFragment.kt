@@ -277,10 +277,10 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
         etSearch.setOnFocusChangeListener { _, hasFocus ->
             if(hasFocus){
 //                reduceMarginFromRoot()
-//                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(true)
+                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(true)
             }else{
 //                resetMarginFromRoot()
-//                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
+                AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
                 hideExpandedState()
             }
 

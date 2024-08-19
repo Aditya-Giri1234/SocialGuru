@@ -25,6 +25,21 @@
             app:civ_border_color="@color/blue"
             app:civ_border_width="@dimen/_1sdp"
             android:layout_gravity="bottom"/>
+        <TextView
+            android:id="@+id/tvInitial"
+            android:layout_width="@dimen/_24sdp"
+            android:layout_height="@dimen/_24sdp"
+            android:fontFamily="@font/poppins_bold"
+            android:layout_marginStart="@dimen/_6sdp"
+            android:text="A"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:background="@drawable/circle_shape_bg"
+            android:visibility="gone"
+            android:maxLength="1"
+            android:textColor="@color/white"
+            android:textSize="@dimen/_12ssp"
+            android:layout_gravity="bottom"/>
         <LinearLayout
             android:id="@+id/linearMessage"
             android:layout_width="wrap_content"

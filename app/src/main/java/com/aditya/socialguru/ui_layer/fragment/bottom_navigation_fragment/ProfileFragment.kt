@@ -28,8 +28,11 @@ import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
+import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myLaunch
+import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
@@ -38,7 +41,6 @@ import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.viewmodel.profile.ProfileViewModel
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -153,14 +155,21 @@ class ProfileFragment : Fragment(), AlertDialogOption {
                 pref.getPrefUser().first()?.let { user ->
                     withContext(Dispatchers.Main) {
                         if (user.userProfileImage != null) {
+                            tvInitialMain.gone()
+                            ivProfile.myShow()
                             ivProfile.tag =
                                 imageAvailable  // help to determine that image available not
                             Glide.with(ivProfile).load(user.userProfileImage)
                                 .placeholder(R.drawable.ic_user).into(ivProfile)
                         } else {
+                            tvInitialMain.myShow()
+                            ivProfile.gone()
                             ivProfile.tag = imageUnAvailable
                             Glide.with(ivProfile).load(R.drawable.ic_user).into(ivProfile)
                             ivProfile.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+
+                            tvInitialMain.text = user.userName?.get(0).toString()
+                            tvInitialMain.setCircularBackground(Helper.setUserProfileColor(user))
                         }
 
                         tvUserName.text = user.userName
@@ -190,7 +199,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
 
         }
 
-        ivProfileOption.setSafeOnClickListener {
+        ivProfileOption.setOnClickListener {
             showPopupMenu()
         }
     }
@@ -214,7 +223,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
 
         bindingPopUp.apply {
 
-            linearItemFriendCircle.setSafeOnClickListener {
+            linearItemFriendCircle.setOnClickListener {
                 popUp.dismiss()
                 val directions: NavDirections =
                     ProfileFragmentDirections.actionProfileFragmentToFriendCircleFragment()
@@ -222,21 +231,35 @@ class ProfileFragment : Fragment(), AlertDialogOption {
             }
             linearItemActivity.setSafeOnClickListener {
                 popUp.dismiss()
-                val directions: NavDirections =
-                    BottomNavigationBarDirections.actionGlobalMyActivityFragment(AuthManager.currentUserId()!!)
-                navController.safeNavigate(
-                    directions, Helper.giveAnimationNavOption()
-                )
-
+                lifecycleScope.launch {
+                    pref.getPrefUser().first()?.let {
+                        val directions: NavDirections =
+                            BottomNavigationBarDirections.actionGlobalMyActivityFragment(
+                                AuthManager.currentUserId()!!,
+                                it
+                            )
+                        navController.safeNavigate(
+                            directions, Helper.giveAnimationNavOption()
+                        )
+                    }
+                }
             }
-            linearItemEditProfile.setSafeOnClickListener {
+            linearItemSavedPost.setSafeOnClickListener {
+                popUp.dismiss()
+                    val directions: NavDirections =
+                        BottomNavigationBarDirections.actionGlobalMySavedPostFragment()
+                    navController.safeNavigate(
+                        directions, Helper.giveAnimationNavOption()
+                    )
+            }
+            linearItemEditProfile.setOnClickListener {
                 popUp.dismiss()
 
                 val directions: NavDirections =
                     ProfileFragmentDirections.actionProfileFragmentToUpdateProfileFragment2()
                 navController.navigate(directions, Helper.giveAnimationNavOption())
             }
-            linearItemLogOut.setSafeOnClickListener {
+            linearItemLogOut.setOnClickListener {
                 popUp.dismiss()
                 AlertDialog(
                     "Are you sure log out ?",
@@ -247,7 +270,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
                     "MyAlertDialog"
                 )
             }
-            linearItemSetting.setSafeOnClickListener {
+            linearItemSetting.setOnClickListener {
                 popUp.dismiss()
 
                 val directions: NavDirections =

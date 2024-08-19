@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -20,6 +21,7 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.databinding.FragmentHomeDiscoverPostBinding
+import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
@@ -46,6 +48,7 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
 
 
     private var _discoverPostAdapter: PostAdapter? = null
+    private var myLoader: MyLoader? = null
     private val discoverPostAdapter get() = _discoverPostAdapter!!
 
 
@@ -143,6 +146,27 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
                         }
                     }
                 }.launchIn(this)
+                discoverPostViewModel.savePost.onEach {
+                        response->
+                    when(response){
+                        is Resource.Success->{
+                            hideDialog()
+                            response.hasBeenMessagedToUser=true
+                            showSnackBar(response.message , isSuccess =
+                            true)
+                        }
+                        is Resource.Loading->{
+                            showDialog()
+                        }
+                        is Resource.Error->{
+                            hideDialog()
+                            response.hasBeenMessagedToUser=true
+                            showSnackBar(response.message)
+                        }
+
+                    }
+                }.launchIn(this)
+
             }
 
         }
@@ -202,6 +226,34 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
         super.onResume()
     }
 
+    private fun showDialog() {
+        myLoader?.dismiss()
+        myLoader = MyLoader()
+        myLoader?.show(childFragmentManager, "My_Loader")
+    }
+
+    private fun hideDialog() {
+        myLoader?.dismiss()
+        myLoader = null
+    }
+
+
+    private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
+        if (isSuccess) {
+            Helper.showSuccessSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        } else {
+            Helper.showSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        }
+    }
+
 
     //region:: Override Part
     override fun onImageClick(): (Uri) -> Unit = {}
@@ -219,7 +271,8 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
         navigateToDetailPostScreen(postId)
     }
 
-    override fun onSettingClick() {
+    override fun onSettingClick(postId: String) {
+        discoverPostViewModel.updatePostSaveStatus(postId)
     }
 
     override fun onSendClick(post: Post) {

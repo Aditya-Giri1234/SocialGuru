@@ -159,6 +159,7 @@ class MainActivity : AppCompatActivity() {
                         showBottomNavigationFotScrollEffect()
                     }
                 }.launchIn(this)
+
                 mainViewModel.user.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
@@ -347,17 +348,20 @@ class MainActivity : AppCompatActivity() {
                     setCustomKey("NAME", it.userName.toString())
                     setCustomKey("EMAIL", it.userEmailId.toString())
                 }
-
             }
         }
     }
 
     private fun getData() {
         if (AuthManager.currentUserId() != null) {
-            if (!mainViewModel.isDataLoaded) {
+            if (!mainViewModel.isDataLoaded){
                 getFCMToken()
-                mainViewModel.getUser()
                 mainViewModel.setDataLoadedStatus(true)
+            }
+            if (!mainViewModel.isListenerSet) {
+                mainViewModel.getUser()
+                mainViewModel.listenMySavedPost()
+                mainViewModel.setListenerSetStatus(true)
             }
         }
     }
@@ -415,6 +419,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        mainViewModel.removeAllListener()
         unregisterReceiver(broadcastReceiver)
         super.onDestroy()
     }

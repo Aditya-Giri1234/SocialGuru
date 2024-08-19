@@ -7,6 +7,7 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -139,6 +140,28 @@ class ShowMyLikedPostFragment(val userId:String) : Fragment(), OnPostClick {
                         }
                     }
                 }.launchIn(this)
+
+
+                myPostViewModel.savePost.onEach {
+                        response->
+                    when(response){
+                        is Resource.Success->{
+                            hideDialog()
+                            response.hasBeenMessagedToUser=true
+                            showSnackBar(response.message , isSuccess =
+                            true)
+                        }
+                        is Resource.Loading->{
+                            showDialog()
+                        }
+                        is Resource.Error->{
+                            hideDialog()
+                            response.hasBeenMessagedToUser=true
+                            showSnackBar(response.message)
+                        }
+
+                    }
+                }.launchIn(this)
             }
         }
     }
@@ -249,7 +272,8 @@ class ShowMyLikedPostFragment(val userId:String) : Fragment(), OnPostClick {
         navigateToDetailPostScreen(postId)
     }
 
-    override fun onSettingClick() {
+    override fun onSettingClick(postId: String) {
+        myPostViewModel.updatePostSaveStatus(postId)
     }
 
     override fun onSendClick(post: Post) {
@@ -282,7 +306,25 @@ class ShowMyLikedPostFragment(val userId:String) : Fragment(), OnPostClick {
         myLoader = null
     }
 
+
+    private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
+        if (isSuccess) {
+            Helper.showSuccessSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        } else {
+            Helper.showSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        }
+    }
+
     override fun onDestroyView() {
+        myPostViewModel.removeAllListener()
         _binding = null
         super.onDestroyView()
     }

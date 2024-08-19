@@ -44,6 +44,7 @@ import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.StoryTypeOptions
@@ -389,9 +390,21 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                         pref.getPrefUser().first()?.let {
                             runOnUiThread {
                                 tvHeaderUserName.text = it.userName
-                                Glide.with(profileImage).load(it.userProfileImage)
-                                    .placeholder(R.drawable.ic_person).error(R.drawable.person)
-                                    .into(profileImage)
+
+                                if (it.userProfileImage == null) {
+                                    tvInitial.myShow()
+                                    profileImage.gone()
+                                    tvInitial.text = it.userName?.get(0).toString()
+                                    tvInitial.setCircularBackground(Helper.setUserProfileColor(it))
+
+                                } else {
+                                    profileImage.myShow()
+                                    tvInitial.gone()
+                                    Glide.with(profileImage).load(it.userProfileImage)
+                                        .placeholder(R.drawable.ic_user).error(R.drawable.ic_user)
+                                        .into(profileImage)
+                                }
+
                             }
                         }
                     }
@@ -426,6 +439,9 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     private fun FragmentHomeBinding.setListener() {
         myToolbar.profileImage.setSafeOnClickListener {
+            navigateToProfileViewFragment()
+        }
+        myToolbar.tvInitial.setSafeOnClickListener {
             navigateToProfileViewFragment()
         }
         myToolbar.icSetting.setOnClickListener {
@@ -476,13 +492,18 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     private fun setData(userStories: List<UserStories> = mutableListOf()) {
         MyLogger.v(isFunctionCall = true)
 
-        if (userData.isEmpty()) {
-            userData.add(0, UserStories(null, null))
-            userData.addAll(userStories)
+        lifecycleScope.launch {
+            val user = pref.getPrefUser().first()
+
+            if (userData.isEmpty()) {
+                userData.add(0, UserStories(user, null))
+                userData.addAll(userStories)
+            }
+
+            MyLogger.v(msg = "Now data is set into homeFragment !")
+            storyAdapter.submitList(userData.toList())
         }
 
-        MyLogger.v(msg = "Now data is set into homeFragment !")
-        storyAdapter.submitList(userData.toList())
     }
 
     private fun showPopupMenu() {

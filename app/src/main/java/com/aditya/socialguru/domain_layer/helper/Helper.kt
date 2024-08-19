@@ -3,6 +3,7 @@ package com.aditya.socialguru.domain_layer.helper
 import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Patterns
@@ -18,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavOptions
 import com.aditya.socialguru.R
+import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.ProfileViewDialog
@@ -282,5 +284,42 @@ object Helper {
             }
         }
     }
+
+    // region:: Get Random color
+
+     fun setUserProfileColor(user: Map<String, User>) : MutableMap<String, Int>{
+        val colorMap = mutableMapOf<String, Int>()
+        for ((key, userDetails) in user) {
+            val color = generateColorFromUserId(key)
+            colorMap[key] = color
+        }
+        return colorMap
+    }
+
+     fun setUserProfileColor(user: User) : Int{
+        return generateColorFromUserId(user.userId!!)
+    }
+
+
+    private fun generateColorFromUserId(userId: String): Int {
+        val hash = userId.hashCode()
+
+        // Generate RGB values
+        val red = (hash and 0xFF0000 shr 16) % 256
+        val green = (hash and 0x00FF00 shr 8) % 256
+        val blue = (hash and 0x0000FF) % 256
+
+        // Adjust the color to ensure it's neither too dark nor too white
+        val minBrightness = 100 // Minimum brightness to avoid dark colors
+        val maxBrightness = 200 // Maximum brightness to avoid white colors
+
+        val adjustedRed = red.coerceIn(minBrightness, maxBrightness)
+        val adjustedGreen = green.coerceIn(minBrightness, maxBrightness)
+        val adjustedBlue = blue.coerceIn(minBrightness, maxBrightness)
+
+        return Color.rgb(adjustedRed, adjustedGreen, adjustedBlue)
+    }
+
+    //endregion
 
 }

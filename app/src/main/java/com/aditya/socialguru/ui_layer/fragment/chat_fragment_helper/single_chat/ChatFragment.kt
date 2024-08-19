@@ -44,6 +44,8 @@ import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.resizeActivate
+import com.aditya.socialguru.domain_layer.helper.resizeStop
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -184,6 +186,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     private fun handleInitialization() {
         receiverId = args.userId
         _chatAdapter = ChatMessageAdapter(this@ChatFragment)
+        requireActivity().resizeActivate()
         initUi()
         subscribeToObserver()
         getData()
@@ -998,6 +1001,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     }
 
     override fun onDestroyView() {
+        requireActivity().resizeStop()
         _chatAdapter=null
         binding.rvChats.adapter = null
         _binding = null

@@ -9,5 +9,6 @@ class FollowingPostRepository {
     suspend fun getUser(userId:String)= FirebaseManager.getUser(userId)
 
     suspend fun updateLikeCount(postId: String ,postCreatorUserId:String, isLiked: Boolean) = FirebaseManager.updateLikeCount(postId ,postCreatorUserId,isLiked)
+    suspend fun updatePostSaveStatus(postId: String) = FirebaseManager.updatePostSaveStatus(postId)
 
 }

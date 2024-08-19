@@ -22,14 +22,15 @@
             app:layout_constraintEnd_toEndOf="@id/guideLineEnd"
             app:layout_constraintStart_toStartOf="@id/guideLineStart"
             app:layout_constraintTop_toTopOf="@id/guideLineUp">
-
             <de.hdodenhof.circleimageview.CircleImageView
                 android:id="@+id/ivPostUserImage"
                 android:layout_width="@dimen/_40sdp"
                 android:layout_height="@dimen/_40sdp"
                 android:layout_marginStart="@dimen/_5sdp"
                 android:layout_weight=".5"
-                android:src="@drawable/person" />
+                app:civ_border_color="@color/blue"
+                app:civ_border_width="@dimen/_1sdp"
+                android:src="@drawable/ic_user" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -66,12 +67,13 @@
 
 
             <ImageView
-                android:id="@+id/ivSetting"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/_20sdp"
+                android:id="@+id/icSave"
+                android:layout_width="@dimen/_30sdp"
+                android:layout_height="@dimen/_30sdp"
+                android:layout_marginHorizontal="@dimen/_5sdp"
                 android:layout_weight=".5"
                 android:scaleType="centerCrop"
-                android:src="@drawable/three_dot" />
+                android:src="@drawable/ic_un_save" />
         </LinearLayout>
 
 

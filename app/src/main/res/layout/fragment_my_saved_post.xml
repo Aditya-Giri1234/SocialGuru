@@ -5,14 +5,25 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/black"
-    tools:context=".ui_layer.fragment.profile_part.my_activity.ShowMyCommentPostFragment">
+    tools:context=".ui_layer.fragment.post.MySavedPostFragment">
 
+    <include layout="@layout/custom_toolbar"
+        android:id="@+id/myToolbar"/>
+   <View
+       android:id="@+id/view"
+       android:layout_width="match_parent"
+       android:layout_height="@dimen/_1sdp"
+       android:layout_marginTop="?actionBarSize"
+       app:layout_constraintStart_toStartOf="parent"
+       app:layout_constraintTop_toTopOf="parent"
+       app:layout_constraintEnd_toEndOf="parent"
+       android:background="@color/lightWhite"/>
     <TextView
         android:id="@+id/tvNoDataView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/poppins_bold"
-        android:text="No Commented Post Available."
+        android:text="No Saved Post Available."
         android:textColor="@color/white"
         android:textSize="@dimen/_20ssp"
         android:textAlignment="center"
@@ -24,15 +35,16 @@
         app:layout_constraintVertical_bias="0.5" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvCommentedPost"
+        android:id="@+id/rvSavedPost"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
         android:visibility="gone"
         android:nestedScrollingEnabled="false"
+        android:layout_marginVertical="@dimen/_10sdp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/view" />
 
     <LinearLayout
         android:id="@+id/linearBackToTop"

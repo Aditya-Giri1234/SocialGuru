@@ -1,5 +1,6 @@
 package com.aditya.socialguru.ui_layer.adapter.chat
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
@@ -16,6 +17,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
@@ -32,6 +34,7 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
     private val DATE_HEADER_VIEW_TYPE = 2
     private val tagChat = Constants.LogTag.Chats
     private var user: User? = null
+    private var userColor: Int? = null
 
     private val differ = AsyncListDiffer(this, object : DiffUtil.ItemCallback<Message>() {
         override fun areItemsTheSame(oldItem: Message, newItem: Message): Boolean {
@@ -50,6 +53,7 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
 
     fun submitUser(user: User) {
         this.user = user
+        userColor = Helper.setUserProfileColor(user)
         notifyDataSetChanged()
     }
 
@@ -164,7 +168,8 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
                             }
 
                             Constants.SeenStatus.Send.status -> {
-                                Glide.with(ivMessageSeenStatus.context).load(R.drawable.ic_message_sent)
+                                Glide.with(ivMessageSeenStatus.context)
+                                    .load(R.drawable.ic_message_sent)
                                     .into(ivMessageSeenStatus)
                             }
 
@@ -174,7 +179,8 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
                             }
 
                             Constants.SeenStatus.MessageSeen.status -> {
-                                Glide.with(ivMessageSeenStatus.context).load(R.drawable.ic_message_seen)
+                                Glide.with(ivMessageSeenStatus.context)
+                                    .load(R.drawable.ic_message_seen)
                                     .into(ivMessageSeenStatus)
                             }
                         }
@@ -204,7 +210,7 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
 
             binding.apply {
                 message.apply {
-                    val time= measureTimeMillis {
+                    val time = measureTimeMillis {
                         val postImageVideoModel: List<PostImageVideoModel>? = when (chatType) {
                             Constants.PostType.OnlyText.name -> {
                                 tvMessage.myShow()
@@ -305,11 +311,20 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
 
                         user?.let {
                             it.userProfileImage?.let { profilePic ->
+                                ivProfileImage.myShow()
+                                tvInitial.gone()
                                 Glide.with(ivProfileImage.context).load(profilePic)
                                     .placeholder(R.drawable.ic_user).error(R.drawable.ic_user)
                                     .into(ivProfileImage)
+                            } ?: run {
+                                ivProfileImage.myShow()
+                                tvInitial.gone()
+                                tvInitial.text = it.userName?.get(0).toString()
+                                tvInitial.setCircularBackground(userColor ?: Color.GREEN)
                             }
                         } ?: run {
+                            ivProfileImage.myShow()
+                            tvInitial.gone()
                             Glide.with(ivProfileImage.context).load(R.drawable.ic_user)
                                 .into(ivProfileImage)
                         }
@@ -457,6 +472,5 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
             it.messageType == Constants.MessageType.Chat.type
         }
     }
-
 
 }

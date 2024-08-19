@@ -26,6 +26,21 @@
         android:src="@drawable/ic_user"
         app:civ_border_width="@dimen/_1sdp"
         app:civ_border_color="@color/blue"/>
+    <TextView
+        android:id="@+id/tvInitial"
+        android:layout_width="@dimen/_30sdp"
+        android:layout_height="@dimen/_30sdp"
+        android:fontFamily="@font/poppins_bold"
+        android:layout_marginStart="@dimen/_5sdp"
+        android:text="A"
+        android:textAlignment="center"
+        android:gravity="center"
+        android:background="@drawable/circle_shape_bg"
+        android:visibility="gone"
+        android:maxLength="1"
+        android:includeFontPadding="false"
+        android:textColor="@color/white"
+        android:textSize="@dimen/_12ssp"/>
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/tvHeaderUserName"

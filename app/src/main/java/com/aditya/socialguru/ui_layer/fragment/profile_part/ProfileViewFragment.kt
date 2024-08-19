@@ -38,6 +38,7 @@ import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
@@ -59,6 +60,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     private val imageAvailable = "0"
     private val imageUnAvailable = "1"
     private var myLoader: MyLoader? = null
+    private var userDetails:User?=null
 
     // Need to be change
     private val navController by lazy {
@@ -397,17 +399,24 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     private fun setData(user: User) {
+        userDetails=user
         binding.apply {
             if (user.userProfileImage != null) {
+                tvInitialMain.gone()
+                ivProfile.myShow()
                 ivProfile.tag =
                     imageAvailable  // help to determine that image available or  not
                 Glide.with(ivProfile).load(user.userProfileImage)
                     .placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivProfile)
             } else {
+                tvInitialMain.myShow()
+                ivProfile.gone()
                 ivProfile.tag = imageUnAvailable
                 Glide.with(ivProfile).load(R.drawable.ic_user).into(ivProfile)
                 //NOt need below code :- Below code for tint color set on icon
 //                ivProfile.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+                tvInitialMain.text = user.userName?.get(0).toString()
+                tvInitialMain.setCircularBackground(Helper.setUserProfileColor(user))
             }
 
             tvUserName.text = user.userName
@@ -527,11 +536,13 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     private fun navigateToPostScreen() {
-        val directions: NavDirections =
-            BottomNavigationBarDirections.actionGlobalMyActivityFragment(userId)
-        navController.safeNavigate(
-            directions, Helper.giveAnimationNavOption()
-        )
+        userDetails?.let {
+            val directions: NavDirections =
+                BottomNavigationBarDirections.actionGlobalMyActivityFragment(userId,it)
+            navController.safeNavigate(
+                directions, Helper.giveAnimationNavOption()
+            )
+        }
     }
 
     private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
