@@ -332,7 +332,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
-        MyLogger.v(msg = "Profile View Model is cleared !")
+        MyLogger.e(msg = "Profile View Model is cleared !")
         super.onCleared()
     }
 

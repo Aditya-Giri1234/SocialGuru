@@ -167,13 +167,12 @@ class StoryShowFragment : Fragment() {
         next.setOnClickListener {
           handleNextStoryChange()
         }
-        videoStatus.viewTreeObserver.addOnGlobalLayoutListener {
+        videoStatus.addOnLayoutChangeListener { v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
             MyLogger.w(tagStory, msg = "Video view layout change !")
             if (_binding != null) {
                 closeVideoIfPlay()
             }
         }
-
 
     }
 

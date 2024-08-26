@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.post.post_meta_data.LikedPostModel
 import com.aditya.socialguru.data_layer.model.post.post_meta_data.SavedPostModel
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
@@ -44,6 +45,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
 
     // This variable not access by ui
     private val savedPost = mutableListOf<SavedPostModel>()
+    private val likedPost = mutableListOf<LikedPostModel>()
 
     private val _fcmToken = MutableSharedFlow<Resource<UpdateResponse>>(
         0,
@@ -126,6 +128,51 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
 
         // Now whoever listen this flow , get updated List
         AppBroadcastHelper.setSavedPostList(savedPost)
+    }
+
+
+    fun listenMyLikedPost() {
+        val job = viewModelScope.myLaunch {
+            repository.listenMyLikedPost().onEach {
+                handleLikedPostResponse(it)
+            }.launchIn(this)
+        }
+        jobList.add(job)
+    }
+
+    private fun handleLikedPostResponse(response: List<ListenerEmissionType<LikedPostModel, LikedPostModel>>) {
+
+        response.forEach {
+            when (it.emitChangeType) {
+                Constants.ListenerEmitType.Starting -> {
+                    // Don't do any thing here
+                }
+
+                Constants.ListenerEmitType.Added -> {
+                    it.singleResponse?.let {
+                        likedPost.add(it)
+                    }
+                }
+
+                Constants.ListenerEmitType.Removed -> {
+                    it.singleResponse?.postId?.let { postId ->
+                        val removePost = likedPost.find { it.postId == postId }
+
+                        if (removePost != null) {
+                            likedPost.remove(removePost)
+                        }
+                    }
+                }
+
+                Constants.ListenerEmitType.Modify -> {
+                    // Don't do anything
+                }
+            }
+        }
+
+
+        // Now whoever listen this flow , get updated List
+        AppBroadcastHelper.setLikedPostList(likedPost)
     }
 
     fun setFcmToken(token: String) = viewModelScope.myLaunch {

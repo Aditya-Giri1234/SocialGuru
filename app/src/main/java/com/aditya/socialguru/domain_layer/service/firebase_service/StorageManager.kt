@@ -235,6 +235,108 @@ object StorageManager {
         }
     }
 
+    suspend fun deleteMyAllPostMedia() = callbackFlow<UpdateResponse> {
+        val storageImageRef = storageReference.child(Constants.Table.Post.name).child(AuthManager.currentUserId()!!).child(Constants.FolderName.PostImage.name)
+        val storageVideoRef = storageReference.child(Constants.Table.Post.name).child(AuthManager.currentUserId()!!).child(Constants.FolderName.PostVideo.name)
+
+        val listImageResult = storageImageRef.listAll().await()
+        val listVideoResult = storageVideoRef.listAll().await()
+
+
+        MyLogger.v(Constants.LogTag.Chats,msg="listImageResult :- $listImageResult \n  ,  listVideoResult :- $listVideoResult")
+
+        val deleteImageTasks = listImageResult.items.map { item ->
+            async {
+                try {
+                    item.delete().await()
+                    true // Deletion successful
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false // Deletion failed
+                }
+            }
+        }
+        val deleteVideoTask = listVideoResult.items.map { item ->
+            async {
+                try {
+                    item.delete().await()
+                    true // Deletion successful
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false // Deletion failed
+                }
+            }
+        }
+
+        // Await all delete tasks to complete
+        val resultsImage = deleteImageTasks.awaitAll()
+        val resultsVideo = deleteVideoTask.awaitAll()
+
+        val isAllDeleted = resultsImage.all { it } && resultsVideo.all { it }
+
+        if (isAllDeleted){
+            trySend(UpdateResponse(true,""))
+        }else{
+            trySend(UpdateResponse(false,"All media not deleted"))
+
+        }
+
+        awaitClose{
+            close()
+        }
+    }
+
+    suspend fun deleteMyAllStoryMedia() = callbackFlow<UpdateResponse> {
+        val storageImageRef = storageReference.child(Constants.Table.Stories.name).child(AuthManager.currentUserId()!!).child(Constants.FolderName.StoryImage.name)
+        val storageVideoRef = storageReference.child(Constants.Table.Stories.name).child(AuthManager.currentUserId()!!).child(Constants.FolderName.StoryVideo.name)
+
+        val listImageResult = storageImageRef.listAll().await()
+        val listVideoResult = storageVideoRef.listAll().await()
+
+
+        MyLogger.v(Constants.LogTag.Chats,msg="listImageResult :- $listImageResult \n  ,  listVideoResult :- $listVideoResult")
+
+        val deleteImageTasks = listImageResult.items.map { item ->
+            async {
+                try {
+                    item.delete().await()
+                    true // Deletion successful
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false // Deletion failed
+                }
+            }
+        }
+        val deleteVideoTask = listVideoResult.items.map { item ->
+            async {
+                try {
+                    item.delete().await()
+                    true // Deletion successful
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false // Deletion failed
+                }
+            }
+        }
+
+        // Await all delete tasks to complete
+        val resultsImage = deleteImageTasks.awaitAll()
+        val resultsVideo = deleteVideoTask.awaitAll()
+
+        val isAllDeleted = resultsImage.all { it } && resultsVideo.all { it }
+
+        if (isAllDeleted){
+            trySend(UpdateResponse(true,""))
+        }else{
+            trySend(UpdateResponse(false,"All media not deleted"))
+
+        }
+
+        awaitClose{
+            close()
+        }
+    }
+
 }
 
 

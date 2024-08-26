@@ -7,12 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
+import androidx.fragment.app.activityViewModels
 import androidx.navigation.NavDirections
-import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
@@ -24,6 +20,8 @@ import com.aditya.socialguru.databinding.FragmentHomeFollowingPostBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
+import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
@@ -31,11 +29,9 @@ import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
-import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.post.FollowingPostViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 
 class HomeFollowingPostFragment : Fragment(), OnPostClick {
@@ -49,9 +45,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
     private val followingPostAdapter get() = _followingPostAdapter!!
 
 
-    private val followingPostViewModel: FollowingPostViewModel by navGraphViewModels(R.id.bottom_navigation_bar) {
-        ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
-    }
+    private val followingPostViewModel: FollowingPostViewModel by activityViewModels()
 
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
@@ -72,7 +66,6 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         handleInitialization()
     }
 
@@ -87,45 +80,23 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
     }
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                followingPostViewModel.userPost.onEach { response ->
-                    response.let {
-                         MyLogger.i(tagPost, msg = "Response coming in ui screen !")
-                        when (response) {
-                            is Resource.Success -> {
-                                response.hasBeenMessagedToUser = true
-                                response.data?.let {
-                                    setData(it)
-                                } ?: run {
-                                    setData()
-                                    Helper.showSnackBar(
-                                        (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                        response.message.toString()
-                                    )
-                                }
-
-                            }
-
-                            is Resource.Loading -> {
-
-                            }
-
-                            is Resource.Error -> {
-                                response.hasBeenMessagedToUser = true
+        observeFlow {
+            followingPostViewModel.userPost.onEach { response ->
+                response.let {
+                    MyLogger.i(tagPost, msg = "Response coming in ui screen !")
+                    when (response) {
+                        is Resource.Success -> {
+                            response.hasBeenMessagedToUser = true
+                            response.data?.let {
+                                setData(it)
+                            } ?: run {
+                                setData()
                                 Helper.showSnackBar(
                                     (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
                                     response.message.toString()
                                 )
                             }
-                        }
-                    }
 
-                }.launchIn(this)
-                followingPostViewModel.likePost.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.hasBeenMessagedToUser = true
                         }
 
                         is Resource.Loading -> {
@@ -134,40 +105,86 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
 
                         is Resource.Error -> {
                             response.hasBeenMessagedToUser = true
-                            followingPostAdapter.notifyDataSetChanged()
                             Helper.showSnackBar(
                                 (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
                                 response.message.toString()
                             )
                         }
                     }
-                }.launchIn(this)
+                }
 
-                followingPostViewModel.savePost.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            hideDialog()
-                            response.hasBeenMessagedToUser = true
-                            showSnackBar(
-                                response.data?.errorMessage, isSuccess =
-                                true
-                            )
-                        }
+            }.launchIn(this)
+            followingPostViewModel.likePost.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                    }
 
-                        is Resource.Loading -> {
-                            showDialog()
-                        }
-
-                        is Resource.Error -> {
-                            hideDialog()
-                            response.hasBeenMessagedToUser = true
-                            showSnackBar(response.message)
-                        }
+                    is Resource.Loading -> {
 
                     }
-                }.launchIn(this)
-            }
 
+                    is Resource.Error -> {
+                        response.hasBeenMessagedToUser = true
+                        followingPostAdapter.notifyDataSetChanged()
+                        Helper.showSnackBar(
+                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                            response.message.toString()
+                        )
+                    }
+                }
+            }.launchIn(this)
+            followingPostViewModel.savePost.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        response.hasBeenMessagedToUser = true
+                        showSnackBar(
+                            response.data?.errorMessage, isSuccess =
+                            true
+                        )
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        response.hasBeenMessagedToUser = true
+                        showSnackBar(response.message)
+                    }
+
+                }
+            }.launchIn(this)
+            followingPostViewModel.followingList.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        MyLogger.i(tagPost, msg = "Following User List response come !")
+                        response.data?.let {
+                            if (it.isEmpty()){
+                                setData()
+                            }else{
+                                followingPostViewModel.getFollowingPost(it.mapNotNull { it.userId })
+                            }
+                        } ?: run {
+                            setData()
+                            MyLogger.w(tagPost, msg = "Following list is empty !")
+                        }
+                    }
+
+                    is Resource.Loading -> {
+                        MyLogger.v(tagPost, msg = "Following List is fetching ...")
+                    }
+
+                    is Resource.Error -> {
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            showSnackBar(response.message?.toString())
+                        }
+                    }
+                }
+            }.launchIn(this)
         }
     }
 
@@ -190,7 +207,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
 
 
     private fun getData() {
-        followingPostViewModel.getDiscoverPost()
+        followingPostViewModel.getFollowingListAndListenChange()
     }
 
     private fun setData(userPosts: List<UserPostModel> = mutableListOf()) {
@@ -236,10 +253,10 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
     }
 
     override fun onLikeClick(post: Post) {
-        val isLiked=post.likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
-        MyLogger.w(tagPost , msg = "User Liked this post before click :- $isLiked")
+        val isLiked = post.likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
+        MyLogger.w(tagPost, msg = "User Liked this post before click :- $isLiked")
         post.run {
-            followingPostViewModel.updateLikeCount(postId!!,userId!!,!isLiked)
+            followingPostViewModel.updateLikeCount(postId!!, userId!!, !isLiked)
         }
 
     }
@@ -252,13 +269,12 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
         followingPostViewModel.updatePostSaveStatus(postId)
     }
 
-    override fun onSendClick(post:Post) {
+    override fun onSendClick(post: Post) {
     }
 
     override fun onPostClick(postId: String) {
         navigateToDetailPostScreen(postId)
     }
-
 
 
     //endregion
@@ -281,6 +297,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
         myLoader?.dismiss()
         myLoader = null
     }
+
     private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
         if (isSuccess) {
             Helper.showSuccessSnackBar(
@@ -298,6 +315,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
     }
 
     override fun onDestroyView() {
+        followingPostViewModel.removeListener()
         _followingPostAdapter = null
         binding.rvFollowingPost.adapter = null
         _binding = null

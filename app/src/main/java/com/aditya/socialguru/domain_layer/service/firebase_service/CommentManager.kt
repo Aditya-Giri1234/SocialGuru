@@ -1,5 +1,6 @@
 package com.aditya.socialguru.domain_layer.service.firebase_service
 
+import android.util.Log
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.chat.UpdateChatResponse
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
@@ -22,6 +23,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.toObject
+import com.google.firebase.firestore.toObjects
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -37,6 +39,7 @@ import kotlin.system.measureTimeMillis
 object CommentManager {
 
     private val tagComment = Constants.LogTag.Comment
+    private val tagDelete = Constants.LogTag.ForceLogout
 
     private var commentListener: ListenerRegistration? = null
     private var commentersListener: ListenerRegistration? = null
@@ -431,6 +434,48 @@ object CommentManager {
         }
 
     }
+
+
+    //region:: Delete My Comment from all post
+
+     suspend fun deleteMyAllCommentFromEveryPost() = callbackFlow<UpdateResponse> {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val userId = AuthManager.currentUserId()!!
+        val commentRef = userRef.document(userId).collection(Constants.Table.CommentedPost.name)
+        val commentList = commentRef.get().await().toObjects<CommentedPost>()
+
+        val deleteTask = commentList.map {
+            async {
+                deleteCommentFromThisPost(it.postId!!)
+            }
+        }
+
+        deleteTask.awaitAll()
+        trySend(UpdateResponse(true, ""))
+        awaitClose {
+            close()
+        }
+    }
+
+    private suspend fun deleteCommentFromThisPost(postId: String) {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val postRef = firestore.collection(Constants.Table.Post.name).document(postId)
+        val myCommentOnPost = postRef.collection(Constants.Table.Comment.name)
+            .whereEqualTo(Constants.PostTable.USER_ID.fieldName, AuthManager.currentUserId()!!)
+            .get().await()
+        MyLogger.d(
+            tagDelete,
+            msg = "My Comment on post id :-> $postId is :- ${myCommentOnPost.size()}"
+        )
+        if (myCommentOnPost.isEmpty) return
+        firestore.runBatch {
+            myCommentOnPost.documents.forEach {
+                it.reference.delete()
+            }
+        }.await()
+    }
+
+    //endregion
 
 
 }

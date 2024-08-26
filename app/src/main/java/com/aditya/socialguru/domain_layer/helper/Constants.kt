@@ -92,24 +92,25 @@ object Constants {
         Comment,
         Commenters,
         CommentedPost,
-        Follower,
-        Following,
-        Friend,
-        FriendRequest ,
-        PendingRequest,
-        Notification,
-        MyLikedPost,
+        Follower, //
+        Following,//
+        Friend,//
+        FriendRequest , //
+        PendingRequest, //
+        Notification, //
+        MyLikedPost, //
         Chats ,
         Messages,
         LastMessage,
-        RecentChat,
+        RecentChat, //
         Media,
-        ChatMuteNotification ,
+        ChatMuteNotification , //
         GroupChat ,
         GroupMember ,
         GroupInfo,
-        UnSeenMessage ,
-        SavedPost
+        UnSeenMessage ,  //
+        SavedPost ,  //
+        LikedPost //
     }
 
     enum class FriendStatus {
@@ -134,7 +135,7 @@ object Constants {
     }
 
     enum class StoryTable(val fieldName: String) {
-        USERID("userId"),
+        USER_ID("userId"),
         STORY_ID("storyId"),
         STORY_UPLOADING_TIME_IN_TEXT("storyUploadingTimeInText"),
         STORY_UPLOADING_TIME_IN_TIMESTAMP("storyUploadingTimeInTimeStamp"),
@@ -337,6 +338,12 @@ object Constants {
         StartGroup,
         CreatorChoose,
         MembersAdd
+    }
+
+    //Intent Table
+
+    enum class IntentTable{
+        LogOutOrDeleteAccountAcitivityHappend
     }
 
     // LogLevel

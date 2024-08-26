@@ -6,6 +6,7 @@ import com.aditya.socialguru.data_layer.model.story.Stories
 import com.aditya.socialguru.data_layer.model.story.StoryListenerEmissionType
 import com.aditya.socialguru.data_layer.model.story.StoryText
 import com.aditya.socialguru.data_layer.model.story.UserStories
+import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Constants.Table
@@ -18,6 +19,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
@@ -33,6 +36,8 @@ import kotlinx.coroutines.withContext
 object StoryManager {
 
     private val tagStory = Constants.LogTag.Story
+    private val tagDelete = Constants.LogTag.ForceLogout
+
 
     private val myStory: UserStories? = null
 
@@ -76,7 +81,7 @@ object StoryManager {
     private suspend fun uploadImageStory(uri: Uri?, user: User) {
         uri ?: return
         startUploading()
-        uploadToStorage(Constants.FolderName.StoryImage, uri).collect {
+        uploadToStorage("${user.userId ?: AuthManager.currentUserId()}/${Constants.FolderName.StoryImage.name}", uri).collect {
             val storyUrl = it.first
             val error = it.second
             if (storyUrl != null) {
@@ -92,7 +97,7 @@ object StoryManager {
     private suspend fun uploadVideoStory(uri: Uri?, user: User) {
         uri ?: return
         startUploading()
-        uploadToStorage(Constants.FolderName.StoryVideo, uri).collect {
+        uploadToStorage("${user.userId ?: AuthManager.currentUserId()}/${Constants.FolderName.StoryVideo.name}", uri).collect {
             val storyUrl = it.first
             val error = it.second
             if (storyUrl != null) {
@@ -118,11 +123,11 @@ object StoryManager {
     }
 
 
-    private suspend fun uploadToStorage(folderName: Constants.FolderName, uri: Uri) =
+    private suspend fun uploadToStorage(folderName: String, uri: Uri) =
         callbackFlow<Pair<String?, String?>> {
             StorageManager.uploadImageToServer(
                 Table.Stories.name,
-                folderName.name,
+                folderName,
                 uri
             ).collect { status ->
                 when (status.state) {
@@ -381,4 +386,44 @@ object StoryManager {
 
     //endregion
 
+    //region:: Delete All My Stories
+
+    suspend fun deleteAllMyStories() = callbackFlow<UpdateResponse> {
+        try {
+            MyLogger.e(tagDelete, isFunctionCall = true)
+            val storyRef = firestore.collection(Constants.Table.Stories.name)
+                .whereEqualTo(Constants.StoryTable.USER_ID.fieldName, AuthManager.currentUserId()!!)
+            val stories = storyRef.get().await()
+
+            MyLogger.d(tagStory, msg = "Storied count :- ${stories.size()}")
+            if (stories.isEmpty){
+                MyLogger.i(tagDelete , msg = "No Story found , so don't do any thing.")
+                trySend(UpdateResponse(true, "All Story Delete Successfully !"))
+            }else{
+                StorageManager.deleteMyAllStoryMedia().onEach {
+                    MyLogger.e(tagDelete, msg = "All Story Media Delete Successfully !")
+                    launch {
+                        MyLogger.w(tagDelete, msg = it.errorMessage)
+                        val storyDeleteWork = stories.map {
+                            async {
+                                it.reference.delete()
+                            }
+                        }
+                        storyDeleteWork.awaitAll()
+                        MyLogger.e(tagDelete, msg = "All Story Ref Delete Successfully !")
+                        trySend(UpdateResponse(true, "All Story Delete Successfully !"))
+                    }
+                }.launchIn(this)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            trySend(UpdateResponse(false, e.message))
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
 }

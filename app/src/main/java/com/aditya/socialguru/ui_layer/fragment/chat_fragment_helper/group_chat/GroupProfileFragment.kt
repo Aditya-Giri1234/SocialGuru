@@ -52,6 +52,7 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
 
     private lateinit var chatRoomId: String
     private lateinit var groupMembers: GroupMembersList
+    private  var groupMemberDetails= mutableListOf<GroupMemberDetails>()
 
 
     private var defaultDialogOption = EditProfileAlertDialogOption.ExitGroup
@@ -122,6 +123,8 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
                 when (response) {
                     is Resource.Success -> {
                         response.data?.let {
+                            groupMemberDetails.clear()
+                            groupMemberDetails.addAll(it)
                             groupMembers = GroupMembersList(members = it.map { it.member })
                             val isIAmExitFromGroup =
                                 it.all { it.member.memberId != AuthManager.currentUserId() }
@@ -267,6 +270,9 @@ navigateToGroupMembersScreen()
             messageType = Constants.MessageType.Info.type,
             senderId = AuthManager.currentUserId()!!,
             infoMessageType = Constants.InfoType.MemberExit.name,
+            addedOrRemovedUserId = AuthManager.currentUserId(),
+            text = groupMemberDetails.find { it.member.memberId == AuthManager.currentUserId() }?.memberInfo?.userName
+
         )
         val lastMessage = GroupLastMessage(
             senderId = AuthManager.currentUserId()!!,

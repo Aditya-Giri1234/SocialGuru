@@ -166,7 +166,7 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
                             viewPagerAdapter.submitList(postImageVideoModel)
                         }
                         tvMessage.text = text
-                        tvTime.text = Helper.getTimeForChat(messageSentTimeInTimeStamp!!)
+                        tvTime.text = Helper.getTimeForChatMessage(messageSentTimeInTimeStamp!!)
 
                         when (seenStatus) {
                             Constants.SeenStatus.Sending.status -> {
@@ -311,7 +311,7 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
                             viewPagerAdapter.submitList(postImageVideoModel)
                         }
                         tvMessage.text = text
-                        tvTime.text = Helper.getTimeForChat(messageSentTimeInTimeStamp!!)
+                        tvTime.text = Helper.getTimeForChatMessage(messageSentTimeInTimeStamp!!)
 
                         userDetails[senderId]?.let {
                             it.userProfileImage?.let { profilePic ->
@@ -417,7 +417,7 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
 
                     InfoType.MemberRemoved.name -> {
                         val prefix =
-                            if (isSenderIsMe) "You" else userDetails[message.senderId]?.userName
+                            if (isSenderIsMe) "You" else message.text ?: "Someone"
                         val suffix = " removed ${message.text ?: "Someone"} from group!"
                         "$prefix$suffix"
                     }
@@ -445,7 +445,7 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
 
                     InfoType.MemberExit.name->{
                         val prefix =
-                            if (isSenderIsMe) "You are" else "${userDetails[message.senderId]?.userName} is"
+                            if (isSenderIsMe) "You are" else "${message.text ?: "Someone"} is"
                         val suffix = " exit from this group!"
                         "$prefix$suffix"
                     }

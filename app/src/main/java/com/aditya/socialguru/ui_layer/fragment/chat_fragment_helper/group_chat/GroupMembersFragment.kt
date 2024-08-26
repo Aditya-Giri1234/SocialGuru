@@ -6,13 +6,13 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
@@ -52,16 +52,16 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
 
-class GroupMembersFragment : Fragment() , AlertDialogOption {
+class GroupMembersFragment : Fragment(), AlertDialogOption {
 
     private var _binding: FragmentGroupMembersBinding? = null
     private val binding get() = _binding!!
     private val tagChat = Constants.LogTag.Chats
     private lateinit var chatRoomId: String
     private val groupMembers: MutableList<FriendCircleData> = mutableListOf()
-    private var groupMembersList : MutableList<GroupMember> = mutableListOf()
+    private var groupMembersList: MutableList<GroupMember> = mutableListOf()
     private var defaultAlertDialogOption = GroupMemberScreenAlertDialogOption.REMOVE_USER
-    private var currentUser:User ?=null // This store which user  current tap
+    private var currentUser: User? = null // This store which user  current tap
     private var myLoader: MyLoader? = null
     private var groupInfo: GroupInfo? = null
 
@@ -75,9 +75,10 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        chatRoomId=args.chatRoomId
+        chatRoomId = args.chatRoomId
     }
 
     override fun onCreateView(
@@ -85,7 +86,7 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        _binding=FragmentGroupMembersBinding.inflate(layoutInflater)
+        _binding = FragmentGroupMembersBinding.inflate(layoutInflater)
         return binding.root
     }
 
@@ -99,7 +100,6 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
         subscribeToObserver()
         getData()
     }
-
 
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -129,7 +129,7 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
             }.launchIn(this)
 
             listenChatViewModel.groupMemberDetails.onEach { response ->
-                MyLogger.w(tagChat , msg = "GroupMemberDetails response come !")
+                MyLogger.w(tagChat, msg = "GroupMemberDetails response come !")
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()
@@ -154,13 +154,15 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()
-                        val message = when(defaultAlertDialogOption){
+                        val message = when (defaultAlertDialogOption) {
                             GroupMemberScreenAlertDialogOption.MAKE_ADMIN -> {
                                 "${currentUser?.userName ?: "this member"} is now admin !"
                             }
+
                             GroupMemberScreenAlertDialogOption.REMOVE_USER -> {
                                 "${currentUser?.userName ?: "this member"} is removed from group !"
                             }
+
                             GroupMemberScreenAlertDialogOption.DISMISS_AS_ADMIN -> {
                                 "${currentUser?.userName ?: "this member"} is dismissed as admin !"
                             }
@@ -188,27 +190,28 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
     }
 
     private fun handleGroupInfo(info: GroupInfo?) {
-        if(info ==null) return
+        if (info == null) return
 
         userAdapter.setGroupInfo(info)
 
-        if (groupMembers.isNotEmpty()){
-            val sortedGroupMemberList = groupMembers.sortedWith(compareBy<FriendCircleData> { member ->
-                when {
-                    member.userId == info.creatorId -> 0 // Creator first
-                    info.groupAdmins?.contains(member.userId) == true -> 1 // Admins second
-                    else -> 2 // Others last
-                }
-            }.thenBy { member ->
-                member.timeStamp // Sort by timestamp for non-creators and non-admins
-            })
+        if (groupMembers.isNotEmpty()) {
+            val sortedGroupMemberList =
+                groupMembers.sortedWith(compareBy<FriendCircleData> { member ->
+                    when {
+                        member.userId == info.creatorId -> 0 // Creator first
+                        info.groupAdmins?.contains(member.userId) == true -> 1 // Admins second
+                        else -> 2 // Others last
+                    }
+                }.thenBy { member ->
+                    member.timeStamp // Sort by timestamp for non-creators and non-admins
+                })
             userAdapter.submitList(sortedGroupMemberList)
         }
     }
 
 
-    private fun initUi(){
-        _userAdapter = UserAdapter {user,view ->
+    private fun initUi() {
+        _userAdapter = UserAdapter { user, view ->
             handleUserClick(user, view)
         }
         binding.apply {
@@ -232,7 +235,7 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
 
 
     private fun getData() {
-        if(!chatViewModel.isDataLoaded){
+        if (!chatViewModel.isDataLoaded) {
             showDialog()  // Initial Dialog
             chatViewModel.setDataLoadedStatus(true)
         }
@@ -277,15 +280,15 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
         )
         groupMembers.addAll(it.map {
             FriendCircleData(
-                userId =it.member.memberId,
-                user = it.memberInfo ,
+                userId = it.member.memberId,
+                user = it.memberInfo,
                 timeStamp = it.member.groupJoiningDateInTimeStamp
             )
         })
 
-        if(groupMembers.isEmpty()){
+        if (groupMembers.isEmpty()) {
             showNoDataView()
-        }else{
+        } else {
             hideNoDataView()
             userAdapter.submitList(groupMembers)
             handleGroupInfo(groupInfo)
@@ -304,7 +307,7 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
     }
 
     private fun handleUserClick(user: User, view: View) {
-        if (user.userId!! == AuthManager.currentUserId() !!) return
+        if (user.userId!! == AuthManager.currentUserId()!!) return
 
         currentUser = user
 
@@ -321,11 +324,13 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
         popUp.isOutsideTouchable = true
         popUp.setBackgroundDrawable(ColorDrawable())
         popUp.animationStyle = R.style.popup_window_animation
-        popUp.showAsDropDown(view ,0 ,-(view.height
-        *50/100) , Gravity.END)
+        popUp.showAsDropDown(
+            view, 0, -(view.height
+                    * 50 / 100), Gravity.END
+        )
 
         bindingPopUp.apply {
-            if (isCreatorOfGroup(user.userId)){
+            if (isCreatorOfGroup(user.userId)) {
                 tvMakeAdmin.gone()
                 viewBelowMakeAdmin.gone()
                 tvDismissAsAdmin.gone()
@@ -334,19 +339,19 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
                 viewBelowRemoveUser.gone()
             }
 
-            if (isAdminOfGroup(user.userId!!)){
+            if (isAdminOfGroup(user.userId!!)) {
                 tvMakeAdmin.gone()
                 viewBelowMakeAdmin.gone()
-                if (!(isCreatorOfGroup(AuthManager.currentUserId()!!) ||isAdminOfGroup(AuthManager.currentUserId()!!)) ){
+                if (!(isCreatorOfGroup(AuthManager.currentUserId()!!) || isAdminOfGroup(AuthManager.currentUserId()!!))) {
                     tvDismissAsAdmin.gone()
                     viewBelowDismissAsAdmin.gone()
                     tvRemoveUser.gone()
                     viewBelowRemoveUser.gone()
                 }
-            } else{
+            } else {
                 tvDismissAsAdmin.gone()
                 viewBelowDismissAsAdmin.gone()
-                if (!(isCreatorOfGroup(AuthManager.currentUserId()!!) ||isAdminOfGroup(AuthManager.currentUserId()!!)) ){
+                if (!(isCreatorOfGroup(AuthManager.currentUserId()!!) || isAdminOfGroup(AuthManager.currentUserId()!!))) {
                     tvMakeAdmin.gone()
                     viewBelowMakeAdmin.gone()
                     tvRemoveUser.gone()
@@ -406,13 +411,14 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
                 }
 
             }
-        }catch (e:Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
     private fun navigateToProfileScreen(id: String) {
-        val directions: NavDirections = BottomNavigationBarDirections.actionGlobalProfileViewFragment(id)
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalProfileViewFragment(id)
         navController.safeNavigate(directions)
     }
 
@@ -421,10 +427,11 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
         navController.safeNavigate(directions)
     }
 
-    private fun isCreatorOfGroup(id: String) : Boolean{
+    private fun isCreatorOfGroup(id: String): Boolean {
         return id == groupInfo?.creatorId
     }
-    private fun isAdminOfGroup(id: String): Boolean{
+
+    private fun isAdminOfGroup(id: String): Boolean {
         return groupInfo?.groupAdmins?.contains(id) ?: false
     }
 
@@ -458,13 +465,15 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
 
     override fun onResult(isYes: Boolean) {
         if (isYes) {
-            when(defaultAlertDialogOption){
+            when (defaultAlertDialogOption) {
                 GroupMemberScreenAlertDialogOption.MAKE_ADMIN -> {
                     performMakeAdmin()
                 }
+
                 GroupMemberScreenAlertDialogOption.REMOVE_USER -> {
                     performRemoveUser()
                 }
+
                 GroupMemberScreenAlertDialogOption.DISMISS_AS_ADMIN -> {
                     performDismissAsAdmin()
                 }
@@ -473,11 +482,11 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
     }
 
     private fun performMakeAdmin() {
-        if (currentUser==null) return
+        if (currentUser == null) return
 
         val currentUserId = currentUser!!.userId!!
 
-        MyLogger.d(tagChat , isFunctionCall = true)
+        MyLogger.d(tagChat, isFunctionCall = true)
 
         val message = GroupMessage(
             messageId = Helper.getMessageId(),
@@ -508,13 +517,14 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
             groupInfo = updatedGroupInfo
         )
     }
+
     private fun performDismissAsAdmin() {
-        if (currentUser==null) return
+        if (currentUser == null) return
 
         val currentUserId = currentUser!!.userId!!
 
 
-        MyLogger.d(tagChat , isFunctionCall = true)
+        MyLogger.d(tagChat, isFunctionCall = true)
 
         val message = GroupMessage(
             messageId = Helper.getMessageId(),
@@ -547,18 +557,18 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
     }
 
     private fun performRemoveUser() {
-        if (currentUser==null) return
+        if (currentUser == null) return
 
         val currentUserId = currentUser!!.userId!!
 
-        MyLogger.d(tagChat , isFunctionCall = true)
+        MyLogger.d(tagChat, isFunctionCall = true)
         val message = GroupMessage(
             messageId = Helper.getMessageId(),
             messageType = Constants.MessageType.Info.type,
             senderId = AuthManager.currentUserId()!!,
             infoMessageType = Constants.InfoType.MemberRemoved.name,
-            addedOrRemovedUserId = currentUserId ,
-            text = groupMembers.find { it.userId==currentUserId }?.user?.userName
+            addedOrRemovedUserId = currentUserId,
+            text = groupMembers.find { it.userId == currentUserId }?.user?.userName
         )
         val lastMessage = GroupLastMessage(
             senderId = AuthManager.currentUserId()!!,
@@ -567,22 +577,21 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
         )
 
         val updatedGroupAdmins = groupInfo?.groupAdmins?.toMutableList()
-        updatedGroupAdmins?.remove(currentUserId !!)
+        updatedGroupAdmins?.remove(currentUserId!!)
         val updatedGroupInfo = groupInfo?.copy(
             groupAdmins = updatedGroupAdmins
         )
 
-            chatViewModel.sentGroupInfoMessage(
-                message,
-                lastMessage,
-                chatRoomId,
-                groupMembersList.filter { it.memberId != currentUserId },
-                action = Constants.InfoType.MemberRemoved,
-                addedOrRemovedUserId = currentUserId,
-                groupInfo = updatedGroupInfo
-            )
+        chatViewModel.sentGroupInfoMessage(
+            message,
+            lastMessage,
+            chatRoomId,
+            groupMembersList.filter { it.memberId != currentUserId },
+            action = Constants.InfoType.MemberRemoved,
+            addedOrRemovedUserId = currentUserId,
+            groupInfo = updatedGroupInfo
+        )
     }
-
 
 
     private fun showNoDataView() {
@@ -600,7 +609,7 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
     }
 
     override fun onDestroyView() {
-        _userAdapter=null
+        _userAdapter = null
         _binding = null
         super.onDestroyView()
     }
@@ -608,8 +617,8 @@ class GroupMembersFragment : Fragment() , AlertDialogOption {
 
 }
 
-enum class GroupMemberScreenAlertDialogOption{
+enum class GroupMemberScreenAlertDialogOption {
     MAKE_ADMIN,
-    REMOVE_USER ,
+    REMOVE_USER,
     DISMISS_AS_ADMIN
 }

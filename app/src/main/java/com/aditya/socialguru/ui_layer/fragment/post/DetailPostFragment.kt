@@ -409,7 +409,6 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
             rvComment.apply {
                 layoutManager = LinearLayoutManager(requireContext())
                 adapter = commentAdapter
-                setHasFixedSize(true)
                 isMotionEventSplittingEnabled = false
             }
 
@@ -682,8 +681,8 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
             showNoCommentView()
         } else {
             hideNoCommentView()
-            commentAdapter.submitList(comments)
         }
+        commentAdapter.submitList(comments)
     }
 
     private fun sendMessage() {

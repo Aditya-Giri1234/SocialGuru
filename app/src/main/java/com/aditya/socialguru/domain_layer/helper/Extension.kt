@@ -46,7 +46,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -488,4 +491,12 @@ fun View.setCircularBackground(color: Int) {
     drawable.shape = GradientDrawable.OVAL // Set shape to oval to make it circular
     drawable.setColor(color) // Set the dynamic color
     background = drawable // Apply the drawable as the background
+}
+
+suspend fun <T, R> List<T>.mapAsync(transform: suspend (T) -> R): List<R> = coroutineScope {
+    map { item ->
+        async {
+            transform(item)
+        }
+    }.awaitAll() // Wait for all async operations to complete and return the results
 }

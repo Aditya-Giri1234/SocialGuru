@@ -97,6 +97,8 @@ object FirebaseManager {
 
     suspend fun findUser(query: String) = UserManager.findUser(query)
 
+    suspend fun deleteAccount() = AuthManager.deleteAccount()
+
 
     //endregion
 
@@ -122,7 +124,7 @@ object FirebaseManager {
     suspend fun uploadingPost(post: Post) = PostManager.uploadPost(post)
 
     suspend fun getDiscoverPost() = PostManager.getDiscoverPost()
-    suspend fun getFollowingPost() = PostManager.getFollowingPost()
+    suspend fun getFollowingPost(userIds: List<String>) = PostManager.getFollowingPost(userIds)
 
     suspend fun getMyPost(userId: String) = PostManager.getMyPost(userId)
 
@@ -140,6 +142,7 @@ object FirebaseManager {
 
     suspend fun updatePostSaveStatus(postId: String) = PostManager.updatePostSaveStatus(postId)
     suspend fun listenMySavedPost() = PostManager.listenMySavedPost()
+    suspend fun listenMyLikedPost() = PostManager.listenMyLikedPost()
     suspend fun listenCommentedPost(userId: String) = PostManager.listenCommentedPost(userId)
     suspend fun listenMySavedPostForScreenView() = PostManager.listenMySavedPostForScreenView()
 

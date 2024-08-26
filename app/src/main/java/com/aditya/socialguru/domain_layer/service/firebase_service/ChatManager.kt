@@ -26,6 +26,7 @@ import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.isExist
 import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
+import com.aditya.socialguru.domain_layer.helper.mapAsync
 import com.aditya.socialguru.domain_layer.helper.safeUpdate
 import com.aditya.socialguru.domain_layer.helper.toNormalMap
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -36,6 +37,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
+import com.google.firebase.firestore.toObjects
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -44,12 +46,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
-import kotlinx.coroutines.withContext
 import kotlin.system.measureTimeMillis
 
 /**
@@ -58,6 +60,7 @@ import kotlin.system.measureTimeMillis
 object ChatManager {
 
     private val tagChat = Constants.LogTag.Chats
+    private val tagDelete = Constants.LogTag.ForceLogout
 
 
     private val firestore: FirebaseFirestore by lazy {
@@ -468,8 +471,10 @@ object ChatManager {
                     }
 
                     batch.delete(messageRef)
-                    batch.safeUpdate(lastMessageRef,
-                        lastMessage!!.toNormalMap().filterValues { it != null }, isLastMessageExist)
+                    batch.safeUpdate(
+                        lastMessageRef,
+                        lastMessage!!.toNormalMap().filterValues { it != null }, isLastMessageExist
+                    )
                     batch.safeUpdate(
                         receiverRecentRef,
                         forReceiverRecentData.toNormalMap(),
@@ -565,9 +570,9 @@ object ChatManager {
 
     private suspend fun deleteCollection(collectionRefs: List<CollectionReference>) =
         callbackFlow<UpdateResponse> {
-            withContext(Dispatchers.IO) {
-                try {
-                    for (collectionRef in collectionRefs) {
+            try {
+                collectionRefs.map {collectionRef ->
+                    async {
                         // Get all documents in the collection
                         val documents = collectionRef.get().await().documents
 
@@ -592,14 +597,14 @@ object ChatManager {
                             batch.commit().await()
                         }
                     }
-                    trySend(UpdateResponse(true, "")) // All documents deleted successfully
-                } catch (e: FirebaseFirestoreException) {
-                    e.printStackTrace()
-                    trySend(UpdateResponse(false, e.message)) // Failed to delete all documents
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    trySend(UpdateResponse(false, e.message)) // Failed to delete all documents
-                }
+                }.awaitAll()
+                trySend(UpdateResponse(true, "")) // All documents deleted successfully
+            } catch (e: FirebaseFirestoreException) {
+                e.printStackTrace()
+                trySend(UpdateResponse(false, e.message)) // Failed to delete all documents
+            } catch (e: Exception) {
+                e.printStackTrace()
+                trySend(UpdateResponse(false, e.message)) // Failed to delete all documents
             }
             awaitClose {
                 close()
@@ -689,7 +694,12 @@ object ChatManager {
 
 
             firestore.runBatch {
-                it.safeUpdate(messageRef , isMessageRefExist, Constants.MessageTable.SEEN_STATUS.fieldName, status)
+                it.safeUpdate(
+                    messageRef,
+                    isMessageRefExist,
+                    Constants.MessageTable.SEEN_STATUS.fieldName,
+                    status
+                )
                 it.safeUpdate(
                     myRecentChatRef,
                     isMyRecentChatRefExist,
@@ -706,7 +716,10 @@ object ChatManager {
 
                 if (status == Constants.SeenStatus.MessageSeen.status) {
                     it.safeUpdate(
-                        myRecentChatRef , isMyRecentChatRefExist, Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName, 0
+                        myRecentChatRef,
+                        isMyRecentChatRefExist,
+                        Constants.RecentChatTable.UNSEEN_MESSAGE_COUNT.fieldName,
+                        0
                     )
                     it.safeUpdate(
                         receiverRecentChatRef,
@@ -943,10 +956,13 @@ object ChatManager {
 
     //region:: Recent Chat
 
-    suspend fun deleteRecentChat(chatRoomId: String) = callbackFlow<UpdateResponse> {
+    suspend fun deleteRecentChat(
+        chatRoomId: String,
+        userId: String = AuthManager.currentUserId()!!
+    ) = callbackFlow<UpdateResponse> {
 
         try {
-            userRef.document(AuthManager.currentUserId()!!).collection(Table.RecentChat.name)
+            userRef.document(userId).collection(Table.RecentChat.name)
                 .document(chatRoomId).delete().addOnSuccessListener {
                     trySend(UpdateResponse(true, ""))
                 }.addOnFailureListener {
@@ -964,6 +980,16 @@ object ChatManager {
 
         awaitClose {
             close()
+        }
+    }
+
+    suspend fun deleteChatRoomId(chatRoomId: String) {
+        try {
+            chatRef.document(chatRoomId).delete()
+        } catch (e: FirebaseFirestoreException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -1400,7 +1426,12 @@ object ChatManager {
                     users.mapNotNull { it.memberId }.forEach {
                         batch.set(
                             chatRef.document(chatRoomId).collection(Table.GroupMember.name)
-                                .document(it), GroupMember(it)
+                                .document(it), GroupMember(
+                                isOnline = false,
+                                memberId = it,
+                                groupJoiningDateInText = timeInText,
+                                groupJoiningDateInTimeStamp = timeStamp
+                            )
                         )
                     }
                 }
@@ -1418,6 +1449,9 @@ object ChatManager {
                 } else {
                     batch.set(lastMessageRef, updatedLastMessage)
                 }
+
+                //Add new info message in chat
+                batch.set(messageRef, updatedMessage)
 
                 // This is for when new user added
                 if (isThisFunctionCallForAddNewMember) {
@@ -1444,10 +1478,10 @@ object ChatManager {
                         userRef.document(addedOrRemovedUserId!!).collection(Table.RecentChat.name)
                             .document(chatRoomId)
                     )
+                    if (users.isEmpty()) {
+                        batch.delete(userRef.document(chatRoomId))
+                    }
                 }
-
-                //Add new info message in chat
-                batch.set(messageRef, updatedMessage)
             }
             MyLogger.v(tagChat, msg = "Time taken to calculate $timeTakingToCalculate")
 
@@ -1457,8 +1491,10 @@ object ChatManager {
             trySend(UpdateResponse(isSuccess = true, errorMessage = ""))
 
             launch {
+                val finalMemberAfterAddMember = (newMembers?.toMutableList() ?: mutableListOf())
+                    .apply { addAll(users.mapNotNull { it.memberId }) }
                 updateRecentChat(
-                    users.mapNotNull { it.memberId },
+                    finalMemberAfterAddMember,
                     commonRecentChat,
                     chatRoomId
                 )
@@ -1577,7 +1613,7 @@ object ChatManager {
                                     unSeenMessageCount = unSeenMessageCount
                                 )
                             }
-                            val recentMessageRefForReceiver = recentChatRef
+                            recentChatRef
                                 .set(updatedRecentChatData).await()
                             // Handle the result if needed
                         } catch (e: FirebaseFirestoreException) {
@@ -1650,8 +1686,10 @@ object ChatManager {
                 }
 
                 batch.delete(messageRef)
-                batch.safeUpdate(lastMessageRef,
-                    lastMessage!!.toNormalMap().filterValues { it != null } ,isLastMessageRefExist)
+                batch.safeUpdate(
+                    lastMessageRef,
+                    lastMessage!!.toNormalMap().filterValues { it != null }, isLastMessageRefExist
+                )
             }.addOnSuccessListener {
                 trySend(UpdateResponse(true, ""))
                 launch {
@@ -1906,50 +1944,64 @@ object ChatManager {
                     when (it.type) {
                         DocumentChange.Type.ADDED -> {
                             launch {
-                                trySend(
-                                    ListenerEmissionType(
-                                        Constants.ListenerEmitType.Added,
-                                        singleResponse = it.document.toObject<GroupMember>().run {
-                                            GroupMemberDetails(
-                                                this,
-                                                UserManager.getUserById(this.memberId!!)!!
-                                            )
-                                        }
+                                val groupMember = it.document.toObject<GroupMember>()
+                                UserManager.getUserById(groupMember.memberId!!)?.let { user ->
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Added,
+                                            singleResponse =
+                                            groupMember.run {
+                                                GroupMemberDetails(
+                                                    this,
+                                                    user
+                                                )
+                                            }
+                                        )
                                     )
-                                )
+                                }
                             }
 
                         }
 
                         DocumentChange.Type.REMOVED -> {
                             launch {
-                                trySend(
-                                    ListenerEmissionType(
-                                        Constants.ListenerEmitType.Removed,
-                                        singleResponse = it.document.toObject<GroupMember>().run {
-                                            GroupMemberDetails(
-                                                this,
-                                                UserManager.getUserById(this.memberId!!)!!
-                                            )
-                                        }
+                                val groupMember = it.document.toObject<GroupMember>()
+                                UserManager.getUserById(groupMember.memberId!!)?.let { user ->
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Removed,
+                                            singleResponse =
+                                            groupMember.run {
+                                                GroupMemberDetails(
+                                                    this,
+                                                    user
+                                                )
+                                            }
+
+                                        )
                                     )
-                                )
+                                }
                             }
                         }
 
                         DocumentChange.Type.MODIFIED -> {
                             launch {
-                                trySend(
-                                    ListenerEmissionType(
-                                        Constants.ListenerEmitType.Modify,
-                                        singleResponse = it.document.toObject<GroupMember>().run {
-                                            GroupMemberDetails(
-                                                this,
-                                                UserManager.getUserById(this.memberId!!)!!
-                                            )
-                                        }
+                                val groupMember = it.document.toObject<GroupMember>()
+                                UserManager.getUserById(groupMember.memberId!!)?.let { user ->
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Modify,
+                                            singleResponse =
+                                            groupMember.run {
+                                                GroupMemberDetails(
+                                                    this,
+                                                    user
+                                                )
+                                            }
+
+                                        )
                                     )
-                                )
+                                }
                             }
                         }
                     }
@@ -2088,9 +2140,11 @@ object ChatManager {
             .await().toObject<GroupInfo>()
 
     suspend fun updateGroupMemberOnlineStatus(chatRoomId: String, status: Boolean) {
-        chatRef.document(chatRoomId).collection(Table.GroupMember.name)
+        val member = chatRef.document(chatRoomId).collection(Table.GroupMember.name)
             .document(AuthManager.currentUserId()!!)
-            .set(GroupMember(AuthManager.currentUserId()!!, status)).await()
+        if (member.isExist()) {
+            member.set(GroupMember(AuthManager.currentUserId()!!, status)).await()
+        }
     }
 
     // This function handle update status of group message ( Receiving or Seen)
@@ -2256,7 +2310,11 @@ object ChatManager {
                 )
 
                 firestore.runBatch { batch ->
-                    batch.safeUpdate(messageRef, updatedMessageData.toNormalMap() , isMessageRefExist)
+                    batch.safeUpdate(
+                        messageRef,
+                        updatedMessageData.toNormalMap(),
+                        isMessageRefExist
+                    )
                     if (isRecentChatUpdateNeeded) {
                         batch.update(
                             senderRecentChatRef,
@@ -2275,8 +2333,135 @@ object ChatManager {
     }
 
 
+    //region:: This is for Delete Account Feature
+    suspend fun updateGroupInfoWithSilent(groupInfo: GroupInfo) {
+        chatRef.document(groupInfo.chatRoomId!!).collection(Table.GroupInfo.name)
+            .document(groupInfo.chatRoomId).set(groupInfo)
+    }
+
+    suspend fun removeFromGroupMemberCollection(chatRoomId: String, userId: String) {
+        chatRef.document(chatRoomId).collection(Table.GroupMember.name)
+            .document(userId).delete()
+    }
+
+    /**
+     * [chooseNewCreatorOfGroup] this function help to make new group creator base on who join after creator that make group creator.
+     * */
+    suspend fun chooseNewCreatorOfGroup(chatRoomId: String, userId: String, groupInfo: GroupInfo) {
+        val member = chatRef.document(chatRoomId).collection(Table.GroupMember.name).get().await()
+        if (member.isEmpty) return
+        val newCreatorId =
+            member.toObjects(GroupMember::class.java).filter { it.memberId != userId }.sortedBy {
+                it.groupJoiningDateInTimeStamp
+            }.firstOrNull()?.memberId
+
+        if (newCreatorId != null) {
+            val updatedGroupInfo = groupInfo.copy(
+                creatorId = newCreatorId
+            )
+            updateGroupInfoWithSilent(updatedGroupInfo)
+        }
+    }
+
+    suspend fun deleteGroupChat(
+        chatRoomId: String
+    ) {
+        launchCoroutineInIOThread {
+            StorageManager.deleteMediaOfChats(chatRoomId).onEach {
+                if (it.isSuccess) {
+                    MyLogger.i(tagChat, msg = "All Media is deleted !!")
+                } else {
+                    MyLogger.e(tagChat, msg = it.errorMessage)
+                }
+
+                val chatRoomIdRef = chatRef.document(chatRoomId)
+                val chatMediaRef = chatRoomIdRef.collection(Table.Media.name)
+                val groupInfoRef = chatRoomIdRef.collection(Table.GroupInfo.name)
+                val groupMemberRef = chatRoomIdRef.collection(Table.GroupMember.name)
+                val messageRef = chatRoomIdRef.collection(Table.Messages.name)
+
+                firestore.runBatch { batch ->
+                    batch.delete(chatRoomIdRef)
+                }.addOnCompleteListener {
+                    launch {
+                        deleteCollection(listOf(chatMediaRef , groupInfoRef ,groupMemberRef ,messageRef )).onEach {
+                            MyLogger.d(tagChat, msg = "Media Chat Collection is deleted!")
+                            deleteAllMessageFromGroup(chatRoomId).onEach {
+                                MyLogger.d(
+                                    tagChat,
+                                    msg = it,
+                                    isJson = true,
+                                    jsonTitle = "Delete Collection Response Come "
+                                )
+                            }.launchIn(this)
+                        }.launchIn(this)
+                    }
+                }
+            }.launchIn(this)
+        }
+    }
+
+
+    //endregion
+
 //endregion
 
 
+    //region :: Delete All chat info for delete account
+
+    suspend fun deleteUserChatInfo() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val userId = AuthManager.currentUserId()!!
+        val chats =
+            userRef.document(userId).collection(Constants.Table.RecentChat.name).get().await()
+
+        MyLogger.e(tagDelete, msg = "chats is count :-> ${chats.size()}")
+        if (!chats.isEmpty) {
+            chats.toObjects<RecentChat>().mapAsync {
+                if (it.isGroupChat == true) {
+                    val groupMembers = ChatManager.getGroupMemberInfo(it.chatRoomId!!).first()
+                    val groupInfo = ChatManager.getGroupInfo(it.chatRoomId!!).first()
+
+                    if (groupMembers.responseList?.size == 1) {
+                        MyLogger.e(
+                            tagDelete,
+                            msg = "This chat is group chat and only one member left"
+                        )
+                        deleteGroupChat(it.chatRoomId!!)
+                    } else {
+                        //Update Group Info
+                        groupInfo?.let { info ->
+                            if (info.creatorId == userId) {
+                                MyLogger.e(
+                                    tagDelete,
+                                    msg = "This chat is group chat and creator left"
+                                )
+                                chooseNewCreatorOfGroup(it.chatRoomId, userId, info)
+                            } else {
+                                if (info.groupAdmins?.contains(userId) == true) {
+                                    MyLogger.e(
+                                        tagDelete,
+                                        msg = "This chat is group chat and admin left"
+                                    )
+                                    updateGroupInfoWithSilent(groupInfo = info.copy(
+                                        groupAdmins = info.groupAdmins.filter { it != userId }
+                                    ))
+                                }
+                            }
+                        }
+
+                        removeFromGroupMemberCollection(it.chatRoomId, userId)
+                    }
+                } else {
+                    MyLogger.e(tagDelete, msg = "This chat is not group chat")
+                    val receiverId =
+                        if (it.receiverId == AuthManager.currentUserId()!!) it.senderId else it.receiverId
+                    clearChats(it.chatRoomId!!, receiverId!!).first()
+                }
+            }
+        }
+    }
+
+    //endregion
 }
 private typealias MessageType = Constants.PostType

@@ -7,27 +7,25 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.get
-import androidx.core.view.isGone
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
-import androidx.navigation.NavDirections
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
@@ -35,7 +33,6 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.databinding.ActivityMainBinding
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
-
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myLaunch
@@ -43,18 +40,17 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.viewmodel.MainViewModel
+import com.google.android.material.navigation.NavigationBarView
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import org.apache.http.auth.AUTH
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedListener {
 
     private lateinit var binding: ActivityMainBinding
 
@@ -75,16 +71,20 @@ class MainActivity : AppCompatActivity() {
                 Constants.AppBroadCast.LogIn.name -> {
                     MyLogger.i(msg = "User login event come !")
                     mainViewModel.setDataLoadedStatus(false)
+                    mainViewModel.setListenerSetStatus(false)
                     getData()
                 }
 
                 Constants.AppBroadCast.LogOut.name -> {
                     MyLogger.i(msg = "User logout event come !")
+                    killActivityAndCreateNewOne()
                 }
             }
         }
 
     }
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -147,11 +147,28 @@ class MainActivity : AppCompatActivity() {
         subscribeToObserver()
         subscribeToDestinationChanges()
         getData()
+        handleIntent()
+    }
+
+    private fun handleIntent() {
+       when{
+           intent.getBooleanExtra(Constants.IntentTable.LogOutOrDeleteAccountAcitivityHappend.name , false) -> {
+               navController.currentDestination?.id?.let {
+                   navController.safeNavigate(it,R.id.onboardingScreenFragment ,Helper.giveAnimationNavOption(it,true))
+               }
+           }
+           else ->{
+               // Don't do anything
+           }
+       }
     }
 
     private fun subscribeToObserver() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+//                navController.currentBackStack.onEach {
+//
+//                }.launchIn(this)
                 AppBroadcastHelper.mainActivityBottomNavHideByScroll.onEach {
                     if (it) {
                         hideBottomNavigationFotScrollEffect()
@@ -204,6 +221,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    @SuppressLint("RestrictedApi")
     private fun subscribeToDestinationChanges() {
         MyLogger.v(isFunctionCall = true)
         lifecycleScope.launch {
@@ -217,7 +235,17 @@ class MainActivity : AppCompatActivity() {
                 MyLogger.d(msg = "Destination is change occurred :- ${destination.label}")
                 if (bottomBarDestination.contains(destination.id)) {
                     showBottomNavigation()
+                  /*  val currentDestinationId = destination.id
+                    val backStack = navController.currentBackStack.value.toList()
 
+                    // Count the number of instances of the current destination in the back stack
+                    val instanceCount = backStack.count { it.destination.id == currentDestinationId }
+
+                    if (instanceCount > 1) {
+                        // Pop the back stack up to the current destination
+                        navController.popBackStack(currentDestinationId, true)
+                        navController.popBackStack(currentDestinationId, false)
+                    }*/
                 } else {
                     val param =
                         (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
@@ -236,9 +264,12 @@ class MainActivity : AppCompatActivity() {
                 (supportFragmentManager.findFragmentById(R.id.localNavHostFragment) as NavHostFragment).findNavController()
             bottomNavigationView.menu[2].isEnabled = false
             bottomNavigationView.setupWithNavController(navController)
+            bottomNavigationView.setOnItemReselectedListener(this@MainActivity)
             setListener()
         }
     }
+
+
 
 
     private fun ActivityMainBinding.setListener() {
@@ -354,13 +385,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun getData() {
         if (AuthManager.currentUserId() != null) {
-            if (!mainViewModel.isDataLoaded){
+            if (!mainViewModel.isDataLoaded) {
                 getFCMToken()
                 mainViewModel.setDataLoadedStatus(true)
             }
             if (!mainViewModel.isListenerSet) {
                 mainViewModel.getUser()
                 mainViewModel.listenMySavedPost()
+                mainViewModel.listenMyLikedPost()
                 mainViewModel.setListenerSetStatus(true)
             }
         }
@@ -373,6 +405,14 @@ class MainActivity : AppCompatActivity() {
                 mainViewModel.setFcmToken(token)
             }
         }
+    }
+
+    private fun killActivityAndCreateNewOne() {
+//        viewModelStore.clear()
+        startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+        ).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra(Constants.IntentTable.LogOutOrDeleteAccountAcitivityHappend.name ,true))
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+
     }
 
 
@@ -416,6 +456,10 @@ class MainActivity : AppCompatActivity() {
                 navController.popBackStack()
             }
         }
+    }
+
+    override fun onNavigationItemReselected(item: MenuItem) {
+        // Don't do any thing
     }
 
     override fun onDestroy() {

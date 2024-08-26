@@ -90,6 +90,7 @@ class SignUpFragment : Fragment() {
 
                             Handler(Looper.getMainLooper()).postDelayed({
                                 MyLogger.v(tagLogin, msg = "Now go to main activity !")
+                                requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.LogIn.name))
                                 val directions: NavDirections =SignUpFragmentDirections.actionSignUpFragmentToHomeFragmentBar()
                                 navController.safeNavigate(directions,Helper.giveAnimationNavOption(R.id.signUpFragment,true))
                             },200)

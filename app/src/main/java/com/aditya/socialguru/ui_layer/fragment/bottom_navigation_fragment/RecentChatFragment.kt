@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDirections
@@ -74,9 +75,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
         (requireActivity() as MainActivity).navController
     }
 
-    private val chatViewModel: ChatViewModel by navGraphViewModels(R.id.bottom_navigation_bar) {
-        ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
-    }
+    private val chatViewModel: ChatViewModel by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         MyLogger.v(isFunctionCall = true)
@@ -112,7 +111,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun subscribeToObserver() {
-        viewLifecycleOwner.observeFlow {
+        observeFlow {
             chatViewModel.recentChat.onEach { response ->
                 when (response) {
                     is Resource.Success -> {

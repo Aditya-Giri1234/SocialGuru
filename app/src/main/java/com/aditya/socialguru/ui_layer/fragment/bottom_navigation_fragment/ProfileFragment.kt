@@ -1,6 +1,7 @@
 package com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.ColorDrawable
@@ -12,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -26,6 +28,7 @@ import com.aditya.socialguru.databinding.FragmentProfileBinding
 import com.aditya.socialguru.databinding.PopUpProfileSettingBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
+import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
 import com.aditya.socialguru.domain_layer.helper.gone
@@ -41,6 +44,7 @@ import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.viewmodel.profile.ProfileViewModel
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -62,9 +66,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
         (requireActivity() as MainActivity).navController
     }
 
-    private val profileViewModel: ProfileViewModel by navGraphViewModels(R.id.bottom_navigation_bar) {
-        ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
-    }
+    private val profileViewModel: ProfileViewModel by activityViewModels()
 
     private val pref by lazy {
         SharePref(requireContext())
@@ -246,11 +248,11 @@ class ProfileFragment : Fragment(), AlertDialogOption {
             }
             linearItemSavedPost.setSafeOnClickListener {
                 popUp.dismiss()
-                    val directions: NavDirections =
-                        BottomNavigationBarDirections.actionGlobalMySavedPostFragment()
-                    navController.safeNavigate(
-                        directions, Helper.giveAnimationNavOption()
-                    )
+                val directions: NavDirections =
+                    BottomNavigationBarDirections.actionGlobalMySavedPostFragment()
+                navController.safeNavigate(
+                    directions, Helper.giveAnimationNavOption()
+                )
             }
             linearItemEditProfile.setOnClickListener {
                 popUp.dismiss()
@@ -297,12 +299,14 @@ class ProfileFragment : Fragment(), AlertDialogOption {
     }
 
     private fun navigateToOnboardingScreen() {
-        val directions: NavDirections =
-            BottomNavigationBarDirections.actionGlobalOnboardingScreenFragment()
-        navController.safeNavigate(
-            directions,
-            Helper.giveAnimationNavOption(R.id.homeFragment, true)
-        )
+        /*  val directions: NavDirections =
+              BottomNavigationBarDirections.actionGlobalOnboardingScreenFragment()
+          navController.safeNavigate(
+              directions,
+              Helper.giveAnimationNavOption(R.id.homeFragment, true)
+          )*/
+
+        requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.LogOut.name))
     }
 
     private fun showDialog() {

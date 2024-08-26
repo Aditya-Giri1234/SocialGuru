@@ -245,7 +245,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
                         followingList.forEach { temp ->
                             if (temp.userId == userId) {
                                 followingList.remove(temp)
-                                followingList.sortBy { it.timeStamp }
+                                followingList.sortByDescending { it.timeStamp }
                                 return@let
                             }
                         }

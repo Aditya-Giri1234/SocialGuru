@@ -31,6 +31,7 @@ class PostAdapter(val onClick: OnPostClick) :
     RecyclerView.Adapter<PostAdapter.ViewHolder>() {
     private var job: Job? = null
     private var mySavedPost = mutableListOf<String>()  // Just post id
+    private var myLikedPost = mutableListOf<String>()  // Just post id
 
     init {
         job = launchCoroutineInIOThread {
@@ -40,6 +41,13 @@ class PostAdapter(val onClick: OnPostClick) :
                 runOnUiThread {
                     notifyDataSetChanged()
                 }
+            }.launchIn(this)
+            AppBroadcastHelper.likedPost.onEach {
+                myLikedPost.clear()
+                myLikedPost.addAll(it.mapNotNull { it.postId })
+//                runOnUiThread {
+//                    notifyDataSetChanged()
+//                }
             }.launchIn(this)
         }
     }
@@ -215,7 +223,7 @@ class PostAdapter(val onClick: OnPostClick) :
                         val countExceptLoginUser =
                             if (isLiked) (likeCount?.let { it - 1 } ?: 0) else likeCount ?: 0
 
-                        ivLike.setImageResource(if (isLiked) R.drawable.like else R.drawable.not_like)
+//                        ivLike.setImageResource(if (isLiked) R.drawable.like else R.drawable.not_like)
 
                         // set time
                         if (postUploadingTimeInTimeStamp != null) {
@@ -230,6 +238,13 @@ class PostAdapter(val onClick: OnPostClick) :
                         val isISaveThisPost = mySavedPost.contains(postId)
                         icSave.setImageResource(
                             if (isISaveThisPost) R.drawable.ic_save else R.drawable.ic_un_save
+                        )
+
+                        // Now Look Forward see , this post is liked or not
+                        val isILikeThisPost = myLikedPost.contains(postId)  // This is line is use less now but don't delete now.
+
+                        ivLike.setImageResource(
+                            if (isLiked) R.drawable.like else R.drawable.not_like
                         )
 
 

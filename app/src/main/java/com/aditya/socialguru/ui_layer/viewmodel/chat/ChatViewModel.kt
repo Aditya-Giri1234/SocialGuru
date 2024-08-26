@@ -149,6 +149,11 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     val groupNameTextCount: MutableLiveData<Int> = MutableLiveData(0) // type :-> 1
     val groupDescTextCount: MutableLiveData<Int> = MutableLiveData(0) // type :-> 2
 
+
+    init {
+        MyLogger.w(tagChat , msg = "chat view model is make with hashcode :-> ${this.hashCode()}")
+    }
+
     fun setDefaultTextCount(count:Int, type:Int){
         when(type){
             0->{
@@ -1153,5 +1158,10 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
 
     fun setVideoUriData(uri: Uri?) {
         _videoUri = uri
+    }
+
+    override fun onCleared() {
+        MyLogger.e(tagChat , msg = "Chat View Model destroyed with hashcode :-> ${this.hashCode()}")
+        super.onCleared()
     }
 }

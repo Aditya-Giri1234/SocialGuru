@@ -188,7 +188,7 @@ class StartChatFragment : Fragment() {
     }
     private fun onItemClick(user: User) {
         val directions:NavDirections=BottomNavigationBarDirections.actionGlobalChatFragment(user.userId!!)
-        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
+        navController.safeNavigate(directions,Helper.giveAnimationNavOption(R.id.startChatFragment ,true))
     }
 
 

@@ -367,12 +367,11 @@ class AddPostFragment : Fragment() {
         }
 
 
-        linearVideo.viewTreeObserver.addOnGlobalLayoutListener {
+        linearVideo.addOnLayoutChangeListener { v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
             MyLogger.v(tagPost, msg = "Video  layout is change !")
             checkNowPostCanSend()
-
         }
-        linearImage.viewTreeObserver.addOnGlobalLayoutListener {
+        linearImage.addOnLayoutChangeListener { v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
             MyLogger.v(tagPost, msg = "Image  layout  is change !")
             checkNowPostCanSend()
         }
@@ -390,7 +389,7 @@ class AddPostFragment : Fragment() {
         }
 
 
-        btnPost.setOnClickListener {
+        btnPost.setSafeOnClickListener {
             MyLogger.v(tagPost, msg = "Post button is click !")
             uploadPost()
         }

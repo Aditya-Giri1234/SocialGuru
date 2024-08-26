@@ -94,7 +94,7 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
 
         MyLogger.v(tagStory, isFunctionCall = true)
 
-        var userStoryList =
+        val userStoryList =
             userStories.replayCache[0].data?.toMutableList() ?: mutableListOf<UserStories>()
 
         when (storyHandling.emitChangeType) {

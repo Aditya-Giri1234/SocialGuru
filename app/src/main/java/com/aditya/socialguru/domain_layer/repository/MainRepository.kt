@@ -13,4 +13,5 @@ class MainRepository {
     suspend fun updateUserAvailability(isUserAvailable:Boolean) = UserManager.updateUserAvailability(isUserAvailable)
 
     suspend fun listenMySavedPost() = FirebaseManager.listenMySavedPost()
+    suspend fun listenMyLikedPost() = PostManager.listenMyLikedPost()
 }

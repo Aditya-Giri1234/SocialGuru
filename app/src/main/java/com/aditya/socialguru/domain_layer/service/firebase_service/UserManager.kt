@@ -5,17 +5,21 @@ import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.model.notification.UserNotificationModel
 import com.aditya.socialguru.data_layer.model.post.Post
+import com.aditya.socialguru.data_layer.model.post.comment.CommentedPost
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Constants.Table
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
+import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.NotificationSendingManager
+import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
@@ -39,6 +43,7 @@ object UserManager {
 
     private val tagLogin = Constants.LogTag.LogIn
     private val tagProfile = Constants.LogTag.Profile
+    private val tagDelete = Constants.LogTag.ForceLogout
 
 
     //Firebase firestore
@@ -171,7 +176,7 @@ object UserManager {
                             if (user != null) {
                                 trySend(Resource.Success(user))
                             } else {
-                                trySend(Resource.Error("User document found but data is null!"))
+                                trySend(Resource.Error("User Not Found !"))
                             }
 
                         } catch (e: Exception) {
@@ -199,7 +204,7 @@ object UserManager {
         }
     }
 
-    suspend fun getAllUserByIds(userIds:List<String>) = callbackFlow<List<FriendCircleData>>{
+    suspend fun getAllUserByIds(userIds: List<String>) = callbackFlow<List<FriendCircleData>> {
         try {
             val userListWork = userIds.map {
                 async {
@@ -210,11 +215,11 @@ object UserManager {
                 FriendCircleData(it.userId!!, user = it)
             }
             trySend(userList)
-        }catch (e : Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
         }
 
-        awaitClose{
+        awaitClose {
             close()
         }
     }
@@ -257,13 +262,13 @@ object UserManager {
         }
     }
 
-    suspend fun logoutUser()= callbackFlow<UpdateResponse>{
+    suspend fun logoutUser() = callbackFlow<UpdateResponse> {
         getUserById(AuthManager.currentUserId()!!)?.let {
-            val timestamp=System.currentTimeMillis()
-            val timeInText=Helper.formatTimestampToDateAndTime(timestamp)
-            val updatedUser=it.copy(
+            val timestamp = System.currentTimeMillis()
+            val timeInText = Helper.formatTimestampToDateAndTime(timestamp)
+            val updatedUser = it.copy(
                 fcmToken = "",
-                userAvailable = false ,
+                userAvailable = false,
                 logoutTimeInText = timeInText,
                 logoutTimeInTimeStamp = timestamp
             )
@@ -272,8 +277,8 @@ object UserManager {
             }.addOnFailureListener {
                 trySend(UpdateResponse(false, it.message))
             }.await()
-        } ?: trySend(UpdateResponse(false , "User Not Found"))
-        awaitClose{
+        } ?: trySend(UpdateResponse(false, "User Not Found"))
+        awaitClose {
             close()
         }
     }
@@ -790,13 +795,14 @@ object UserManager {
                                     trySend(
                                         ListenerEmissionType(
                                             Constants.ListenerEmitType.Added,
-                                            singleResponse = it.document.toObject<FriendCircleData>().run {
-                                                copy(user = this.userId?.let { it1 ->
-                                                    getUserById(
-                                                        it1
-                                                    )
-                                                })
-                                            }
+                                            singleResponse = it.document.toObject<FriendCircleData>()
+                                                .run {
+                                                    copy(user = this.userId?.let { it1 ->
+                                                        getUserById(
+                                                            it1
+                                                        )
+                                                    })
+                                                }
                                         )
                                     )
                                 }
@@ -804,12 +810,12 @@ object UserManager {
 
                             DocumentChange.Type.REMOVED -> {
 
-                                    trySend(
-                                        ListenerEmissionType(
-                                            Constants.ListenerEmitType.Removed,
-                                            singleResponse = it.document.toObject<FriendCircleData>()
-                                        )
+                                trySend(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Removed,
+                                        singleResponse = it.document.toObject<FriendCircleData>()
                                     )
+                                )
 
                             }
 
@@ -1242,7 +1248,7 @@ object UserManager {
             .addOnSuccessListener { documents ->
                 for (document in documents) {
                     document.toObject(User::class.java).let {
-                        resultList.add(FriendCircleData(it.userId , user = it))
+                        resultList.add(FriendCircleData(it.userId, user = it))
                     }
                 }
                 resultList.sortBy { it.user?.userName }
@@ -1256,6 +1262,227 @@ object UserManager {
             close()
         }
     }
+
+    //endregion
+
+    //region:: Delete My id from follower and following and friend and friend request
+
+    suspend fun deleteMyUserRelation() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        launchCoroutineInIOThread {
+            val deleteWorkFollower = async {
+                deleteMyFollower()
+            }
+            val deleteWorkFollowing = async {
+                deleteMyFollowing()
+            }
+            val deleteWorkFriend = async {
+                deleteMyFriend()
+            }
+            val deleteWorkPendingRequest = async {
+                deleteMyPendingRequest()
+            }
+            val deleteWorkFriendRequest = async {
+                deleteMyFriendRequest()
+            }
+            deleteWorkFollower.await()
+            deleteWorkFollowing.await()
+            deleteWorkFriend.await()
+            deleteWorkPendingRequest.await()
+            deleteWorkFriendRequest.await()
+
+        }.join()
+    }
+
+    private suspend fun deleteMyFollower() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val myFollowerList = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.Follower.name).get().await()
+        if (myFollowerList.isEmpty) return
+        launchCoroutineInIOThread {
+            MyLogger.w(tagDelete, msg = "Delete My Follower Start ....")
+            val deleteWork = myFollowerList.map {
+                async {
+                    userRef.document(it.id).collection(Table.Following.name)
+                        .document(AuthManager.currentUserId()!!).delete()
+                }
+            }
+            deleteWork.awaitAll()
+            MyLogger.w(tagDelete, msg = "Delete My Follower Done ....")
+        }
+    }
+
+    private suspend fun deleteMyFollowing() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val myFollowingList = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.Following.name).get().await()
+        if (myFollowingList.isEmpty) return
+        launchCoroutineInIOThread {
+            MyLogger.w(tagDelete, msg = "Delete My Following Start ....")
+            val deleteWork = myFollowingList.map {
+                async {
+                    userRef.document(it.id).collection(Table.Follower.name)
+                        .document(AuthManager.currentUserId()!!).delete()
+                }
+            }
+            deleteWork.awaitAll()
+            MyLogger.w(tagDelete, msg = "Delete My Following Done ....")
+        }
+    }
+
+    private suspend fun deleteMyFriend() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val myFriendList =
+            userRef.document(AuthManager.currentUserId()!!).collection(Constants.Table.Friend.name)
+                .get().await()
+        if (myFriendList.isEmpty) return
+        launchCoroutineInIOThread {
+            MyLogger.w(tagDelete, msg = "Delete My Friend Start ....")
+            val deleteWork = myFriendList.map {
+                async {
+                    userRef.document(it.id).collection(Table.Friend.name)
+                        .document(AuthManager.currentUserId()!!).delete()
+                }
+            }
+            deleteWork.awaitAll()
+            MyLogger.w(tagDelete, msg = "Delete My Friend Done ....")
+        }
+    }
+
+    private suspend fun deleteMyPendingRequest() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val myPendingRequestList = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.PendingRequest.name).get().await()
+        if (myPendingRequestList.isEmpty) return
+        launchCoroutineInIOThread {
+            MyLogger.w(tagDelete, msg = "Delete My Pending Request Start ....")
+            val deleteWork = myPendingRequestList.map {
+                async {
+                    userRef.document(it.id).collection(Table.FriendRequest.name)
+                        .document(AuthManager.currentUserId()!!).delete()
+                }
+            }
+            deleteWork.awaitAll()
+            MyLogger.w(tagDelete, msg = "Delete My Pending Request Done ....")
+        }
+    }
+
+    private suspend fun deleteMyFriendRequest() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val myPendingRequestList = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.FriendRequest.name).get().await()
+        if (myPendingRequestList.isEmpty) return
+        launchCoroutineInIOThread {
+            MyLogger.w(tagDelete, msg = "Delete My Friend Request Start ....")
+            val deleteWork = myPendingRequestList.map {
+                async {
+                    userRef.document(it.id).collection(Table.PendingRequest.name)
+                        .document(AuthManager.currentUserId()!!).delete()
+                }
+            }
+            deleteWork.awaitAll()
+            MyLogger.w(tagDelete, msg = "Delete My Friend Request Done ....")
+        }
+    }
+
+    //endregion
+
+    //region:: Delete All My Sub Collection
+
+    suspend fun deleteAllMySubCollection() = callbackFlow<UpdateResponse> {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val collectionRefs = listOf(
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.Follower.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.Following.name),
+            userRef.document(AuthManager.currentUserId()!!).collection(Constants.Table.Friend.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.FriendRequest.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.PendingRequest.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.Notification.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.MyLikedPost.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.SavedPost.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.LikedPost.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.UnSeenMessage.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.ChatMuteNotification.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.RecentChat.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.CommentedPost.name)
+        )
+        deleteCollection(collectionRefs).onEach {
+            MyLogger.i(tagDelete, msg = "All Collection is deleted !")
+            trySend(it)
+        }.launchIn(this)
+
+        awaitClose {
+            close()
+        }
+    }
+
+     suspend fun deleteCollection(collectionRefs: List<CollectionReference>) =
+        callbackFlow<UpdateResponse> {
+            MyLogger.e(tagDelete, isFunctionCall = true)
+            try {
+                MyLogger.w(tagDelete, msg = "Delete Delete Collection Start ....")
+                collectionRefs.map { collectionRef ->
+                    async {
+                        MyLogger.w(
+                            tagDelete,
+                            msg = "Delete collectionRef :- $collectionRef Start ...."
+                        )
+                        // Get all documents in the collection
+                        val documents = collectionRef.get().await().documents
+
+                        // Batch delete documents
+                        val batchSize = 500 // Firestore batch limit
+                        var batch = firestore.batch()
+                        var counter = 0
+
+                        for (document in documents) {
+                            batch.delete(document.reference)
+                            counter++
+
+                            // Commit the batch every batchSize documents
+                            if (counter % batchSize == 0) {
+                                batch.commit().await()
+                                batch = firestore.batch()
+                            }
+                        }
+
+                        // Commit the remaining documents
+                        if (counter % batchSize != 0) {
+                            batch.commit().await()
+                        }
+                        MyLogger.w(
+                            tagDelete,
+                            msg = "Delete collectionRef :- $collectionRef End ...."
+                        )
+                    }
+                }.awaitAll()
+                MyLogger.w(tagDelete, msg = "Delete Delete Collection End ....")
+                trySend(UpdateResponse(true, "")) // All documents deleted successfully
+            } catch (e: FirebaseFirestoreException) {
+                e.printStackTrace()
+                trySend(UpdateResponse(false, e.message)) // Failed to delete all documents
+            } catch (e: Exception) {
+                e.printStackTrace()
+                trySend(UpdateResponse(false, e.message)) // Failed to delete all documents
+            }
+            awaitClose {
+                close()
+            }
+        }
+
+
 
     //endregion
 

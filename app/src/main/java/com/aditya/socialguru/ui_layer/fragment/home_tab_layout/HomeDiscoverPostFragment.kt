@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -52,9 +53,7 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     private val discoverPostAdapter get() = _discoverPostAdapter!!
 
 
-    private val discoverPostViewModel: DiscoverPostViewModel by navGraphViewModels(R.id.bottom_navigation_bar) {
-        ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
-    }
+    private val discoverPostViewModel: DiscoverPostViewModel by activityViewModels()
 
     private val navController by lazy {
         (requireActivity() as MainActivity).navController

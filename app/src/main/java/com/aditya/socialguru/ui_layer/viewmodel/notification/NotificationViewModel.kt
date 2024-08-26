@@ -169,7 +169,7 @@ class NotificationViewModel(val app:Application) : AndroidViewModel(app) {
 
 
     override fun onCleared() {
-        MyLogger.w(tagNotification, msg = "Notification view model is finished !")
+        MyLogger.e(tagNotification, msg = "Notification view model is finished !")
         super.onCleared()
     }
 

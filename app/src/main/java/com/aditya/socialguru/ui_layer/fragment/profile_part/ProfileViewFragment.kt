@@ -1,8 +1,6 @@
 package com.aditya.socialguru.ui_layer.fragment.profile_part
 
 import android.content.Context
-import android.graphics.Color
-import android.graphics.PorterDuff
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -26,8 +24,6 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
 import com.aditya.socialguru.databinding.FragmentProfileViewBinding
-import com.aditya.socialguru.databinding.PopUpHomeSettingBinding
-import com.aditya.socialguru.databinding.PopUpProfileSettingBinding
 import com.aditya.socialguru.databinding.SampleProfileViewPopMenuBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
@@ -40,10 +36,8 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
-import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
-import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.profile.ProfileViewModel
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.flow.launchIn
@@ -60,7 +54,9 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     private val imageAvailable = "0"
     private val imageUnAvailable = "1"
     private var myLoader: MyLoader? = null
-    private var userDetails:User?=null
+    private var userDetails: User? = null
+    private var defaultDialogOption: ProfileViewDialogOption =
+        ProfileViewDialogOption.PendingRequest
 
     // Need to be change
     private val navController by lazy {
@@ -70,7 +66,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     private val args by navArgs<ProfileViewFragmentArgs>()
 
 
-    private lateinit var userId:String
+    private lateinit var userId: String
 
     private val profileViewModel by viewModels<ProfileViewModel>()
 
@@ -316,16 +312,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 icBack.myShow()
                 profileImage.gone()
                 tvHeaderUserName.text = "Profile"
-                icSetting.myShow()
             }
-
-            userId?.let {
-                if (it==AuthManager.currentUserId()!!){
-                    btnFriend.gone()
-                    btnFollow.gone()
-                }
-            }
-
             setListener()
         }
     }
@@ -375,6 +362,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 }
 
                 getString(R.string.pending_request) -> {
+                    defaultDialogOption = ProfileViewDialogOption.PendingRequest
                     AlertDialog(
                         "Are you sure delete friend request ?",
                         this@ProfileViewFragment,
@@ -383,7 +371,12 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 }
 
                 getString(R.string.already_friend) -> {
-                    profileViewModel.removeFriend(userId!!)
+                    defaultDialogOption = ProfileViewDialogOption.AlreadyFriend
+                    AlertDialog(
+                        "Are you sure you want to remove this friend?",
+                        this@ProfileViewFragment,
+                        false
+                    ).show(childFragmentManager, "My_Dialog")
                 }
 
             }
@@ -399,8 +392,23 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     private fun setData(user: User) {
-        userDetails=user
+        userDetails = user
+
         binding.apply {
+            myToolbar.icSetting.myShow()
+
+            linearProfile.myShow()
+            linearUserAction.myShow()
+            linearFollower.myShow()
+            linearPostLike.myShow()
+            noDataView.gone()
+
+            userId.let {
+                if (it == AuthManager.currentUserId()!!) {
+                    linearUserAction.gone()
+                }
+            }
+
             if (user.userProfileImage != null) {
                 tvInitialMain.gone()
                 ivProfile.myShow()
@@ -509,7 +517,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
         popUp.animationStyle = R.style.popup_window_animation
         popUp.showAsDropDown(binding.myToolbar.icSetting)
 
-        if (binding.btnFriend.text!=getString(R.string.already_friend)&&userId!=AuthManager.currentUserId()!!){
+        if (binding.btnFriend.text != getString(R.string.already_friend) && userId != AuthManager.currentUserId()!!) {
             bindingPopUp.linearItemStories.gone()
             bindingPopUp.viewDevider1.gone()
         }
@@ -538,7 +546,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     private fun navigateToPostScreen() {
         userDetails?.let {
             val directions: NavDirections =
-                BottomNavigationBarDirections.actionGlobalMyActivityFragment(userId,it)
+                BottomNavigationBarDirections.actionGlobalMyActivityFragment(userId, it)
             navController.safeNavigate(
                 directions, Helper.giveAnimationNavOption()
             )
@@ -573,14 +581,26 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     override fun onDestroyView() {
-        _binding=null
+        _binding = null
         super.onDestroyView()
     }
 
     override fun onResult(isYes: Boolean) {
         if (isYes) {
-            profileViewModel.deleteFriendRequest(userId!!)
+            when (defaultDialogOption) {
+                ProfileViewDialogOption.PendingRequest -> {
+                    profileViewModel.deleteFriendRequest(userId!!)
+                }
+
+                ProfileViewDialogOption.AlreadyFriend -> {
+                    profileViewModel.removeFriend(userId!!)
+                }
+            }
         }
     }
+}
 
+private enum class ProfileViewDialogOption {
+    PendingRequest,
+    AlreadyFriend
 }

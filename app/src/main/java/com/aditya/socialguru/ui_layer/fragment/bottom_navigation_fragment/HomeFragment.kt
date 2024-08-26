@@ -92,7 +92,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
 
-    private val homeViewModel: HomeViewModel by navGraphViewModels(R.id.bottom_navigation_bar) {
+    private val homeViewModel: HomeViewModel by navGraphViewModels(R.id.homeFragment) {
         ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
     }
 

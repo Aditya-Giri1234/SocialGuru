@@ -8,6 +8,7 @@ import com.aditya.socialguru.data_layer.model.post.PostUploadingResponse
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.data_layer.model.post.comment.CommentedPost
 import com.aditya.socialguru.data_layer.model.post.post_meta_data.CommentedUserPostModel
+import com.aditya.socialguru.data_layer.model.post.post_meta_data.LikedPostModel
 import com.aditya.socialguru.data_layer.model.post.post_meta_data.SavedPostModel
 import com.aditya.socialguru.data_layer.model.post.post_meta_data.SavedUserPostModel
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
@@ -15,12 +16,14 @@ import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Constants.FolderName
 import com.aditya.socialguru.domain_layer.helper.Constants.PostTable
 import com.aditya.socialguru.domain_layer.helper.Constants.Table
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
+import com.aditya.socialguru.domain_layer.helper.mapAsync
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.NotificationSendingManager
 import com.google.firebase.firestore.DocumentChange
@@ -31,6 +34,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 
@@ -40,6 +46,8 @@ import kotlinx.coroutines.launch
 object PostManager {
 
     private val tagPost = Constants.LogTag.Post
+    private val tagDelete = Constants.LogTag.ForceLogout
+
 
     private val firestore: FirebaseFirestore by lazy {
         FirebaseFirestore.getInstance()
@@ -51,8 +59,6 @@ object PostManager {
     private var discoverPostListener: ListenerRegistration? = null
     private var isFirstTimeDiscoverPostListnerCall = true
 
-    private var followingPostListener: ListenerRegistration? = null
-    private var isFirstTimeFollowingPostListnerCall = true
 
     private var myPostListener: ListenerRegistration? = null
     private var isFirstTimeMyPostListenerCall = true
@@ -69,7 +75,11 @@ object PostManager {
     private var isFirstTimeMyLikePostListenerCall = true
 
     private var listenMySavedPostListener: ListenerRegistration? = null
+    private var listenMyLikedPostListener: ListenerRegistration? = null
     private var listenMyCommentedPost: ListenerRegistration? = null
+
+    private var listenMySavedPostForScreenViewListener: ListenerRegistration? = null
+    private var listenMyLikedPostForScreenViewListener: ListenerRegistration? = null
 
     //region:: Like or Unlike a post or MyLiked Post or Update Like count
 
@@ -98,44 +108,65 @@ object PostManager {
                 userRef.document(postCreatorUserId).collection(Table.Notification.name)
                     .document(notificationId)
 
-            firestore.runTransaction { transaction ->
-                val post = transaction.get(postIdRef).toObject<Post>() ?: return@runTransaction
+            val post = postIdRef.get().await().toObject<Post>()
 
-                val currentCount = post.likeCount ?: 0
-                val newCount =
-                    if (isLiked) currentCount + 1 else if (currentCount == 0) 0 else currentCount - 1
-                val updatedLikedUserList = if (isLiked) {
-                    val likedUserData = FriendCircleData(AuthManager.currentUserId()!!, timeStamp)
-                    transaction.set(insertUserIntoLike, likedUserData)
-                    post.likedUserList?.toMutableList()
-                        ?.apply { add(AuthManager.currentUserId()!!) }
-                        ?: mutableListOf(AuthManager.currentUserId()!!)
-                } else {
-                    transaction.delete(deleteUserFromLike)
-                    post.likedUserList?.toMutableList()
-                        ?.apply { remove(AuthManager.currentUserId()!!) }
-                        ?: mutableListOf()
-                }
+            if (post != null) {
+                // First We Add or Remove From My Liked Post Then do other thing
+                updatePostLikeStatus(postId).onEach {
+                    if (it.isSuccess) {
+                        val currentCount = post.likeCount ?: 0
+                        val newCount =
+                            if (isLiked) currentCount + 1 else if (currentCount == 0) 0 else currentCount - 1
+                        firestore.runBatch { batch ->
 
-                transaction.update(
-                    postIdRef, mapOf(
-                        PostTable.LIKE_COUNT.fieldName to newCount,
-                        PostTable.LIKED_USER_LIST.fieldName to updatedLikedUserList
-                    )
-                )
-                if (postCreatorUserId != AuthManager.currentUserId() && isLiked) {
-                    transaction.set(notificationRef, notificationData)
-                }
-            }.addOnSuccessListener {
-                if (postCreatorUserId != AuthManager.currentUserId()!! && isLiked) {
-                    NotificationSendingManager.sendNotification(postCreatorUserId, notificationData)
-                }
-                MyLogger.i(tagPost, msg = "Like count updated successfully!")
-                trySend(UpdateResponse(true, ""))
-            }.addOnFailureListener { e ->
-                MyLogger.e(tagPost, msg = "Error updating like count: $e")
-                trySend(UpdateResponse(false, e.message))
-            }.await()
+                            val userId = AuthManager.currentUserId()!!
+
+                            val updatedLikedUserList =
+                                (post.likedUserList?.toMutableList() ?: mutableListOf()).apply {
+                                    if (isLiked) {
+                                        batch.set(
+                                            insertUserIntoLike,
+                                            FriendCircleData(userId, timeStamp)
+                                        )
+                                        if (!contains(userId)) add(userId)
+                                    } else {
+                                        batch.delete(deleteUserFromLike)
+                                        remove(userId)
+                                    }
+                                }
+
+
+                            batch.update(
+                                postIdRef, mapOf(
+                                    PostTable.LIKE_COUNT.fieldName to newCount,
+                                    PostTable.LIKED_USER_LIST.fieldName to updatedLikedUserList
+                                )
+                            )
+                            if (postCreatorUserId != AuthManager.currentUserId() && isLiked) {
+                                batch.set(notificationRef, notificationData)
+                            }
+                        }.addOnSuccessListener {
+                            if (postCreatorUserId != AuthManager.currentUserId()!! && isLiked) {
+                                NotificationSendingManager.sendNotification(
+                                    postCreatorUserId,
+                                    notificationData
+                                )
+                            }
+                            MyLogger.i(tagPost, msg = "Like count updated successfully!")
+                            trySend(UpdateResponse(true, ""))
+                        }.addOnFailureListener { e ->
+                            MyLogger.e(tagPost, msg = "Error updating like count: $e")
+                            trySend(UpdateResponse(false, e.message))
+                        }.await()
+                    } else {
+                        trySend(it)
+                    }
+                }.launchIn(this)
+
+            } else {
+                trySend(UpdateResponse(false, "Something went wrong!"))
+            }
+
 
             awaitClose {
                 close()
@@ -150,10 +181,11 @@ object PostManager {
             val likeRef = postIdRef.collection(Table.Like.name)
 
             val userIdList = likeRef.get().await().mapNotNull {
-                it.toObject<FriendCircleData>().copy(
-                    user = UserManager.getUserById(it.id)
-                )
-
+                UserManager.getUserById(it.id)?.let { user ->
+                    it.toObject<FriendCircleData>().copy(
+                        user = user
+                    )
+                }
             }.toMutableList()
             userIdList.sortByDescending { it.timeStamp }
 
@@ -395,83 +427,59 @@ object PostManager {
 
     //region::Get Following Post (Discover)
 
-    suspend fun getFollowingPost() = callbackFlow<PostListenerEmissionType> {
+    suspend fun getFollowingPost(userIds: List<String>) = callbackFlow<PostListenerEmissionType> {
+        // Define the batch size within the function scope
+        val BATCH_SIZE = 10
 
-        val discoverPostQuery = firestore.collection(Constants.Table.Post.name)
-        val posts = discoverPostQuery.get().await()
-
-
-        val userPostList = posts.mapNotNull {
-            val post = it.toObject<Post>()
-            post.userId?.let { id ->
-                UserManager.getUserById(id)?.let { UserPostModel(it, post) }
+        // Helper function to process document changes
+        suspend fun processDocumentChange(change: DocumentChange) {
+            val post = change.document.toObject<Post>()
+            val emissionType = when (change.type) {
+                DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
             }
-        }.toMutableList()
+            trySend(PostListenerEmissionType(emissionType, userPostModel = post)).isSuccess
+        }
 
+        // Split user IDs into chunks based on the batch size
+        val userIdChunks = userIds.chunked(BATCH_SIZE)
 
-        MyLogger.i(
-            tagPost,
-            msg = userPostList,
-            isJson = true,
-            jsonTitle = "User Following Post list !"
-        )
+        // Initialize a list to hold all registrations
+        val registrations = mutableListOf<ListenerRegistration>()
 
-        trySend(
-            PostListenerEmissionType(
-                Constants.ListenerEmitType.Starting,
-                userPostList = userPostList.toList()
-            )
-        )
-        userPostList.clear()
-        followingPostListener?.remove()
-        followingPostListener = discoverPostQuery.addSnapshotListener { value, error ->
+        // Function to create and register listeners for chunks of user IDs
+        suspend fun registerListeners(userIdChunks: List<List<String>>) {
+            userIdChunks.forEach { chunk ->
+                val query = firestore.collection(Table.Post.name)
+                    .whereIn(PostTable.USER_ID.fieldName, chunk)
 
-            if (error != null) return@addSnapshotListener
+                val registration = query.addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        // Handle error if necessary
+                        return@addSnapshotListener
+                    }
 
-            if (!isFirstTimeFollowingPostListnerCall) {
-                value?.documentChanges?.forEach { document ->
-                    when (document.type) {
-                        DocumentChange.Type.ADDED -> {
-                            trySend(
-                                PostListenerEmissionType(
-                                    Constants.ListenerEmitType.Added,
-                                    userPostModel = document.document.toObject<Post>()
-                                )
-                            )
-                        }
-
-                        DocumentChange.Type.REMOVED -> {
-                            trySend(
-                                PostListenerEmissionType(
-                                    Constants.ListenerEmitType.Removed,
-                                    userPostModel = document.document.toObject<Post>()
-                                )
-                            )
-                        }
-
-                        DocumentChange.Type.MODIFIED -> {
-                            trySend(
-                                PostListenerEmissionType(
-                                    Constants.ListenerEmitType.Modify,
-                                    userPostModel = document.document.toObject<Post>()
-                                )
-                            )
+                    // Process all document changes
+                    launch {
+                        snapshot?.documentChanges?.mapAsync {
+                            processDocumentChange(it)
                         }
                     }
                 }
-            }
-            isFirstTimeFollowingPostListnerCall = false
 
+                registrations.add(registration)
+            }
         }
 
+        // Register listeners for all chunks
+        registerListeners(userIdChunks)
 
+        // Ensure listeners are removed when the channel is closed
         awaitClose {
-            isFirstTimeFollowingPostListnerCall =
-                true// This is singleton variable if function again call then this variable contain old value so that reset here
-            discoverPostListener?.remove()
+            registrations.forEach { it.remove() }
             channel.close()
         }
-
     }
 
 
@@ -651,7 +659,7 @@ object PostManager {
         val videoUri = post.videoUrl!!.convertParseUri()
         StorageManager.uploadVideoToServer(
             Constants.Table.Post.name,
-            Constants.FolderName.PostVideo.name,
+            "${post.userId ?: AuthManager.currentUserId()}/${FolderName.PostVideo.name}",
             videoUri
         ).collect {
             when (it.state) {
@@ -710,7 +718,7 @@ object PostManager {
         val imageUri = post.imageUrl!!.convertParseUri()
         StorageManager.uploadImageToServer(
             Constants.Table.Post.name,
-            Constants.FolderName.PostImage.name,
+            "${post.userId ?: AuthManager.currentUserId()}/${FolderName.PostImage.name}",
             imageUri
         ).collect {
             when (it.state) {
@@ -828,7 +836,12 @@ object PostManager {
                     )
                 }
             }.addOnSuccessListener {
-                trySend(UpdateResponse(true , if(isPostPresentInMyPostSaveList) "Post Un-Save Successfully !" else "Post Save Successfully !"))
+                trySend(
+                    UpdateResponse(
+                        true,
+                        if (isPostPresentInMyPostSaveList) "Post Un-Save Successfully !" else "Post Save Successfully !"
+                    )
+                )
             }.addOnFailureListener {
                 trySend(UpdateResponse(false, it.message))
             }.await()
@@ -847,7 +860,58 @@ object PostManager {
 
     //endregion
 
-    //region:: Get And Listen Saved Post
+    //region:: Update Post Save
+
+    private suspend fun updatePostLikeStatus(postId: String) = callbackFlow<UpdateResponse> {
+        try {
+            val timestamp = System.currentTimeMillis()
+            val timeInText = Helper.formatTimestampToDateAndTime(timestamp)
+            val likedPostRef =
+                userRef.document(AuthManager.currentUserId()!!).collection(Table.LikedPost.name)
+                    .document(postId)
+            val isPostPresentInMyPostLikedList = likedPostRef.get().await().exists()
+
+            firestore.runBatch {
+                if (isPostPresentInMyPostLikedList) {
+                    //Dis Like
+                    likedPostRef.delete()
+
+                } else {
+                    //Like
+                    likedPostRef.set(
+                        LikedPostModel(
+                            postId,
+                            timestamp,
+                            timeInText
+                        )
+                    )
+                }
+            }.addOnSuccessListener {
+                trySend(
+                    UpdateResponse(
+                        true,
+                        ""
+                    )
+                )
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            trySend(UpdateResponse(false, e.message))
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+
+    //endregion
+
+    //region:: Listen My Saved And Like post ids for post Adapter
 
     suspend fun listenMySavedPost() =
         callbackFlow<List<ListenerEmissionType<SavedPostModel, SavedPostModel>>> {
@@ -858,25 +922,32 @@ object PostManager {
                     if (error != null) return@addSnapshotListener
 
                     value?.documentChanges?.let { data ->
+                        launch {
+                            val savedList = data.map {
+                                async {
+                                    val savedPost = it.document.toObject<SavedPostModel>()
+                                    val changeType = when (it.type) {
+                                        DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                        DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                        DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                    }
 
-                        val savedList =
-                            mutableListOf<ListenerEmissionType<SavedPostModel, SavedPostModel>>()
+                                    val postTask =
+                                        postRef.document(savedPost.postId!!).get().await()
+                                    if (!postTask.exists()) return@async null
 
-                        data.forEach {
-                            val changeType = when (it.type) {
-                                DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
-                                DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
-                                DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
-                            }
-                            savedList.add(
-                                ListenerEmissionType(
-                                    changeType, singleResponse = it.document
-                                        .toObject()
-                                )
-                            )
+                                    val post = postTask.toObject<Post>() ?: return@async null
+
+                                    val userTask = userRef.document(post.userId!!).get().await()
+                                    if (!userTask.exists()) return@async null
+                                    ListenerEmissionType<SavedPostModel, SavedPostModel>(
+                                        changeType, singleResponse = savedPost
+                                    )
+                                }
+                            }.awaitAll().filterNotNull()
+
+                            trySend(savedList)
                         }
-
-                        trySend(savedList)
                     }
                 }
 
@@ -886,6 +957,54 @@ object PostManager {
 
             awaitClose {
                 listenMySavedPostListener?.remove()
+                close()
+            }
+        }
+
+    suspend fun listenMyLikedPost() =
+        callbackFlow<List<ListenerEmissionType<LikedPostModel, LikedPostModel>>> {
+            try {
+                val savedPostRef =
+                    userRef.document(AuthManager.currentUserId()!!).collection(Table.LikedPost.name)
+                listenMyLikedPostListener = savedPostRef.addSnapshotListener { value, error ->
+                    if (error != null) return@addSnapshotListener
+
+                    value?.documentChanges?.let { data ->
+                        launch {
+                            val savedList = data.map {
+                                async {
+                                    val likedPost = it.document.toObject<LikedPostModel>()
+                                    val changeType = when (it.type) {
+                                        DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                        DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                        DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                    }
+
+                                    val postTask =
+                                        postRef.document(likedPost.postId!!).get().await()
+                                    if (!postTask.exists()) return@async null
+
+                                    val post = postTask.toObject<Post>() ?: return@async null
+
+                                    val userTask = userRef.document(post.userId!!).get().await()
+                                    if (!userTask.exists()) return@async null
+                                    ListenerEmissionType<LikedPostModel, LikedPostModel>(
+                                        changeType, singleResponse = likedPost
+                                    )
+                                }
+                            }.awaitAll().filterNotNull()
+
+                            trySend(savedList)
+                        }
+                    }
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            awaitClose {
+                listenMyLikedPostListener?.remove()
                 close()
             }
         }
@@ -925,7 +1044,7 @@ object PostManager {
                                     val user = userTask.toObject<User>()
                                     ListenerEmissionType<CommentedUserPostModel, CommentedUserPostModel>(
                                         changeType, singleResponse = CommentedUserPostModel(
-                                            commentedPost , UserPostModel(user,post)
+                                            commentedPost, UserPostModel(user, post)
                                         )
                                     )
                                 }
@@ -954,52 +1073,124 @@ object PostManager {
             try {
                 val myCommentedRef = userRef.document(AuthManager.currentUserId()!!)
                     .collection(Table.SavedPost.name)
-                listenMyCommentedPost = myCommentedRef.addSnapshotListener { value, error ->
-                    if (error != null) return@addSnapshotListener
+                listenMySavedPostForScreenViewListener =
+                    myCommentedRef.addSnapshotListener { value, error ->
+                        if (error != null) return@addSnapshotListener
 
-                    value?.documentChanges?.let { data ->
-                        launch {
-                            val savedPostList = data.map {
-                                async {
-                                    val savedPost = it.document.toObject<SavedPostModel>()
-                                    val changeType = when (it.type) {
-                                        DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
-                                        DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
-                                        DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                        value?.documentChanges?.let { data ->
+                            launch {
+                                val savedPostList = data.map {
+                                    async {
+                                        val savedPost = it.document.toObject<SavedPostModel>()
+                                        val changeType = when (it.type) {
+                                            DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                            DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                            DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                        }
+
+                                        val postTask =
+                                            postRef.document(savedPost.postId!!).get().await()
+                                        if (!postTask.exists()) return@async null
+
+                                        val post = postTask.toObject<Post>() ?: return@async null
+
+                                        val userTask = userRef.document(post.userId!!).get().await()
+                                        if (!userTask.exists()) return@async null
+
+                                        val user = userTask.toObject<User>()
+                                        ListenerEmissionType<SavedUserPostModel, SavedUserPostModel>(
+                                            changeType, singleResponse = SavedUserPostModel(
+                                                savedPost, UserPostModel(
+                                                    user, post
+                                                )
+                                            )
+                                        )
                                     }
+                                }.awaitAll().filterNotNull()
 
-                                    val postTask =
-                                        postRef.document(savedPost.postId!!).get().await()
-                                    if (!postTask.exists()) return@async null
-
-                                    val post = postTask.toObject<Post>() ?: return@async null
-
-                                    val userTask = userRef.document(post.userId!!).get().await()
-                                    if (!userTask.exists()) return@async null
-
-                                    val user = userTask.toObject<User>()
-                                    ListenerEmissionType<SavedUserPostModel, SavedUserPostModel>(
-                                        changeType, singleResponse = SavedUserPostModel( savedPost,UserPostModel(
-                                            user, post
-                                        ))
-                                    )
-                                }
-                            }.awaitAll().filterNotNull()
-
-                            trySend(savedPostList)
+                                trySend(savedPostList)
+                            }
                         }
                     }
-                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
 
             awaitClose {
-                listenMyCommentedPost?.remove()
+                listenMySavedPostForScreenViewListener?.remove()
                 close()
             }
         }
 
 //endregion
+
+
+    //region:: Delete All My Post
+
+    suspend fun deleteAllMyPost() = callbackFlow<UpdateResponse> {
+        try {
+            MyLogger.e(tagDelete, isFunctionCall = true)
+            val postRef = firestore.collection(Table.Post.name)
+                .whereEqualTo(PostTable.USER_ID.fieldName, AuthManager.currentUserId()!!)
+            val posts = postRef.get().await()
+            MyLogger.e(tagDelete, msg = "posts is count :-> ${posts.size()}")
+            if (posts.isEmpty) {
+                MyLogger.i(tagDelete, msg = "No Post found , so don't do any thing.")
+                trySend(UpdateResponse(true, "All Post Delete Successfully !"))
+            } else {
+                StorageManager.deleteMyAllPostMedia().onEach {
+                    MyLogger.e(tagDelete, msg = "All Post Media Delete Successfully !")
+                    launch {
+                        MyLogger.w(tagPost, msg = it.errorMessage)
+                        val postSubCollectionDeleteWork = posts.map {
+                            async {
+                                deleteAllThisPostSubCollection(it.id).first()
+                            }
+                        }
+                        postSubCollectionDeleteWork.awaitAll()
+
+                        val postDeleteWork = posts.map {
+                            async {
+                                it.reference.delete()
+                            }
+                        }
+                        postDeleteWork.awaitAll()
+
+                        MyLogger.e(tagDelete, msg = "All Post Ref Delete Successfully !")
+                        trySend(UpdateResponse(true, "All Post Delete Successfully !"))
+                    }
+                }.launchIn(this)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            trySend(UpdateResponse(false, e.message))
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+    private suspend fun deleteAllThisPostSubCollection(postId: String) =
+        callbackFlow<UpdateResponse> {
+            MyLogger.e(tagDelete, isFunctionCall = true)
+            val postIdRef = postRef.document(postId)
+            val collectionRefs = listOf(
+                postIdRef.collection(Constants.Table.Like.name),
+                postIdRef.collection(Constants.Table.Comment.name),
+                postIdRef.collection(Constants.Table.Commenters.name)
+            )
+            UserManager.deleteCollection(collectionRefs).onEach {
+                MyLogger.i(tagDelete, msg = "All Collection is deleted !")
+                trySend(it)
+            }.launchIn(this)
+
+            awaitClose {
+                close()
+            }
+        }
+
+//endregion
+
 
 }

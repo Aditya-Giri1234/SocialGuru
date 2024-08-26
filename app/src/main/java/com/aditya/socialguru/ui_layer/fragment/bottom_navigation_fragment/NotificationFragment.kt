@@ -12,8 +12,10 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavDirections
 import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -62,9 +64,7 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
 
 
     // This give me viewmodel which scope till nav back stack
-    private val notificationViewModel: NotificationViewModel by navGraphViewModels(R.id.bottom_navigation_bar) {
-        ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
-    }
+    private val notificationViewModel: NotificationViewModel by activityViewModels()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
