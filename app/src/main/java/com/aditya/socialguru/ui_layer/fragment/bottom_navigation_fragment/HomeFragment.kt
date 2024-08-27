@@ -19,6 +19,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -92,9 +93,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
 
-    private val homeViewModel: HomeViewModel by navGraphViewModels(R.id.homeFragment) {
-        ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
-    }
+    private val homeViewModel: HomeViewModel by activityViewModels()
 
     val pickImage = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         // Callback is invoked after the user selects a media item or closes the
@@ -212,7 +211,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
         initUi()
         subscribeToObserver()
-        //This flag help me when i navigate to other app and come back to this fragment then fragment state maintain so that if frament scrolled already then fragment go to previous scroll position which trigger to nested scroll listener down scroll logic. So below help me to skip first time down scroll when navigate happen between fragment.
+        //This flag help me when i navigate to other app and come back to this fragment then fragment state maintain so that if fragment scrolled already then fragment go to previous scroll position which trigger to nested scroll listener down scroll logic. So below help me to skip first time down scroll when navigate happen between fragment.
         isFragmentSwitchHappen = true
         if (!homeViewModel.isDataLoaded) {
             getData()
@@ -222,15 +221,17 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
     private fun subscribeToBroadcastReceiver() {
-        val filter = IntentFilter()
-        filter.addAction(Constants.BroadcastType.StoryUploading.name)
+        if (!homeViewModel.isDataLoaded){
+            val filter = IntentFilter()
+            filter.addAction(Constants.BroadcastType.StoryUploading.name)
 
-        ContextCompat.registerReceiver(
-            requireContext(),
-            broadcastManager,
-            filter,
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
+            ContextCompat.registerReceiver(
+                requireContext(),
+                broadcastManager,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }
     }
 
     private fun subscribeToObserver() {
@@ -305,6 +306,8 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                                 tagStory,
                                 msg = "Loader is show with  StoryUploadedSuccessfully state ..."
                             )
+                            // This help to handle or change work manager status
+                            requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.StoryChange.name).putExtra(Constants.DATA,2))
                             hideLoader()
                             Helper.showSuccessSnackBar(
                                 (requireActivity() as MainActivity).findViewById(
@@ -588,7 +591,6 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         uri: Uri? = null,
         text: StoryText? = null
     ) {
-
         lifecycleScope.myLaunch {
             try {
                 pref.getPrefUser().first()?.let {
@@ -609,7 +611,6 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                 )
 
             }
-
         }
     }
 
@@ -684,7 +685,11 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     override fun onDestroy() {
         MyLogger.v(isFunctionCall = true)
-        requireContext().unregisterReceiver(broadcastManager)
+        val navHostFragment = requireActivity().supportFragmentManager.fragments.first()
+        if (navHostFragment.childFragmentManager.backStackEntryCount == 0){
+            MyLogger.w(tagStory , msg = "Broadcast receiver is now unregister !")
+            requireContext().unregisterReceiver(broadcastManager)
+        }
         super.onDestroy()
     }
     //endregion

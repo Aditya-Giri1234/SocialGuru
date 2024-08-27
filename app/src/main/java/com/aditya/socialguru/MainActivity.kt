@@ -29,15 +29,22 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
+import androidx.work.BackoffPolicy
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.databinding.ActivityMainBinding
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.worker.MyWorker
 import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.service.SharePref
@@ -45,10 +52,12 @@ import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.viewmodel.MainViewModel
 import com.google.android.material.navigation.NavigationBarView
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.time.Duration
 
 class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedListener {
 
@@ -72,18 +81,27 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                     MyLogger.i(msg = "User login event come !")
                     mainViewModel.setDataLoadedStatus(false)
                     mainViewModel.setListenerSetStatus(false)
+                    handleStoryChange(2)
                     getData()
                 }
 
                 Constants.AppBroadCast.LogOut.name -> {
                     MyLogger.i(msg = "User logout event come !")
-                    killActivityAndCreateNewOne()
+                    handleStoryChange(2)
+                    lifecycleScope.launch {
+                        delay(100)
+                        killActivityAndCreateNewOne()
+                    }
+                }
+
+                Constants.AppBroadCast.StoryChange.name -> {
+                    MyLogger.i(msg = "Story change event come !")
+                    handleStoryChange(intent.getIntExtra(Constants.DATA,0))
                 }
             }
         }
 
     }
-
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -133,6 +151,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         val intentFilter = IntentFilter()
         intentFilter.addAction(Constants.AppBroadCast.LogIn.name)
         intentFilter.addAction(Constants.AppBroadCast.LogOut.name)
+        intentFilter.addAction(Constants.AppBroadCast.StoryChange.name)
 
         ContextCompat.registerReceiver(
             this,
@@ -151,16 +170,24 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     }
 
     private fun handleIntent() {
-       when{
-           intent.getBooleanExtra(Constants.IntentTable.LogOutOrDeleteAccountAcitivityHappend.name , false) -> {
-               navController.currentDestination?.id?.let {
-                   navController.safeNavigate(it,R.id.onboardingScreenFragment ,Helper.giveAnimationNavOption(it,true))
-               }
-           }
-           else ->{
-               // Don't do anything
-           }
-       }
+        when {
+            intent.getBooleanExtra(
+                Constants.IntentTable.LogOutOrDeleteAccountAcitivityHappend.name,
+                false
+            ) -> {
+                navController.currentDestination?.id?.let {
+                    navController.safeNavigate(
+                        it,
+                        R.id.onboardingScreenFragment,
+                        Helper.giveAnimationNavOption(it, true)
+                    )
+                }
+            }
+
+            else -> {
+                // Don't do anything
+            }
+        }
     }
 
     private fun subscribeToObserver() {
@@ -235,17 +262,17 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                 MyLogger.d(msg = "Destination is change occurred :- ${destination.label}")
                 if (bottomBarDestination.contains(destination.id)) {
                     showBottomNavigation()
-                  /*  val currentDestinationId = destination.id
-                    val backStack = navController.currentBackStack.value.toList()
+                    /*  val currentDestinationId = destination.id
+                      val backStack = navController.currentBackStack.value.toList()
 
-                    // Count the number of instances of the current destination in the back stack
-                    val instanceCount = backStack.count { it.destination.id == currentDestinationId }
+                      // Count the number of instances of the current destination in the back stack
+                      val instanceCount = backStack.count { it.destination.id == currentDestinationId }
 
-                    if (instanceCount > 1) {
-                        // Pop the back stack up to the current destination
-                        navController.popBackStack(currentDestinationId, true)
-                        navController.popBackStack(currentDestinationId, false)
-                    }*/
+                      if (instanceCount > 1) {
+                          // Pop the back stack up to the current destination
+                          navController.popBackStack(currentDestinationId, true)
+                          navController.popBackStack(currentDestinationId, false)
+                      }*/
                 } else {
                     val param =
                         (binding.localNavHostFragment.layoutParams as ViewGroup.MarginLayoutParams)
@@ -268,8 +295,6 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
             setListener()
         }
     }
-
-
 
 
     private fun ActivityMainBinding.setListener() {
@@ -409,8 +434,12 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
 
     private fun killActivityAndCreateNewOne() {
 //        viewModelStore.clear()
-        startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-        ).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra(Constants.IntentTable.LogOutOrDeleteAccountAcitivityHappend.name ,true))
+        startActivity(
+            Intent(this, MainActivity::class.java).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK
+            ).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                .putExtra(Constants.IntentTable.LogOutOrDeleteAccountAcitivityHappend.name, true)
+        )
         overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
 
     }
@@ -460,6 +489,68 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
 
     override fun onNavigationItemReselected(item: MenuItem) {
         // Don't do any thing
+    }
+
+    private fun handleStoryChange(isUserWantToRemoveStory: Int) {
+        launchCoroutineInIOThread {
+            if (isUserWantToRemoveStory!=2) {
+                if (isUserWantToRemoveStory == 1){
+                    runWorker()
+                }else{
+                    MyLogger.w(
+                        Constants.LogTag.JobManager,
+                        msg = "User setting doesn't want to remove story so that i cancel my worker !"
+                    )
+                    cancelWorker()
+                }
+
+            } else {
+                pref.getPrefUser().first()?.let {
+                    it.userSetting?.let { setting ->
+                        if (setting.isStoryRemoveAfter24HourActive == true) {
+                            runWorker()
+                        } else {
+                            MyLogger.w(
+                                Constants.LogTag.JobManager,
+                                msg = "User setting doesn't want to remove story so that i cancel my worker !"
+                            )
+                            cancelWorker()
+                        }
+                    }
+                } ?: run {
+                    MyLogger.w(
+                        Constants.LogTag.JobManager,
+                        msg = "User setting is null and so that i cancel my worker !"
+                    )
+                    cancelWorker()
+                }
+            }
+        }
+    }
+
+    private fun runWorker() {
+        MyLogger.i(
+            Constants.LogTag.JobManager,
+            msg = "User setting  want to remove story so that i start my worker !"
+        )
+        val workRequest = PeriodicWorkRequestBuilder<MyWorker>(
+            repeatInterval = 1,
+            repeatIntervalTimeUnit = java.util.concurrent.TimeUnit.HOURS
+        ).apply {
+            setBackoffCriteria(
+                backoffPolicy = BackoffPolicy.LINEAR,
+                duration = Duration.ofSeconds(15)
+            )
+        }.build()
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            Constants.MY_CUSTOM_WORKER,
+            ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
+    }
+
+    private fun cancelWorker() {
+        WorkManager.getInstance(applicationContext).cancelUniqueWork(Constants.MY_CUSTOM_WORKER)
     }
 
     override fun onDestroy() {

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.UserSetting
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.profile.SettingRepo
@@ -26,6 +27,13 @@ class SettingViewModel(val app :Application) : AndroidViewModel(app) {
     )
     val deleteAccount: SharedFlow<Resource<UpdateResponse>> get() = _deleteAccount.asSharedFlow()
 
+    private val _settingUpdate = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val settingUpdate: SharedFlow<Resource<UpdateResponse>> get() = _settingUpdate.asSharedFlow()
+
     fun deleteAccount() = viewModelScope.launch {
         _deleteAccount.tryEmit(Resource.Loading())
         if (SoftwareManager.isNetworkAvailable(app)){
@@ -41,5 +49,19 @@ class SettingViewModel(val app :Application) : AndroidViewModel(app) {
         }
     }
 
+    fun updateUserSetting(userSetting: UserSetting) = viewModelScope.launch {
+        _settingUpdate.tryEmit(Resource.Loading())
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.updateUserSetting(userSetting).onEach {
+                if (it.isSuccess){
+                    _settingUpdate.tryEmit(Resource.Success(it))
+                }else{
+                    _settingUpdate.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }.launchIn(this)
+        }else{
+            _settingUpdate.tryEmit(Resource.Error("No Internet Connection"))
+        }
+    }
 
 }

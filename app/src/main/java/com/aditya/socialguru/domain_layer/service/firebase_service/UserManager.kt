@@ -2,6 +2,7 @@ package com.aditya.socialguru.domain_layer.service.firebase_service
 
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.UserSetting
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.model.notification.UserNotificationModel
 import com.aditya.socialguru.data_layer.model.post.Post
@@ -1486,5 +1487,26 @@ object UserManager {
 
     //endregion
 
+    //region:: User Setting
+
+    suspend fun updateUserSetting(userSetting: UserSetting) = callbackFlow<UpdateResponse> {
+        try {
+            userRef.document(AuthManager.currentUserId()!!).update(Constants.UserTable.USER_SETTING.fieldName ,userSetting).addOnCompleteListener {
+                if (it.isSuccessful){
+                    trySend(UpdateResponse(true,""))
+                }else{
+                    trySend(UpdateResponse(false ,it.exception?.message.toString()))
+                }
+            }
+        }catch (e:Exception){
+            e.printStackTrace()
+            trySend(UpdateResponse(true , ""))
+        }
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
 
 }

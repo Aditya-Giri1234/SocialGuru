@@ -2,6 +2,7 @@ package com.aditya.socialguru.domain_layer.repository
 
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.PostManager
+import com.aditya.socialguru.domain_layer.service.firebase_service.StoryManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.UserManager
 
 class MainRepository {
@@ -14,4 +15,5 @@ class MainRepository {
 
     suspend fun listenMySavedPost() = FirebaseManager.listenMySavedPost()
     suspend fun listenMyLikedPost() = PostManager.listenMyLikedPost()
+
 }

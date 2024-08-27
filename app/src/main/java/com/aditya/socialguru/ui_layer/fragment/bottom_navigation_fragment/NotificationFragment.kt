@@ -246,9 +246,8 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
             showNoDataView()
         } else {
             hideNoDataView()
-            notificationAdapter.submitList(list)
         }
-
+        notificationAdapter.submitList(list)
     }
 
     private fun showBackToTopView() {

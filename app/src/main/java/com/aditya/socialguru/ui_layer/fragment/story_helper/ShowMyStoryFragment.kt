@@ -1,5 +1,6 @@
 package com.aditya.socialguru.ui_layer.fragment.story_helper
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -144,6 +145,8 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
                         if (stories.isEmpty()) {
                             showNoStatusView()
                         }
+                        // This help to handle or change work manager status
+                        requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.StoryChange.name).putExtra(Constants.DATA,2))
 
                         Helper.showSuccessSnackBar(
                             (requireActivity() as MainActivity).findViewById(R.id.coordLayout),

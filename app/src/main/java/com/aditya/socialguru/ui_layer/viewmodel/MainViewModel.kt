@@ -15,6 +15,7 @@ import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.MainRepository
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
+import com.aditya.socialguru.domain_layer.service.firebase_service.StoryManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -195,6 +196,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
     fun updateUserAvailability(isUserAvailable: Boolean) = viewModelScope.myLaunch {
         repository.updateUserAvailability(isUserAvailable)
     }
+
 
     fun setDataLoadedStatus(status: Boolean) {
         _isDataLoaded = status

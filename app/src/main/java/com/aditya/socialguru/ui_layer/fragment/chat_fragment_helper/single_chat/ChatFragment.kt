@@ -83,6 +83,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     private var isUserActiveOnCurrentChat = false
     private var isFirstTimeDataSetOnUi = true
     private val MAX_VIDEO_SIZE_MB = 50f
+    private var isReceiverOnlineStatusIsHide = false
 
     private val emojiKeyboardTag = 0
     private val emojiPopup by lazy {
@@ -219,9 +220,11 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                 }
 
             }.launchIn(this)
+
             chatViewModel.lastMessage.onEach {
                 updateUserAvailability(it)
             }.launchIn(this)
+
             chatViewModel.chatMessage.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
@@ -582,17 +585,24 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                     .error(R.drawable.ic_user).into(ivProfileImage)
                 tvUserName.text = userName
                 isUserAppOpen = userAvailable ?: false
+                this@ChatFragment.isReceiverOnlineStatusIsHide = userSetting
+                    ?.isMyOnlineStatusHideEnable ?: isReceiverOnlineStatusIsHide
             }
         }
     }
 
     private fun updateUserAvailability(message: LastMessage) {
-        val userAvailable = if (isIAmUser1) {
-            message.isUser2Online ?: false
-        } else {
-            message.isUser1Online ?: false
+        if (isReceiverOnlineStatusIsHide){
+            hideOnline()
+        }else{
+            val userAvailable = if (isIAmUser1) {
+                message.isUser2Online ?: false
+            } else {
+                message.isUser1Online ?: false
+            }
+            updateOnlineStatus(userAvailable , message)
         }
-        updateOnlineStatus(userAvailable , message)
+
     }
 
     private fun updateOnlineStatus(userAvailable: Boolean, message: LastMessage) {

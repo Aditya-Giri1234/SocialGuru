@@ -263,6 +263,35 @@ object Helper {
         return sdf.format(date)
     }
 
+    fun is24HourOldStory(storyTimestamp: Long): Boolean {
+        // Get the current time in milliseconds
+        val currentTime = System.currentTimeMillis()
+
+        // Calculate the difference in time between the current time and the story timestamp
+        val timeDifference = currentTime - storyTimestamp
+
+        // 24 hours in milliseconds
+        val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
+
+        // Check if the time difference is greater than or equal to 24 hours
+        return timeDifference >= twentyFourHoursInMillis
+    }
+
+    fun isOneMinuteOldStory(storyTimestamp: Long): Boolean {
+        // Get the current time in milliseconds
+        val currentTime = System.currentTimeMillis()
+
+        // Calculate the difference in time between the current time and the story timestamp
+        val timeDifference = currentTime - storyTimestamp
+
+        // 1 minute in milliseconds
+        val oneMinuteInMillis = 60 * 1000
+
+        // Check if the time difference is greater than or equal to 1 minute
+        return timeDifference >= oneMinuteInMillis
+    }
+
+
     fun showImageDialog(activity: Activity, bitmap: Bitmap) {
         val dialog = ProfileViewDialog(bitmap)
         dialog.show((activity as AppCompatActivity).supportFragmentManager, "MyDialog")

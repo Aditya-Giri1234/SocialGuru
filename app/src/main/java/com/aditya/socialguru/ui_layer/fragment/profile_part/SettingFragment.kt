@@ -8,11 +8,11 @@ import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.navigation.NavDirections
-import com.aditya.socialguru.BottomNavigationBarDirections
+import androidx.lifecycle.lifecycleScope
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.UserSetting
 import com.aditya.socialguru.databinding.FragmentSettingBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
@@ -23,16 +23,19 @@ import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
-import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.DeleteAccountPasswordResult
+import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.ui_layer.viewmodel.profile.SettingViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 
-class SettingFragment : Fragment() , AlertDialogOption  , DeleteAccountPasswordResult{
+class SettingFragment : Fragment(), AlertDialogOption, DeleteAccountPasswordResult {
 
     private var _binding: FragmentSettingBinding? = null
     private val binding get() = _binding!!
@@ -44,6 +47,10 @@ class SettingFragment : Fragment() , AlertDialogOption  , DeleteAccountPasswordR
 
 
     private val navController get() = (requireActivity() as MainActivity).navController
+    private val pref by lazy {
+        SharePref(requireContext())
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
@@ -65,7 +72,9 @@ class SettingFragment : Fragment() , AlertDialogOption  , DeleteAccountPasswordR
     private fun handleInitialization() {
         initUi()
         subscribeToObserver()
+        loadDefaultSetting()
     }
+
 
     private fun subscribeToObserver() {
         observeFlow {
@@ -77,6 +86,27 @@ class SettingFragment : Fragment() , AlertDialogOption  , DeleteAccountPasswordR
                         showSnackBar("Account Deleted Successfully", isSuccess = true)
                         Helper.setLogout(requireContext())
                         navigateToOnboardingScreen()
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        response.hasBeenMessagedToUser = true
+                        showSnackBar(response.message.toString())
+                    }
+                }
+
+            }.launchIn(this)
+
+            settingViewModel.settingUpdate.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        response.hasBeenMessagedToUser = true
+                        showSnackBar("Setting Update Successfully !", isSuccess = true)
                     }
 
                     is Resource.Loading -> {
@@ -114,6 +144,19 @@ class SettingFragment : Fragment() , AlertDialogOption  , DeleteAccountPasswordR
         btnDelete.setSafeOnClickListener {
             handleDeleteAccount()
         }
+
+        switchRemoveStory.setSafeOnClickListener {
+
+            // This help to handle or change work manager status
+            val intValueOfChecked = if (switchRemoveStory.isChecked) 1 else 0
+            requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.StoryChange.name).putExtra(Constants.DATA,intValueOfChecked))
+            updateUserSetting(switchRemoveStory.isChecked)
+        }
+
+        switchLastSeen.setSafeOnClickListener {
+            updateUserSetting(isMyOnlineStatusHideEnable = switchLastSeen.isChecked)
+        }
+
     }
 
     private fun handleDeleteAccount() {
@@ -128,14 +171,45 @@ class SettingFragment : Fragment() , AlertDialogOption  , DeleteAccountPasswordR
 
     }
 
+    private fun loadDefaultSetting() {
+        lifecycleScope.launch {
+            pref.getPrefUser().first()?.let {
+                it.userSetting?.let { setting ->
+                    binding.apply {
+                        switchRemoveStory.isChecked = setting.isStoryRemoveAfter24HourActive ?: false
+                        switchLastSeen.isChecked = setting.isMyOnlineStatusHideEnable ?: false
+                    }
+                }
+            }
+        }
+    }
+
     private fun navigateToOnboardingScreen() {
-      /*  val directions: NavDirections =
-            BottomNavigationBarDirections.actionGlobalOnboardingScreenFragment()
-        navController.safeNavigate(
-            directions,
-            Helper.giveAnimationNavOption(R.id.homeFragment, true)
-        )*/
+        /*  val directions: NavDirections =
+              BottomNavigationBarDirections.actionGlobalOnboardingScreenFragment()
+          navController.safeNavigate(
+              directions,
+              Helper.giveAnimationNavOption(R.id.homeFragment, true)
+          )*/
         requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.LogOut.name))
+    }
+
+    private fun updateUserSetting(
+        isStoryRemoveAfter24HourActive: Boolean? = null,
+        isMyOnlineStatusHideEnable: Boolean? = null
+    ) {
+        lifecycleScope.launch {
+            pref.getPrefUser().first()?.let { user ->
+                val updatedSettings = user.userSetting?.copy(
+                    isStoryRemoveAfter24HourActive = isStoryRemoveAfter24HourActive ?: user.userSetting?.isStoryRemoveAfter24HourActive,
+                    isMyOnlineStatusHideEnable = isMyOnlineStatusHideEnable ?: user.userSetting?.isMyOnlineStatusHideEnable
+                ) ?: UserSetting(
+                    isStoryRemoveAfter24HourActive = isStoryRemoveAfter24HourActive ?: false,
+                    isMyOnlineStatusHideEnable = isMyOnlineStatusHideEnable ?: false
+                )
+                updatedSettings.let { settingViewModel.updateUserSetting(it) }
+            }
+        }
     }
 
     private fun showDialog() {
@@ -165,6 +239,7 @@ class SettingFragment : Fragment() , AlertDialogOption  , DeleteAccountPasswordR
             )
         }
     }
+
     override fun onResult(isYes: Boolean) {
         if (isYes) {
             DeleteAccountPasswordDialog(
@@ -176,21 +251,23 @@ class SettingFragment : Fragment() , AlertDialogOption  , DeleteAccountPasswordR
         }
     }
 
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
-    }
+
 
     override fun onResult(isSuccess: Boolean, errorMessage: String?) {
         runOnUiThread {
-            if (isSuccess){
+            if (isSuccess) {
                 settingViewModel.deleteAccount()
-            }else{
-                if (errorMessage!=null){
+            } else {
+                if (errorMessage != null) {
                     showSnackBar(errorMessage)
                 }
             }
         }
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 
 }

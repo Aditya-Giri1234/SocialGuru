@@ -81,7 +81,10 @@ object StoryManager {
     private suspend fun uploadImageStory(uri: Uri?, user: User) {
         uri ?: return
         startUploading()
-        uploadToStorage("${user.userId ?: AuthManager.currentUserId()}/${Constants.FolderName.StoryImage.name}", uri).collect {
+        uploadToStorage(
+            "${user.userId ?: AuthManager.currentUserId()}/${Constants.FolderName.StoryImage.name}",
+            uri
+        ).collect {
             val storyUrl = it.first
             val error = it.second
             if (storyUrl != null) {
@@ -97,7 +100,10 @@ object StoryManager {
     private suspend fun uploadVideoStory(uri: Uri?, user: User) {
         uri ?: return
         startUploading()
-        uploadToStorage("${user.userId ?: AuthManager.currentUserId()}/${Constants.FolderName.StoryVideo.name}", uri).collect {
+        uploadToStorage(
+            "${user.userId ?: AuthManager.currentUserId()}/${Constants.FolderName.StoryVideo.name}",
+            uri
+        ).collect {
             val storyUrl = it.first
             val error = it.second
             if (storyUrl != null) {
@@ -218,7 +224,8 @@ object StoryManager {
                     tagStory,
                     msg = "List of friend is not empty :- $listOfFriend and  ${listOf("5z3GqeOT8ZZxr7nE4Ny231cP68J3")}"
                 )
-                isFirstTimeStoryListnerCall = true // Reset this because friend list change all process start with fresh .
+                isFirstTimeStoryListnerCall =
+                    true // Reset this because friend list change all process start with fresh .
                 val storiesQuery = firestore.collection(Constants.Table.Stories.name)
                     .whereIn(UserTable.USERID.fieldName, listOfFriend.toList())
                 val stories = storiesQuery.get().await()
@@ -293,9 +300,8 @@ object StoryManager {
                     isFirstTimeStoryListnerCall = false
 
                 }
-            }
-            else{
-                trySend(StoryListenerEmissionType(Constants.StoryEmitType.Starting,null))
+            } else {
+                trySend(StoryListenerEmissionType(Constants.StoryEmitType.Starting, null))
             }
         }.launchIn(this)
 
@@ -355,7 +361,7 @@ object StoryManager {
         // Map the documents to Stories objects
         val userStoriesList = stories.documents.mapNotNull {
             it.toObject<Stories>()
-        }.sortedBy { it.storyUploadingTimeInTimeStamp }.toMutableList()
+        }.sortedByDescending { it.storyUploadingTimeInTimeStamp }.toMutableList()
 
         // Get the user object
         val user = UserManager.getUserById(userId)
@@ -396,10 +402,10 @@ object StoryManager {
             val stories = storyRef.get().await()
 
             MyLogger.d(tagStory, msg = "Storied count :- ${stories.size()}")
-            if (stories.isEmpty){
-                MyLogger.i(tagDelete , msg = "No Story found , so don't do any thing.")
+            if (stories.isEmpty) {
+                MyLogger.i(tagDelete, msg = "No Story found , so don't do any thing.")
                 trySend(UpdateResponse(true, "All Story Delete Successfully !"))
-            }else{
+            } else {
                 StorageManager.deleteMyAllStoryMedia().onEach {
                     MyLogger.e(tagDelete, msg = "All Story Media Delete Successfully !")
                     launch {
@@ -420,6 +426,56 @@ object StoryManager {
             trySend(UpdateResponse(false, e.message))
         }
 
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
+
+    //region:: Delete All Stale Stories
+
+    suspend fun listenMyStoryCount() = callbackFlow<Int> {
+        val storyRef = firestore.collection(Constants.Table.Stories.name)
+            .whereEqualTo(Constants.StoryTable.USER_ID.fieldName, AuthManager.currentUserId()!!)
+        val listener = storyRef.addSnapshotListener { value, error ->
+            if (error != null) return@addSnapshotListener
+
+            val size = value?.documents?.size ?: 0
+
+            trySend(size)
+        }
+
+        awaitClose {
+            listener.remove()
+            close()
+        }
+    }
+
+    suspend fun deleteStaleStories() = callbackFlow<UpdateResponse> {
+        try {
+            val userId = AuthManager.currentUserId()!!
+            val storyRef = firestore.collection(Constants.Table.Stories.name)
+            val myStories =
+                storyRef.whereEqualTo(Constants.StoryTable.USER_ID.fieldName, userId).get().await()
+            if (myStories.isEmpty) {
+                trySend(UpdateResponse(true, ""))
+            } else {
+                val staleStoriesDeleteWork = myStories.map {
+                    async {
+                        val story = it.toObject<Stories>()
+                        if (Helper.isOneMinuteOldStory(story.storyUploadingTimeInTimeStamp!!)) {
+                            it.reference.delete()
+                        }
+                    }
+                }
+                staleStoriesDeleteWork.awaitAll()
+                trySend(UpdateResponse(true, ""))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            trySend(UpdateResponse(false, e.message))
+        }
         awaitClose {
             close()
         }

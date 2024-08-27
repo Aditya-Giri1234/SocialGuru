@@ -78,7 +78,7 @@
                     </LinearLayout>
 
                     <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/switchMute"
+                        android:id="@+id/switchRemoveStory"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="false"
@@ -118,7 +118,7 @@
                         android:textSize="@dimen/_16ssp"
                         android:fontFamily="@font/poppin_medium"/>
                     <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/switchMuteLastSeen"
+                        android:id="@+id/switchLastSeen"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="false"

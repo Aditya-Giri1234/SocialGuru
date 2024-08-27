@@ -174,7 +174,7 @@ class WriteTextStoryFragment : Fragment() {
                         StoryText(etStatus.text.toString(), currentFont ,currentColor)
                     )
                 })
-                navController?.navigateUp()
+                navController.navigateUp()
             }
 
         }

@@ -94,9 +94,11 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     ksp("com.github.bumptech.glide:ksp:4.15.1")
 
+    // WorkManager dependency
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
+
 
     //Firebase Dependency
-
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-storage")

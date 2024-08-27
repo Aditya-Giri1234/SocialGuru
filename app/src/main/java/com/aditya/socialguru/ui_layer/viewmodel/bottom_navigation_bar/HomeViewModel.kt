@@ -47,6 +47,7 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
     private var _isDataLoaded = false
      val isDataLoaded get() = _isDataLoaded
 
+
     fun uploadStory(
         storyType: Constants.StoryType,
         uri: Uri? = null,
@@ -74,9 +75,6 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
     @OptIn(FlowPreview::class)
      fun getAllStory(userId: String) = viewModelScope.myLaunch {
         _userStories.tryEmit(Resource.Loading())
-        viewModelScope.launch {
-
-        }
         MyLogger.v(tagStory, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
             MyLogger.v(tagStory, msg = "Network available !")

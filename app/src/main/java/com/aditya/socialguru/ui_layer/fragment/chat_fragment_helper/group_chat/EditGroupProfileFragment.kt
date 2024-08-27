@@ -221,7 +221,7 @@ class EditGroupProfileFragment : Fragment(), ProfilePicEditOption {
         }
 
         binding.icEdit.setSafeOnClickListener {
-            if (currentImage == null) {
+            if (ivProfile.tag == imageUnAvailable) {
                 pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             } else {
                 ProfilePicEditDialog(this@EditGroupProfileFragment).show(

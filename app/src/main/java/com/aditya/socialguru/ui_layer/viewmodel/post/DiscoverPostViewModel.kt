@@ -135,11 +135,11 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
                         userPostList.forEach { userPost ->
                             val currentPostId=userPost.post?.postId
                             if (currentPostId != null&& currentPostId==postId) {
-                                userPost.post?.apply {
-                                    commentCount=post.commentCount
-                                    likeCount=post.likeCount
-                                    likedUserList=post.likedUserList
-                                }
+                                userPost.post = userPost.post?.copy(
+                                    commentCount = post.commentCount,
+                                    likeCount = post.likeCount,
+                                    likedUserList = post.likedUserList
+                                )
                                 return@let
                             }
                         }

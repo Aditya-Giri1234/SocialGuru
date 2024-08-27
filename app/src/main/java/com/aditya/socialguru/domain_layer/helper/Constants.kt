@@ -5,6 +5,7 @@ object Constants {
 
     const val TYPE = "TYPE"
     const val DATA = "DATA"
+    const val MY_CUSTOM_WORKER = "MY_CUSTOM_WORKER"
 
     //Notification  Constant
 
@@ -28,7 +29,8 @@ object Constants {
 
     enum class AppBroadCast{
         LogIn,
-        LogOut
+        LogOut ,
+        StoryChange
     }
 
 
@@ -131,7 +133,8 @@ object Constants {
         LOG_IN_TIME_IN_TIMESTAMP("loginTimeInTimeStamp"),
         FCM_TOKEN("fcmToken"),
         POST_COUNT("postCount"),
-        USER_AVAILABLE("userAvailable")
+        USER_AVAILABLE("userAvailable") ,
+        USER_SETTING("userSetting")
     }
 
     enum class StoryTable(val fieldName: String) {

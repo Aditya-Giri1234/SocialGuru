@@ -3,6 +3,7 @@ package com.aditya.socialguru.domain_layer.service
 import android.net.Uri
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.UserSetting
 import com.aditya.socialguru.data_layer.model.chat.LastMessage
 import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
@@ -99,6 +100,7 @@ object FirebaseManager {
 
     suspend fun deleteAccount() = AuthManager.deleteAccount()
 
+    suspend fun updateUserSetting(userSetting: UserSetting) = UserManager.updateUserSetting(userSetting)
 
     //endregion
 
@@ -116,6 +118,9 @@ object FirebaseManager {
     suspend fun getMyStory(userId: String) = StoryManager.getMyStory(userId)
 
     suspend fun deleteStoryById(storyId: String) = StoryManager.deleteStoryById(storyId)
+
+    suspend fun deleteStaleStories() = StoryManager.deleteStaleStories()
+    suspend fun listenMyStoryCount() = StoryManager.listenMyStoryCount()
 
     //endregion
 
