@@ -200,7 +200,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     private fun subscribeToObserver() {
-        viewLifecycleOwner.observeFlow {
+        observeFlow {
             chatViewModel.groupChatMessage.onEach { response ->
                 when (response) {
                     is Resource.Success -> {

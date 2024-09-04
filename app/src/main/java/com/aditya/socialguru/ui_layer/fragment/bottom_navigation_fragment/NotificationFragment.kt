@@ -100,7 +100,7 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
 
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.observeFlow {
+        observeFlow {
             notificationViewModel.notificationList.onEach { response ->
                 when (response) {
                     is Resource.Success -> {

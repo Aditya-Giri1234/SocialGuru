@@ -20,6 +20,7 @@ import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.NotificationSendingManager
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
@@ -27,6 +28,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
+import com.google.rpc.context.AttributeContext.Auth
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
@@ -1502,6 +1504,36 @@ object UserManager {
             e.printStackTrace()
             trySend(UpdateResponse(true , ""))
         }
+        awaitClose {
+            close()
+        }
+    }
+
+     suspend fun updateUserEmail(newEmailId:String) = callbackFlow<UpdateResponse> {
+
+        userRef.document(AuthManager.currentUserId()!!).update(Constants.UserTable.USER_EMAIL_ID.fieldName ,newEmailId).addOnCompleteListener {
+            if (it.isSuccessful){
+                trySend(UpdateResponse(true ,""))
+            }else{
+                trySend(UpdateResponse(false, it.exception?.toString()))
+            }
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun updateUserPassword(newPassword:String) = callbackFlow<UpdateResponse> {
+
+        userRef.document(AuthManager.currentUserId()!!).update(Constants.UserTable.USER_PASSWORD.fieldName ,newPassword).addOnCompleteListener {
+            if (it.isSuccessful){
+                trySend(UpdateResponse(true ,""))
+            }else{
+                trySend(UpdateResponse(false, it.exception?.toString()))
+            }
+        }
+
         awaitClose {
             close()
         }

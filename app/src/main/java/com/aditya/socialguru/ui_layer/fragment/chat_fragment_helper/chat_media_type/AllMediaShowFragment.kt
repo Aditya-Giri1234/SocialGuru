@@ -74,7 +74,7 @@ class AllMediaShowFragment(val chatRoomId: String) : Fragment() {
     }
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.observeFlow {
+        observeFlow {
             chatViewModel.chatMedia.onEach { response ->
                 when (response) {
                     is Resource.Success -> {

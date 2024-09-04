@@ -13,6 +13,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -306,8 +307,8 @@ object Helper {
         AlertDialog(message,null,false).show((activity as AppCompatActivity).supportFragmentManager ,"My_Fcm_Token_Not_Send")
     }
 
-    fun LifecycleOwner.observeFlow(run:suspend CoroutineScope.()->Unit){
-        lifecycleScope.launch {
+    fun Fragment.observeFlow(run:suspend CoroutineScope.()->Unit){
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED){
                 run()
             }

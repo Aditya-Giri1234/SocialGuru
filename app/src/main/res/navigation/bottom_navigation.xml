@@ -316,4 +316,12 @@
         android:name="com.aditya.socialguru.ui_layer.fragment.post.MySavedPostFragment"
         android:label="fragment_my_saved_post"
         tools:layout="@layout/fragment_my_saved_post" /><action android:id="@+id/action_global_mySavedPostFragment" app:destination="@id/mySavedPostFragment"/>
+    <dialog
+        android:id="@+id/emailPasswordChangeDialog"
+        android:name="com.aditya.socialguru.ui_layer.fragment.dialog_fragment.EmailPasswordChangeDialog"
+        android:label="EmailPasswordChangeDialog" >
+        <argument
+            android:name="bottomSheetOpenFor"
+            app:argType="string" />
+    </dialog><action android:id="@+id/action_global_emailPasswordChangeDialog" app:destination="@id/emailPasswordChangeDialog"/>
 </navigation>

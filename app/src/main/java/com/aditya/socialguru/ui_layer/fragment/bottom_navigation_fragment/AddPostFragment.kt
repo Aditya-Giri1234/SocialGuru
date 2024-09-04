@@ -184,8 +184,7 @@ class AddPostFragment : Fragment() {
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     private fun subscribeToObserver() {
-        viewLifecycleOwner.observeFlow{
-
+        observeFlow{
             binding.etCreatePost.getQueryTextChangeStateFlow().debounce(100).distinctUntilChanged()
                 .flatMapLatest {
                     if (it.startsWith(" ")) {

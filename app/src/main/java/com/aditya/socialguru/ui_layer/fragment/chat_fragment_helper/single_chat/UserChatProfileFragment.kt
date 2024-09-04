@@ -80,7 +80,7 @@ class UserChatProfileFragment : Fragment() {
     }
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.observeFlow {
+        observeFlow {
             chatViewModel.userDetails.onEach { response ->
                 when (response) {
                     is Resource.Success -> {

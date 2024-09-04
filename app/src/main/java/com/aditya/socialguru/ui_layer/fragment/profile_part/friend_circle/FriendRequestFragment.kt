@@ -72,7 +72,7 @@ class FriendRequestFragment : Fragment() {
 
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.observeFlow {
+        observeFlow {
             friendViewModel.friendRequestList.onEach { response ->
                 when (response) {
                     is Resource.Success -> {

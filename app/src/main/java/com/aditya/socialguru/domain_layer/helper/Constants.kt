@@ -343,6 +343,14 @@ object Constants {
         MembersAdd
     }
 
+    // For Setting Bottom Sheet
+
+    enum class BottomSheetOpenFor{
+        EmailUpdate,
+        PasswordChange,
+        PasswordReset
+    }
+
     //Intent Table
 
     enum class IntentTable{

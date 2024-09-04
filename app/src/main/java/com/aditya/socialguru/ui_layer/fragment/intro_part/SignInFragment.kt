@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDirections
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -22,6 +23,7 @@ import com.aditya.socialguru.domain_layer.helper.myDelay
 import com.aditya.socialguru.domain_layer.helper.getStringText
 import com.aditya.socialguru.domain_layer.helper.removeErrorOnTextChanged
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.ui_layer.viewmodel.AuthViewModel
@@ -131,6 +133,11 @@ class SignInFragment : Fragment() {
             }
         }
 
+        tvForgetPassword.setSafeOnClickListener {
+            val direction: NavDirections =
+                BottomNavigationBarDirections.actionGlobalEmailPasswordChangeDialog(Constants.BottomSheetOpenFor.PasswordReset.name)
+            navController.safeNavigate(direction, Helper.giveUpAndBottomAnimationNavOption())
+        }
         tilEmail.removeErrorOnTextChanged()
         tilPassword.removeErrorOnTextChanged()
 
@@ -139,7 +146,6 @@ class SignInFragment : Fragment() {
 
     private fun validateData(): Boolean {
         with(binding) {
-
             return when {
 
                 tiEtEmail.text.isNullOrEmpty() -> {

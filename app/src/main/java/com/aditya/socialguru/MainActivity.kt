@@ -418,6 +418,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                 mainViewModel.getUser()
                 mainViewModel.listenMySavedPost()
                 mainViewModel.listenMyLikedPost()
+                mainViewModel.listenAuthOfUser()
                 mainViewModel.setListenerSetStatus(true)
             }
         }

@@ -36,6 +36,14 @@ object FirebaseManager {
 
     fun isUserLogin(): Boolean = AuthManager.isUserLogin()
 
+    suspend fun sendPasswordResetEmail(email: String?) = AuthManager.sendPasswordResetEmail(email)
+
+    suspend fun updateUserEmailId(newEmailId: String, password: String) = AuthManager.updateUserEmailId(newEmailId , password)
+
+    suspend fun updateUserPassword(currentPassword:String ,newPassword:String) = AuthManager.updateUserPassword(currentPassword , newPassword)
+
+    suspend fun listenAuthOfUser() = AuthManager.listenAuthOfUser()
+
 
     //endregion
 

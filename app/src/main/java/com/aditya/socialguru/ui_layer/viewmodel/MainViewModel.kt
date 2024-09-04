@@ -141,6 +141,10 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
         jobList.add(job)
     }
 
+    fun listenAuthOfUser() = viewModelScope.myLaunch {
+        repository.listenAuthOfUser()
+    }
+
     private fun handleLikedPostResponse(response: List<ListenerEmissionType<LikedPostModel, LikedPostModel>>) {
 
         response.forEach {

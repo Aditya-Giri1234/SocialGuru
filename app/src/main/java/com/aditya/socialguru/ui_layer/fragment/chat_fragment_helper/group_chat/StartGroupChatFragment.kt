@@ -111,7 +111,7 @@ class StartGroupChatFragment : Fragment() {
 
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.observeFlow {
+        observeFlow {
             chatViewModel.friendList.onEach { response ->
                 when (response) {
                     is Resource.Success -> {

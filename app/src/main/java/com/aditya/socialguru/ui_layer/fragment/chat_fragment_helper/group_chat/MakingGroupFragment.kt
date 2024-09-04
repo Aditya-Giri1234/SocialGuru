@@ -115,7 +115,7 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
 
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.observeFlow {
+        observeFlow {
             chatViewModel.sendGroupMessage.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
