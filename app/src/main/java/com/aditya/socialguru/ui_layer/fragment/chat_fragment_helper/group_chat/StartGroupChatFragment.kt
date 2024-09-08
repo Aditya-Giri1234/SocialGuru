@@ -33,6 +33,7 @@ import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.service.SharePref
@@ -64,8 +65,8 @@ class StartGroupChatFragment : Fragment() {
     private var chatRoomId: String? = null
 
     private var _friendAdapter: StartChatAdapter? = null
-    private var myLoader: MyLoader? = null
     private val friendAdapter get() = _friendAdapter!!
+    private var myLoader: MyLoader? = null
 
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
@@ -505,8 +506,16 @@ class StartGroupChatFragment : Fragment() {
         val chipBinding = SampleStartGroupChatUserChipBinding.inflate(layoutInflater)
         chipBinding.apply {
             chipText.text = user.userName
-            Glide.with(circularImage).load(user.userProfileImage).placeholder(R.drawable.ic_user)
-                .error(R.drawable.ic_user).into(circularImage)
+            if (user.userProfileImage==null){
+                tvInitial.myShow()
+                tvInitial.text = user.userName?.get(0).toString()
+                tvInitial.setCircularBackground(Helper.setUserProfileColor(user))
+            }else{
+                tvInitial.gone()
+                Glide.with(circularImage).load(user.userProfileImage).placeholder(R.drawable.ic_user).error(
+                    R.drawable.ic_user
+                ).into(circularImage)
+            }
             binding.chipSelectedUsers.addView(this.root)
             closeIcon.setOnClickListener {
                 selectedUser.remove(user)

@@ -29,6 +29,7 @@ import com.aditya.socialguru.domain_layer.manager.NotificationSendingManager
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -350,72 +351,49 @@ object PostManager {
     //region::Get Random Post (Discover)
 
 
-    suspend fun getDiscoverPost() = callbackFlow<PostListenerEmissionType> {
+    suspend fun getDiscoverPost() = callbackFlow<List<ListenerEmissionType<UserPostModel,UserPostModel>>> {
 
-        val discoverPostQuery = firestore.collection(Constants.Table.Post.name)
-        val posts = discoverPostQuery.get().await()
+        try{
+            val discoverPostQuery = firestore.collection(Constants.Table.Post.name).orderBy(PostTable.POST_UPLOADING_TIME_IN_TIMESTAMP.fieldName, Query.Direction.DESCENDING)
+            discoverPostListener?.remove()
+            discoverPostListener = discoverPostQuery.addSnapshotListener { value, error ->
 
+                if (error != null) return@addSnapshotListener
 
-        val userPostList = posts.mapNotNull {
-            val post = it.toObject<Post>()
-            post.userId?.let { id ->
-                UserManager.getUserById(id)?.let { UserPostModel(it, post) }
-            }
-        }.toMutableList()
+                value?.documentChanges?.let { data ->
+                    launch {
+                        val savedList = data.map {
+                            async {
+                                val post = it.document.toObject<Post>()
+                                val changeType = when (it.type) {
+                                    DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                    DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                    DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                }
+                                val userTask = userRef.document(post.userId!!).get().await()
+                                if (!userTask.exists()) return@async null
+                                if (changeType == Constants.ListenerEmitType.Added){
+                                    ListenerEmissionType(
+                                        changeType, singleResponse = UserPostModel(user = userTask.toObject(),post = post)
+                                    )
+                                }else{
+                                    ListenerEmissionType<UserPostModel, UserPostModel>(
+                                        changeType, singleResponse = UserPostModel(post = post)
+                                    )
+                                }
 
+                            }
+                        }.awaitAll().filterNotNull()
 
-        MyLogger.i(
-            tagPost,
-            msg = userPostList,
-            isJson = true,
-            jsonTitle = "User Discover Post list !"
-        )
-
-        trySend(
-            PostListenerEmissionType(
-                Constants.ListenerEmitType.Starting,
-                userPostList = userPostList.toList()
-            )
-        )
-        userPostList.clear()
-        discoverPostListener?.remove()
-        discoverPostListener = discoverPostQuery.addSnapshotListener { value, error ->
-
-            if (error != null) return@addSnapshotListener
-
-            if (!isFirstTimeDiscoverPostListnerCall) {
-                value?.documentChanges?.forEach { document ->
-                    when (document.type) {
-                        DocumentChange.Type.ADDED -> {
-                            trySend(
-                                PostListenerEmissionType(
-                                    Constants.ListenerEmitType.Added,
-                                    userPostModel = document.document.toObject<Post>()
-                                )
-                            )
-                        }
-
-                        DocumentChange.Type.REMOVED -> {
-                            trySend(
-                                PostListenerEmissionType(
-                                    Constants.ListenerEmitType.Removed,
-                                    userPostModel = document.document.toObject<Post>()
-                                )
-                            )
-                        }
-
-                        else -> {}
+                        trySend(savedList)
                     }
                 }
             }
-            isFirstTimeDiscoverPostListnerCall = false
-
+        }catch(e:Exception){
+            e.printStackTrace()
         }
 
-
         awaitClose {
-            isFirstTimeDiscoverPostListnerCall =
-                true  // This is singleton variable if function again call then this variable contain old value so that reset here
             discoverPostListener?.remove()
             channel.close()
         }
@@ -425,7 +403,7 @@ object PostManager {
 
     //endregion
 
-    //region::Get Following Post (Discover)
+    //region::Get Following Post
 
     suspend fun getFollowingPost(userIds: List<String>) = callbackFlow<PostListenerEmissionType> {
         // Define the batch size within the function scope
@@ -481,7 +459,6 @@ object PostManager {
             channel.close()
         }
     }
-
 
     //endregion
 
@@ -1013,7 +990,7 @@ object PostManager {
 
     //region:: Get And Listen Commented Post
 
-    suspend fun listenCommentedPost(userId: String) =
+    /*suspend fun listenCommentedPost(userId: String) =
         callbackFlow<List<ListenerEmissionType<CommentedUserPostModel, CommentedUserPostModel>>> {
             try {
                 val myCommentedRef = userRef.document(userId)
@@ -1042,6 +1019,7 @@ object PostManager {
                                     if (!userTask.exists()) return@async null
 
                                     val user = userTask.toObject<User>()
+
                                     ListenerEmissionType<CommentedUserPostModel, CommentedUserPostModel>(
                                         changeType, singleResponse = CommentedUserPostModel(
                                             commentedPost, UserPostModel(user, post)
@@ -1062,7 +1040,112 @@ object PostManager {
                 listenMyCommentedPost?.remove()
                 close()
             }
+        }*/
+
+    suspend fun listenCommentedPost(userId: String) =
+        callbackFlow<List<ListenerEmissionType<CommentedUserPostModel, CommentedUserPostModel>>> {
+
+            val postListeners = mutableMapOf<String, ListenerRegistration>()
+
+            // Function to listen to individual post changes
+            suspend fun listenToPostChanges(commentedPost: CommentedPost) {
+                val postListener = postRef.document(commentedPost.postId!!)
+                    .addSnapshotListener { postSnapshot, postError ->
+                        if (postError != null) return@addSnapshotListener
+
+                        // Check if the post was deleted (exists() will return false)
+                        if (postSnapshot == null || !postSnapshot.exists()) {
+                            // Post was deleted
+                            trySend(
+                                listOf(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Removed,  // ChangeType is set to Removed
+                                        singleResponse = CommentedUserPostModel(
+                                            commentedPost, UserPostModel(null, null)  // Post is null since it's deleted
+                                        )
+                                    )
+                                )
+                            )
+                            return@addSnapshotListener
+                        }
+
+                        launch {
+                            val post = postSnapshot.toObject<Post>() ?: return@launch
+                            val userTask = userRef.document(post.userId!!).get().await()
+                            if (!userTask.exists()) return@launch
+
+                            val user = userTask.toObject<User>()
+
+                            // Send appropriate event for Added or Modified post
+                            trySend(
+                                listOf(
+                                    ListenerEmissionType(
+                                        Constants.ListenerEmitType.Modify,  // Either Added or Modify
+                                        singleResponse = CommentedUserPostModel(
+                                            commentedPost, UserPostModel(user, post)  // Static user, dynamic post
+                                        )
+                                    )
+                                )
+                            )
+                        }
+                    }
+
+                // Store the post listener to remove later
+                postListeners[commentedPost.postId] = postListener
+            }
+
+            try {
+                // Listen to commented posts
+                val myCommentedRef = userRef.document(userId)
+                    .collection(Table.CommentedPost.name)
+                listenMyCommentedPost = myCommentedRef.addSnapshotListener { value, error ->
+                    if (error != null) return@addSnapshotListener
+
+                    value?.documentChanges?.let { data ->
+                        launch {
+                             data.mapNotNull { change ->
+                                val commentedPost = change.document.toObject<CommentedPost>()
+                                val changeType = when (change.type) {
+                                    DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                    DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                    DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                }
+
+                                // If a post is removed, stop listening to that post
+                                if (changeType == Constants.ListenerEmitType.Removed) {
+                                    postListeners[commentedPost.postId]?.remove()
+                                    trySend(
+                                        listOf(
+                                            ListenerEmissionType(
+                                                Constants.ListenerEmitType.Removed,  // ChangeType is set to Removed
+                                                singleResponse = CommentedUserPostModel(
+                                                    commentedPost, UserPostModel(null, null)  // Post is null since it's deleted
+                                                )
+                                            )
+                                        )
+                                    )
+                                }
+                                if(changeType == Constants.ListenerEmitType.Added){
+                                    // Listen to changes in the individual post
+                                    listenToPostChanges(commentedPost)
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            awaitClose {
+                // Remove all listeners when the flow is closed
+                postListeners.values.forEach { it.remove() }
+                listenMyCommentedPost?.remove()
+                close()
+            }
         }
+
+
 
 //endregion
 

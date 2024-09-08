@@ -38,7 +38,7 @@
                 android:layout_marginStart="@dimen/_2sdp"
                 app:civ_border_color="@color/blue"
                 app:civ_border_width="@dimen/_1sdp"
-                android:src="@drawable/ic_person"
+                android:src="@drawable/ic_group"
                 android:layout_marginTop="@dimen/_20sdp"
                 app:layout_constraintStart_toStartOf="@id/guidelineStart"
                 app:layout_constraintTop_toTopOf="@id/view"

@@ -8,12 +8,7 @@ import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
-import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
@@ -25,6 +20,7 @@ import com.aditya.socialguru.databinding.FragmentHomeDiscoverPostBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
@@ -32,11 +28,9 @@ import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
-import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.post.DiscoverPostViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 
 class HomeDiscoverPostFragment : Fragment(), OnPostClick {
@@ -90,84 +84,69 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
 
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                discoverPostViewModel.userPost.onEach { response ->
-                    response.let {
-                        MyLogger.d(msg = "Response coming in ui screen !")
-                        when (response) {
-                            is Resource.Success -> {
-                                response.hasBeenMessagedToUser = true
-                                response.data?.let {
-                                    setData(it)
-                                } ?: run {
-                                    setData()
-                                    Helper.showSnackBar(
-                                        (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                        response.message.toString()
-                                    )
-                                }
-
-                            }
-
-                            is Resource.Loading -> {
-
-                            }
-
-                            is Resource.Error -> {
-                                response.hasBeenMessagedToUser = true
-                                Helper.showSnackBar(
-                                    (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                    response.message.toString()
-                                )
-                            }
+        observeFlow {
+            discoverPostViewModel.userPost.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                        response.data?.let {
+                            setData(it)
+                        } ?: run {
+                            setData()
+                            showSnackBar(message = response.message)
                         }
                     }
 
-                }.launchIn(this)
-                discoverPostViewModel.likePost.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.hasBeenMessagedToUser = true
-                        }
-
-                        is Resource.Loading -> {
-
-                        }
-
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser = true
-                            discoverPostAdapter.notifyDataSetChanged()
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                response.message.toString()
-                            )
-                        }
-                    }
-                }.launchIn(this)
-                discoverPostViewModel.savePost.onEach {
-                        response->
-                    when(response){
-                        is Resource.Success->{
-                            hideDialog()
-                            response.hasBeenMessagedToUser=true
-                            showSnackBar(response.data?.errorMessage, isSuccess =
-                            true)
-                        }
-                        is Resource.Loading->{
-                            showDialog()
-                        }
-                        is Resource.Error->{
-                            hideDialog()
-                            response.hasBeenMessagedToUser=true
-                            showSnackBar(response.message)
-                        }
+                    is Resource.Loading -> {
 
                     }
-                }.launchIn(this)
 
-            }
+                    is Resource.Error -> {
+                        response.hasBeenMessagedToUser = true
+                        showSnackBar(message = response.message)
+                    }
+                }
+            }.launchIn(this)
+            discoverPostViewModel.likePost.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                    }
 
+                    is Resource.Loading -> {
+
+                    }
+
+                    is Resource.Error -> {
+                        response.hasBeenMessagedToUser = true
+                        discoverPostAdapter.notifyDataSetChanged()
+                        showSnackBar(message = response.message)
+                    }
+                }
+            }.launchIn(this)
+            discoverPostViewModel.savePost.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        response.hasBeenMessagedToUser = true
+                        showSnackBar(
+                            response.data?.errorMessage, isSuccess =
+                            true
+                        )
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        response.hasBeenMessagedToUser = true
+                        showSnackBar(response.message)
+                    }
+
+                }
+            }.launchIn(this)
         }
     }
 
@@ -198,10 +177,11 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
             MyLogger.w(tagPost, msg = "list is empty then show no data view !")
             showNoDataView()
         } else {
-            MyLogger.v(msg = "Now data is set into homeFragment !")
-            discoverPostAdapter.submitList(userPosts.toList())
+            MyLogger.v(tagPost,msg = "Now data is set into homeFragment !")
             hideNoDataView()
         }
+
+        discoverPostAdapter.submitList(userPosts.toList())
     }
 
     private fun showNoDataView() {
@@ -219,10 +199,9 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     }
 
     override fun onResume() {
-
+        super.onResume()
         // This done because when first viewpager have data and height increase then user come this fragment and this fragment data not loaded or not have data but it take previous fragment height so avoid this below line put.
         binding.root.requestLayout()
-        super.onResume()
     }
 
     private fun showDialog() {
@@ -282,7 +261,6 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     }
 
 
-
     //endregion
 
     private fun navigateToDetailPostScreen(postId: String) {
@@ -294,6 +272,7 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     }
 
     override fun onDestroyView() {
+//        discoverPostViewModel.removeListener()
         _discoverPostAdapter = null
         binding.rvDiscoverPost.adapter = null
         _binding = null

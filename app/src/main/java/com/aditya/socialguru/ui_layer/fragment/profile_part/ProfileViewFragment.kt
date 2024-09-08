@@ -307,7 +307,6 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
     private fun initUI() {
         binding.apply {
-
             myToolbar.apply {
                 icBack.myShow()
                 profileImage.gone()

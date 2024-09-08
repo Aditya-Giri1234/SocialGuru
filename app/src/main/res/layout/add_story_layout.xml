@@ -26,7 +26,7 @@
             android:id="@+id/tvInitial"
             android:layout_width="@dimen/_60sdp"
             android:layout_height="@dimen/_60sdp"
-            android:fontFamily="@font/poppins_bold"
+            android:fontFamily="@font/poppins_semi_bold"
             android:layout_marginStart="@dimen/_5sdp"
             android:text="A"
             android:textAlignment="center"

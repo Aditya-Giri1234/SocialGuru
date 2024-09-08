@@ -11,10 +11,10 @@ class CommentRepo {
         comment: Comment, isCreatorOnline: Boolean
     ) = CommentManager.sendComment(comment, isCreatorOnline)
 
-    suspend fun deleteComment(comment: Comment) = CommentManager.deleteComment(comment)
-    suspend fun getCommentAndListen(postId: String) = CommentManager.getCommentAndListen(postId)
+    suspend fun deleteComment(comment: Comment) = FirebaseManager.deleteComment(comment)
+    suspend fun getCommentAndListen(postId: String) = FirebaseManager.getCommentAndListen(postId)
 
-    suspend fun getCommentersAndListen(postId: String) = CommentManager.getCommentersAndListen(postId)
+    suspend fun getCommentersAndListen(postId: String) = FirebaseManager.getCommentersAndListen(postId)
 
     suspend fun updateMyOnlineStatus(postId: String, status:Boolean,post: Post?=null) = FirebaseManager.updateMyOnlineStatus(postId,status ,post)
 

@@ -26,13 +26,14 @@
         android:id="@+id/nestedScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="?actionBarSize"
+        app:layout_constrainedHeight="true"
+        android:layout_marginBottom="@dimen/_10sdp"
         android:fillViewport="true"
         android:orientation="vertical"
         app:layout_constraintBottom_toTopOf="@id/btnDelete"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/view">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"

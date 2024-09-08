@@ -11,8 +11,10 @@ import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.SampleUserListBinding
+import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.bumptech.glide.Glide
 
@@ -49,12 +51,25 @@ class UserAdapter(val itemClick: (user: User, view: View) -> Unit) :
     inner class ViewHolder(val binding: SampleUserListBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(data: FriendCircleData) {
-            data.apply {
+            data.let {
                 binding.apply {
-                    Glide.with(ivUserProfileImage).load(data.user?.userProfileImage).placeholder(R.drawable.ic_user).error(
-                        R.drawable.ic_user
-                    ).into(ivUserProfileImage)
-                    tvUserName.text = data.user?.userName
+                    data.user?.let {
+                        if (it.userProfileImage==null){
+                            tvInitial.myShow()
+                            ivUserProfileImage.gone()
+                            tvInitial.text = it.userName?.get(0).toString()
+                            tvInitial.setCircularBackground(Helper.setUserProfileColor(it))
+                        }else{
+                            tvInitial.gone()
+                            ivUserProfileImage.myShow()
+                            Glide.with(ivUserProfileImage).load(data.user?.userProfileImage).placeholder(R.drawable.ic_user).error(
+                                R.drawable.ic_user
+                            ).into(ivUserProfileImage)
+                        }
+
+                        tvUserName.text = it.userName
+                    }
+
                     root.setSafeOnClickListener {
                         data.user?.let {user->
                             itemClick(user, it)
@@ -62,12 +77,12 @@ class UserAdapter(val itemClick: (user: User, view: View) -> Unit) :
                     }
 
 
-                    val isThisUserCreator = groupInfo?.creatorId == userId
+                    val isThisUserCreator = groupInfo?.creatorId == it.userId
                     if(isThisUserCreator){
                         tvCreator.myShow()
                     } else tvCreator.gone()
 
-                    val isThisUserAdmin = groupInfo?.groupAdmins?.contains(userId)
+                    val isThisUserAdmin = groupInfo?.groupAdmins?.contains(it.userId)
                     if(isThisUserAdmin == true){
                         tvAdmin.myShow()
                     } else tvAdmin.gone()

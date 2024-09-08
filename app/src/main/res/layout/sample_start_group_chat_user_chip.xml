@@ -20,6 +20,24 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+    <TextView
+        android:id="@+id/tvInitial"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fontFamily="@font/poppins_semi_bold"
+        android:text="A"
+        android:textAlignment="center"
+        android:gravity="center"
+        android:background="@drawable/circle_shape_bg"
+        android:visibility="visible"
+        android:includeFontPadding="false"
+        android:maxLength="1"
+        android:textColor="@color/white"
+        android:textSize="@dimen/_25ssp"
+        app:layout_constraintTop_toTopOf="@id/circularImage"
+        app:layout_constraintStart_toStartOf="@id/circularImage"
+        app:layout_constraintEnd_toEndOf="@id/circularImage"
+        app:layout_constraintBottom_toBottomOf="@id/circularImage"/>
 
     <ImageView
         android:id="@+id/closeIcon"

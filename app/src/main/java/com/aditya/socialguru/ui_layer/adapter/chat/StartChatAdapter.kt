@@ -11,6 +11,10 @@ import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.SampleStartChatDialogBinding
 import com.aditya.socialguru.databinding.SampleUserStartChatItemBinding
+import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.bumptech.glide.Glide
 
@@ -41,12 +45,18 @@ class StartChatAdapter (val itemClick:(user: User)->Unit) : RecyclerView.Adapter
         fun bind(user:User){
             binding.apply {
                 user.run{
-                    if (user.userProfileImage==null){
-                        ivUserProfileImage.setImageResource(R.drawable.ic_user)
+                    if (userProfileImage==null){
+                        tvInitial.myShow()
+                        ivUserProfileImage.gone()
+                        tvInitial.text = userName?.get(0).toString()
+                        tvInitial.setCircularBackground(Helper.setUserProfileColor(this))
                     }else{
-                        Glide.with(ivUserProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivUserProfileImage)
+                        tvInitial.gone()
+                        ivUserProfileImage.myShow()
+                        Glide.with(ivUserProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user).error(
+                            R.drawable.ic_user
+                        ).into(ivUserProfileImage)
                     }
-
                     tvUserName.text=userName
                     tvBio.text=userBio
                 }

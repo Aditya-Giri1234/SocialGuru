@@ -9,6 +9,7 @@ import androidx.fragment.app.DialogFragment
 import com.aditya.socialguru.databinding.DeleteAccountPasswordDialogBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.customError
+import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.helper.removeErrorOnTextChanged
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
@@ -134,6 +135,7 @@ class DeleteAccountPasswordDialog(val option: DeleteAccountPasswordResult) : Dia
     }
 
     override fun onDestroyView() {
+        hideKeyboard()
         _binding = null
         super.onDestroyView()
     }

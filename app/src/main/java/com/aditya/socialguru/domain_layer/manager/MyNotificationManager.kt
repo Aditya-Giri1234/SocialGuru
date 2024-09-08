@@ -1,18 +1,24 @@
 package com.aditya.socialguru.domain_layer.manager
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.TaskStackBuilder
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import androidx.annotation.NavigationRes
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.navigation.NavDeepLinkBuilder
+import androidx.navigation.NavGraph
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.User
@@ -66,7 +72,31 @@ object MyNotificationManager {
         get() {
             return _CHAT_MESSAGE_NOTIFICATION_ID + (Random().nextInt(Int.MAX_VALUE))
         }
+//    private val
 
+    fun createDeepLinkPendingIntent(context: Context ,notificationData: NotificationData): PendingIntent? {
+        // Define a fixed navigation graph and destination
+        val navGraphId = R.navigation.bottom_navigation  // Replace with your nav graph resource ID
+        val destinationId = R.id.profileViewFragment  // Replace with your fixed destination ID
+
+        // Create the intent without default flags
+        val pendingIntent = NavDeepLinkBuilder(context)
+            .setGraph(navGraphId) // Set the fixed navigation graph
+            .setDestination(destinationId) // Set the fixed destination
+            .setArguments(ProfileViewFragmentArgs(notificationData.friendOrFollowerId!!).toBundle())
+            .createTaskStackBuilder()
+            .editIntentAt(0)?.apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP // Set only Single Top flag
+                removeFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            }
+
+        // Return the PendingIntent with FLAG_UPDATE_CURRENT and no clear task/new task
+        return pendingIntent?.let {
+            TaskStackBuilder.create(context)
+                .addNextIntent(it)
+                .getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT)!!
+        }
+    }
 
     fun showNewFollowerNotification(
         user: User,
@@ -80,12 +110,13 @@ object MyNotificationManager {
         val pendingIntent = NavDeepLinkBuilder(context)
             .setGraph(R.navigation.bottom_navigation)
             .setDestination(R.id.profileViewFragment) // Reference deep link action ID
-            .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
+    /*        .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.*/
             .setArguments(ProfileViewFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
-            .createPendingIntent()
+
+//            .createPendingIntent()
 
 
-            /*.createTaskStackBuilder().run {
+            .createTaskStackBuilder().run {
                 val intentList=intents
                 if (intentList.isEmpty()) {
                     throw IllegalStateException(
@@ -102,8 +133,10 @@ object MyNotificationManager {
                     PendingIntent.getActivity(context,110,intent,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 }
 
-            }*/
+            }
 
+
+        val finalPendingIntent = createDeepLinkPendingIntent(context,notificationData) ?: pendingIntent
 
 
         val notificationManager =
@@ -143,8 +176,8 @@ object MyNotificationManager {
         notification.setAutoCancel(true)
 
         // below two line important because in android 8 notification not show like head up so that we need below  2 line.
-        notification.setContentIntent(pendingIntent)
-        notification.setFullScreenIntent(pendingIntent,true)
+        notification.setContentIntent(finalPendingIntent)
+        notification.setFullScreenIntent(finalPendingIntent,true)
 
         MyLogger.d(Constants.LogTag.Notification, msg = "Notification Id :- $USER_ACTION_NOTIFICATION_ID")
 

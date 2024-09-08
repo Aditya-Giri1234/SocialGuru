@@ -21,11 +21,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
-import androidx.navigation.navGraphViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
@@ -347,6 +345,9 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                             response.hasBeenMessagedToUser = true
                         }
                     }
+                }.launchIn(this)
+                pref.getPrefUser().onEach {
+                    storyAdapter.setUserData(it)
                 }.launchIn(this)
 
                 AppBroadcastHelper.homeFragmentBackToTopShow.onEach {

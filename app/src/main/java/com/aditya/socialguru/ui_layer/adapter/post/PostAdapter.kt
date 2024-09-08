@@ -18,6 +18,7 @@ import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
@@ -101,8 +102,10 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.OnlyImage.name -> {
-                                tvPostBottom.gone()
+                                tvPost.gone()
+                                constMedia.myShow()
                                 dotsIndicator.gone()
+                                tvPostBottom.gone()
                                 linearBottomHeader.context.apply {
                                     linearBottomHeader.setMargin(
                                         com.intuit.sdp.R.dimen._1sdp,
@@ -121,8 +124,10 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.OnlyVideo.name -> {
-                                tvPostBottom.gone()
+                                tvPost.gone()
+                                constMedia.myShow()
                                 dotsIndicator.gone()
+                                tvPostBottom.gone()
                                 linearBottomHeader.context.apply {
                                     linearBottomHeader.setMargin(
                                         com.intuit.sdp.R.dimen._1sdp,
@@ -140,8 +145,11 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.TextAndImage.name -> {
-                                tvPostBottom.text = text
+                                tvPost.gone()
+                                constMedia.myShow()
                                 dotsIndicator.gone()
+                                tvPostBottom.myShow()
+                                tvPostBottom.text = text
                                 listOf(
                                     PostImageVideoModel(
                                         imageUrl, true
@@ -150,8 +158,11 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.TextAndVideo.name -> {
-                                tvPostBottom.text = text
+                                tvPost.gone()
+                                constMedia.myShow()
                                 dotsIndicator.gone()
+                                tvPostBottom.myShow()
+                                tvPostBottom.text = text
                                 listOf(
                                     PostImageVideoModel(
                                         videoUrl, false
@@ -160,6 +171,9 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.ImageAndVideo.name -> {
+                                tvPost.gone()
+                                constMedia.myShow()
+                                dotsIndicator.myShow()
                                 tvPostBottom.gone()
                                 linearBottomHeader.context.apply {
                                     linearBottomHeader.setMargin(
@@ -181,6 +195,10 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.All.name -> {
+                                tvPost.gone()
+                                constMedia.myShow()
+                                dotsIndicator.myShow()
+                                tvPostBottom.myShow()
                                 tvPostBottom.text = text
                                 listOf(
                                     PostImageVideoModel(
@@ -216,10 +234,11 @@ class PostAdapter(val onClick: OnPostClick) :
                             likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
 
                         // This is for when click like button then result show as soon as possible so that below calculation help to fast calculation
-                        MyLogger.w(
+                       /* MyLogger.w(
                             Constants.LogTag.Post,
                             msg = "Index :- $absoluteAdapterPosition and isLiked $isLiked and liked User list := $likedUserList"
-                        )
+                        )*/
+                        MyLogger.d(Constants.LogTag.Post,msg = "Index :- $absoluteAdapterPosition and postType $postType")
                         val countExceptLoginUser =
                             if (isLiked) (likeCount?.let { it - 1 } ?: 0) else likeCount ?: 0
 
@@ -284,10 +303,19 @@ class PostAdapter(val onClick: OnPostClick) :
                     }
                 }
             }
-            userPost.user?.run {
+            userPost.user?.let {
                 binding.apply {
-                    Glide.with(ivPostUserImage).load(userProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivPostUserImage)
-                    tvPostUserName.text = userName
+                    if (it.userProfileImage==null){
+                        tvInitial.myShow()
+                        ivPostUserImage.gone()
+                        tvInitial.text = it.userName?.get(0).toString()
+                        tvInitial.setCircularBackground(Helper.setUserProfileColor(it))
+                    }else{
+                        tvInitial.gone()
+                        ivPostUserImage.myShow()
+                        Glide.with(ivPostUserImage).load(it.userProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivPostUserImage)
+                    }
+                    tvPostUserName.text = it.userName
                 }
             }
         }
@@ -309,7 +337,7 @@ class PostAdapter(val onClick: OnPostClick) :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(differ.currentList[position])
+        holder.bind(differ.currentList[holder.absoluteAdapterPosition])
     }
 
 

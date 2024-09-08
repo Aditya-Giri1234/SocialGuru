@@ -25,5 +25,14 @@ data class UserSetting(
     @field:JvmField
     val isStoryRemoveAfter24HourActive:Boolean?=false,
     @field:JvmField
-    val isMyOnlineStatusHideEnable:Boolean ?=false
+    val isMyOnlineStatusHideEnable:Boolean ?=false ,
+    @field : JvmField
+    val isSingleChatNotificationMute:Boolean?=false,
+    @field : JvmField
+    val isGroupChatNotificationMute:Boolean?=false,
+    @field : JvmField
+    val isPostNotificationMute:Boolean?=false,
+    @field : JvmField
+    val isFriendCircleNotificationMute:Boolean?=false,
+
 )

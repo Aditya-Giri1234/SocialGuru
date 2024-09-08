@@ -36,6 +36,25 @@
                 app:layout_constraintEnd_toStartOf="@+id/guidelineEnd"
                 app:layout_constraintStart_toStartOf="@id/guideLineStart"
                 app:layout_constraintTop_toTopOf="@id/guideLineUp" />
+            <TextView
+                android:id="@+id/tvEditInitial"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:fontFamily="@font/poppins_semi_bold"
+                android:text="A"
+                android:textAlignment="center"
+                android:gravity="center"
+                android:background="@drawable/circle_shape_bg"
+                android:visibility="visible"
+                android:includeFontPadding="false"
+                android:maxLength="1"
+                android:textColor="@color/white"
+                android:textSize="@dimen/_45ssp"
+                app:layout_constraintTop_toTopOf="@id/ivProfile"
+                app:layout_constraintStart_toStartOf="@id/ivProfile"
+                app:layout_constraintEnd_toEndOf="@id/ivProfile"
+                app:layout_constraintBottom_toBottomOf="@id/ivProfile"/>
+
 
             <ImageView
                 android:id="@+id/icEdit"

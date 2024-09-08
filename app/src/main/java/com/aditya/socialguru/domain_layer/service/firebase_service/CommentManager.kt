@@ -363,6 +363,12 @@ object CommentManager {
 
                         DocumentChange.Type.MODIFIED -> {
                             // Do Nothing
+                            commentsList.add(
+                                ListenerEmissionType(
+                                    emitChangeType = Constants.ListenerEmitType.Added,
+                                    singleResponse = it.document.toObject<Comment>()
+                                )
+                            )
                         }
 
                         DocumentChange.Type.REMOVED -> {

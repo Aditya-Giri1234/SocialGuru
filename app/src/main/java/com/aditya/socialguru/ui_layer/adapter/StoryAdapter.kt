@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.R
+import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.databinding.AddStoryLayoutBinding
 import com.aditya.socialguru.databinding.SampleStoriesLayoutBinding
@@ -49,6 +50,7 @@ class StoryAdapter(
     private val tagStory=Constants.LogTag.Story
     private val TYPE_AVAIBLE = 0
     private val TYPE_UPLOAD = 1
+    private var userData: User?=null
 
     private val differ = AsyncListDiffer(this, callback)
 
@@ -57,6 +59,11 @@ class StoryAdapter(
         notifyDataSetChanged()
     }
 
+
+    fun setUserData(user: User?) {
+        userData = user
+        notifyItemChanged(0)
+    }
     private inner class AvailableStoryViewHolder(val binding: SampleStoriesLayoutBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
@@ -131,7 +138,7 @@ class StoryAdapter(
         RecyclerView.ViewHolder(view.root) {
         fun bind(data: UserStories) {
             view.apply {
-               /* data.user?.let {
+                userData?.let {
                     if (it.userProfileImage==null){
                         tvInitial.myShow()
                         profileImage.gone()
@@ -142,7 +149,7 @@ class StoryAdapter(
                         profileImage.myShow()
                         Glide.with(profileImage).load(it.userProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(profileImage)
                     }
-                }*/
+                }
                 root.setOnClickListener {
                     MyLogger.w(msg = "Story Adapter is clicked!")
                 }

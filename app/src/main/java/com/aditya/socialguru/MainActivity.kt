@@ -370,7 +370,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     private fun showBottomNavigation() {
         binding.bottomApp.animate().apply {
             duration = 300
-            translationY(binding.bottomApp.height.toFloat()) // Move the bottom navigation bar below the screen
+            translationY(-binding.bottomApp.height.toFloat()) // Move the bottom navigation bar below the screen
             translationY(0f)
             setListener(object : Animator.AnimatorListener {
                 override fun onAnimationStart(p0: Animator) {
@@ -552,6 +552,11 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
 
     private fun cancelWorker() {
         WorkManager.getInstance(applicationContext).cancelUniqueWork(Constants.MY_CUSTOM_WORKER)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        navController.handleDeepLink(intent)
     }
 
     override fun onDestroy() {

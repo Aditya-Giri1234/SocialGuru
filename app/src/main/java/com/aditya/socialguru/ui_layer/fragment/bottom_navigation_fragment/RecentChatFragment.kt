@@ -148,12 +148,15 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
 
             }.launchIn(this)
             AppBroadcastHelper.homeFragmentBackToTopShow.onEach {
-                if (it) {
-                    MyLogger.w(tagChat, msg = "Back To Top show event come!")
-                    showBackToTopView()
-                } else {
-                    binding.linearBackToTop.gone()
+                if(isResumed){
+                    if (it) {
+                        MyLogger.w(tagChat, msg = "Back To Top show event come!")
+                        showBackToTopView()
+                    } else {
+                        binding.linearBackToTop.gone()
+                    }
                 }
+
             }.launchIn(this)
 
             AppBroadcastHelper.homeScrollBackToTopClick.onEach {

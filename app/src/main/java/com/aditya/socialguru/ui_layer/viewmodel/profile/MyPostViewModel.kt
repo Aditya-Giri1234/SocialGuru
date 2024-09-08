@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.onEach
 class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     private val tagProfile = Constants.LogTag.Profile
+    private val tagPost = Constants.LogTag.Post
     private val repository = MyPostRepository()
 
 
@@ -327,39 +328,42 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
         response.forEach {
             when (it.emitChangeType) {
                 Constants.ListenerEmitType.Starting -> {}
-                Constants.ListenerEmitType.Added -> {
+/*                Constants.ListenerEmitType.Added -> {
                     updatedCommentedPost.add(it.singleResponse!!)
                     updatedCommentedPost.sortByDescending { it.commentModel?.updatedCommentdPostTimeInTimeStamp }
-                }
+                }*/
 
                 Constants.ListenerEmitType.Removed -> {
-                    val removePostId = it.singleResponse?.userPostModel?.post?.postId
+                    MyLogger.d(tagPost, msg = it.singleResponse, isJson = true , jsonTitle = "Removal Post Event Come ")
+                    val removePostId = it.singleResponse?.commentModel?.postId
                     removePostId ?: return@forEach
                     val removeItem =
                         updatedCommentedPost.find { it.commentModel?.postId == removePostId }
                     if (removeItem != null) {
                         updatedCommentedPost.remove(removeItem)
-                        updatedCommentedPost.sortByDescending { it.commentModel?.updatedCommentdPostTimeInTimeStamp }
                     }
                 }
 
-                Constants.ListenerEmitType.Modify -> {
+                else -> {
                     val updatedPostId = it.singleResponse?.commentModel?.postId
                     updatedPostId ?: return@forEach
                     val updatedItem =
                         updatedCommentedPost.find { it.commentModel?.postId == updatedPostId }
                     if (updatedItem != null) {
-                        val updatedIemIndex = updatedCommentedPost.indexOf(updatedItem)
-                        updatedCommentedPost[updatedIemIndex] =
-                            updatedCommentedPost[updatedIemIndex].copy(
-                                commentModel = updatedItem.commentModel,
-                                userPostModel = updatedItem.userPostModel
-                            )
-                        updatedCommentedPost.sortByDescending { it.commentModel?.updatedCommentdPostTimeInTimeStamp }
+                        MyLogger.d(tagPost, msg = it.singleResponse, isJson = true , jsonTitle = "Modify Post Event Come ")
+                        updatedItem.apply {
+                            commentModel = it.singleResponse.commentModel
+                            userPostModel = it.singleResponse.userPostModel
+                        }
+                    }else{
+                        MyLogger.d(tagPost, msg = it.singleResponse, isJson = true , jsonTitle = "Add Post Event Come ")
+                        updatedCommentedPost.add(it.singleResponse)
                     }
                 }
             }
         }
+        updatedCommentedPost.sortByDescending { it.commentModel?.updatedCommentdPostTimeInTimeStamp }
+
 
         return Resource.Success(updatedCommentedPost)
     }

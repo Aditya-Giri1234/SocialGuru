@@ -61,7 +61,9 @@ class EmailPasswordChangeDialog : BottomSheetDialogFragment() {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return BottomSheetDialog(requireContext() , R.style.MyTransparentBottomSheetDialogTheme)
+        return BottomSheetDialog(requireContext() , R.style.MyTransparentBottomSheetDialogTheme).apply {
+            window?.setWindowAnimations(R.style.DialogAnimation)
+        }
     }
 
     private fun handleInitialization() {

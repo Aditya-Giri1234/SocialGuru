@@ -464,7 +464,7 @@ object StoryManager {
                 val staleStoriesDeleteWork = myStories.map {
                     async {
                         val story = it.toObject<Stories>()
-                        if (Helper.isOneMinuteOldStory(story.storyUploadingTimeInTimeStamp!!)) {
+                        if (Helper.is24HourOldStory(story.storyUploadingTimeInTimeStamp!!)) {
                             it.reference.delete()
                         }
                     }

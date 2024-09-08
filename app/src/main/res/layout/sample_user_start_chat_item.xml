@@ -19,11 +19,28 @@
         android:paddingHorizontal="@dimen/_10sdp"
         android:paddingVertical="@dimen/_5sdp">
 
+        <TextView
+            android:id="@+id/tvInitial"
+            android:layout_width="@dimen/_40sdp"
+            android:layout_height="@dimen/_40sdp"
+            android:fontFamily="@font/poppins_semi_bold"
+            android:layout_marginStart="@dimen/_5sdp"
+            android:text="A"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:background="@drawable/circle_shape_bg"
+            android:visibility="visible"
+            android:includeFontPadding="false"
+            android:maxLength="1"
+            android:textColor="@color/white"
+            android:textSize="@dimen/_25ssp"/>
+
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/ivUserProfileImage"
             android:layout_width="@dimen/_40sdp"
             android:layout_height="@dimen/_40sdp"
-            android:src="@drawable/person"
+            android:src="@drawable/ic_person"
+            android:visibility="gone"
             app:civ_border_color="@color/blue"
             app:civ_border_overlay="true"
             app:civ_border_width="@dimen/_1sdp" />

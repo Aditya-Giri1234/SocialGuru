@@ -35,10 +35,8 @@ import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.google.android.gms.tasks.Task
 import com.google.android.material.textfield.TextInputLayout
-import com.google.common.base.Objects
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.WriteBatch
-import com.google.firebase.firestore.core.UserData.ParsedUpdateData
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
@@ -500,3 +498,9 @@ suspend fun <T, R> List<T>.mapAsync(transform: suspend (T) -> R): List<R> = coro
         }
     }.awaitAll() // Wait for all async operations to complete and return the results
 }
+
+// For Getting Screen width and height
+
+fun getScreenWidth(): Int = Resources.getSystem().displayMetrics.widthPixels
+
+fun getScreenHeight() : Int = Resources.getSystem().displayMetrics.heightPixels

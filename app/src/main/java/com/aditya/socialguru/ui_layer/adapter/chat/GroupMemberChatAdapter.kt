@@ -10,6 +10,10 @@ import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.SampleGroupMemberItemBinding
 import com.aditya.socialguru.databinding.SampleUserStartChatItemBinding
+import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.bumptech.glide.Glide
 
@@ -41,8 +45,11 @@ class GroupMemberChatAdapter : RecyclerView.Adapter<GroupMemberChatAdapter.ViewH
             binding.apply {
                 user.run{
                     if (user.userProfileImage==null){
-                        ivProfileImage.setImageResource(R.drawable.ic_user)
+                        tvInitial.myShow()
+                        tvInitial.text = user.userName?.get(0).toString()
+                        tvInitial.setCircularBackground(Helper.setUserProfileColor(user))
                     }else{
+                        tvInitial.gone()
                         Glide.with(ivProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user).error(
                             R.drawable.ic_user).into(ivProfileImage)
                     }

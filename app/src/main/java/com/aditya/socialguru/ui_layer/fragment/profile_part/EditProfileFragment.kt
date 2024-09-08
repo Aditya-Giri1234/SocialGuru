@@ -20,6 +20,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.databinding.FragmentUpdateProfileBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.dialog.ProfilePicEditDialog
@@ -32,6 +33,8 @@ import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.removeErrorOnTextChanged
+import com.aditya.socialguru.domain_layer.helper.runOnUiThread
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.profile.ProfilePicEditOption
@@ -145,7 +148,6 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
 
     private fun initUi() {
         binding.apply {
-
             myToolbar.apply {
                 profileImage.gone()
                 icBack.myShow()
@@ -154,13 +156,7 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
 
             viewLifecycleOwner.lifecycleScope.launch {
                 pref.getPrefUser().first()?.let { user ->
-                    user.userProfileImage?.let {
-                        ivProfile.tag = imageAvailable
-                        currentImage = it
-                        Glide.with(ivProfile).load(it).into(ivProfile)
-                    } ?: run {
-                        ivProfile.tag = imageUnAvailable
-                    }
+                    showInitial(user)
                     tiEtName.setText(user.userName)
                     tiEtProfession.setText(user.userProfession)
                     tiEtBio.setText(user.userBio)
@@ -304,17 +300,59 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
 
     }
 
+    private fun showInitial(user: User?=null, image:String?=null){
+        binding.apply {
+            when {
+                user != null -> {
+                    // Initial case when data load
+                    runOnUiThread {
+                        if (user.userProfileImage==null){
+                            tvEditInitial.myShow()
+                            tvEditInitial.text = user.userName?.get(0).toString()
+                            tvEditInitial.setCircularBackground(Helper.setUserProfileColor(user))
+                            ivProfile.tag= imageUnAvailable
+                        }else{
+                            tvEditInitial.gone()
+                            Glide.with(ivProfile).load(user.userProfileImage).placeholder(R.drawable.ic_user).error(
+                                R.drawable.ic_user).into(ivProfile)
+                            ivProfile.tag = imageAvailable
+                        }
+                    }
+                }
+
+                else -> {
+                    // this is case where user delete image or pick image
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        pref.getPrefUser().first()?.let { user ->
+                            runOnUiThread {
+                                if (image==null){
+                                    tvEditInitial.myShow()
+                                    tvEditInitial.text = user.userName?.get(0).toString()
+                                    tvEditInitial.setCircularBackground(Helper.setUserProfileColor(user))
+                                    ivProfile.tag = imageUnAvailable
+                                }else{
+                                    tvEditInitial.gone()
+                                    Glide.with(ivProfile).load(image).placeholder(R.drawable.ic_user).error(
+                                        R.drawable.ic_user).into(ivProfile)
+                                    ivProfile.tag = imageAvailable
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun setImageOnProfileView(uri: Uri) {
         newImage = uri.toString()
-        Glide.with(binding.ivProfile).load(newImage).into(binding.ivProfile)
-        binding.ivProfile.tag=imageAvailable
+        showInitial(image = uri.toString())
     }
 
     private fun removeImageFromProfileView(){
         binding.apply {
             newImage = null  //Assure newImage should null and currentImage not change
-            ivProfile.setImageResource(R.drawable.ic_user)
-            ivProfile.tag = imageUnAvailable
+            showInitial()
         }
     }
 

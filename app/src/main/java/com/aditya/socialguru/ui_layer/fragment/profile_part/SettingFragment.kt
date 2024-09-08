@@ -9,7 +9,6 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.media3.exoplayer.source.ClippingMediaSource.IllegalClippingException.Reason
 import androidx.navigation.NavDirections
 import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
@@ -181,6 +180,9 @@ class SettingFragment : Fragment(), AlertDialogOption, DeleteAccountPasswordResu
         cardResetPasswordSetting.setSafeOnClickListener {
             handleResetPassword()
         }
+        cardNotificationSetting.setSafeOnClickListener {
+            openSettingDialog(it.x.toLong() , it.y.toLong())
+        }
 
         switchRemoveStory.setSafeOnClickListener {
 
@@ -198,6 +200,7 @@ class SettingFragment : Fragment(), AlertDialogOption, DeleteAccountPasswordResu
         switchLastSeen.setSafeOnClickListener {
             updateUserSetting(isMyOnlineStatusHideEnable = switchLastSeen.isChecked)
         }
+
 
     }
 
@@ -277,6 +280,14 @@ class SettingFragment : Fragment(), AlertDialogOption, DeleteAccountPasswordResu
             BottomNavigationBarDirections.actionGlobalEmailPasswordChangeDialog(reason.name)
         navController.safeNavigate(direction, Helper.giveUpAndBottomAnimationNavOption())
     }
+
+    private fun openSettingDialog(x: Long, y:Long) {
+        val direction: NavDirections =
+            BottomNavigationBarDirections.actionGlobalNotificationSettingDialog(startX = x, startY = y)
+        navController.safeNavigate(direction)
+    }
+
+
 
     private fun showDialog() {
         myLoader?.dismiss()

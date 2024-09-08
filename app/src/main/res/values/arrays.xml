@@ -5,7 +5,7 @@
         <item>Discover</item>
     </array>
     <array name="activity_tabs">
-        <item>All</item>
+        <item>My Post</item>
         <item>Comment</item>
         <item>Like</item>
     </array>
