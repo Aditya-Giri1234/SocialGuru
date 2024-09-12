@@ -53,6 +53,14 @@ object Helper {
         .setPopEnterAnim(R.anim.slide_in_left)
         .setPopExitAnim(R.anim.slide_out_right)
         .build()
+
+    fun giveAnimationNavOptionWithSingleTop()= NavOptions.Builder()
+        .setEnterAnim(R.anim.slide_in_right)
+        .setExitAnim(R.anim.slide_out_left)
+        .setPopEnterAnim(R.anim.slide_in_left)
+        .setPopExitAnim(R.anim.slide_out_right)
+        .setLaunchSingleTop(true)
+        .build()
     fun giveUpAndBottomAnimationNavOption(): NavOptions = NavOptions.Builder()
         .setEnterAnim(R.anim.slide_in_top)
         .setExitAnim(R.anim.slide_out_top)
@@ -349,6 +357,8 @@ object Helper {
 
         return Color.rgb(adjustedRed, adjustedGreen, adjustedBlue)
     }
+
+
 
     //endregion
 

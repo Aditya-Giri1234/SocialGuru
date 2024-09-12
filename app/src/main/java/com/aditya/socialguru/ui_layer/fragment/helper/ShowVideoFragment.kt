@@ -29,8 +29,8 @@ import com.aditya.socialguru.databinding.FragmentShowVideoBinding
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
-import com.aditya.socialguru.domain_layer.helper.shareVideo
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.aditya.socialguru.ui_layer.viewmodel.VideoViewModel
 import com.google.android.material.animation.AnimationUtils
 
@@ -144,7 +144,7 @@ class ShowVideoFragment : Fragment() {
 
         //This null check come because i remove this view from landscape mode
         icShare?.setSafeOnClickListener {
-            requireContext().shareVideo(videoUri)
+            ShareManager.shareVideo(requireContext(),videoUri)
         }
 
         icFullscreen.setSafeOnClickListener {

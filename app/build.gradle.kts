@@ -148,8 +148,8 @@ dependencies {
     //Google Auth
     implementation("com.google.auth:google-auth-library-oauth2-http:1.23.0")
 
-    // swipe reveal  view
-    implementation("com.chauthai.swipereveallayout:swipe-reveal-layout:1.4.1")
+//    // swipe reveal  view
+//    implementation("com.chauthai.swipereveallayout:swipe-reveal-layout:1.4.1")
 
 
 }

@@ -330,27 +330,6 @@ fun giveMeErrorMessage(whatProcessRunning:String,reason: String)="Some error occ
 
 
 
-fun Context.shareImage(imageUri: Uri) {
-    val shareIntent = Intent().apply {
-        action = Intent.ACTION_SEND
-        putExtra(Intent.EXTRA_STREAM, imageUri)
-        type = "image/*"
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    startActivity(Intent.createChooser(shareIntent, "Share Image"))
-}
-
-fun Context.shareVideo(videoUri: Uri) {
-    val shareIntent = Intent().apply {
-        action = Intent.ACTION_SEND
-        putExtra(Intent.EXTRA_STREAM, videoUri)
-        type = "video/*"
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    startActivity(Intent.createChooser(shareIntent, "Share Video"))
-}
-
-
 /**
  * Extension function to convert SSP (scaled size pixels) to pixels.
  * @param ssp A value in ssp (scaled size pixels) which we need to convert into pixels.

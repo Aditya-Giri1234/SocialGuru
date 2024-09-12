@@ -13,7 +13,7 @@ import com.aditya.socialguru.R
 import com.aditya.socialguru.databinding.FragmentImageShowBinding
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
-import com.aditya.socialguru.domain_layer.helper.shareImage
+import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
@@ -87,7 +87,7 @@ class ShowImageFragment : Fragment() {
         }
 
         icShare.setSafeOnClickListener {
-            requireContext().shareImage(imageUri)
+            ShareManager.shareImage(requireContext(),imageUri)
         }
 
     }

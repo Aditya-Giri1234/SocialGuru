@@ -6,6 +6,8 @@ object Constants {
     const val TYPE = "TYPE"
     const val DATA = "DATA"
     const val MY_CUSTOM_WORKER = "MY_CUSTOM_WORKER"
+    const val IS_FCM_INTENT="IS_FCM_INTENT"
+    const val FCM_INTENT_FOR="FCM_INTENT_FOR"
 
     //Notification  Constant
 
@@ -48,10 +50,15 @@ object Constants {
         CommentImage
     }
 
-
-
     enum class BroadcastType {
         StoryUploading
+    }
+
+    enum class FcmIntentFor{
+        ProfileScreen,
+        SingleChatScreen,
+        GroupChatScreen ,
+        PostScreen
     }
 
     enum class StoryUploadState(val status:String) {

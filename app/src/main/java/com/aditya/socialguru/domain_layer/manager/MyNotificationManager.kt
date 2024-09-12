@@ -2,6 +2,7 @@ package com.aditya.socialguru.domain_layer.manager
 
 import android.annotation.SuppressLint
 import android.app.Notification
+import android.app.Notification.Action
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -17,6 +18,7 @@ import android.provider.Settings
 import androidx.annotation.NavigationRes
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.net.toUri
 import androidx.navigation.NavDeepLinkBuilder
 import androidx.navigation.NavGraph
 import com.aditya.socialguru.MainActivity
@@ -51,6 +53,12 @@ object MyNotificationManager {
     private const val _CHAT_MESSAGE_NOTIFICATION_ID = 200
     private const val GROUP_SUMMARY_NOTIFICATION_ID = 400
 
+    private const val _USER_ACTION_PENDING_INTENT_ID = 0
+    private const val _POST_ACTION_PENDING_INTENT_ID = 100
+    private const val _CHAT_MESSAGE_PENDING_INTENT_ID = 200
+
+
+
     //Give each pending intent different request code
     private const val USER_PENDING_INTENT_REQUEST_CODE = 0
     private const val POST_PENDING_INTENT_REQUEST_CODE = 1
@@ -60,6 +68,7 @@ object MyNotificationManager {
     private const val NOTIFICATON_GROUP="Notification Group"
 
 
+    //For Notification
     private val USER_ACTION_NOTIFICATION_ID: Int
         get() {
             return _USER_ACTION_NOTIFICATION_ID + (Random().nextInt(Int.MAX_VALUE))
@@ -72,15 +81,29 @@ object MyNotificationManager {
         get() {
             return _CHAT_MESSAGE_NOTIFICATION_ID + (Random().nextInt(Int.MAX_VALUE))
         }
+
+    //For Pending Intent
+    private val USER_ACTION_PENDING_INTENT_ID: Int
+        get() {
+            return _USER_ACTION_PENDING_INTENT_ID + (Random().nextInt(Int.MAX_VALUE))
+        }
+    private val POST_ACTION_PENDING_INTENT_ID: Int
+        get() {
+            return _POST_ACTION_PENDING_INTENT_ID + (Random().nextInt(Int.MAX_VALUE))
+        }
+    private val CHAT_MESSAGE_PENDING_INTENT_ID: Int
+        get() {
+            return _CHAT_MESSAGE_PENDING_INTENT_ID + (Random().nextInt(Int.MAX_VALUE))
+        }
 //    private val
 
-    fun createDeepLinkPendingIntent(context: Context ,notificationData: NotificationData): PendingIntent? {
+/*    fun createDeepLinkPendingIntent(context: Context ,notificationData: NotificationData): PendingIntent? {
         // Define a fixed navigation graph and destination
         val navGraphId = R.navigation.bottom_navigation  // Replace with your nav graph resource ID
         val destinationId = R.id.profileViewFragment  // Replace with your fixed destination ID
 
         // Create the intent without default flags
-        val pendingIntent = NavDeepLinkBuilder(context)
+  *//*      val pendingIntent = NavDeepLinkBuilder(context)
             .setGraph(navGraphId) // Set the fixed navigation graph
             .setDestination(destinationId) // Set the fixed destination
             .setArguments(ProfileViewFragmentArgs(notificationData.friendOrFollowerId!!).toBundle())
@@ -94,9 +117,38 @@ object MyNotificationManager {
         return pendingIntent?.let {
             TaskStackBuilder.create(context)
                 .addNextIntent(it)
-                .getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT)!!
+                .getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)!!
+        }*//*
+
+    *//*    val intent = NavDeepLinkBuilder(context)
+            .setGraph(navGraphId)
+            .setDestination(destinationId)
+            .setArguments(ProfileViewFragmentArgs(notificationData.friendOrFollowerId!!).toBundle())
+            .createTaskStackBuilder()
+            .editIntentAt(0)
+        intent?.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP *//* // Ensure the activity is not recreated
+
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = "socialguru.aditya/${notificationData.friendOrFollowerId}".toUri()
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
-    }
+
+
+        return PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE // Use appropriate flags
+        )
+    }*/
+
+     private fun createDefaultPendingIntent(context: Context) : Intent{
+         return Intent(context,MainActivity::class.java).apply {
+             addCategory(Intent.CATEGORY_LAUNCHER)
+             action = Intent.ACTION_MAIN
+             putExtra(Constants.IS_FCM_INTENT,true)
+         }
+     }
 
     fun showNewFollowerNotification(
         user: User,
@@ -107,10 +159,10 @@ object MyNotificationManager {
         // There is no need to make deep link in graph it was implicit deep link  which help like open url base link in app but below is explicit deep link which not require any thing.
 
         // And one more thing it will recreate give activity and open destination
-        val pendingIntent = NavDeepLinkBuilder(context)
+  /*      val pendingIntent = NavDeepLinkBuilder(context)
             .setGraph(R.navigation.bottom_navigation)
             .setDestination(R.id.profileViewFragment) // Reference deep link action ID
-    /*        .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.*/
+    *//*        .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.*//*
             .setArguments(ProfileViewFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
 
 //            .createPendingIntent()
@@ -136,8 +188,15 @@ object MyNotificationManager {
             }
 
 
-        val finalPendingIntent = createDeepLinkPendingIntent(context,notificationData) ?: pendingIntent
+        val finalPendingIntent = createDeepLinkPendingIntent(context,notificationData) ?: pendingIntent*/
 
+        val intent = createDefaultPendingIntent(context).apply {
+            putExtra(Constants.DATA,notificationData.friendOrFollowerId!!)
+            putExtra(Constants.FCM_INTENT_FOR,Constants.FcmIntentFor.ProfileScreen.name)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(context,
+            USER_ACTION_PENDING_INTENT_ID,intent ,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE  or PendingIntent.FLAG_ONE_SHOT)
 
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -176,8 +235,8 @@ object MyNotificationManager {
         notification.setAutoCancel(true)
 
         // below two line important because in android 8 notification not show like head up so that we need below  2 line.
-        notification.setContentIntent(finalPendingIntent)
-        notification.setFullScreenIntent(finalPendingIntent,true)
+        notification.setContentIntent(pendingIntent)
+        notification.setFullScreenIntent(pendingIntent,true)
 
         MyLogger.d(Constants.LogTag.Notification, msg = "Notification Id :- $USER_ACTION_NOTIFICATION_ID")
 
@@ -196,12 +255,20 @@ object MyNotificationManager {
         // There is no need to make deep link in graph it was implicit deep link  which help like open url base link in app but below is explicit deep link which not require any thing.
 
         // And one more thing it will recreate give activity and open destination
-        val pendingIntent = NavDeepLinkBuilder(context)
+/*        val pendingIntent = NavDeepLinkBuilder(context)
             .setGraph(R.navigation.bottom_navigation)
             .setDestination(R.id.profileViewFragment) // Reference deep link action ID
             .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
             .setArguments(ProfileViewFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
-            .createPendingIntent()
+            .createPendingIntent()*/
+
+        val intent = createDefaultPendingIntent(context).apply {
+            putExtra(Constants.DATA,notificationData.friendOrFollowerId!!)
+            putExtra(Constants.FCM_INTENT_FOR,Constants.FcmIntentFor.ProfileScreen.name)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(context,
+            USER_ACTION_PENDING_INTENT_ID,intent ,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE  or PendingIntent.FLAG_ONE_SHOT)
 
 
         val notificationManager =
@@ -260,12 +327,20 @@ object MyNotificationManager {
         // There is no need to make deep link in graph it was implicit deep link  which help like open url base link in app but below is explicit deep link which not require any thing.
 
         // And one more thing it will recreate give activity and open destination
-        val pendingIntent = NavDeepLinkBuilder(context)
+   /*     val pendingIntent = NavDeepLinkBuilder(context)
             .setGraph(R.navigation.bottom_navigation)
             .setDestination(R.id.profileViewFragment) // Reference deep link action ID
             .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
             .setArguments(ProfileViewFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
-            .createPendingIntent()
+            .createPendingIntent()*/
+
+        val intent = createDefaultPendingIntent(context).apply {
+            putExtra(Constants.DATA,notificationData.friendOrFollowerId!!)
+            putExtra(Constants.FCM_INTENT_FOR,Constants.FcmIntentFor.ProfileScreen.name)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(context,
+            USER_ACTION_PENDING_INTENT_ID,intent ,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE  or PendingIntent.FLAG_ONE_SHOT)
 
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -323,12 +398,20 @@ object MyNotificationManager {
         // There is no need to make deep link in graph it was implicit deep link  which help like open url base link in app but below is explicit deep link which not require any thing.
 
         // And one more thing it will recreate give activity and open destination
-        val pendingIntent = NavDeepLinkBuilder(context)
+ /*       val pendingIntent = NavDeepLinkBuilder(context)
             .setGraph(R.navigation.bottom_navigation)
             .setDestination(R.id.detailPostFragment) // Reference deep link action ID
 //            .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
             .setArguments(DetailPostFragmentArgs(notificationData.postId!!).toBundle()) // Pass user ID if needed
-            .createPendingIntent()
+            .createPendingIntent()*/
+
+        val intent = createDefaultPendingIntent(context).apply {
+            putExtra(Constants.DATA,notificationData.postId!!)
+            putExtra(Constants.FCM_INTENT_FOR,Constants.FcmIntentFor.PostScreen.name)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(context,
+            USER_ACTION_PENDING_INTENT_ID,intent ,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE  or PendingIntent.FLAG_ONE_SHOT)
 
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -388,12 +471,25 @@ object MyNotificationManager {
         // There is no need to make deep link in graph it was implicit deep link  which help like open url base link in app but below is explicit deep link which not require any thing.
 
         // And one more thing it will recreate give activity and open destination
-        val pendingIntent = NavDeepLinkBuilder(context)
+   /*     val pendingIntent = NavDeepLinkBuilder(context)
             .setGraph(R.navigation.bottom_navigation)
             .setDestination(R.id.chatFragment) // Reference deep link action ID
 //            .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
             .setArguments(ChatFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
-            .createPendingIntent()
+            .createPendingIntent()*/
+
+        val intent = createDefaultPendingIntent(context).apply {
+            if (notificationData.isGroupMessage!=null&&notificationData.isGroupMessage=="true"){
+                putExtra(Constants.DATA,notificationData.chatRoomId!!)
+                putExtra(Constants.FCM_INTENT_FOR,Constants.FcmIntentFor.GroupChatScreen.name)
+            }else{
+                putExtra(Constants.DATA,notificationData.friendOrFollowerId!!)
+                putExtra(Constants.FCM_INTENT_FOR,Constants.FcmIntentFor.SingleChatScreen.name)
+            }
+        }
+
+        val pendingIntent = PendingIntent.getActivity(context,
+            USER_ACTION_PENDING_INTENT_ID,intent ,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE  or PendingIntent.FLAG_ONE_SHOT)
 
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

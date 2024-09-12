@@ -8,12 +8,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.model.notification.UserNotificationModel
 import com.aditya.socialguru.databinding.SampleNotificationItemBinding
+import com.aditya.socialguru.domain_layer.custom_class.chauthai_library.ViewBinderHelper
 import com.aditya.socialguru.domain_layer.helper.Constants.NotificationType
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.bumptech.glide.Glide
-import com.chauthai.swipereveallayout.ViewBinderHelper
 
 
 
@@ -61,7 +61,7 @@ class NotificationAdapter(val onNotificationDelete:(data:NotificationData)->Unit
                     data.notificationData.let { notificationData ->
 
                         //Bind swipe layout to this id
-                        viewBinderHelper.bind(binding.swipeLayout,notificationData.notificationId)
+                        viewBinderHelper.bind(binding.swipeLayout,notificationData.notificationId!!)
 
 
                         val (message, isProfileView) = when (notificationData.type) {

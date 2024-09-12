@@ -25,14 +25,45 @@
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
-            android:launchMode="singleTask"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustPan"
             android:exported="true">
-            <nav-graph android:value="@navigation/bottom_navigation"/>
+<!--            <nav-graph android:value="@navigation/bottom_navigation"/>-->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https"/>
+                <data android:scheme="http"/>
+                <data android:host="com.aditya.socialguru"/>
+                <data android:pathPrefix="/post"/>
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https"/>
+                <data android:scheme="http"/>
+                <data android:host="com.aditya.socialguru"/>
+                <data android:pathPrefix="/image"/>
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https"/>
+                <data android:scheme="http"/>
+                <data android:host="com.aditya.socialguru"/>
+                <data android:pathPrefix="/video"/>
             </intent-filter>
         </activity>
 

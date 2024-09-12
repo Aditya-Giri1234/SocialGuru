@@ -47,6 +47,7 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.OnAttachmentItemListener
@@ -450,6 +451,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
         }
 
         ivSend.setSafeOnClickListener {
+            ShareManager.sharePost(requireContext(),postId)
         }
 
         icSave.setSafeOnClickListener {

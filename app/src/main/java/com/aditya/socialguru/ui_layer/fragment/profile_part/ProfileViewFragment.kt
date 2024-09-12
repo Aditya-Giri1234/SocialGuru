@@ -217,7 +217,9 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                         is Resource.Success -> {
                             hideDialog()
                             response.data?.let {
-                                setUserRelational(it)
+                                if(!response.hasBeenMessagedToUser){
+                                    setUserRelational(it)
+                                }
                             }
                         }
 
@@ -226,6 +228,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                         }
 
                         is Resource.Error -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar(response.message)
                         }

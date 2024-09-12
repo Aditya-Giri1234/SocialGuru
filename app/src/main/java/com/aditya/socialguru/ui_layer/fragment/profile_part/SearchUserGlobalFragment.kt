@@ -27,6 +27,7 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
@@ -305,6 +306,7 @@ class SearchUserGlobalFragment : Fragment() {
 
 
     override fun onDestroyView() {
+        hideKeyboard()
         _binding = null
         super.onDestroyView()
     }

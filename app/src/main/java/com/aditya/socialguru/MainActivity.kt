@@ -14,9 +14,9 @@ import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -31,7 +31,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.work.BackoffPolicy
 import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.aditya.socialguru.data_layer.model.Resource
@@ -47,6 +46,7 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.worker.MyWorker
 import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.viewmodel.MainViewModel
@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
 
                 Constants.AppBroadCast.StoryChange.name -> {
                     MyLogger.i(msg = "Story change event come !")
-                    handleStoryChange(intent.getIntExtra(Constants.DATA,0))
+                    handleStoryChange(intent.getIntExtra(Constants.DATA, 0))
                 }
             }
         }
@@ -170,6 +170,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     }
 
     private fun handleIntent() {
+
         when {
             intent.getBooleanExtra(
                 Constants.IntentTable.LogOutOrDeleteAccountAcitivityHappend.name,
@@ -186,6 +187,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
 
             else -> {
                 // Don't do anything
+                handleDeepLink(intent)
             }
         }
     }
@@ -494,10 +496,10 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
 
     private fun handleStoryChange(isUserWantToRemoveStory: Int) {
         launchCoroutineInIOThread {
-            if (isUserWantToRemoveStory!=2) {
-                if (isUserWantToRemoveStory == 1){
+            if (isUserWantToRemoveStory != 2) {
+                if (isUserWantToRemoveStory == 1) {
                     runWorker()
-                }else{
+                } else {
                     MyLogger.w(
                         Constants.LogTag.JobManager,
                         msg = "User setting doesn't want to remove story so that i cancel my worker !"
@@ -554,9 +556,115 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         WorkManager.getInstance(applicationContext).cancelUniqueWork(Constants.MY_CUSTOM_WORKER)
     }
 
+    private fun handleDeepLink(intent: Intent) {
+        val isForFcmIntent = intent.getBooleanExtra(Constants.IS_FCM_INTENT, false)
+        if (isForFcmIntent) {
+            when (intent.getStringExtra(Constants.FCM_INTENT_FOR)) {
+                Constants.FcmIntentFor.ProfileScreen.name -> {
+                    val userId = intent.getStringExtra(Constants.DATA)
+                    if (userId != null) {
+                        val directions =
+                            BottomNavigationBarDirections.actionGlobalProfileViewFragment(userId)
+                        navController.safeNavigate(
+                            directions,
+                            Helper.giveAnimationNavOptionWithSingleTop()
+                        )
+                    }
+                }
+
+                Constants.FcmIntentFor.SingleChatScreen.name -> {
+                    val userId = intent.getStringExtra(Constants.DATA)
+                    if (userId != null) {
+                        val directions =
+                            BottomNavigationBarDirections.actionGlobalChatFragment(userId)
+                        navController.safeNavigate(
+                            directions,
+                            Helper.giveAnimationNavOptionWithSingleTop()
+                        )
+                    }
+                }
+
+                Constants.FcmIntentFor.GroupChatScreen.name -> {
+                    val groupId = intent.getStringExtra(Constants.DATA)
+                    if (groupId != null) {
+                        val directions =
+                            BottomNavigationBarDirections.actionGlobalGroupChatFragment(groupId)
+                        navController.safeNavigate(
+                            directions,
+                            Helper.giveAnimationNavOptionWithSingleTop()
+                        )
+                    }
+                }
+
+                Constants.FcmIntentFor.PostScreen.name -> {
+                    val postId = intent.getStringExtra(Constants.DATA)
+                    if (postId != null) {
+                        val directions =
+                            BottomNavigationBarDirections.actionGlobalDetailPostFragment(postId)
+                        navController.safeNavigate(
+                            directions,
+                            Helper.giveAnimationNavOptionWithSingleTop()
+                        )
+                    }
+                }
+            }
+        } else {
+            intent.data?.let { uri ->
+                val isUriHostMatchMyHost = intent.data?.host == packageName
+                if (isUriHostMatchMyHost) {
+                    uri.path?.let { path ->
+                        when {
+                            path.startsWith("/post") -> {
+                                val pathSegments = uri.pathSegments
+                                if (pathSegments.isNotEmpty() && pathSegments.size > 1) {
+                                    val postId =
+                                        pathSegments[1] // Assuming postId is the first path segment
+                                    val directions =
+                                        BottomNavigationBarDirections.actionGlobalDetailPostFragment(
+                                            postId
+                                        )
+                                    navController.safeNavigate(
+                                        directions,
+                                        Helper.giveAnimationNavOptionWithSingleTop()
+                                    )
+                                }
+                            }
+
+                            path.startsWith("/image") -> {
+                                val encodedUrl = path.removePrefix("/image/")
+                                val directions =
+                                    BottomNavigationBarDirections.actionGlobalShowImageFragment(
+                                        (ShareManager.decodeUrl(encodedUrl)).toUri()
+                                    )
+                                navController.safeNavigate(
+                                    directions,
+                                    Helper.giveAnimationNavOptionWithSingleTop()
+                                )
+                            }
+
+                            path.startsWith("/video") -> {
+                                val encodedUrl = path.removePrefix("/video/")
+                                val directions =
+                                    BottomNavigationBarDirections.actionGlobalShowVideoFragment(
+                                        (ShareManager.decodeUrl(encodedUrl)).toUri()
+                                    )
+                                navController.safeNavigate(
+                                    directions,
+                                    Helper.giveAnimationNavOptionWithSingleTop()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        navController.handleDeepLink(intent)
+        if (intent != null) {
+            handleDeepLink(intent)
+        }
     }
 
     override fun onDestroy() {
@@ -564,5 +672,6 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         unregisterReceiver(broadcastReceiver)
         super.onDestroy()
     }
+
 
 }
