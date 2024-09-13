@@ -19,96 +19,113 @@ import kotlinx.coroutines.launch
 object FcmDataHandling : HandleJsonData {
 
     override fun handle(context: Context, _notificationData: String) {
-        MyLogger.v(Constants.LogTag.Notification , msg = _notificationData)
+        MyLogger.v(Constants.LogTag.Notification, msg = _notificationData)
 
-        val notificationData=Gson().fromJson(_notificationData,NotificationData::class.java) ?: return
+        val notificationData =
+            Gson().fromJson(_notificationData, NotificationData::class.java) ?: return
         notificationData.type ?: return
 
-        when(notificationData.type){
+        when (notificationData.type) {
             Constants.NotificationType.NEW_FOLLOWER.name -> {
-                handleNewFollowerNotification(notificationData,context)
+                handleNewFollowerNotification(notificationData, context)
             }
+
             Constants.NotificationType.ACCEPT_FRIEND_REQUEST.name -> {
-                handleAcceptFriendRequestNotification(notificationData,context)
+                handleAcceptFriendRequestNotification(notificationData, context)
             }
+
             Constants.NotificationType.FRIEND_REQUEST_COME.name -> {
-                handleFriendRequestComeNotification(notificationData,context)
+                handleFriendRequestComeNotification(notificationData, context)
             }
+
             Constants.NotificationType.LIKE_IN_POST.name -> {
-                handleLikeInPostNotification(notificationData,context)
+                handleLikeInPostNotification(notificationData, context)
             }
+
             Constants.NotificationType.COMMENT_IN_POST.name -> {
-                handleCommentInPostNotification(notificationData,context)
+                handleCommentInPostNotification(notificationData, context)
             }
+
             Constants.NotificationType.TextChat.name -> {
-                handleTextChatMessage(notificationData,context)
+                handleSingleChatMessage(notificationData, context)
             }
+
             Constants.NotificationType.MediaChat.name -> {
-                handleMediaChatMessage(notificationData,context)
+                handleSingleChatMessage(notificationData, context)
             }
+
             Constants.NotificationType.GroupTextChat.name -> {
-                handleGroupTextChatMessage(notificationData,context)
+                handleGroupChatMessage(notificationData, context)
             }
+
             Constants.NotificationType.GroupMediaChat.name -> {
-                handleGroupMediaChatMessage(notificationData,context)
+                handleGroupChatMessage(notificationData, context)
             }
         }
     }
 
-    private fun handleGroupMediaChatMessage(notificationData: NotificationData, context: Context) {
 
-    }
-
-    private fun handleGroupTextChatMessage(notificationData: NotificationData, context: Context) {
-        val senderId=notificationData.friendOrFollowerId!!
-        val messageId=notificationData.messageId!!
-        val chatRoomId=notificationData.chatRoomId!!
+    private fun handleGroupChatMessage(notificationData: NotificationData, context: Context) {
+        val senderId = notificationData.friendOrFollowerId!!
+        val messageId = notificationData.messageId!!
+        val chatRoomId = notificationData.chatRoomId!!
         launchCoroutineInIOThread {
-            val messageData=async {  FirebaseManager.getMessageById(chatRoomId,messageId).first()}
-            val userData=async {  FirebaseManager.getUser(senderId).first().data }
-            val user=userData.await()
-            val message=messageData.await()
-            if (user!=null){
-                FirebaseManager.updateGroupReceivedStatus(messageId,chatRoomId,senderId)
-               /* if (!FirebaseManager.isUserMuted(userId)){
-                    MyNotificationManager.showTextChatMessage(user,notificationData ,message,context)
+            val messageData =
+                async { FirebaseManager.getGroupMessageById(chatRoomId, messageId).first() }
+            val userData = async { FirebaseManager.getUser(senderId).first().data }
+            val user = userData.await()
+            val message = messageData.await()
+            if (user != null) {
+                FirebaseManager.updateGroupReceivedStatus(messageId, chatRoomId, senderId)
+                if (!FirebaseManager.isUserMuted(chatRoomId)) {
+                    MyNotificationManager.showGroupChatMessage(
+                        user,
+                        notificationData,
+                        message,
+                        context
+                    )
                     MyNotificationManager.showGroupSummaryNotification(context)
-                }else{
-                    MyLogger.w(Constants.LogTag.Notification, msg = "Notification come of chat but sender is muted so that no notification show !")
-                }*/
-
-                MyNotificationManager.showTextChatMessage(user,notificationData ,message,context)
+                } else {
+                    MyLogger.w(
+                        Constants.LogTag.Notification,
+                        msg = "Notification come of chat but sender is muted so that no notification show !"
+                    )
+                }
             }
-
         }
     }
 
-    private fun handleMediaChatMessage(notificationData: NotificationData, context: Context) {
-        val userId=notificationData.friendOrFollowerId!!
-        val messageId=notificationData.messageId!!
-        val chatRoomId=notificationData.chatRoomId!!
-        launchCoroutineInIOThread {
-            val messageData=async {  FirebaseManager.getMessageById(chatRoomId,messageId).first()}
-            val userData=async {  FirebaseManager.getUser(userId).first().data }
-        }
-    }
 
-    private fun handleTextChatMessage(notificationData: NotificationData, context: Context) {
-        val userId=notificationData.friendOrFollowerId!!   // senderId
-        val messageId=notificationData.messageId!!
-        val chatRoomId=notificationData.chatRoomId!!
+    private fun handleSingleChatMessage(notificationData: NotificationData, context: Context) {
+        val userId = notificationData.friendOrFollowerId!!   // senderId
+        val messageId = notificationData.messageId!!
+        val chatRoomId = notificationData.chatRoomId!!
         launchCoroutineInIOThread {
-            val messageData=async {  FirebaseManager.getMessageById(chatRoomId,messageId).first()}
-            val userData=async {  FirebaseManager.getUser(userId).first().data }
-            val user=userData.await()
-            val message=messageData.await()
-            if (user!=null){
-                FirebaseManager.updateSeenStatus(Constants.SeenStatus.Received.status,messageId,chatRoomId ,notificationData.friendOrFollowerId)
-                if (!FirebaseManager.isUserMuted(userId)){
-                    MyNotificationManager.showTextChatMessage(user,notificationData ,message,context)
+            val messageData =
+                async { FirebaseManager.getMessageById(chatRoomId, messageId).first() }
+            val userData = async { FirebaseManager.getUser(userId).first().data }
+            val user = userData.await()
+            val message = messageData.await()
+            if (user != null) {
+                FirebaseManager.updateSeenStatus(
+                    Constants.SeenStatus.Received.status,
+                    messageId,
+                    chatRoomId,
+                    notificationData.friendOrFollowerId
+                )
+                if (!FirebaseManager.isUserMuted(userId)) {
+                    MyNotificationManager.showSingleChatMessage(
+                        user,
+                        notificationData,
+                        message,
+                        context
+                    )
                     MyNotificationManager.showGroupSummaryNotification(context)
-                }else{
-                    MyLogger.w(Constants.LogTag.Notification, msg = "Notification come of chat but sender is muted so that no notification show !")
+                } else {
+                    MyLogger.w(
+                        Constants.LogTag.Notification,
+                        msg = "Notification come of chat but sender is muted so that no notification show !"
+                    )
                 }
 
             }
@@ -120,7 +137,24 @@ object FcmDataHandling : HandleJsonData {
         notificationData: NotificationData,
         context: Context
     ) {
-
+        val userId = notificationData.friendOrFollowerId!!   // senderId
+        val messageId = notificationData.messageId!!
+        val postId = notificationData.postId!!
+        launchCoroutineInIOThread {
+            val commentData = async { FirebaseManager.getCommentById(postId, messageId).first() }
+            val userData = async { FirebaseManager.getUser(userId).first().data }
+            val user = userData.await()
+            val message = commentData.await()
+            if (user != null) {
+                MyNotificationManager.showCommentOnPostNotification(
+                    user,
+                    notificationData,
+                    message,
+                    context
+                )
+                MyNotificationManager.showGroupSummaryNotification(context)
+            }
+        }
     }
 
     private fun handleLikeInPostNotification(notificationData: NotificationData, context: Context) {
@@ -128,7 +162,11 @@ object FcmDataHandling : HandleJsonData {
             CoroutineScope(Dispatchers.IO).launch {
                 FirebaseManager.getUser(it).onEach {
                     it.data?.let {
-                        MyNotificationManager.showLikeInPostNotification(it,notificationData,context)
+                        MyNotificationManager.showLikeInPostNotification(
+                            it,
+                            notificationData,
+                            context
+                        )
                         MyNotificationManager.showGroupSummaryNotification(context)
                     }
                 }.launchIn(this)
@@ -144,7 +182,11 @@ object FcmDataHandling : HandleJsonData {
             CoroutineScope(Dispatchers.IO).launch {
                 FirebaseManager.getUser(it).onEach {
                     it.data?.let {
-                        MyNotificationManager.showFriendRequestComeNotification(it,notificationData,context)
+                        MyNotificationManager.showFriendRequestComeNotification(
+                            it,
+                            notificationData,
+                            context
+                        )
                         MyNotificationManager.showGroupSummaryNotification(context)
                     }
                 }.launchIn(this)
@@ -160,7 +202,11 @@ object FcmDataHandling : HandleJsonData {
             CoroutineScope(Dispatchers.IO).launch {
                 FirebaseManager.getUser(it).onEach {
                     it.data?.let {
-                        MyNotificationManager.showAcceptFriendRequestNotification(it,notificationData,context)
+                        MyNotificationManager.showAcceptFriendRequestNotification(
+                            it,
+                            notificationData,
+                            context
+                        )
                         MyNotificationManager.showGroupSummaryNotification(context)
                     }
                 }.launchIn(this)
@@ -168,21 +214,25 @@ object FcmDataHandling : HandleJsonData {
         }
     }
 
-    private fun handleNewFollowerNotification(notificationData: NotificationData, context: Context) {
+    private fun handleNewFollowerNotification(
+        notificationData: NotificationData,
+        context: Context
+    ) {
         notificationData.friendOrFollowerId?.let {
             CoroutineScope(Dispatchers.IO).launch {
                 FirebaseManager.getUser(it).onEach {
                     it.data?.let {
-                        MyNotificationManager.showNewFollowerNotification(it,notificationData,context)
+                        MyNotificationManager.showNewFollowerNotification(
+                            it,
+                            notificationData,
+                            context
+                        )
                         MyNotificationManager.showGroupSummaryNotification(context)
                     }
                 }.launchIn(this)
             }
         }
     }
-
-
-
 
 
     /*private fun setIntent(number: String, context: Context): Intent {

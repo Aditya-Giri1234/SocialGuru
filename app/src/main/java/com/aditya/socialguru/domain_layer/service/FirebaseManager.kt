@@ -181,6 +181,8 @@ object FirebaseManager {
     ,isIAmUser1,status)
 
     suspend fun getMessageById(chatRoomId: String,messageId:String) = ChatManager.getMessageById(chatRoomId,messageId)
+    suspend fun getGroupMessageById(chatRoomId: String, messageId: String) = ChatManager.getGroupMessageById(chatRoomId,messageId)
+    suspend fun getCommentById(postId: String, commentId: String) = CommentManager.getCommentById(postId,commentId)
     suspend fun getRecentChatAndListen() = ChatManager.getRecentChatAndListen()
 
     suspend fun deleteMessage(message: Message,chatRoomId:String,userId:String  , lastMessage: LastMessage?, secondLastMessage:Message?=null) = ChatManager.deleteMessage(message,chatRoomId,userId,lastMessage,secondLastMessage)

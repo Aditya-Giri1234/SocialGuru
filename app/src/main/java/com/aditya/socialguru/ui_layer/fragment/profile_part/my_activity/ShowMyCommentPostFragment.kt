@@ -33,6 +33,7 @@ import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
@@ -269,6 +270,7 @@ class ShowMyCommentPostFragment(val userId: String) : Fragment(), OnPostClick {
     }
 
     override fun onSendClick(post: Post) {
+        ShareManager.sharePost(requireContext(),post.postId!!)
     }
 
     override fun onPostClick(postId: String) {

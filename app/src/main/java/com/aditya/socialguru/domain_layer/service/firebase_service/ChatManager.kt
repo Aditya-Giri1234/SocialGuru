@@ -790,6 +790,11 @@ object ChatManager {
         chatRef.document(chatRoomId).collection(Table.Messages.name).document(messageId).get()
             .await().toObject<Message>()?.let { emit(it) }
     }
+    suspend fun getGroupMessageById(chatRoomId: String, messageId: String) = flow<GroupMessage> {
+        chatRef.document(chatRoomId).collection(Table.Messages.name).document(messageId).get()
+            .await().toObject<GroupMessage>()?.let { emit(it) }
+    }
+
 
 
     suspend fun getRecentChatAndListen() =

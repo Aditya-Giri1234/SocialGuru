@@ -119,6 +119,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 profileViewModel.followUser.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar("Successfully Following !", true)
                         }
@@ -128,6 +129,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                         }
 
                         is Resource.Error -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar(response.message)
                         }
@@ -137,6 +139,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 profileViewModel.unFollow.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar("UnFollow Successfully!", true)
                         }
@@ -146,6 +149,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                         }
 
                         is Resource.Error -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar(response.message)
                         }
@@ -156,6 +160,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 profileViewModel.sendFriendRequest.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar("Successfully  Friend Request Sent !", true)
 
@@ -166,6 +171,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                         }
 
                         is Resource.Error -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar(response.message)
                         }
@@ -176,6 +182,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 profileViewModel.acceptFriendRequest.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar("Friend Request Accepted !", true)
 
@@ -186,6 +193,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                         }
 
                         is Resource.Error -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar(response.message)
                         }
@@ -196,6 +204,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 profileViewModel.deleteFriendRequest.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar(" Friend Request deleted  successfully !", true)
                         }
@@ -205,6 +214,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                         }
 
                         is Resource.Error -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar(response.message)
                         }
@@ -218,6 +228,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                             hideDialog()
                             response.data?.let {
                                 if(!response.hasBeenMessagedToUser){
+                                    response.hasBeenMessagedToUser=true
                                     setUserRelational(it)
                                 }
                             }
@@ -255,6 +266,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 profileViewModel.removeFriend.onEach { response ->
                     when (response) {
                         is Resource.Success -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar("Removed Successfully !", true)
                         }
@@ -264,6 +276,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                         }
 
                         is Resource.Error -> {
+                            response.hasBeenMessagedToUser=true
                             hideDialog()
                             showSnackBar(response.message)
                         }

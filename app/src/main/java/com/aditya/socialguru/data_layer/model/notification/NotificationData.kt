@@ -10,7 +10,7 @@ data class NotificationData(
     val notificationTimeInTimeStamp:String?=null,
     val notificationId:String?=null,
     val chatRoomId:String?=null,
-    val messageId:String?=null,
+    val messageId:String?=null,  // also work for comment Id
 
     //For Group Chat
     @field:JvmField

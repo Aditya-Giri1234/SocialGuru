@@ -5,18 +5,25 @@
     <color name="lightWhite">#B9B7B7</color>
     <color name="yellow">#FFEB3B</color>
     <color name="darkYellow">#D8C62E</color>
+    <color name="orange">#FF9800</color>  // For New Follower etc.
     <color name="dark_orange">#FF5722</color>
     <color name="deep_dark_orange">#D64B1F</color>
     <color name="grey">#808080</color>
     <color name="lightBlack">#1E1E1E</color>
     <color name="red">#FA0202</color>
-    <color name="green">#0EC215</color>
+    <color name="green">#0EC215</color>   // For Single Chat Text Message.
+    <color name="lightGreen">#8BC34A </color>  //For Friend Request accepted.
     <color name="dark_night_green">#191D19</color>
-    <color name="blue">#108CEF</color>
+    <color name="blue">#108CEF</color>  //For Comment On Post.
     <color name="dark_night_blue">#376A94</color>
     <color name="light_pink">#FFB6C1</color>
     <color name="deep_pink">#FF1493</color>
     <color name="fab_bg">#80B9B7B7</color>
+    <color name="magenta">#E91E63 </color> // For Group Chat Media message.
+    <color name="light_blue">#03A9F4 </color> //For Group Chat Text message.
+    <color name="purple">#9C27B0 </color>   // For Single Chat Media message.
+    <color name="amber">#FFC107 </color>  // For New Friend Request.
+    <color name="pink">#FF4081  </color>  // For Like Post.
 
 
     <color name="mtrl_textinput_default_box_stroke_color" tools:override="true">#fff</color>

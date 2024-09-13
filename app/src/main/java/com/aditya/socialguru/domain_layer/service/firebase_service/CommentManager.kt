@@ -2,6 +2,7 @@ package com.aditya.socialguru.domain_layer.service.firebase_service
 
 import android.util.Log
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.chat.Message
 import com.aditya.socialguru.data_layer.model.chat.UpdateChatResponse
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.model.post.Comment
@@ -11,6 +12,7 @@ import com.aditya.socialguru.data_layer.model.post.comment.CommentersModel
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Constants.Table
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
@@ -29,6 +31,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlin.system.measureTimeMillis
@@ -198,6 +201,7 @@ object CommentManager {
             notificationTimeInTimeStamp = timeStamp.toString(),
             type = Constants.NotificationType.COMMENT_IN_POST.name,
             postId = comment.postId,
+            messageId = comment.commentId
         )
 
         // This is updated message
@@ -258,6 +262,12 @@ object CommentManager {
         awaitClose {
             close()
         }
+    }
+
+    suspend fun getCommentById(postId: String, commentId: String) = flow<Comment> {
+        postRef.document(postId).collection(Constants.Table.Comment.name)
+            .document(commentId).get()
+            .await().toObject<Comment>()?.let { emit(it) }
     }
 
 

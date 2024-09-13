@@ -706,7 +706,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
                 commentUploadingTimeInTimestamp = timeStamp,
                 commentUploadingTimeInText = timeInText,
                 postId = postId,
-                postCreatorId = post.postId,
+                postCreatorId = post.userId,
                 userName = pref.getPrefUser().first()?.userName,
 
                 )

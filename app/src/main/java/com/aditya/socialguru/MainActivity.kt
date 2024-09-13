@@ -170,7 +170,6 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     }
 
     private fun handleIntent() {
-
         when {
             intent.getBooleanExtra(
                 Constants.IntentTable.LogOutOrDeleteAccountAcitivityHappend.name,
