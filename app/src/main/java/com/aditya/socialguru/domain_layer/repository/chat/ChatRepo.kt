@@ -23,7 +23,7 @@ class ChatRepo {
 
     suspend fun getChatMessageAndListen(chatRoomId: String) = FirebaseManager.getChatMessageAndListen(chatRoomId)
 
-    suspend fun listenLastMessage(chatRoomId: String) = ChatManager.listenLastMessage(chatRoomId)
+    suspend fun listenLastMessage(chatRoomId: String) = FirebaseManager.listenLastMessage(chatRoomId)
     suspend fun updateUserAvailabilityForChatRoom(chatRoomId: String,isIAmUser1:Boolean,status: Boolean)=FirebaseManager.updateUserAvailabilityForChatRoom(chatRoomId
         ,isIAmUser1,status)
 

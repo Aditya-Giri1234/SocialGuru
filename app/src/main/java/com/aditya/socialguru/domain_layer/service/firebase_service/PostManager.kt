@@ -113,7 +113,7 @@ object PostManager {
 
             if (post != null) {
                 // First We Add or Remove From My Liked Post Then do other thing
-                updatePostLikeStatus(postId).onEach {
+                updatePostLikeStatus(postId).first().let {
                     if (it.isSuccess) {
                         val currentCount = post.likeCount ?: 0
                         val newCount =
@@ -162,8 +162,7 @@ object PostManager {
                     } else {
                         trySend(it)
                     }
-                }.launchIn(this)
-
+                }
             } else {
                 trySend(UpdateResponse(false, "Something went wrong!"))
             }

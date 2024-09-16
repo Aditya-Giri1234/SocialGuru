@@ -844,14 +844,6 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 it.singleResponse?.let {
                     chatMessageList.add(it)
                     chatMessageList.sortBy { it.messageSentTimeInTimeStamp }
-                    if (it.senderId != senderId) {
-                        FirebaseManager.updateSeenStatus(
-                            Constants.SeenStatus.MessageSeen.status,
-                            it.messageId!!,
-                            chatRoomId,
-                            it.senderId!!
-                        )
-                    }
                 }
             }
 
@@ -1017,7 +1009,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
      fun listenNewMessage(chatRoomId: String) = viewModelScope.myLaunch {
          if (isNetworkAvailable(app)){
              repository.listenNewMessage(chatRoomId).onEach {
-// Don't do anything here
+                    // Don't do anything here
              }.launchIn(this)
          }else{
              MyLogger.e(tagChat, msg = "Internet Off so that user status update failed!")

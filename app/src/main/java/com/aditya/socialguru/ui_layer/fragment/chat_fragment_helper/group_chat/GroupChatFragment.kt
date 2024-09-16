@@ -498,7 +498,6 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
         if (message.isNotEmpty()) {
             hideNoDataView()
             chatAdapter.submitList(message)
-
             if (isFirstTimeDataSetOnUi) {
                 isFirstTimeDataSetOnUi = false
                 lifecycleScope.launch {
@@ -506,11 +505,6 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                     binding.rvChats.scrollToPosition(chatAdapter.itemCount - 1)
                 }
             }
-            //Update seen status of message of receiver not my  message
-//            chatViewModel.updateMessageSeenAvailability(
-//                message.filter { it.seenStatus != Constants.SeenStatus.MessageSeen.status && it.senderId != senderId },
-//                chatRoomId
-//            )
         } else {
             showNoDataView()
         }
@@ -571,7 +565,6 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                 seenStatus = Constants.SeenStatus.Sending.status,
                 sendTimeUsers = onlyGroupMembers ,
                 senderUserName = perf.getPrefUser().first()?.userName
-
             )
             val lastMessage = GroupLastMessage(
                 senderId = senderId,

@@ -36,6 +36,7 @@ import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.google.android.gms.tasks.Task
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.Transaction
 import com.google.firebase.firestore.WriteBatch
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
@@ -449,6 +450,14 @@ fun WriteBatch.safeUpdate(documentReference: DocumentReference, data: Map<String
 }
 
 fun WriteBatch.safeUpdate(documentReference: DocumentReference , isExist:Boolean, field: String ,value : Any? ): WriteBatch? {
+    return  if (isExist) update(documentReference , field ,value) else null
+}
+
+fun Transaction.safeUpdate(documentReference: DocumentReference, data: Map<String, Any> , isExist:Boolean): Transaction? {
+    return  if (isExist) update(documentReference ,data) else null
+}
+
+fun Transaction.safeUpdate(documentReference: DocumentReference, isExist:Boolean, field: String, value : Any? ): Transaction? {
     return  if (isExist) update(documentReference , field ,value) else null
 }
 suspend fun DocumentReference.safeUpdate(field: String ,value: Any?) : Task<Void>?{

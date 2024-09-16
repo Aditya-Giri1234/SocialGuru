@@ -34,5 +34,4 @@ data class UserSetting(
     val isPostNotificationMute:Boolean?=false,
     @field : JvmField
     val isFriendCircleNotificationMute:Boolean?=false,
-
-)
+) : Serializable

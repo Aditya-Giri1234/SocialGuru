@@ -172,7 +172,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     private fun handleIntent() {
         when {
             intent.getBooleanExtra(
-                Constants.IntentTable.LogOutOrDeleteAccountAcitivityHappend.name,
+                Constants.IntentTable.LogOutOrDeleteAccountActivityHappened.name,
                 false
             ) -> {
                 navController.currentDestination?.id?.let {
@@ -440,7 +440,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
             Intent(this, MainActivity::class.java).addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK
             ).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                .putExtra(Constants.IntentTable.LogOutOrDeleteAccountAcitivityHappend.name, true)
+                .putExtra(Constants.IntentTable.LogOutOrDeleteAccountActivityHappened.name, true)
         )
         overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
 

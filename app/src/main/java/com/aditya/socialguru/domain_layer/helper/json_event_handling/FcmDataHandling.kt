@@ -7,6 +7,7 @@ import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.MyNotificationManager
 import com.aditya.socialguru.domain_layer.service.FirebaseManager
+import com.aditya.socialguru.domain_layer.service.SharePref
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,19 +47,11 @@ object FcmDataHandling : HandleJsonData {
                 handleCommentInPostNotification(notificationData, context)
             }
 
-            Constants.NotificationType.TextChat.name -> {
+            Constants.NotificationType.SINGLE_CHAT.name -> {
                 handleSingleChatMessage(notificationData, context)
             }
 
-            Constants.NotificationType.MediaChat.name -> {
-                handleSingleChatMessage(notificationData, context)
-            }
-
-            Constants.NotificationType.GroupTextChat.name -> {
-                handleGroupChatMessage(notificationData, context)
-            }
-
-            Constants.NotificationType.GroupMediaChat.name -> {
+            Constants.NotificationType.GROUP_CHAT.name -> {
                 handleGroupChatMessage(notificationData, context)
             }
         }
@@ -73,23 +66,33 @@ object FcmDataHandling : HandleJsonData {
             val messageData =
                 async { FirebaseManager.getGroupMessageById(chatRoomId, messageId).first() }
             val userData = async { FirebaseManager.getUser(senderId).first().data }
+            val groupInfoData = async { FirebaseManager.getGroupInfo(chatRoomId).first() }
             val user = userData.await()
             val message = messageData.await()
-            if (user != null) {
+            val groupInfo = groupInfoData.await()
+            if (user!=null) {
                 FirebaseManager.updateGroupReceivedStatus(messageId, chatRoomId, senderId)
-                if (!FirebaseManager.isUserMuted(chatRoomId)) {
-                    MyNotificationManager.showGroupChatMessage(
-                        user,
-                        notificationData,
-                        message,
-                        context
-                    )
-                    MyNotificationManager.showGroupSummaryNotification(context)
-                } else {
-                    MyLogger.w(
-                        Constants.LogTag.Notification,
-                        msg = "Notification come of chat but sender is muted so that no notification show !"
-                    )
+                SharePref(context).getPrefUser().first()?.let { myData ->
+                    myData.userSetting?.let { setting ->
+                        if (setting.isSingleChatNotificationMute != true) {
+                            if (!FirebaseManager.isUserMuted(chatRoomId)) {
+                                MyNotificationManager.showGroupChatMessage(
+                                    user,
+                                    myData,
+                                    notificationData,
+                                    message,
+                                    groupInfo,
+                                    context
+                                )
+                                MyNotificationManager.showGroupSummaryNotification(context)
+                            } else {
+                                MyLogger.w(
+                                    Constants.LogTag.Notification,
+                                    msg = "Notification come of chat but sender is muted so that no notification show !"
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -113,23 +116,27 @@ object FcmDataHandling : HandleJsonData {
                     chatRoomId,
                     notificationData.friendOrFollowerId
                 )
-                if (!FirebaseManager.isUserMuted(userId)) {
-                    MyNotificationManager.showSingleChatMessage(
-                        user,
-                        notificationData,
-                        message,
-                        context
-                    )
-                    MyNotificationManager.showGroupSummaryNotification(context)
-                } else {
-                    MyLogger.w(
-                        Constants.LogTag.Notification,
-                        msg = "Notification come of chat but sender is muted so that no notification show !"
-                    )
+                SharePref(context).getPrefUser().first()?.let { myData ->
+                    myData.userSetting?.let { setting ->
+                        if (setting.isSingleChatNotificationMute != true) {
+                            if (!FirebaseManager.isUserMuted(userId)) {
+                                MyNotificationManager.showSingleChatMessage(
+                                    user,
+                                    notificationData,
+                                    message,
+                                    context
+                                )
+                                MyNotificationManager.showGroupSummaryNotification(context)
+                            } else {
+                                MyLogger.w(
+                                    Constants.LogTag.Notification,
+                                    msg = "Notification come of chat but sender is muted so that no notification show !"
+                                )
+                            }
+                        }
+                    }
                 }
-
             }
-
         }
     }
 
@@ -141,18 +148,25 @@ object FcmDataHandling : HandleJsonData {
         val messageId = notificationData.messageId!!
         val postId = notificationData.postId!!
         launchCoroutineInIOThread {
-            val commentData = async { FirebaseManager.getCommentById(postId, messageId).first() }
-            val userData = async { FirebaseManager.getUser(userId).first().data }
-            val user = userData.await()
-            val message = commentData.await()
-            if (user != null) {
-                MyNotificationManager.showCommentOnPostNotification(
-                    user,
-                    notificationData,
-                    message,
-                    context
-                )
-                MyNotificationManager.showGroupSummaryNotification(context)
+            SharePref(context).getPrefUser().first()?.let { user ->
+                user.userSetting?.let { setting ->
+                    if (setting.isPostNotificationMute != true) {
+                        val commentData =
+                            async { FirebaseManager.getCommentById(postId, messageId).first() }
+                        val userData = async { FirebaseManager.getUser(userId).first().data }
+                        val user = userData.await()
+                        val message = commentData.await()
+                        if (user != null) {
+                            MyNotificationManager.showCommentOnPostNotification(
+                                user,
+                                notificationData,
+                                message,
+                                context
+                            )
+                            MyNotificationManager.showGroupSummaryNotification(context)
+                        }
+                    }
+                }
             }
         }
     }
@@ -160,16 +174,22 @@ object FcmDataHandling : HandleJsonData {
     private fun handleLikeInPostNotification(notificationData: NotificationData, context: Context) {
         notificationData.friendOrFollowerId?.let {
             CoroutineScope(Dispatchers.IO).launch {
-                FirebaseManager.getUser(it).onEach {
-                    it.data?.let {
-                        MyNotificationManager.showLikeInPostNotification(
-                            it,
-                            notificationData,
-                            context
-                        )
-                        MyNotificationManager.showGroupSummaryNotification(context)
+                SharePref(context).getPrefUser().first()?.let { user ->
+                    user.userSetting?.let { setting ->
+                        if (setting.isPostNotificationMute != true) {
+                            FirebaseManager.getUser(it).onEach {
+                                it.data?.let {
+                                    MyNotificationManager.showLikeInPostNotification(
+                                        it,
+                                        notificationData,
+                                        context
+                                    )
+                                    MyNotificationManager.showGroupSummaryNotification(context)
+                                }
+                            }.launchIn(this)
+                        }
                     }
-                }.launchIn(this)
+                }
             }
         }
     }
@@ -180,16 +200,22 @@ object FcmDataHandling : HandleJsonData {
     ) {
         notificationData.friendOrFollowerId?.let {
             CoroutineScope(Dispatchers.IO).launch {
-                FirebaseManager.getUser(it).onEach {
-                    it.data?.let {
-                        MyNotificationManager.showFriendRequestComeNotification(
-                            it,
-                            notificationData,
-                            context
-                        )
-                        MyNotificationManager.showGroupSummaryNotification(context)
+                SharePref(context).getPrefUser().first()?.let { user ->
+                    user.userSetting?.let { setting ->
+                        if (setting.isFriendCircleNotificationMute != true) {
+                            FirebaseManager.getUser(it).onEach {
+                                it.data?.let {
+                                    MyNotificationManager.showFriendRequestComeNotification(
+                                        it,
+                                        notificationData,
+                                        context
+                                    )
+                                    MyNotificationManager.showGroupSummaryNotification(context)
+                                }
+                            }.launchIn(this)
+                        }
                     }
-                }.launchIn(this)
+                }
             }
         }
     }
@@ -200,16 +226,22 @@ object FcmDataHandling : HandleJsonData {
     ) {
         notificationData.friendOrFollowerId?.let {
             CoroutineScope(Dispatchers.IO).launch {
-                FirebaseManager.getUser(it).onEach {
-                    it.data?.let {
-                        MyNotificationManager.showAcceptFriendRequestNotification(
-                            it,
-                            notificationData,
-                            context
-                        )
-                        MyNotificationManager.showGroupSummaryNotification(context)
+                SharePref(context).getPrefUser().first()?.let { user ->
+                    user.userSetting?.let { setting ->
+                        if (setting.isFriendCircleNotificationMute != true) {
+                            FirebaseManager.getUser(it).onEach {
+                                it.data?.let {
+                                    MyNotificationManager.showAcceptFriendRequestNotification(
+                                        it,
+                                        notificationData,
+                                        context
+                                    )
+                                    MyNotificationManager.showGroupSummaryNotification(context)
+                                }
+                            }.launchIn(this)
+                        }
                     }
-                }.launchIn(this)
+                }
             }
         }
     }
@@ -220,16 +252,22 @@ object FcmDataHandling : HandleJsonData {
     ) {
         notificationData.friendOrFollowerId?.let {
             CoroutineScope(Dispatchers.IO).launch {
-                FirebaseManager.getUser(it).onEach {
-                    it.data?.let {
-                        MyNotificationManager.showNewFollowerNotification(
-                            it,
-                            notificationData,
-                            context
-                        )
-                        MyNotificationManager.showGroupSummaryNotification(context)
+                SharePref(context).getPrefUser().first()?.let { user ->
+                    user.userSetting?.let { setting ->
+                        if (setting.isFriendCircleNotificationMute != true) {
+                            FirebaseManager.getUser(it).onEach {
+                                it.data?.let {
+                                    MyNotificationManager.showNewFollowerNotification(
+                                        it,
+                                        notificationData,
+                                        context
+                                    )
+                                    MyNotificationManager.showGroupSummaryNotification(context)
+                                }
+                            }.launchIn(this)
+                        }
                     }
-                }.launchIn(this)
+                }
             }
         }
     }

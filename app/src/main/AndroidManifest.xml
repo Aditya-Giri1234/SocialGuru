@@ -67,7 +67,6 @@
             </intent-filter>
         </activity>
 
-
         <service
             android:name=".domain_layer.service.MyFirebaseMessagingService"
             android:enabled="true"
@@ -77,6 +76,8 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <receiver android:name=".ui_layer.broadcaster.NotificationEventListener" android:enabled="true"  android:exported="false"/>
 
         <provider
             android:name="androidx.core.content.FileProvider"

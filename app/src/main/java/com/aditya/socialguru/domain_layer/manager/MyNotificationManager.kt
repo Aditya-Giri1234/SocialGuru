@@ -1,39 +1,46 @@
 package com.aditya.socialguru.domain_layer.manager
 
-import android.annotation.SuppressLint
 import android.app.Notification
-import android.app.Notification.Action
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.TaskStackBuilder
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import androidx.annotation.NavigationRes
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.app.NotificationCompat
+import androidx.core.app.Person
+import androidx.core.app.RemoteInput
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.IconCompat
 import androidx.core.graphics.drawable.toBitmap
-import androidx.core.net.toUri
-import androidx.navigation.NavDeepLinkBuilder
-import androidx.navigation.NavGraph
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.chat.Message
+import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
 import com.aditya.socialguru.data_layer.model.chat.group.GroupMessage
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.model.post.Comment
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Constants.IntentTable
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
-import com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.single_chat.ChatFragmentArgs
-import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
-import com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragmentArgs
+import com.aditya.socialguru.ui_layer.broadcaster.NotificationEventListener
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import java.util.Random
 
 
@@ -41,6 +48,7 @@ object MyNotificationManager {
 
     const val TAG = "MyNotificationManager"
     private val tagNotification = Constants.LogTag.Notification
+
 
     //give channel name and id
     private const val USER_ACTION_CHANNEL = "User Action Channel"
@@ -67,7 +75,7 @@ object MyNotificationManager {
     private const val CHAT_PENDING_INTENT_REQUEST_CODE = 2
 
     //Group Id
-    private const val NOTIFICATON_GROUP = "Notification Group"
+    private const val NOTIFICATION_GROUP = "Notification Group"
 
 
     //For Notification
@@ -98,6 +106,9 @@ object MyNotificationManager {
             return _CHAT_MESSAGE_PENDING_INTENT_ID + (Random().nextInt(Int.MAX_VALUE))
         }
 //    private val
+
+    private val conversationMessages =
+        mutableMapOf<String, MutableList<NotificationCompat.MessagingStyle.Message>>()
 
     /*    fun createDeepLinkPendingIntent(context: Context ,notificationData: NotificationData): PendingIntent? {
             // Define a fixed navigation graph and destination
@@ -241,7 +252,7 @@ object MyNotificationManager {
                 context, R.color.orange
             )
         )
-        notification.setGroup(NOTIFICATON_GROUP)
+        notification.setGroup(NOTIFICATION_GROUP)
         notification.setAutoCancel(true)
 
         // below two line important because in android 8 notification not show like head up so that we need below  2 line.
@@ -320,7 +331,7 @@ object MyNotificationManager {
         // Don't set sound and vibrate individually for this notification
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(NOTIFICATON_GROUP)
+        notification.setGroup(NOTIFICATION_GROUP)
         notification.setColor(
             ContextCompat.getColor(
                 context, R.color.amber
@@ -401,7 +412,7 @@ object MyNotificationManager {
 
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(NOTIFICATON_GROUP)
+        notification.setGroup(NOTIFICATION_GROUP)
         notification.setColor(context.giveMeColor(R.color.lightGreen))
         notification.setAutoCancel(true)
 
@@ -479,7 +490,7 @@ object MyNotificationManager {
 
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(NOTIFICATON_GROUP)
+        notification.setGroup(NOTIFICATION_GROUP)
         notification.setColor(context.giveMeColor(R.color.pink))
         notification.setAutoCancel(true)
 
@@ -512,6 +523,8 @@ object MyNotificationManager {
      //            .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
                  .setArguments(ChatFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
                  .createPendingIntent()*/
+
+        val notificationId = getUniqueRequestCode(comment.postId!!)
 
         val intent = createDefaultPendingIntent(context).apply {
             putExtra(Constants.DATA, notificationData.postId)
@@ -556,7 +569,7 @@ object MyNotificationManager {
 
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(NOTIFICATON_GROUP)
+        notification.setGroup(NOTIFICATION_GROUP)
         notification.setColor(context.giveMeColor(R.color.green))
         notification.setAutoCancel(true)
 
@@ -565,7 +578,6 @@ object MyNotificationManager {
         notification.setFullScreenIntent(pendingIntent, true)
 
 
-        val notificationId = CHAT_MESSAGE_NOTIFICATION_ID
 
         MyLogger.d(Constants.LogTag.Notification, msg = "Comment Id :- ${comment.commentId}")
 
@@ -573,7 +585,7 @@ object MyNotificationManager {
         notificationManager.notify(notificationId, notification.build())
     }
 
-    fun showSingleChatMessage(
+    suspend fun showSingleChatMessage(
         user: User,
         notificationData: NotificationData,
         message: Message,
@@ -589,6 +601,8 @@ object MyNotificationManager {
      //            .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
                  .setArguments(ChatFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
                  .createPendingIntent()*/
+
+        val chatRoomId = notificationData.chatRoomId!!
 
         val intent = createDefaultPendingIntent(context).apply {
             putExtra(Constants.DATA, notificationData.friendOrFollowerId!!)
@@ -613,47 +627,164 @@ object MyNotificationManager {
 
         notificationManager.createNotificationChannel(notificationChannel)
 
+        val notificationId = getChatNotificationId(chatRoomId)
+
+        val remoteInput: RemoteInput =
+            RemoteInput.Builder(IntentTable.ReplyMessage.name).run {
+                setLabel("send reply...")
+                build()
+            }
+        val broadCastIntent = Intent(context, NotificationEventListener::class.java).apply {
+            setAction(Constants.NotificationRemoteInput.SingleChatReply.name)
+            putExtra(IntentTable.UserData.name,user)
+            putExtra(IntentTable.SenderId.name,notificationData.friendOrFollowerId!!)
+            putExtra(IntentTable.ChatRoomId.name,chatRoomId)
+        }
+        val replyPendingIntent: PendingIntent =
+            PendingIntent.getBroadcast(
+                context,
+                getUniqueRequestCode(notificationData.chatRoomId),
+                broadCastIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+            )
+
+
         val appIcon = context.packageManager.getApplicationIcon(context.packageName)
 
-        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID)
-        notification.setSmallIcon(R.drawable.app_icon)
-        if (appIcon is AdaptiveIconDrawable) {
-            val bitmap = appIcon.toBitmap()
-            notification.setLargeIcon(bitmap)
-        } else {
-            // If it's not an AdaptiveIconDrawable, assume it's a BitmapDrawable
-            notification.setLargeIcon((appIcon as BitmapDrawable).bitmap)
+//        val shareBitmap = vectorDrawableToBitmap(context, R.drawable.share, 48, 48)
+        val action: NotificationCompat.Action =
+            NotificationCompat.Action.Builder(
+                0,
+                "Reply", replyPendingIntent
+            )
+                .addRemoteInput(remoteInput)
+                .build()
+        val person = Person.Builder()
+            .setIcon(getBitmapImage(context, user.userProfileImage).first())
+            .setName(user.userName)
+            .build()
+
+        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID).apply {
+            setSmallIcon(R.drawable.app_icon)
+            setTicker("Text Message")
+            setSubText(user.userName ?: "Someone")
+            addAction(action)
+
+
+            // Set other notification properties...
+
+            setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
+            setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            setGroup(NOTIFICATION_GROUP)
+            setColor(context.giveMeColor(R.color.green))
+            setAutoCancel(true)
+
+            // Retrieve the existing messages for this conversation or create a new list
+            val messagesList =
+                conversationMessages.getOrPut(notificationData.chatRoomId) { mutableListOf() }
+
+            // Create the new message object
+            val newMessageObj = NotificationCompat.MessagingStyle.Message(
+                getContentMessageForSingleChat(message, user), // Message text
+                message.messageSentTimeInTimeStamp!!, // Message time
+                person // Sender's name
+            )
+
+            // Add the new message to the list
+            messagesList.add(newMessageObj)
+
+            // Create MessagingStyle and add all messages
+            val messagingStyle = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                NotificationCompat.MessagingStyle(person).run {
+                    setConversationTitle(user.userName ?: "Someone")
+                    this
+                }
+            }else{
+                NotificationCompat.MessagingStyle(user.userName ?: "Someone")
+            }
+
+            // Add all messages to the style
+            for (cMessage in messagesList) {
+                messagingStyle.addMessage(cMessage)
+            }
+            setStyle(messagingStyle)
+
+            // below two line important because in android 8 notification not show like head up so that we need below  2 line.
+            setContentIntent(pendingIntent)
+            setFullScreenIntent(pendingIntent, true)
+
+            MyLogger.d(Constants.LogTag.Notification, msg = "Message Id :- ${message.messageId}")
         }
-        notification.setTicker("Text Message")
-        notification.setContentTitle(user.userName ?: "Unknown")
-        notification.setContentText(getContentMessageForSingleChat(message, user))
-
-
-        // Set other notification properties...
-
-        notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
-        notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(NOTIFICATON_GROUP)
-        notification.setColor(context.giveMeColor(R.color.green))
-        notification.setAutoCancel(true)
-
-        // below two line important because in android 8 notification not show like head up so that we need below  2 line.
-        notification.setContentIntent(pendingIntent)
-        notification.setFullScreenIntent(pendingIntent, true)
-
-
-        val notificationId = CHAT_MESSAGE_NOTIFICATION_ID
-
-        MyLogger.d(Constants.LogTag.Notification, msg = "Message Id :- ${message.messageId}")
 
         removeHeadUpNotificationBehaviour(notification, notificationManager, notificationId)
         notificationManager.notify(notificationId, notification.build())
     }
 
-    fun showGroupChatMessage(
+    suspend fun showSingleChatSendMessage(
         user: User,
+        chatRoomId: String,
+        receiverId:String,
+        message: String,
+        context: Context
+    ) {
+
+        val intent = createDefaultPendingIntent(context).apply {
+            putExtra(Constants.DATA, receiverId)
+            putExtra(Constants.FCM_INTENT_FOR, Constants.FcmIntentFor.SingleChatScreen.name)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            USER_ACTION_PENDING_INTENT_ID,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+        )
+
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationChannel = NotificationChannel(
+            CHAT_MESSAGE_CHANNEL_ID,
+            CHAT_MESSAGE_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        }
+
+        notificationManager.createNotificationChannel(notificationChannel)
+
+        val notificationId = getChatNotificationId(chatRoomId)
+
+
+
+        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID).apply {
+            setSmallIcon(R.drawable.app_icon)
+            setTicker("Text Message")
+            setContentTitle(user.userName ?: "Someone")
+            setContentText(message)
+
+            // Set other notification properties...
+
+            setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
+            setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            setGroup(NOTIFICATION_GROUP)
+            setColor(context.giveMeColor(R.color.green))
+            setTimeoutAfter(500)
+            setAutoCancel(true)
+
+            // Retrieve the existing messages for this conversation or create a new list
+            conversationMessages.remove(chatRoomId)
+
+            // below two line important because in android 8 notification not show like head up so that we need below  2 line.
+            setContentIntent(pendingIntent)
+        }
+        notificationManager.notify(notificationId, notification.build())
+    }
+
+    suspend fun showGroupChatMessage(
+        user: User,
+        myData:User,
         notificationData: NotificationData,
         message: GroupMessage,
+        groupInfo: GroupInfo?,
         context: Context
     ) {
 
@@ -667,8 +798,10 @@ object MyNotificationManager {
                  .setArguments(ChatFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
                  .createPendingIntent()*/
 
+
+        val chatRoomId = notificationData.chatRoomId!!
         val intent = createDefaultPendingIntent(context).apply {
-            putExtra(Constants.DATA, notificationData.chatRoomId!!)
+            putExtra(Constants.DATA, chatRoomId)
             putExtra(Constants.FCM_INTENT_FOR, Constants.FcmIntentFor.GroupChatScreen.name)
         }
 
@@ -690,41 +823,173 @@ object MyNotificationManager {
 
         notificationManager.createNotificationChannel(notificationChannel)
 
+        val notificationId = getChatNotificationId(chatRoomId)
         val appIcon = context.packageManager.getApplicationIcon(context.packageName)
 
-        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID)
-        notification.setSmallIcon(R.drawable.app_icon)
-        if (appIcon is AdaptiveIconDrawable) {
+        val remoteInput: RemoteInput =
+            RemoteInput.Builder(IntentTable.ReplyMessage.name).run {
+                setLabel("send reply...")
+                build()
+            }
+        val broadCastIntent = Intent(context, NotificationEventListener::class.java).apply {
+            setAction(Constants.NotificationRemoteInput.GroupChatReply.name)
+            putExtra(IntentTable.UserData.name,myData)
+            putExtra(IntentTable.GroupInfo.name,groupInfo)
+            putExtra(IntentTable.ChatRoomId.name,chatRoomId)
+        }
+        val replyPendingIntent: PendingIntent =
+            PendingIntent.getBroadcast(
+                context,
+                getUniqueRequestCode(notificationData.chatRoomId),
+                broadCastIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+            )
+
+        val action: NotificationCompat.Action =
+            NotificationCompat.Action.Builder(
+                0,
+                "Reply", replyPendingIntent
+            )
+                .addRemoteInput(remoteInput)
+                .build()
+        val person = Person.Builder()
+            .setIcon(getBitmapImage(context, user.userProfileImage).first())
+            .setName(user.userName)
+            .build()
+
+        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID).apply {
+
+            setSmallIcon(R.drawable.app_icon)
+            /* if (appIcon is AdaptiveIconDrawable) {
             val bitmap = appIcon.toBitmap()
             notification.setLargeIcon(bitmap)
         } else {
             // If it's not an AdaptiveIconDrawable, assume it's a BitmapDrawable
             notification.setLargeIcon((appIcon as BitmapDrawable).bitmap)
+        }*/
+            setTicker("Text Message")
+            setSubText(groupInfo?.groupName ?: "GroupChat")
+            addAction(action)
+
+
+            // Set other notification properties...
+
+            setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
+            setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            setGroup(NOTIFICATION_GROUP)
+            setColor(context.giveMeColor(R.color.green))
+            setAutoCancel(true)
+
+            // Retrieve the existing messages for this conversation or create a new list
+            val messagesList =
+                conversationMessages.getOrPut(notificationData.chatRoomId) { mutableListOf() }
+
+            // Create the new message object
+            val newMessageObj = NotificationCompat.MessagingStyle.Message(
+                getContentMessageForGroupChat(message, user), // Message text
+                message.messageSentTimeInTimeStamp!!, // Message time
+                person // Sender's name
+            )
+
+            // Add the new message to the list
+            messagesList.add(newMessageObj)
+
+            // Create MessagingStyle and add all messages
+            val messagingStyle = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                NotificationCompat.MessagingStyle(person).run {
+                    setConversationTitle(groupInfo?.groupName ?: "GroupChat")
+                    this
+                }
+            }else{
+                NotificationCompat.MessagingStyle(groupInfo?.groupName ?: "GroupChat")
+            }
+            messagingStyle.setGroupConversation(true)
+
+            // Add all messages to the style
+            for (cMessage in messagesList) {
+                messagingStyle.addMessage(cMessage)
+            }
+            setStyle(messagingStyle)
+
+            // below two line important because in android 8 notification not show like head up so that we need below  2 line.
+            setContentIntent(pendingIntent)
+            setFullScreenIntent(pendingIntent, true)
+
         }
-        notification.setTicker("Text Message")
-        notification.setContentTitle(user.userName ?: "Unknown")
-
-        notification.setContentText(message.text.toString())
-
-
-        // Set other notification properties...
-
-        notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
-        notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(NOTIFICATON_GROUP)
-        notification.setColor(context.giveMeColor(R.color.green))
-        notification.setAutoCancel(true)
-
-        // below two line important because in android 8 notification not show like head up so that we need below  2 line.
-        notification.setContentIntent(pendingIntent)
-        notification.setFullScreenIntent(pendingIntent, true)
-
-
-        val notificationId = CHAT_MESSAGE_NOTIFICATION_ID
 
         MyLogger.d(Constants.LogTag.Notification, msg = "Message Id :- ${message.messageId}")
 
         removeHeadUpNotificationBehaviour(notification, notificationManager, notificationId)
+        notificationManager.notify(notificationId, notification.build())
+    }
+
+    suspend fun showGroupChatSendNotification(
+        message: String,
+        chatRoomId: String,
+        groupInfo: GroupInfo?,
+        context: Context
+    ) {
+
+        // There is no need to make deep link in graph it was implicit deep link  which help like open url base link in app but below is explicit deep link which not require any thing.
+
+        // And one more thing it will recreate give activity and open destination
+        /*     val pendingIntent = NavDeepLinkBuilder(context)
+                 .setGraph(R.navigation.bottom_navigation)
+                 .setDestination(R.id.chatFragment) // Reference deep link action ID
+     //            .setComponentName(MainActivity::class.java)  // This tell deep link this graph is present That main activity. If you not use this it go to default activity which was launcher activity and find this graph their.
+                 .setArguments(ChatFragmentArgs(notificationData.friendOrFollowerId!!).toBundle()) // Pass user ID if needed
+                 .createPendingIntent()*/
+
+
+        val intent = createDefaultPendingIntent(context).apply {
+            putExtra(Constants.DATA, chatRoomId)
+            putExtra(Constants.FCM_INTENT_FOR, Constants.FcmIntentFor.GroupChatScreen.name)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            USER_ACTION_PENDING_INTENT_ID,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+        )
+
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationChannel = NotificationChannel(
+            CHAT_MESSAGE_CHANNEL_ID,
+            CHAT_MESSAGE_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        }
+
+        notificationManager.createNotificationChannel(notificationChannel)
+
+        val notificationId = getChatNotificationId(chatRoomId)
+
+
+        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID).apply {
+
+            setSmallIcon(R.drawable.app_icon)
+            setTicker("Text Message")
+            setSubText(groupInfo?.groupName ?: "GroupChat")
+            setContentText(message)
+
+
+
+            // Set other notification properties...
+
+            setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
+            setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            setGroup(NOTIFICATION_GROUP)
+            setColor(context.giveMeColor(R.color.green))
+            setAutoCancel(true)
+            setTimeoutAfter(500)
+
+           conversationMessages.remove(chatRoomId)
+
+            // below two line important because in android 8 notification not show like head up so that we need below  2 line.
+            setContentIntent(pendingIntent)
+        }
         notificationManager.notify(notificationId, notification.build())
     }
 
@@ -745,7 +1010,7 @@ object MyNotificationManager {
             summaryNotification.setLargeIcon((appIcon as BitmapDrawable).bitmap)
         }
             .setSmallIcon(R.drawable.app_icon)
-            .setGroup(NOTIFICATON_GROUP) // Use the group key
+            .setGroup(NOTIFICATION_GROUP) // Use the group key
             .setGroupSummary(true)
             .setColor(Color.BLACK)
             .setContentTitle("Notification") // Customize the summary title
@@ -1326,22 +1591,73 @@ object MyNotificationManager {
         return mNotificationManager.activeNotifications.any { it.id == id }
     }
 
-    private fun getContentMessageForSingleChat(message: Message , user: User): String {
-        val isTextAvailable = message.text!=null
-        val isImageAvailable = message.imageUri!=null
-        val isVideoAvailable = message.videoUri!=null
+
+    private fun getContentMessageForSingleChat(message: Message, user: User): String {
+        val isTextAvailable = !message.text.isNullOrEmpty()
+        val isImageAvailable = !message.imageUri.isNullOrEmpty()
+        val isVideoAvailable = !message.videoUri.isNullOrEmpty()
 
         return when {
-            isTextAvailable && isImageAvailable && isVideoAvailable ->"📸 & ✍️ ${user.userName ?: "Someone"} shared photos/videos with a message!"
-
-            isTextAvailable && isImageAvailable -> "📸 You’ve got a new message from ${user.userName ?: "Someone"} with text and an image!"
-            isTextAvailable && isVideoAvailable -> "🎥 You’ve got a new message from ${user.userName ?: "Someone"} with text and a video!"
-            isImageAvailable && isVideoAvailable -> "📸🎥 ${user.userName ?: "Someone"} sent you an image and a video! Tap to view."
-            isImageAvailable-> "📸 ${user.userName ?: "Someone"} sent you a new image! Tap to view."
-            isVideoAvailable -> "🎥 ${user.userName ?: "Someone"} sent you a new video! Tap to watch."
-            else -> "💬 You’ve received a new message from ${user.userName ?: "Someone"}: ${message.text ?: ""}"
+            isTextAvailable && isImageAvailable && isVideoAvailable -> {
+                "📽️🖼️📝 A new message with text, an image, and a video!"
+            }
+            isTextAvailable && isImageAvailable -> {
+                "🖼️📝 A new message with text and an image!"
+            }
+            isTextAvailable && isVideoAvailable -> {
+                "📽️📝 A new message with text and a video!"
+            }
+            isImageAvailable && isVideoAvailable -> {
+                "📽️🖼️ New image and video!"
+            }
+            isImageAvailable -> {
+                "🖼️ New image!"
+            }
+            isVideoAvailable -> {
+                "📽️ New video!"
+            }
+            isTextAvailable -> {
+                "📝 ${message.text}"
+            }
+            else -> {
+                "🔔 New message received."
+            }
         }
     }
+
+    private fun getContentMessageForGroupChat(message: GroupMessage, user: User): String {
+        val isTextAvailable = !message.text.isNullOrEmpty()
+        val isImageAvailable = !message.imageUri.isNullOrEmpty()
+        val isVideoAvailable = !message.videoUri.isNullOrEmpty()
+
+        return when {
+            isTextAvailable && isImageAvailable && isVideoAvailable -> {
+                "📽️🖼️📝 A new message with text, an image, and a video!"
+            }
+            isTextAvailable && isImageAvailable -> {
+                "🖼️📝 A new message with text and an image!"
+            }
+            isTextAvailable && isVideoAvailable -> {
+                "📽️📝 A new message with text and a video!"
+            }
+            isImageAvailable && isVideoAvailable -> {
+                "📽️🖼️ New image and video!"
+            }
+            isImageAvailable -> {
+                "🖼️ New image!"
+            }
+            isVideoAvailable -> {
+                "📽️ New video!"
+            }
+            isTextAvailable -> {
+                "📝 ${message.text}"
+            }
+            else -> {
+                "🔔 New message received."
+            }
+        }
+    }
+
 
     private fun getContentMessageForPostComment(comment: Comment, user: User): String {
         val isTextAvailable = comment.text != null
@@ -1371,5 +1687,64 @@ object MyNotificationManager {
                 "💬 ${user.userName ?: "Someone"} commented on your post: ${comment.text ?: ""}"
         }
     }
+
+
+    //region:: Support Method
+    private fun getUniqueRequestCode(chatRoomId: String): Int {
+        return chatRoomId.hashCode()
+    }
+
+    private fun vectorDrawableToBitmap(
+        context: Context,
+        drawableResId: Int,
+        width: Int,
+        height: Int
+    ): Bitmap {
+        val drawable = AppCompatResources.getDrawable(context, drawableResId)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        drawable?.setBounds(0, 0, canvas.width, canvas.height)
+        drawable?.draw(canvas)
+
+        return bitmap
+    }
+
+    private fun getBitmapImage(context: Context, imagePath: String?) = callbackFlow<IconCompat?> {
+        if (imagePath == null) {
+            trySend(null)
+        } else {
+            Glide.with(context)
+                .asBitmap()
+                .circleCrop()
+                .load(imagePath)
+                .into(object : CustomTarget<Bitmap>() {
+                    override fun onResourceReady(
+                        resource: Bitmap,
+                        transition: Transition<in Bitmap>?
+                    ) {
+                        trySend(IconCompat.createWithBitmap(resource))
+                    }
+
+                    override fun onLoadCleared(placeholder: Drawable?) {
+                        // Handle cleanup if necessary
+                    }
+
+                    override fun onLoadFailed(errorDrawable: Drawable?) {
+                        // If loading fails, use default icon
+                        trySend(null)
+                    }
+                })
+        }
+        awaitClose {
+            close()
+        }
+    }
+
+    private fun getChatNotificationId(chatRoomId: String): Int {
+        return _CHAT_MESSAGE_NOTIFICATION_ID + chatRoomId.hashCode()
+    }
+
+    //endregion
 
 }

@@ -354,6 +354,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                 adapter = chatAdapter
                 setHasFixedSize(true)
                 isMotionEventSplittingEnabled = false
+                this.setItemViewCacheSize(4)
             }
             setListener()
         }

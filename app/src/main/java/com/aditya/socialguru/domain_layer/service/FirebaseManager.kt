@@ -174,6 +174,9 @@ object FirebaseManager {
     suspend fun sentMessage(message: Message ,lastMessage: LastMessage, chatRoomId: String , isUserOnline:Boolean=false)=ChatManager.sentMessage(message ,lastMessage,chatRoomId,isUserOnline)
 
     suspend fun getChatMessageAndListen(chatRoomId: String) = ChatManager.getChatMessageAndListen(chatRoomId)
+    suspend fun getChatMessageAndUpdateSeenStatusForNotification(chatRoomId: String) = ChatManager.getChatMessageAndUpdateSeenStatusForNotification(chatRoomId)
+
+    suspend fun updateSeenStatusForGroupChatForNotification(chatRoomId: String) = ChatManager.updateSeenStatusForGroupChatForNotification(chatRoomId)
     fun updateSeenStatus(status:String,messageId:String,chatRoomId: String ,receiverId:String) = ChatManager.updateSeenStatus(status,messageId,chatRoomId ,receiverId)
 
     suspend fun listenLastMessage(chatRoomId: String) = ChatManager.listenLastMessage(chatRoomId)

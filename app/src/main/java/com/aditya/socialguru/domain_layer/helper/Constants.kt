@@ -319,10 +319,12 @@ object Constants {
         FRIEND_REQUEST_COME,
         LIKE_IN_POST,
         COMMENT_IN_POST,
-        TextChat,
-        MediaChat,
-        GroupTextChat,
-        GroupMediaChat
+        SINGLE_CHAT,
+        GROUP_CHAT
+    }
+    enum class NotificationRemoteInput{
+        SingleChatReply,
+        GroupChatReply
     }
 
     // NotificationPriority
@@ -361,7 +363,13 @@ object Constants {
     //Intent Table
 
     enum class IntentTable{
-        LogOutOrDeleteAccountAcitivityHappend
+        LogOutOrDeleteAccountActivityHappened ,
+        ReplyMessage,
+        SenderId ,
+        NotificationId,
+        ChatRoomId,
+        UserData,
+        GroupInfo
     }
 
     // LogLevel
