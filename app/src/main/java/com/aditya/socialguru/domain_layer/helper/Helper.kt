@@ -9,13 +9,11 @@ import android.provider.OpenableColumns
 import android.util.Patterns
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavOptions
@@ -26,6 +24,7 @@ import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.ProfileViewDialog
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSnackBar
 import com.aditya.socialguru.domain_layer.custom_class.snackbar.CustomSuccessSnackBar
+import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.google.android.material.snackbar.BaseTransientBottomBar
@@ -361,5 +360,11 @@ object Helper {
 
 
     //endregion
+
+    fun deleteCacheFile(context: Context, fileName: String?){
+        if (fileName == null) return
+        val isDelete = context.deleteFile(fileName)
+        MyLogger.w(msg = "Temp File $fileName is ${if(isDelete) "Deleted" else "Not Deleted"}")
+    }
 
 }

@@ -76,6 +76,9 @@ dependencies {
     //For Memory Leak
 //    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 
+    //add Module
+    implementation(project(mapOf("path" to ":video-trimmer")))
+
     //For text size
     implementation("com.intuit.sdp:sdp-android:1.1.1")
     implementation("com.intuit.ssp:ssp-android:1.1.1")

@@ -15,10 +15,22 @@
         <action
             android:id="@+id/action_homeFragment_to_writeTextStoryFragment"
             app:destination="@id/writeTextStoryFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_videoTrimmingFragment"
+            app:destination="@id/videoTrimmingFragment" />
     </fragment>
     <fragment
         android:id="@+id/writeTextStoryFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.story_helper.WriteTextStoryFragment"
         android:label="fragment_write_text_story"
         tools:layout="@layout/fragment_write_text_story" />
+    <fragment
+        android:id="@+id/videoTrimmingFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.helper.VideoTrimmingFragment"
+        android:label="fragment_video_trimming"
+        tools:layout="@layout/fragment_video_trimming" >
+        <argument
+            android:name="videoUri"
+            app:argType="string" />
+    </fragment>
 </navigation>

@@ -18,8 +18,10 @@ import android.widget.PopupWindow
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.setFragmentResultListener
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -74,10 +76,15 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     private val MAX_VIDEO_SIZE_MB = 30f
     private var myLoader: MyLoader? = null
     private var isFragmentSwitchHappen = true
+    private var videoFileName :String?=null
 
     private var _storyAdapter: StoryAdapter? = null
     private val storyAdapter get() = _storyAdapter!!
-
+    companion object{
+        const val VideoTrimResult = "VideoTrimResult"
+        const val VideoTrimRequest = "VideoTrimRequest"
+        const val VideoTrimFileName = "VideoTrimFileName"
+    }
 
     // Don't use lazy it lead to memory leak and not leave old view when fragment switching and come back this view that time thi variable if initialize with lazy that not leave old view and crash app
     private var _pagerAdapter: NormalPagerAdapter? = null
@@ -145,7 +152,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                         msg = "User selected video length is $videoLength and max length :- $MAX_VIDEO_SIZE_MB  which is not exceeded 😁! "
                     )
                     MyLogger.v(tagStory, msg = "User select video now send to server !")
-                    handleUserSelectedMedia(Constants.StoryType.Video, uri)
+                    navigateToVideoTrimScreen(uri.toString())
                 }
             }
 
@@ -181,6 +188,14 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     //region:: Top level function
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setFragmentResultListener(VideoTrimRequest) { requestKey, bundle ->
+            // We use a String here, but any type that can be put in a Bundle is supported.
+            val result = bundle.getString(VideoTrimResult)
+            videoFileName = bundle.getString(VideoTrimFileName)
+            result?.let {
+                handleUserSelectedMedia(Constants.StoryType.Video, result.toUri())
+            }
+        }
         subscribeToBroadcastReceiver()
         MyLogger.v(isFunctionCall = true)
     }
@@ -292,6 +307,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                                 msg = "Something went wrong :- ${it.first.name} occurred !"
                             )
                             hideLoader()
+                            Helper.deleteCacheFile(requireContext(),videoFileName)
                             Helper.showSnackBar(
                                 (requireActivity() as MainActivity).findViewById(
                                     R.id.coordLayout
@@ -307,6 +323,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                             // This help to handle or change work manager status
                             requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.StoryChange.name).putExtra(Constants.DATA,2))
                             hideLoader()
+                            Helper.deleteCacheFile(requireContext(),videoFileName)
                             Helper.showSuccessSnackBar(
                                 (requireActivity() as MainActivity).findViewById(
                                     R.id.coordLayout
@@ -592,7 +609,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         uri: Uri? = null,
         text: StoryText? = null
     ) {
-        lifecycleScope.myLaunch {
+        lifecycleScope.launch {
             try {
                 pref.getPrefUser().first()?.let {
                     MyLogger.v(tagStory, msg = "User data is retrieved !")
@@ -606,13 +623,18 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                     tagStory,
                     msg = "Some error occurred during uploading story  :- ${e.message}"
                 )
-                Helper.showSnackBar(
-                    (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                    e.message.toString()
-                )
-
+                runOnUiThread {
+                    Helper.showSnackBar(
+                        (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                        e.message.toString()
+                    )
+                }
             }
         }
+    }
+    private fun navigateToVideoTrimScreen(videoUri:String){
+        val directions: NavDirections = HomeFragmentDirections.actionHomeFragmentToVideoTrimmingFragment(videoUri)
+        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
     }
 
 
