@@ -84,6 +84,7 @@ object FcmDataHandling : HandleJsonData {
                                     groupInfo,
                                     context
                                 )
+                                MyNotificationManager.showGroupChatNotification(context)
                                 MyNotificationManager.showGroupSummaryNotification(context)
                             } else {
                                 MyLogger.w(
@@ -126,6 +127,7 @@ object FcmDataHandling : HandleJsonData {
                                     message,
                                     context
                                 )
+                                MyNotificationManager.showGroupChatNotification(context)
                                 MyNotificationManager.showGroupSummaryNotification(context)
                             } else {
                                 MyLogger.w(
@@ -163,6 +165,7 @@ object FcmDataHandling : HandleJsonData {
                                 message,
                                 context
                             )
+                            MyNotificationManager.showGroupPostNotification(context)
                             MyNotificationManager.showGroupSummaryNotification(context)
                         }
                     }
@@ -184,6 +187,7 @@ object FcmDataHandling : HandleJsonData {
                                         notificationData,
                                         context
                                     )
+                                    MyNotificationManager.showGroupPostNotification(context)
                                     MyNotificationManager.showGroupSummaryNotification(context)
                                 }
                             }.launchIn(this)
@@ -210,6 +214,7 @@ object FcmDataHandling : HandleJsonData {
                                         notificationData,
                                         context
                                     )
+                                    MyNotificationManager.showGroupFriendCircleNotification(context)
                                     MyNotificationManager.showGroupSummaryNotification(context)
                                 }
                             }.launchIn(this)
@@ -236,6 +241,7 @@ object FcmDataHandling : HandleJsonData {
                                         notificationData,
                                         context
                                     )
+                                    MyNotificationManager.showGroupFriendCircleNotification(context)
                                     MyNotificationManager.showGroupSummaryNotification(context)
                                 }
                             }.launchIn(this)
@@ -262,6 +268,7 @@ object FcmDataHandling : HandleJsonData {
                                         notificationData,
                                         context
                                     )
+                                    MyNotificationManager.showGroupFriendCircleNotification(context)
                                     MyNotificationManager.showGroupSummaryNotification(context)
                                 }
                             }.launchIn(this)

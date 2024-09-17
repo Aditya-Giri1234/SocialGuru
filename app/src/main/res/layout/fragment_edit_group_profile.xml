@@ -36,7 +36,7 @@
             android:layout_width="@dimen/_90sdp"
             android:layout_height="@dimen/_90sdp"
             android:src="@drawable/ic_user"
-            android:tag="0"
+            android:tag="1"
             app:civ_border_color="@color/white"
             app:civ_border_overlay="false"
             app:civ_border_width="@dimen/_1sdp"

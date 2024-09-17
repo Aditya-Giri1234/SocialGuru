@@ -1,5 +1,6 @@
 package com.aditya.socialguru.domain_layer.manager
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -51,6 +52,8 @@ object MyNotificationManager {
 
 
     //give channel name and id
+    private const val APP_NOTIFICATION ="App Notification"
+    private const val APP_NOTIFICATION_ID = "APP_NOTIFICATION_ID"
     private const val USER_ACTION_CHANNEL = "User Action Channel"
     private const val USER_ACTION_CHANNEL_ID = "USER_ACTION_CHANNEL_ID"
     private const val POST_ACTION_CHANNEL = "Post Action Channel"
@@ -63,6 +66,10 @@ object MyNotificationManager {
     private const val _POST_ACTION_NOTIFICATION_ID = 100
     private const val _CHAT_MESSAGE_NOTIFICATION_ID = 200
     private const val GROUP_SUMMARY_NOTIFICATION_ID = 400
+    private const val GROUP_FRIEND_CIRCLE_NOTIFICATION_ID = 1111
+    private const val GROUP_POST_NOTIFICATION_ID = 1112
+    private const val GROUP_CHAT_NOTIFICATION_ID = 1113
+
 
     private const val _USER_ACTION_PENDING_INTENT_ID = 0
     private const val _POST_ACTION_PENDING_INTENT_ID = 100
@@ -76,6 +83,9 @@ object MyNotificationManager {
 
     //Group Id
     private const val NOTIFICATION_GROUP = "Notification Group"
+    private const val POST_NOTIFICATION_GROUP = "Post Notification Group"
+    private const val CHAT_NOTIFICATION_GROUP = "Chat Notification Group"
+    private const val FRIEND_CIRCLE_NOTIFICATION_GROUP = "Friend Circle Notification Group"
 
 
     //For Notification
@@ -252,7 +262,7 @@ object MyNotificationManager {
                 context, R.color.orange
             )
         )
-        notification.setGroup(NOTIFICATION_GROUP)
+        notification.setGroup(FRIEND_CIRCLE_NOTIFICATION_GROUP)
         notification.setAutoCancel(true)
 
         // below two line important because in android 8 notification not show like head up so that we need below  2 line.
@@ -331,7 +341,7 @@ object MyNotificationManager {
         // Don't set sound and vibrate individually for this notification
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(NOTIFICATION_GROUP)
+        notification.setGroup(FRIEND_CIRCLE_NOTIFICATION_GROUP)
         notification.setColor(
             ContextCompat.getColor(
                 context, R.color.amber
@@ -412,7 +422,7 @@ object MyNotificationManager {
 
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(NOTIFICATION_GROUP)
+        notification.setGroup(FRIEND_CIRCLE_NOTIFICATION_GROUP)
         notification.setColor(context.giveMeColor(R.color.lightGreen))
         notification.setAutoCancel(true)
 
@@ -490,7 +500,7 @@ object MyNotificationManager {
 
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(NOTIFICATION_GROUP)
+        notification.setGroup(POST_NOTIFICATION_GROUP)
         notification.setColor(context.giveMeColor(R.color.pink))
         notification.setAutoCancel(true)
 
@@ -569,7 +579,7 @@ object MyNotificationManager {
 
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(NOTIFICATION_GROUP)
+        notification.setGroup(POST_NOTIFICATION_GROUP)
         notification.setColor(context.giveMeColor(R.color.green))
         notification.setAutoCancel(true)
 
@@ -636,9 +646,9 @@ object MyNotificationManager {
             }
         val broadCastIntent = Intent(context, NotificationEventListener::class.java).apply {
             setAction(Constants.NotificationRemoteInput.SingleChatReply.name)
-            putExtra(IntentTable.UserData.name,user)
-            putExtra(IntentTable.SenderId.name,notificationData.friendOrFollowerId!!)
-            putExtra(IntentTable.ChatRoomId.name,chatRoomId)
+            putExtra(IntentTable.UserData.name, user)
+            putExtra(IntentTable.SenderId.name, notificationData.friendOrFollowerId!!)
+            putExtra(IntentTable.ChatRoomId.name, chatRoomId)
         }
         val replyPendingIntent: PendingIntent =
             PendingIntent.getBroadcast(
@@ -660,7 +670,8 @@ object MyNotificationManager {
                 .addRemoteInput(remoteInput)
                 .build()
         val person = Person.Builder()
-            .setIcon(getBitmapImage(context, user.userProfileImage).first())
+            .setIcon(getBitmapImage(context, user.userProfileImage).first()
+                ?.let { IconCompat.createWithBitmap(it) })
             .setName(user.userName)
             .build()
 
@@ -675,7 +686,7 @@ object MyNotificationManager {
 
             setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
             setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            setGroup(NOTIFICATION_GROUP)
+            setGroup(CHAT_NOTIFICATION_GROUP)
             setColor(context.giveMeColor(R.color.green))
             setAutoCancel(true)
 
@@ -694,12 +705,12 @@ object MyNotificationManager {
             messagesList.add(newMessageObj)
 
             // Create MessagingStyle and add all messages
-            val messagingStyle = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val messagingStyle = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 NotificationCompat.MessagingStyle(person).run {
                     setConversationTitle(user.userName ?: "Someone")
                     this
                 }
-            }else{
+            } else {
                 NotificationCompat.MessagingStyle(user.userName ?: "Someone")
             }
 
@@ -723,7 +734,7 @@ object MyNotificationManager {
     suspend fun showSingleChatSendMessage(
         user: User,
         chatRoomId: String,
-        receiverId:String,
+        receiverId: String,
         message: String,
         context: Context
     ) {
@@ -754,7 +765,6 @@ object MyNotificationManager {
         val notificationId = getChatNotificationId(chatRoomId)
 
 
-
         val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID).apply {
             setSmallIcon(R.drawable.app_icon)
             setTicker("Text Message")
@@ -765,7 +775,7 @@ object MyNotificationManager {
 
             setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
             setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            setGroup(NOTIFICATION_GROUP)
+            setGroup(CHAT_NOTIFICATION_GROUP)
             setColor(context.giveMeColor(R.color.green))
             setTimeoutAfter(500)
             setAutoCancel(true)
@@ -779,9 +789,10 @@ object MyNotificationManager {
         notificationManager.notify(notificationId, notification.build())
     }
 
+    @SuppressLint("RestrictedApi")
     suspend fun showGroupChatMessage(
         user: User,
-        myData:User,
+        myData: User,
         notificationData: NotificationData,
         message: GroupMessage,
         groupInfo: GroupInfo?,
@@ -824,7 +835,8 @@ object MyNotificationManager {
         notificationManager.createNotificationChannel(notificationChannel)
 
         val notificationId = getChatNotificationId(chatRoomId)
-        val appIcon = context.packageManager.getApplicationIcon(context.packageName)
+//        val appIcon = context.packageManager.getApplicationIcon(context.packageName)
+        val groupIcon = getBitmapImage(context, groupInfo?.groupPic).first()
 
         val remoteInput: RemoteInput =
             RemoteInput.Builder(IntentTable.ReplyMessage.name).run {
@@ -833,9 +845,9 @@ object MyNotificationManager {
             }
         val broadCastIntent = Intent(context, NotificationEventListener::class.java).apply {
             setAction(Constants.NotificationRemoteInput.GroupChatReply.name)
-            putExtra(IntentTable.UserData.name,myData)
-            putExtra(IntentTable.GroupInfo.name,groupInfo)
-            putExtra(IntentTable.ChatRoomId.name,chatRoomId)
+            putExtra(IntentTable.UserData.name, myData)
+            putExtra(IntentTable.GroupInfo.name, groupInfo)
+            putExtra(IntentTable.ChatRoomId.name, chatRoomId)
         }
         val replyPendingIntent: PendingIntent =
             PendingIntent.getBroadcast(
@@ -853,7 +865,8 @@ object MyNotificationManager {
                 .addRemoteInput(remoteInput)
                 .build()
         val person = Person.Builder()
-            .setIcon(getBitmapImage(context, user.userProfileImage).first())
+            .setIcon(getBitmapImage(context, user.userProfileImage).first()
+                ?.let { IconCompat.createWithBitmap(it) })
             .setName(user.userName)
             .build()
 
@@ -861,12 +874,16 @@ object MyNotificationManager {
 
             setSmallIcon(R.drawable.app_icon)
             /* if (appIcon is AdaptiveIconDrawable) {
-            val bitmap = appIcon.toBitmap()
-            notification.setLargeIcon(bitmap)
-        } else {
-            // If it's not an AdaptiveIconDrawable, assume it's a BitmapDrawable
-            notification.setLargeIcon((appIcon as BitmapDrawable).bitmap)
-        }*/
+                 val bitmap = appIcon.toBitmap()
+                 setLargeIcon(bitmap)
+             } else {
+                 // If it's not an AdaptiveIconDrawable, assume it's a BitmapDrawable
+                 setLargeIcon((appIcon as BitmapDrawable).bitmap)
+             }*/
+
+
+            setLargeIcon(groupIcon)
+
             setTicker("Text Message")
             setSubText(groupInfo?.groupName ?: "GroupChat")
             addAction(action)
@@ -876,7 +893,7 @@ object MyNotificationManager {
 
             setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
             setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            setGroup(NOTIFICATION_GROUP)
+            setGroup(CHAT_NOTIFICATION_GROUP)
             setColor(context.giveMeColor(R.color.green))
             setAutoCancel(true)
 
@@ -895,12 +912,12 @@ object MyNotificationManager {
             messagesList.add(newMessageObj)
 
             // Create MessagingStyle and add all messages
-            val messagingStyle = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val messagingStyle = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 NotificationCompat.MessagingStyle(person).run {
                     setConversationTitle(groupInfo?.groupName ?: "GroupChat")
                     this
                 }
-            }else{
+            } else {
                 NotificationCompat.MessagingStyle(groupInfo?.groupName ?: "GroupChat")
             }
             messagingStyle.setGroupConversation(true)
@@ -975,17 +992,16 @@ object MyNotificationManager {
             setContentText(message)
 
 
-
             // Set other notification properties...
 
             setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
             setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            setGroup(NOTIFICATION_GROUP)
+            setGroup(CHAT_NOTIFICATION_GROUP)
             setColor(context.giveMeColor(R.color.green))
             setAutoCancel(true)
             setTimeoutAfter(500)
 
-           conversationMessages.remove(chatRoomId)
+            conversationMessages.remove(chatRoomId)
 
             // below two line important because in android 8 notification not show like head up so that we need below  2 line.
             setContentIntent(pendingIntent)
@@ -994,13 +1010,14 @@ object MyNotificationManager {
     }
 
 
+    // App Level Group Notification
     fun showGroupSummaryNotification(context: Context) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
 
         val appIcon = context.packageManager.getApplicationIcon(context.packageName)
-        val summaryNotification = NotificationCompat.Builder(context, USER_ACTION_CHANNEL_ID)
+        val summaryNotification = NotificationCompat.Builder(context, APP_NOTIFICATION_ID)
         summaryNotification.setSmallIcon(R.drawable.app_icon)
         if (appIcon is AdaptiveIconDrawable) {
             val bitmap = appIcon.toBitmap()
@@ -1020,6 +1037,95 @@ object MyNotificationManager {
 
         // Notify the summary notification
         notificationManager.notify(GROUP_SUMMARY_NOTIFICATION_ID, summaryNotification.build())
+    }
+
+    // Post Group Notification
+    fun showGroupPostNotification(context: Context) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+
+        val appIcon = context.packageManager.getApplicationIcon(context.packageName)
+        val summaryNotification = NotificationCompat.Builder(context, POST_ACTION_CHANNEL_ID)
+        summaryNotification.setSmallIcon(R.drawable.app_icon)
+        if (appIcon is AdaptiveIconDrawable) {
+            val bitmap = appIcon.toBitmap()
+            summaryNotification.setLargeIcon(bitmap)
+        } else {
+            // If it's not an AdaptiveIconDrawable, assume it's a BitmapDrawable
+            summaryNotification.setLargeIcon((appIcon as BitmapDrawable).bitmap)
+        }
+            .setSmallIcon(R.drawable.app_icon)
+            .setGroup(NOTIFICATION_GROUP) // Use the group key
+            .setGroup(POST_NOTIFICATION_GROUP)
+            .setColor(Color.BLACK)
+            .setContentTitle("Post Notification") // Customize the summary title
+            .setContentText("You got some post related notification.") // Customize the summary content
+            .setAutoCancel(true)
+            .build()
+
+        // Notify the summary notification
+        notificationManager.notify(GROUP_POST_NOTIFICATION_ID, summaryNotification.build())
+    }
+
+    // Friend Circle Group Notification
+    fun showGroupFriendCircleNotification(context: Context) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+
+        val appIcon = context.packageManager.getApplicationIcon(context.packageName)
+        val summaryNotification = NotificationCompat.Builder(context, USER_ACTION_CHANNEL_ID)
+        summaryNotification.setSmallIcon(R.drawable.app_icon)
+        if (appIcon is AdaptiveIconDrawable) {
+            val bitmap = appIcon.toBitmap()
+            summaryNotification.setLargeIcon(bitmap)
+        } else {
+            // If it's not an AdaptiveIconDrawable, assume it's a BitmapDrawable
+            summaryNotification.setLargeIcon((appIcon as BitmapDrawable).bitmap)
+        }
+            .setSmallIcon(R.drawable.app_icon)
+            .setGroup(NOTIFICATION_GROUP) // Use the group key
+            .setGroup(FRIEND_CIRCLE_NOTIFICATION_GROUP)
+            .setGroupSummary(true)
+            .setColor(Color.BLACK)
+            .setContentTitle("Friend Circle Notification") // Customize the summary title
+            .setContentText("You got some friend circle notification.") // Customize the summary content
+            .setAutoCancel(true)
+            .build()
+
+        // Notify the summary notification
+        notificationManager.notify(GROUP_SUMMARY_NOTIFICATION_ID, summaryNotification.build())
+    }
+
+    // Chat Group Notification
+    fun showGroupChatNotification(context: Context) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+
+        val appIcon = context.packageManager.getApplicationIcon(context.packageName)
+        val summaryNotification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID)
+        summaryNotification.setSmallIcon(R.drawable.app_icon)
+        if (appIcon is AdaptiveIconDrawable) {
+            val bitmap = appIcon.toBitmap()
+            summaryNotification.setLargeIcon(bitmap)
+        } else {
+            // If it's not an AdaptiveIconDrawable, assume it's a BitmapDrawable
+            summaryNotification.setLargeIcon((appIcon as BitmapDrawable).bitmap)
+        }
+            .setSmallIcon(R.drawable.app_icon)
+            .setGroup(NOTIFICATION_GROUP) // Use the group key
+            .setGroup(CHAT_NOTIFICATION_GROUP)
+            .setGroupSummary(true)
+            .setColor(Color.BLACK)
+            .setContentTitle("Chat Notification") // Customize the summary title
+            .setContentText("You got some new chats.") // Customize the summary content
+            .setAutoCancel(true)
+            .build()
+
+        // Notify the summary notification
+        notificationManager.notify(CHAT_MESSAGE_NOTIFICATION_ID, summaryNotification.build())
     }
 
 
@@ -1601,24 +1707,31 @@ object MyNotificationManager {
             isTextAvailable && isImageAvailable && isVideoAvailable -> {
                 "📽️🖼️📝 A new message with text, an image, and a video!"
             }
+
             isTextAvailable && isImageAvailable -> {
                 "🖼️📝 A new message with text and an image!"
             }
+
             isTextAvailable && isVideoAvailable -> {
                 "📽️📝 A new message with text and a video!"
             }
+
             isImageAvailable && isVideoAvailable -> {
                 "📽️🖼️ New image and video!"
             }
+
             isImageAvailable -> {
                 "🖼️ New image!"
             }
+
             isVideoAvailable -> {
                 "📽️ New video!"
             }
+
             isTextAvailable -> {
                 "📝 ${message.text}"
             }
+
             else -> {
                 "🔔 New message received."
             }
@@ -1634,24 +1747,31 @@ object MyNotificationManager {
             isTextAvailable && isImageAvailable && isVideoAvailable -> {
                 "📽️🖼️📝 A new message with text, an image, and a video!"
             }
+
             isTextAvailable && isImageAvailable -> {
                 "🖼️📝 A new message with text and an image!"
             }
+
             isTextAvailable && isVideoAvailable -> {
                 "📽️📝 A new message with text and a video!"
             }
+
             isImageAvailable && isVideoAvailable -> {
                 "📽️🖼️ New image and video!"
             }
+
             isImageAvailable -> {
                 "🖼️ New image!"
             }
+
             isVideoAvailable -> {
                 "📽️ New video!"
             }
+
             isTextAvailable -> {
                 "📝 ${message.text}"
             }
+
             else -> {
                 "🔔 New message received."
             }
@@ -1710,7 +1830,7 @@ object MyNotificationManager {
         return bitmap
     }
 
-    private fun getBitmapImage(context: Context, imagePath: String?) = callbackFlow<IconCompat?> {
+    private fun getBitmapImage(context: Context, imagePath: String?) = callbackFlow<Bitmap?> {
         if (imagePath == null) {
             trySend(null)
         } else {
@@ -1723,7 +1843,7 @@ object MyNotificationManager {
                         resource: Bitmap,
                         transition: Transition<in Bitmap>?
                     ) {
-                        trySend(IconCompat.createWithBitmap(resource))
+                        trySend(resource)
                     }
 
                     override fun onLoadCleared(placeholder: Drawable?) {

@@ -171,7 +171,7 @@ class EditGroupProfileFragment : Fragment(), ProfilePicEditOption {
                 groupPic?.let {
                     ivProfile.tag = imageAvailable
                     currentImage = it
-                    Glide.with(ivProfile).load(it).into(ivProfile)
+                    Glide.with(ivProfile).load(it).placeholder(R.drawable.ic_group).error(R.drawable.ic_group).into(ivProfile)
                 } ?: run {
                     ivProfile.tag = imageUnAvailable
                 }
