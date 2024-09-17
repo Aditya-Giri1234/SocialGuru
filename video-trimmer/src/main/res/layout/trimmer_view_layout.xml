@@ -8,6 +8,18 @@
     android:orientation="vertical"
     android:id="@+id/container">
 
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:indeterminateTint="@android:color/white"
+        android:indeterminate="true"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/layout"/>
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/layoutSurfaceView"
         android:layout_width="match_parent"
@@ -134,7 +146,7 @@
                 android:progressDrawable="@android:color/transparent"
                 android:secondaryProgress="0"
                 android:thumb="@drawable/seek_line"
-                android:visibility="visible"
+                android:visibility="gone"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"

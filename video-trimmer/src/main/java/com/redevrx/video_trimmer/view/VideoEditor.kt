@@ -2,6 +2,7 @@ package com.redevrx.video_trimmer.view
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Color
 import android.graphics.Typeface
 import android.media.MediaMetadataRetriever
 import android.net.Uri
@@ -18,6 +19,7 @@ import android.widget.SeekBar
 import android.widget.Toast
 import androidx.annotation.ColorInt
 import androidx.core.net.toUri
+import androidx.core.view.isGone
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -42,6 +44,7 @@ import com.redevrx.video_trimmer.event.OnProgressVideoEvent
 import com.redevrx.video_trimmer.event.OnRangeSeekBarEvent
 import com.redevrx.video_trimmer.event.OnVideoEditedEvent
 import com.redevrx.video_trimmer.utils.BackgroundExecutor
+import com.redevrx.video_trimmer.utils.MyLogger
 import com.redevrx.video_trimmer.utils.TrimVideoUtils
 import com.redevrx.video_trimmer.utils.UiThreadExecutor
 import java.io.File
@@ -101,6 +104,7 @@ class VideoEditor @JvmOverloads constructor(
 
     private fun init(context: Context) {
         binding = TrimmerViewLayoutBinding.inflate(LayoutInflater.from(context), this, true)
+        binding.progressBar.setIndicatorColor(Color.WHITE)
         setUpListeners()
         setUpMargins()
     }
@@ -507,6 +511,32 @@ class VideoEditor @JvmOverloads constructor(
             override fun onPlayerError(error: PlaybackException) {
                 mOnVideoEditedListener?.onError("Something went wrong reason : ${error.localizedMessage}")
             }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                super.onPlaybackStateChanged(playbackState)
+                when (playbackState) {
+                    ExoPlayer.STATE_IDLE -> {
+                        MyLogger.d(msg = "STATE_IDLE")
+                    }
+
+                    ExoPlayer.STATE_BUFFERING -> {
+                        MyLogger.d(msg = "STATE_BUFFERING")
+                        binding.progressBar.isGone=false
+                        binding.layoutSurfaceView.visibility = View.INVISIBLE
+                    }
+
+                    ExoPlayer.STATE_READY -> {
+                        MyLogger.d(msg = "STATE_READY")
+                        binding.progressBar.isGone=true
+                        binding.layoutSurfaceView.visibility = View.VISIBLE
+                    }
+                    ExoPlayer.STATE_ENDED -> {
+                        MyLogger.d(msg = "STATE_ENDED")
+                    }
+                }
+
+            }
+
             @SuppressLint("UnsafeOptInUsageError")
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 super.onVideoSizeChanged(videoSize)
