@@ -87,7 +87,7 @@ class SignInFragment : Fragment() {
                                 pref.setPrefUser(data)
                             }
                             Handler(Looper.getMainLooper()).postDelayed({
-                                requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.LogIn.name))
+                                requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.LogIn.name).apply { setPackage(requireContext().packageName) })
                                 val directions:NavDirections=SignInFragmentDirections.actionSignInFragmentToHomeFragmentBar()
                                 navController.safeNavigate(directions,Helper.giveAnimationNavOption(R.id.signInFragment,true))
                             },200)

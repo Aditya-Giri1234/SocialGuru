@@ -173,6 +173,7 @@ class WriteTextStoryFragment : Fragment() {
                         Constants.DATA,
                         StoryText(etStatus.text.toString(), currentFont ,currentColor)
                     )
+                    setPackage(requireContext().packageName)
                 })
                 navController.navigateUp()
             }

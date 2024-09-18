@@ -306,7 +306,9 @@ class ProfileFragment : Fragment(), AlertDialogOption {
               Helper.giveAnimationNavOption(R.id.homeFragment, true)
           )*/
 
-        requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.LogOut.name))
+        requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.LogOut.name).apply {
+            setPackage(requireContext().packageName)
+        })
     }
 
     private fun showDialog() {

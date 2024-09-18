@@ -146,7 +146,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
                             showNoStatusView()
                         }
                         // This help to handle or change work manager status
-                        requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.StoryChange.name).putExtra(Constants.DATA,2))
+                        requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.StoryChange.name).putExtra(Constants.DATA,2).apply { setPackage(requireContext().packageName) })
 
                         Helper.showSuccessSnackBar(
                             (requireActivity() as MainActivity).findViewById(R.id.coordLayout),

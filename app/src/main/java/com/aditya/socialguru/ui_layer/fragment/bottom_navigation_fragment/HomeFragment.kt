@@ -321,7 +321,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                                 msg = "Loader is show with  StoryUploadedSuccessfully state ..."
                             )
                             // This help to handle or change work manager status
-                            requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.StoryChange.name).putExtra(Constants.DATA,2))
+                            requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.StoryChange.name).putExtra(Constants.DATA,2).setPackage(requireContext().packageName))
                             hideLoader()
                             Helper.deleteCacheFile(requireContext(),videoFileName)
                             Helper.showSuccessSnackBar(

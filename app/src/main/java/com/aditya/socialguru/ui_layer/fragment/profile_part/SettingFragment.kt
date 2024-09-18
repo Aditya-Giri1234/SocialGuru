@@ -192,7 +192,7 @@ class SettingFragment : Fragment(), AlertDialogOption, DeleteAccountPasswordResu
                 Intent(Constants.AppBroadCast.StoryChange.name).putExtra(
                     Constants.DATA,
                     intValueOfChecked
-                )
+                ).apply { setPackage(requireContext().packageName) }
             )
             updateUserSetting(switchRemoveStory.isChecked)
         }
@@ -252,7 +252,7 @@ class SettingFragment : Fragment(), AlertDialogOption, DeleteAccountPasswordResu
               directions,
               Helper.giveAnimationNavOption(R.id.homeFragment, true)
           )*/
-        requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.LogOut.name))
+        requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.LogOut.name).apply { setPackage(requireContext().packageName) })
     }
 
     private fun updateUserSetting(

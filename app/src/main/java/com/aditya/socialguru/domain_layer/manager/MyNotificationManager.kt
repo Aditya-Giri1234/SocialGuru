@@ -52,14 +52,14 @@ object MyNotificationManager {
 
 
     //give channel name and id
-    private const val APP_NOTIFICATION ="App Notification"
-    private const val APP_NOTIFICATION_ID = "APP_NOTIFICATION_ID"
-    private const val USER_ACTION_CHANNEL = "User Action Channel"
+    private const val APP_NOTIFICATION_CHANNEL ="App Notification"
+    private const val APP_NOTIFICATION_CHANNEL_ID = "APP_NOTIFICATION_CHANNEL_ID"
+/*    private const val USER_ACTION_CHANNEL = "User Action Channel"
     private const val USER_ACTION_CHANNEL_ID = "USER_ACTION_CHANNEL_ID"
     private const val POST_ACTION_CHANNEL = "Post Action Channel"
     private const val POST_ACTION_CHANNEL_ID = "POST_ACTION_CHANNEL_ID"
     private const val CHAT_MESSAGE_CHANNEL = "Chat Message Channel"
-    private const val CHAT_MESSAGE_CHANNEL_ID = "CHAT_MESSAGE_CHANNEL_ID"
+    private const val CHAT_MESSAGE_CHANNEL_ID = "CHAT_MESSAGE_CHANNEL_ID"*/
 
     //now make each notification id
     private const val _USER_ACTION_NOTIFICATION_ID = 0
@@ -228,8 +228,8 @@ object MyNotificationManager {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationChannel = NotificationChannel(
-            USER_ACTION_CHANNEL_ID,
-            USER_ACTION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+            APP_NOTIFICATION_CHANNEL_ID,
+            APP_NOTIFICATION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
         ).apply {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
@@ -238,7 +238,7 @@ object MyNotificationManager {
 
         val appIcon = context.packageManager.getApplicationIcon(context.packageName)
 
-        val notification = NotificationCompat.Builder(context, USER_ACTION_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, APP_NOTIFICATION_CHANNEL_ID)
         notification.setSmallIcon(R.drawable.app_icon)
         if (appIcon is AdaptiveIconDrawable) {
             val bitmap = appIcon.toBitmap()
@@ -256,13 +256,13 @@ object MyNotificationManager {
 
         // Don't set sound and vibrate individually for this notification
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
-        notification.setCategory(NotificationCompat.EXTRA_INFO_TEXT)
+        notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
         notification.setColor(
             ContextCompat.getColor(
                 context, R.color.orange
             )
         )
-        notification.setGroup(FRIEND_CIRCLE_NOTIFICATION_GROUP)
+        notification.setGroup(NOTIFICATION_GROUP)
         notification.setAutoCancel(true)
 
         // below two line important because in android 8 notification not show like head up so that we need below  2 line.
@@ -312,8 +312,8 @@ object MyNotificationManager {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationChannel = NotificationChannel(
-            USER_ACTION_CHANNEL_ID,
-            USER_ACTION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+            APP_NOTIFICATION_CHANNEL_ID,
+            APP_NOTIFICATION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
         ).apply {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
@@ -322,7 +322,7 @@ object MyNotificationManager {
 
         val appIcon = context.packageManager.getApplicationIcon(context.packageName)
 
-        val notification = NotificationCompat.Builder(context, USER_ACTION_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, APP_NOTIFICATION_CHANNEL_ID)
         notification.setSmallIcon(R.drawable.app_icon)
         if (appIcon is AdaptiveIconDrawable) {
             val bitmap = appIcon.toBitmap()
@@ -341,7 +341,7 @@ object MyNotificationManager {
         // Don't set sound and vibrate individually for this notification
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(FRIEND_CIRCLE_NOTIFICATION_GROUP)
+        notification.setGroup(NOTIFICATION_GROUP)
         notification.setColor(
             ContextCompat.getColor(
                 context, R.color.amber
@@ -394,8 +394,8 @@ object MyNotificationManager {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationChannel = NotificationChannel(
-            USER_ACTION_CHANNEL_ID,
-            USER_ACTION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+            APP_NOTIFICATION_CHANNEL_ID,
+            APP_NOTIFICATION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
         ).apply {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
@@ -404,7 +404,7 @@ object MyNotificationManager {
 
         val appIcon = context.packageManager.getApplicationIcon(context.packageName)
 
-        val notification = NotificationCompat.Builder(context, USER_ACTION_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, APP_NOTIFICATION_CHANNEL_ID)
         notification.setSmallIcon(R.drawable.app_icon)
         if (appIcon is AdaptiveIconDrawable) {
             val bitmap = appIcon.toBitmap()
@@ -422,7 +422,7 @@ object MyNotificationManager {
 
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(FRIEND_CIRCLE_NOTIFICATION_GROUP)
+        notification.setGroup(NOTIFICATION_GROUP)
         notification.setColor(context.giveMeColor(R.color.lightGreen))
         notification.setAutoCancel(true)
 
@@ -472,8 +472,8 @@ object MyNotificationManager {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationChannel = NotificationChannel(
-            POST_ACTION_CHANNEL_ID,
-            POST_ACTION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+            APP_NOTIFICATION_CHANNEL_ID,
+            APP_NOTIFICATION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
         ).apply {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
@@ -482,7 +482,7 @@ object MyNotificationManager {
 
         val appIcon = context.packageManager.getApplicationIcon(context.packageName)
 
-        val notification = NotificationCompat.Builder(context, POST_ACTION_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, APP_NOTIFICATION_CHANNEL_ID)
         notification.setSmallIcon(R.drawable.app_icon)
         if (appIcon is AdaptiveIconDrawable) {
             val bitmap = appIcon.toBitmap()
@@ -500,7 +500,7 @@ object MyNotificationManager {
 
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(POST_NOTIFICATION_GROUP)
+        notification.setGroup(NOTIFICATION_GROUP)
         notification.setColor(context.giveMeColor(R.color.pink))
         notification.setAutoCancel(true)
 
@@ -551,8 +551,8 @@ object MyNotificationManager {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationChannel = NotificationChannel(
-            CHAT_MESSAGE_CHANNEL_ID,
-            CHAT_MESSAGE_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+            APP_NOTIFICATION_CHANNEL_ID,
+            APP_NOTIFICATION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
         ).apply {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
@@ -561,7 +561,7 @@ object MyNotificationManager {
 
         val appIcon = context.packageManager.getApplicationIcon(context.packageName)
 
-        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, APP_NOTIFICATION_CHANNEL_ID)
         notification.setSmallIcon(R.drawable.app_icon)
         if (appIcon is AdaptiveIconDrawable) {
             val bitmap = appIcon.toBitmap()
@@ -579,7 +579,7 @@ object MyNotificationManager {
 
         notification.setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
         notification.setCategory(NotificationCompat.CATEGORY_MESSAGE)
-        notification.setGroup(POST_NOTIFICATION_GROUP)
+        notification.setGroup(NOTIFICATION_GROUP)
         notification.setColor(context.giveMeColor(R.color.green))
         notification.setAutoCancel(true)
 
@@ -629,8 +629,8 @@ object MyNotificationManager {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationChannel = NotificationChannel(
-            CHAT_MESSAGE_CHANNEL_ID,
-            CHAT_MESSAGE_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+            APP_NOTIFICATION_CHANNEL_ID,
+            APP_NOTIFICATION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
         ).apply {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
@@ -675,7 +675,7 @@ object MyNotificationManager {
             .setName(user.userName)
             .build()
 
-        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID).apply {
+        val notification = NotificationCompat.Builder(context, APP_NOTIFICATION_CHANNEL_ID).apply {
             setSmallIcon(R.drawable.app_icon)
             setTicker("Text Message")
             setSubText(user.userName ?: "Someone")
@@ -686,7 +686,7 @@ object MyNotificationManager {
 
             setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
             setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            setGroup(CHAT_NOTIFICATION_GROUP)
+            setGroup(NOTIFICATION_GROUP)
             setColor(context.giveMeColor(R.color.green))
             setAutoCancel(true)
 
@@ -754,8 +754,8 @@ object MyNotificationManager {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationChannel = NotificationChannel(
-            CHAT_MESSAGE_CHANNEL_ID,
-            CHAT_MESSAGE_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+            APP_NOTIFICATION_CHANNEL_ID,
+            APP_NOTIFICATION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
         ).apply {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
@@ -765,7 +765,7 @@ object MyNotificationManager {
         val notificationId = getChatNotificationId(chatRoomId)
 
 
-        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID).apply {
+        val notification = NotificationCompat.Builder(context, APP_NOTIFICATION_CHANNEL_ID).apply {
             setSmallIcon(R.drawable.app_icon)
             setTicker("Text Message")
             setContentTitle(user.userName ?: "Someone")
@@ -775,7 +775,7 @@ object MyNotificationManager {
 
             setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
             setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            setGroup(CHAT_NOTIFICATION_GROUP)
+            setGroup(NOTIFICATION_GROUP)
             setColor(context.giveMeColor(R.color.green))
             setTimeoutAfter(500)
             setAutoCancel(true)
@@ -826,8 +826,8 @@ object MyNotificationManager {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationChannel = NotificationChannel(
-            CHAT_MESSAGE_CHANNEL_ID,
-            CHAT_MESSAGE_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+            APP_NOTIFICATION_CHANNEL_ID,
+            APP_NOTIFICATION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
         ).apply {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
@@ -870,7 +870,7 @@ object MyNotificationManager {
             .setName(user.userName)
             .build()
 
-        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID).apply {
+        val notification = NotificationCompat.Builder(context, APP_NOTIFICATION_CHANNEL_ID).apply {
 
             setSmallIcon(R.drawable.app_icon)
             /* if (appIcon is AdaptiveIconDrawable) {
@@ -893,7 +893,7 @@ object MyNotificationManager {
 
             setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
             setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            setGroup(CHAT_NOTIFICATION_GROUP)
+            setGroup(NOTIFICATION_GROUP)
             setColor(context.giveMeColor(R.color.green))
             setAutoCancel(true)
 
@@ -973,8 +973,8 @@ object MyNotificationManager {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationChannel = NotificationChannel(
-            CHAT_MESSAGE_CHANNEL_ID,
-            CHAT_MESSAGE_CHANNEL, NotificationManager.IMPORTANCE_HIGH
+            APP_NOTIFICATION_CHANNEL_ID,
+            APP_NOTIFICATION_CHANNEL, NotificationManager.IMPORTANCE_HIGH
         ).apply {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
@@ -984,7 +984,7 @@ object MyNotificationManager {
         val notificationId = getChatNotificationId(chatRoomId)
 
 
-        val notification = NotificationCompat.Builder(context, CHAT_MESSAGE_CHANNEL_ID).apply {
+        val notification = NotificationCompat.Builder(context, APP_NOTIFICATION_CHANNEL_ID).apply {
 
             setSmallIcon(R.drawable.app_icon)
             setTicker("Text Message")
@@ -996,7 +996,7 @@ object MyNotificationManager {
 
             setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
             setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            setGroup(CHAT_NOTIFICATION_GROUP)
+            setGroup(NOTIFICATION_GROUP)
             setColor(context.giveMeColor(R.color.green))
             setAutoCancel(true)
             setTimeoutAfter(500)
@@ -1017,7 +1017,7 @@ object MyNotificationManager {
 
 
         val appIcon = context.packageManager.getApplicationIcon(context.packageName)
-        val summaryNotification = NotificationCompat.Builder(context, APP_NOTIFICATION_ID)
+        val summaryNotification = NotificationCompat.Builder(context, APP_NOTIFICATION_CHANNEL_ID)
         summaryNotification.setSmallIcon(R.drawable.app_icon)
         if (appIcon is AdaptiveIconDrawable) {
             val bitmap = appIcon.toBitmap()
@@ -1029,6 +1029,7 @@ object MyNotificationManager {
             .setSmallIcon(R.drawable.app_icon)
             .setGroup(NOTIFICATION_GROUP) // Use the group key
             .setGroupSummary(true)
+            .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY)
             .setColor(Color.BLACK)
             .setContentTitle("Notification") // Customize the summary title
             .setContentText("You got some notification.") // Customize the summary content
@@ -1039,7 +1040,7 @@ object MyNotificationManager {
         notificationManager.notify(GROUP_SUMMARY_NOTIFICATION_ID, summaryNotification.build())
     }
 
-    // Post Group Notification
+/*    // Post Group Notification
     fun showGroupPostNotification(context: Context) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -1126,7 +1127,7 @@ object MyNotificationManager {
 
         // Notify the summary notification
         notificationManager.notify(CHAT_MESSAGE_NOTIFICATION_ID, summaryNotification.build())
-    }
+    }*/
 
 
     /**
