@@ -58,4 +58,10 @@
         <item name="android:windowExitAnimation">@anim/slide_out_bottom</item>
     </style>
 
+    <style name="MyCropImageStyle" parent="Base.Theme.AppCompat">
+        <item name="android:navigationBarColor">@color/black</item>
+        <item name="isLightTheme">false</item>
+        <item name="navigationIconTint">@color/white</item>
+    </style>
+
 </resources>
