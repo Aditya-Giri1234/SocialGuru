@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
@@ -22,9 +23,7 @@ import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.setFragmentResultListener
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.BottomNavigationBarDirections
@@ -39,7 +38,9 @@ import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.bufferWithDelay
+import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
@@ -58,6 +59,10 @@ import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeDiscoverPostF
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeFollowingPostFragment
 import com.aditya.socialguru.ui_layer.viewmodel.bottom_navigation_bar.HomeViewModel
 import com.bumptech.glide.Glide
+import com.canhub.cropper.CropImageContract
+import com.canhub.cropper.CropImageContractOptions
+import com.canhub.cropper.CropImageOptions
+import com.canhub.cropper.CropImageView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -76,11 +81,12 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     private val MAX_VIDEO_SIZE_MB = 30f
     private var myLoader: MyLoader? = null
     private var isFragmentSwitchHappen = true
-    private var videoFileName :String?=null
+    private var videoFileName: String? = null
 
     private var _storyAdapter: StoryAdapter? = null
     private val storyAdapter get() = _storyAdapter!!
-    companion object{
+
+    companion object {
         const val VideoTrimResult = "VideoTrimResult"
         const val VideoTrimRequest = "VideoTrimRequest"
         const val VideoTrimFileName = "VideoTrimFileName"
@@ -100,67 +106,91 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     private val homeViewModel: HomeViewModel by activityViewModels()
 
-    val pickImage = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        // Callback is invoked after the user selects a media item or closes the
-        // photo picker.
-        if (uri != null) {
-            MyLogger.v(tagStory, msg = "User select pic now send to server !")
-            handleUserSelectedMedia(Constants.StoryType.Image, uri)
-
+    private val cropImage = registerForActivityResult(CropImageContract()) { result ->
+        if (result.isSuccessful) {
+            // Use the cropped image URI.
+            val croppedImageUri = result.uriContent
+            handleUserSelectedMedia(Constants.StoryType.Image, croppedImageUri)
         } else {
-            MyLogger.v(tagStory, msg = "User revoke or cancel upload story !")
+            // An error occurred.
+            val exception = result.error
+            // Handle the error.
         }
     }
 
-    val pickVideo = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        // Callback is invoked after the user selects a media item or closes the
-        // photo picker.
-        if (uri != null) {
-
-
-            val videoLength = Helper.getVideoSize(requireActivity(), uri)
-
-            when {
-                videoLength == -1f -> {
-                    MyLogger.e(
-                        tagStory,
-                        msg = "User selected video length is -1 means some error occurred !"
+    private val pickImage =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            // Callback is invoked after the user selects a media item or closes the
+            // photo picker.
+            if (uri != null) {
+                MyLogger.v(tagStory, msg = "User select pic now send to server !")
+                cropImage.launch(
+                    CropImageContractOptions(
+                        uri = uri,
+                        cropImageOptions = CropImageOptions(
+                            guidelines = CropImageView.Guidelines.ON,
+                            outputCompressFormat = Bitmap.CompressFormat.PNG,
+                            activityBackgroundColor = requireContext().giveMeColor(R.color.lightBlack),
+                            toolbarColor = requireContext().giveMeColor(R.color.black)
+                        )
                     )
-                    Helper.showSnackBar(
-                        (requireActivity() as MainActivity).findViewById(
-                            R.id.coordLayout
-                        ),
-                        "Some error occurred during video fetching  , may be file size to large!"
-                    )
-                }
+                )
 
-                videoLength >= MAX_VIDEO_SIZE_MB -> {
-                    MyLogger.e(
-                        tagStory,
-                        msg = "User selected video length is $videoLength and max lenght :- $MAX_VIDEO_SIZE_MB  which exceeded ! "
-                    )
-                    Helper.showSnackBar(
-                        (requireActivity() as MainActivity).findViewById(
-                            R.id.coordLayout
-                        ), "Video length exceeded , max length is $MAX_VIDEO_SIZE_MB mb !"
-                    )
-                }
-
-                else -> {
-                    MyLogger.v(
-                        tagStory,
-                        msg = "User selected video length is $videoLength and max length :- $MAX_VIDEO_SIZE_MB  which is not exceeded 😁! "
-                    )
-                    MyLogger.v(tagStory, msg = "User select video now send to server !")
-                    navigateToVideoTrimScreen(uri.toString())
-                }
+            } else {
+                MyLogger.v(tagStory, msg = "User revoke or cancel upload story !")
             }
-
-
-        } else {
-            MyLogger.v(tagStory, msg = "User revoke or cancel upload story !")
         }
-    }
+
+    private val pickVideo =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            // Callback is invoked after the user selects a media item or closes the
+            // photo picker.
+            if (uri != null) {
+
+
+                val videoLength = Helper.getVideoSize(requireActivity(), uri)
+
+                when {
+                    videoLength == -1f -> {
+                        MyLogger.e(
+                            tagStory,
+                            msg = "User selected video length is -1 means some error occurred !"
+                        )
+                        Helper.showSnackBar(
+                            (requireActivity() as MainActivity).findViewById(
+                                R.id.coordLayout
+                            ),
+                            "Some error occurred during video fetching  , may be file size to large!"
+                        )
+                    }
+
+                    videoLength >= MAX_VIDEO_SIZE_MB -> {
+                        MyLogger.e(
+                            tagStory,
+                            msg = "User selected video length is $videoLength and max lenght :- $MAX_VIDEO_SIZE_MB  which exceeded ! "
+                        )
+                        Helper.showSnackBar(
+                            (requireActivity() as MainActivity).findViewById(
+                                R.id.coordLayout
+                            ), "Video length exceeded , max length is $MAX_VIDEO_SIZE_MB mb !"
+                        )
+                    }
+
+                    else -> {
+                        MyLogger.v(
+                            tagStory,
+                            msg = "User selected video length is $videoLength and max length :- $MAX_VIDEO_SIZE_MB  which is not exceeded 😁! "
+                        )
+                        MyLogger.v(tagStory, msg = "User select video now send to server !")
+                        navigateToVideoTrimScreen(uri.toString())
+                    }
+                }
+
+
+            } else {
+                MyLogger.v(tagStory, msg = "User revoke or cancel upload story !")
+            }
+        }
 
     private val broadcastManager = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -234,7 +264,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
     private fun subscribeToBroadcastReceiver() {
-        if (!homeViewModel.isDataLoaded){
+        if (!homeViewModel.isDataLoaded) {
             val filter = IntentFilter()
             filter.addAction(Constants.BroadcastType.StoryUploading.name)
 
@@ -248,141 +278,143 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                homeViewModel.userStories.onEach { response ->
-                    response.let {
-                        MyLogger.i(msg = "Response coming in ui screen !")
-                        when (response) {
-                            is Resource.Success -> {
-                                response.hasBeenMessagedToUser = true
-                                userData.clear()
-                                response.data?.let {
-                                    setData(it)
-                                } ?: run {
-                                    setData()
-                                    if (isUserStorySnackBarShouldShow) {
-                                        Helper.showSnackBar(
-                                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                            response.message.toString()
-                                        )
-                                    }
-                                }
-
-
-                                isUserStorySnackBarShouldShow = false
-
-                            }
-
-                            is Resource.Loading -> {
-                                isUserStorySnackBarShouldShow = true
-                            }
-
-                            is Resource.Error -> {
-                                response.hasBeenMessagedToUser = true
+        observeFlow {
+            homeViewModel.userStories.onEach { response ->
+                response.let {
+                    MyLogger.i(msg = "Response coming in ui screen !")
+                    when (response) {
+                        is Resource.Success -> {
+                            response.hasBeenMessagedToUser = true
+                            userData.clear()
+                            response.data?.let {
+                                setData(it)
+                            } ?: run {
+                                setData()
                                 if (isUserStorySnackBarShouldShow) {
                                     Helper.showSnackBar(
                                         (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
                                         response.message.toString()
                                     )
-                                    isUserStorySnackBarShouldShow = false
                                 }
                             }
-                        }
-                    }
 
-                }.launchIn(this)
 
-                // bufferWithDelay is because collector is slow ( MyLoader take some  millisecond time to show ui  and publisher is fast. So it throw / public item and collector collect item and call loader but loader is not initialize at. So when you access it ui , it throw null pointer exception because binding is not initialize.
-                AppBroadcastHelper.uploadStories.bufferWithDelay(100).onEach {
-                    MyLogger.v(tagStory, isFunctionCall = true)
-                    when (it.first) {
-                        Constants.StoryUploadState.StartUploading, Constants.StoryUploadState.Uploading, Constants.StoryUploadState.SavingStory -> {
-                            myLoader?.setLoadingStatus(it.first.status, it.second ?: 0)
-                        }
+                            isUserStorySnackBarShouldShow = false
 
-                        Constants.StoryUploadState.UploadingFail, Constants.StoryUploadState.UrlNotGet -> {
-                            MyLogger.e(
-                                tagStory,
-                                msg = "Something went wrong :- ${it.first.name} occurred !"
-                            )
-                            hideLoader()
-                            Helper.deleteCacheFile(requireContext(),videoFileName)
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(
-                                    R.id.coordLayout
-                                ), "Story uploading failed !"
-                            )
-                        }
-
-                        Constants.StoryUploadState.StoryUploadedSuccessfully -> {
-                            MyLogger.v(
-                                tagStory,
-                                msg = "Loader is show with  StoryUploadedSuccessfully state ..."
-                            )
-                            // This help to handle or change work manager status
-                            requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.StoryChange.name).putExtra(Constants.DATA,2).setPackage(requireContext().packageName))
-                            hideLoader()
-                            Helper.deleteCacheFile(requireContext(),videoFileName)
-                            Helper.showSuccessSnackBar(
-                                (requireActivity() as MainActivity).findViewById(
-                                    R.id.coordLayout
-                                ), "Story uploaded successfully !"
-                            )
-                        }
-                    }
-                }.launchIn(this)
-
-                homeViewModel.uploadStories.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            // Do nothing here
                         }
 
                         is Resource.Loading -> {
-                            MyLogger.v(
-                                tagStory,
-                                msg = "Story uploading now and now loader is showing !"
-                            )
-                            showLoader()
+                            isUserStorySnackBarShouldShow = true
                         }
 
                         is Resource.Error -> {
-                            MyLogger.e(
-                                tagStory,
-                                msg = "Some error occurred during post uploading :- ${response.message.toString()}"
-                            )
-                            hideLoader()
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(
-                                    R.id.coordLayout
-                                ),
-                                response.message.toString()
-                            )
                             response.hasBeenMessagedToUser = true
+                            if (isUserStorySnackBarShouldShow) {
+                                Helper.showSnackBar(
+                                    (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                                    response.message.toString()
+                                )
+                                isUserStorySnackBarShouldShow = false
+                            }
                         }
                     }
-                }.launchIn(this)
-                pref.getPrefUser().onEach {
-                    storyAdapter.setUserData(it)
-                }.launchIn(this)
+                }
 
-                AppBroadcastHelper.homeFragmentBackToTopShow.onEach {
-                    if (it) {
-                        showBackToTopView()
-                    } else {
-                        binding.linearBackToTop.gone()
-                    }
-                }.launchIn(this)
+            }.launchIn(this)
 
-                AppBroadcastHelper.homeScrollBackToTopClick.onEach {
-                    if (it) {
-                        binding.nestedRVHome.smoothScrollTo(0, 0)
+            // bufferWithDelay is because collector is slow ( MyLoader take some  millisecond time to show ui  and publisher is fast. So it throw / public item and collector collect item and call loader but loader is not initialize at. So when you access it ui , it throw null pointer exception because binding is not initialize.
+            AppBroadcastHelper.uploadStories.bufferWithDelay(100).onEach {
+                MyLogger.v(tagStory, isFunctionCall = true)
+                when (it.first) {
+                    Constants.StoryUploadState.StartUploading, Constants.StoryUploadState.Uploading, Constants.StoryUploadState.SavingStory -> {
+                        myLoader?.setLoadingStatus(it.first.status, it.second ?: 0)
                     }
-                }.launchIn(this)
-            }
+
+                    Constants.StoryUploadState.UploadingFail, Constants.StoryUploadState.UrlNotGet -> {
+                        MyLogger.e(
+                            tagStory,
+                            msg = "Something went wrong :- ${it.first.name} occurred !"
+                        )
+                        hideLoader()
+                        Helper.deleteCacheFile(requireContext(), videoFileName)
+                        Helper.showSnackBar(
+                            (requireActivity() as MainActivity).findViewById(
+                                R.id.coordLayout
+                            ), "Story uploading failed !"
+                        )
+                    }
+
+                    Constants.StoryUploadState.StoryUploadedSuccessfully -> {
+                        MyLogger.v(
+                            tagStory,
+                            msg = "Loader is show with  StoryUploadedSuccessfully state ..."
+                        )
+                        // This help to handle or change work manager status
+                        requireActivity().sendBroadcast(
+                            Intent(Constants.AppBroadCast.StoryChange.name).putExtra(
+                                Constants.DATA,
+                                2
+                            ).setPackage(requireContext().packageName)
+                        )
+                        hideLoader()
+                        Helper.deleteCacheFile(requireContext(), videoFileName)
+                        Helper.showSuccessSnackBar(
+                            (requireActivity() as MainActivity).findViewById(
+                                R.id.coordLayout
+                            ), "Story uploaded successfully !"
+                        )
+                    }
+                }
+            }.launchIn(this)
+
+            homeViewModel.uploadStories.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        // Do nothing here
+                    }
+
+                    is Resource.Loading -> {
+                        MyLogger.v(
+                            tagStory,
+                            msg = "Story uploading now and now loader is showing !"
+                        )
+                        showLoader()
+                    }
+
+                    is Resource.Error -> {
+                        MyLogger.e(
+                            tagStory,
+                            msg = "Some error occurred during post uploading :- ${response.message.toString()}"
+                        )
+                        hideLoader()
+                        Helper.showSnackBar(
+                            (requireActivity() as MainActivity).findViewById(
+                                R.id.coordLayout
+                            ),
+                            response.message.toString()
+                        )
+                        response.hasBeenMessagedToUser = true
+                    }
+                }
+            }.launchIn(this)
+            pref.getPrefUser().onEach {
+                storyAdapter.setUserData(it)
+            }.launchIn(this)
+
+            AppBroadcastHelper.homeFragmentBackToTopShow.onEach {
+                if (it) {
+                    showBackToTopView()
+                } else {
+                    binding.linearBackToTop.gone()
+                }
+            }.launchIn(this)
+
+            AppBroadcastHelper.homeScrollBackToTopClick.onEach {
+                if (it) {
+                    binding.nestedRVHome.smoothScrollTo(0, 0)
+                }
+            }.launchIn(this)
         }
-
     }
 
 
@@ -518,13 +550,13 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 //        lifecycleScope.launch {
 //            val user = pref.getPrefUser().first()
 
-            if (userData.isEmpty()) {
-                userData.add(0, UserStories(null,null))
-                userData.addAll(userStories)
-            }
+        if (userData.isEmpty()) {
+            userData.add(0, UserStories(null, null))
+            userData.addAll(userStories)
+        }
 
-            MyLogger.v(msg = "Now data is set into homeFragment !")
-            storyAdapter.submitList(userData.toList())
+        MyLogger.v(msg = "Now data is set into homeFragment !")
+        storyAdapter.submitList(userData.toList())
 //        }
 
     }
@@ -632,9 +664,11 @@ class HomeFragment : Fragment(), StoryTypeOptions {
             }
         }
     }
-    private fun navigateToVideoTrimScreen(videoUri:String){
-        val directions: NavDirections = HomeFragmentDirections.actionHomeFragmentToVideoTrimmingFragment(videoUri)
-        navController.safeNavigate(directions,Helper.giveAnimationNavOption())
+
+    private fun navigateToVideoTrimScreen(videoUri: String) {
+        val directions: NavDirections =
+            HomeFragmentDirections.actionHomeFragmentToVideoTrimmingFragment(videoUri)
+        navController.safeNavigate(directions, Helper.giveAnimationNavOption())
     }
 
 
@@ -709,8 +743,8 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     override fun onDestroy() {
         MyLogger.v(isFunctionCall = true)
         val navHostFragment = requireActivity().supportFragmentManager.fragments.first()
-        if (navHostFragment.childFragmentManager.backStackEntryCount == 0){
-            MyLogger.w(tagStory , msg = "Broadcast receiver is now unregister !")
+        if (navHostFragment.childFragmentManager.backStackEntryCount == 0) {
+            MyLogger.w(tagStory, msg = "Broadcast receiver is now unregister !")
             requireContext().unregisterReceiver(broadcastManager)
         }
         super.onDestroy()

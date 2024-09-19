@@ -46,6 +46,7 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.worker.MyWorker
 import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.MyNotificationManager
 import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
@@ -556,6 +557,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     }
 
     private fun handleDeepLink(intent: Intent) {
+        MyNotificationManager.clearAllNotification(this)
         val isForFcmIntent = intent.getBooleanExtra(Constants.IS_FCM_INTENT, false)
         if (isForFcmIntent) {
             when (intent.getStringExtra(Constants.FCM_INTENT_FOR)) {
@@ -659,11 +661,9 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         }
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent != null) {
-            handleDeepLink(intent)
-        }
+        handleDeepLink(intent)
     }
 
     override fun onDestroy() {
