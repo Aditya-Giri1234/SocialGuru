@@ -26,6 +26,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -47,7 +48,7 @@ class MySavedPostFragment : Fragment(), OnPostClick {
     private val postAdapter get() = _postAdapter!!
 
     private var myLoader: MyLoader? = null
-
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private val tagProfile = Constants.LogTag.Profile
     private val myPostViewModel by viewModels<MyPostViewModel>()
 
@@ -93,10 +94,6 @@ class MySavedPostFragment : Fragment(), OnPostClick {
                             setData(it.mapNotNull { it.userPostModel })
                         } ?: run {
                             setData()
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                response.message.toString()
-                            )
                         }
 
                     }
@@ -106,12 +103,28 @@ class MySavedPostFragment : Fragment(), OnPostClick {
                     }
 
                     is Resource.Error -> {
-                        response.hasBeenMessagedToUser = true
-                        Helper.showSnackBar(
-                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                            response.message.toString()
-                        )
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
+                }
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
                 }
             }.launchIn(this)
             myPostViewModel.likePost.onEach { response ->

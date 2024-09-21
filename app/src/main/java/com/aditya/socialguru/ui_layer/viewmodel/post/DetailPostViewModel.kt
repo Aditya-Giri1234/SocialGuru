@@ -66,7 +66,7 @@ class DetailPostViewModel(val app: Application) : AndroidViewModel(app) {
                     }
                 }.launchIn(this)
             } else {
-                _postDetail.tryEmit(Resource.Error("No Internet Available !"))
+                _postDetail.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
             }
         }
         jobList.add(job)
@@ -106,7 +106,7 @@ class DetailPostViewModel(val app: Application) : AndroidViewModel(app) {
                     _userList.tryEmit(Resource.Success(handleLikePostUser(it)))
                 }.launchIn(this)
             } else {
-                _userList.tryEmit(Resource.Error("No Internet Available !"))
+                _userList.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
             }
 
         }

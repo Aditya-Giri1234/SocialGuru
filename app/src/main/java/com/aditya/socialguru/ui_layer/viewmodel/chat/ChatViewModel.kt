@@ -31,6 +31,7 @@ import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.ChatManager
 import com.bumptech.glide.load.Transformation
+import com.google.rpc.ErrorInfo
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -199,7 +200,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
             }.launchIn(this)
 
         } else {
-            _friendList.tryEmit(Resource.Error("No Internet Available !"))
+            _friendList.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
@@ -276,7 +277,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 _userDetails.tryEmit(it)
             }.launchIn(this)
         } else {
-            _userDetails.tryEmit(Resource.Error("No Internet Available !"))
+            _userDetails.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
     //endregion
@@ -325,7 +326,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 _chatMessage.tryEmit(handleChatMessageResponse(it, chatRoomId))
             }.launchIn(this)
         } else {
-            _chatMessage.tryEmit(Resource.Error("No Internet Available !"))
+            _chatMessage.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
@@ -439,10 +440,14 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
     //region:: Listen Last Message Status
 
     fun listenLastMessage(chatRoomId: String) = viewModelScope.myLaunch {
-        repository.listenLastMessage(chatRoomId).onEach {
-            MyLogger.w(tagChat, msg = it, isJson = true, jsonTitle = "Last Message Updated !")
-            _lastMessage.tryEmit(it)
-        }.launchIn(this)
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.listenLastMessage(chatRoomId).onEach {
+                MyLogger.w(tagChat, msg = it, isJson = true, jsonTitle = "Last Message Updated !")
+                _lastMessage.tryEmit(it)
+            }.launchIn(this)
+        }else{
+            MyLogger.e(tagChat, msg = "Last Message listen failed due to no network available!")
+        }
     }
 
     //endregion
@@ -486,7 +491,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 _recentChat.tryEmit(handleRecentChatMessageResponse(it))
             }.launchIn(this)
         } else {
-            _recentChat.tryEmit(Resource.Error("No Internet Available !"))
+            _recentChat.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
@@ -643,7 +648,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 _isMuted.tryEmit(Resource.Success(it))
             }.launchIn(this)
         } else {
-            _isMuted.tryEmit(Resource.Error("No Internet Available !"))
+            _isMuted.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
     //endregion
@@ -677,7 +682,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 _chatMedia.tryEmit(Resource.Success(handleMediaResponse(it,category)))
             }.launchIn(this)
         }else{
-            _chatMedia.tryEmit(Resource.Error("No Internet Connection !"))
+            _chatMedia.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
@@ -756,7 +761,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 _userListDetailsByIds.tryEmit(Resource.Success(it))
             }.launchIn(this)
         }else{
-            _userListDetailsByIds.tryEmit(Resource.Error("No Internet Available !"))
+            _userListDetailsByIds.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
@@ -821,7 +826,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 _groupChatMessage.tryEmit(handleGroupChatMessageResponse(it, chatRoomId))
             }.launchIn(this)
         } else {
-            _groupChatMessage.tryEmit(Resource.Error("No Internet Available !"))
+            _groupChatMessage.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
@@ -927,7 +932,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 _groupMemberDetails.tryEmit(handleGroupMemberDetails(it))
             }.launchIn(this)
         }else{
-            _groupMemberDetails.tryEmit(Resource.Error("No Internet Available !"))
+            _groupMemberDetails.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
@@ -994,7 +999,7 @@ class ChatViewModel(val app: Application) : AndroidViewModel(app) {
                 }
             }.launchIn(this)
         }else{
-            _groupInfo.tryEmit(Resource.Error("No Internet Available !"))
+            _groupInfo.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 

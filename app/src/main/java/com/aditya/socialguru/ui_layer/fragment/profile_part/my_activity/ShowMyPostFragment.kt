@@ -10,9 +10,6 @@ import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,7 +23,9 @@ import com.aditya.socialguru.databinding.FragmentShowMyPostBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -36,11 +35,9 @@ import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.post.PostAdapter
-import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
 import com.aditya.socialguru.ui_layer.viewmodel.profile.MyPostViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 
 class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
@@ -53,6 +50,7 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
 
     private var myLoader: MyLoader? = null
     private val tagProfile = Constants.LogTag.Profile
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private val myPostViewModel by viewModels<MyPostViewModel>()
 
 
@@ -98,78 +96,95 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
 
     private fun subscribeToObservation() {
         MyLogger.v(isFunctionCall = true)
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                myPostViewModel.myPost.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
+        observeFlow {
+            myPostViewModel.myPost.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                        response.data?.let {
+                            setData(it)
+                        } ?: run {
+                            setData()
+                            Helper.showSnackBar(
+                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                                response.message.toString()
+                            )
+                        }
+
+                    }
+
+                    is Resource.Loading -> {
+
+                    }
+
+                    is Resource.Error -> {
+                        if (!response.hasBeenMessagedToUser) {
                             response.hasBeenMessagedToUser = true
-                            response.data?.let {
-                                setData(it)
-                            } ?: run {
-                                setData()
-                                Helper.showSnackBar(
-                                    (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                    response.message.toString()
-                                )
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
                             }
-
-                        }
-
-                        is Resource.Loading -> {
-
-                        }
-
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser = true
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                response.message.toString()
-                            )
                         }
                     }
-                }.launchIn(this)
-                myPostViewModel.likePost.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.hasBeenMessagedToUser = true
-                        }
-
-                        is Resource.Loading -> {
-
-                        }
-
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser = true
-                            postAdapter.notifyDataSetChanged()
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                response.message.toString()
-                            )
-                        }
+                }
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
                     }
-                }.launchIn(this)
-                myPostViewModel.savePost.onEach {
-                    response->
-                    when(response){
-                        is Resource.Success->{
-                            hideDialog()
-                            response.hasBeenMessagedToUser=true
-                            showSnackBar(response.data?.errorMessage, isSuccess =
-                            true)
-                        }
-                        is Resource.Loading->{
-                            showDialog()
-                        }
-                        is Resource.Error->{
-                            hideDialog()
-                            response.hasBeenMessagedToUser=true
-                            showSnackBar(response.message)
-                        }
+                    jobQueue.clear()
+                }
+            }.launchIn(this)
+            myPostViewModel.likePost.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                    }
+
+                    is Resource.Loading -> {
 
                     }
-                }.launchIn(this)
-            }
+
+                    is Resource.Error -> {
+                        response.hasBeenMessagedToUser = true
+                        postAdapter.notifyDataSetChanged()
+                        Helper.showSnackBar(
+                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                            response.message.toString()
+                        )
+                    }
+                }
+            }.launchIn(this)
+            myPostViewModel.savePost.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        response.hasBeenMessagedToUser = true
+                        showSnackBar(
+                            response.data?.errorMessage, isSuccess =
+                            true
+                        )
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        response.hasBeenMessagedToUser = true
+                        showSnackBar(response.message)
+                    }
+
+                }
+            }.launchIn(this)
         }
     }
 
@@ -278,7 +293,7 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
     }
 
     override fun onSendClick(post: Post) {
-        ShareManager.sharePost(requireContext(),post.postId!!)
+        ShareManager.sharePost(requireContext(), post.postId!!)
     }
 
     override fun onPostClick(postId: String) {

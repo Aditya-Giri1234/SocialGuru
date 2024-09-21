@@ -23,6 +23,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -42,6 +43,7 @@ class AllMediaShowFragment(val chatRoomId: String) : Fragment() {
     private val mediaAdapter get() = _mediaAdapter!!
 
     private val tagChat=Constants.LogTag.Chats
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
 
     private val chatViewModel by viewModels<ChatViewModel>()
 
@@ -70,7 +72,7 @@ class AllMediaShowFragment(val chatRoomId: String) : Fragment() {
         }
         initUi()
         subscribeToObserver()
-        getData()
+        getDataWithValidation()
     }
 
     private fun subscribeToObserver() {
@@ -93,10 +95,30 @@ class AllMediaShowFragment(val chatRoomId: String) : Fragment() {
                     }
 
                     is Resource.Error -> {
-                        showSnackBar(response.message, isSuccess = false)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
                 }
 
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
             }.launchIn(this)
         }
     }
@@ -161,11 +183,14 @@ class AllMediaShowFragment(val chatRoomId: String) : Fragment() {
 
     }
 
-    private fun getData() {
+    private fun getDataWithValidation() {
         if (!chatViewModel.isDataLoaded) {
             chatViewModel.setDataLoadedStatus(true)
-            chatViewModel.getAllMediaForChat(chatRoomId, 0)
+           getData()
         }
+    }
+    private fun getData(){
+        chatViewModel.getAllMediaForChat(chatRoomId, 0)
     }
 
     private fun showData(media: List<ChatMediaData>) {

@@ -31,6 +31,7 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setCircularBackground
@@ -58,6 +59,7 @@ class StartGroupChatFragment : Fragment() {
     private val allUser = mutableListOf<FriendCircleData>()
     private val selectedUser = mutableListOf<User>()
     private val notSelectedUser = mutableListOf<FriendCircleData>()
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private var isCreatorOfGroupIsRemoveApiCall = false
     private lateinit var memberAddType: String
     private var groupInfo: GroupInfo? = null
@@ -107,7 +109,7 @@ class StartGroupChatFragment : Fragment() {
         }
         initUi()
         subscribeToObserver()
-        getData()
+        getDataWithValidation()
     }
 
 
@@ -139,7 +141,18 @@ class StartGroupChatFragment : Fragment() {
 
                         if (!response.hasBeenMessagedToUser) {
                             response.hasBeenMessagedToUser = true
-                            showSnackBar(response.message?.toString())
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.clear()
+                                    chatViewModel.setDataLoadedStatus(false)
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
                         }
                     }
                 }
@@ -167,7 +180,18 @@ class StartGroupChatFragment : Fragment() {
 
                         if (!response.hasBeenMessagedToUser) {
                             response.hasBeenMessagedToUser = true
-                            showSnackBar(response.message?.toString())
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.clear()
+                                    chatViewModel.setDataLoadedStatus(false)
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
                         }
                     }
                 }
@@ -208,6 +232,14 @@ class StartGroupChatFragment : Fragment() {
                             showSnackBar(response.message?.toString())
                         }
                     }
+                }
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
                 }
             }.launchIn(this)
         }
@@ -362,14 +394,17 @@ class StartGroupChatFragment : Fragment() {
         }
     }
 
-    private fun getData() {
+    private fun getDataWithValidation() {
         if (!chatViewModel.isDataLoaded) {
-            if (memberAddType == MembersAddType.CreatorChoose.name) {
-                chatViewModel.getAllUserByIds(groupAlreadyMembers!!.members.mapNotNull { it.memberId })
-            } else {
-                chatViewModel.getFriendListAndListenChange()
-            }
+            getData()
             chatViewModel.setDataLoadedStatus(true)
+        }
+    }
+    private fun getData(){
+        if (memberAddType == MembersAddType.CreatorChoose.name) {
+            chatViewModel.getAllUserByIds(groupAlreadyMembers!!.members.mapNotNull { it.memberId })
+        } else {
+            chatViewModel.getFriendListAndListenChange()
         }
     }
 

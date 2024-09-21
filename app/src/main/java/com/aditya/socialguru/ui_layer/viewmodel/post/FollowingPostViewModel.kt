@@ -10,6 +10,7 @@ import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.toList
 
 class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
 
@@ -30,7 +32,7 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     private val repository = FollowingPostRepository()
     private var followingUserPostJob: Job? = null
-    private var followingUserListJob:Job?=null
+    private var followingUserListJob: Job? = null
 
     private var _isDataLoaded = false
     val isDataLoaded get() = _isDataLoaded
@@ -80,7 +82,7 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
                 }.launchIn(this)
             } else {
                 MyLogger.v(tagPost, msg = "Network not available !")
-                _userPost.tryEmit(Resource.Error(message = "Internet not available ."))
+                _userPost.tryEmit(Resource.Error(message =Constants.ErrorMessage.InternetNotAvailable.message))
             }
         }
     }
@@ -88,78 +90,83 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
     private suspend fun handleGetFollowing(discoverPostHandling: PostListenerEmissionType): Resource<List<UserPostModel>> {
 
         MyLogger.v(tagPost, isFunctionCall = true)
-
         val userPostList =
             userPost.replayCache[0].data?.toMutableList() ?: mutableListOf<UserPostModel>()
+        return try {
 
-        when (discoverPostHandling.emitChangeType) {
-            Constants.ListenerEmitType.Starting -> {
-                // Don't Do anything
-            }
-
-            Constants.ListenerEmitType.Added -> {
-                MyLogger.v(
-                    tagPost,
-                    msg = "This is added post type "
-                )
-                discoverPostHandling.userPostModel?.let { post ->
-                    post.userId?.let { userId ->
-                        userPostList.add(
-                            UserPostModel(
-                                repository.getUser(userId).first().data,
-                                post
-                            )
-                        )
-                        userPostList.sortByDescending {
-                            it.post?.postUploadingTimeInTimeStamp
-                        }
-                    }
+            when (discoverPostHandling.emitChangeType) {
+                Constants.ListenerEmitType.Starting -> {
+                    // Don't Do anything
                 }
-                MyLogger.d(tagPost, msg = userPostList, isJson = true)
 
-            }
-
-            Constants.ListenerEmitType.Removed -> {
-                MyLogger.v(tagPost, msg = "This is removed post type")
-
-                discoverPostHandling.userPostModel?.let { post ->
-                    post.postId?.let { postId ->
-                        userPostList.forEach { userPost ->
-                            val currentPostId = userPost.post?.postId
-                            if (currentPostId != null && currentPostId == postId) {
-                                userPostList.remove(userPost)
-                                return@let
-                            }
-                        }
-                    }
-                }
-                MyLogger.d(tagPost, msg = userPostList, isJson = true)
-
-            }
-
-            Constants.ListenerEmitType.Modify -> {
-                // For Future
-                MyLogger.v(tagPost, msg = "This modify post type ..")
-                discoverPostHandling.userPostModel?.let { post ->
-                    post.postId?.let { postId ->
-                        userPostList.forEach { userPost ->
-                            val currentPostId = userPost.post?.postId
-                            if (currentPostId != null && currentPostId == postId) {
-                                userPost.post = userPost.post?.copy(
-                                    commentCount = post.commentCount,
-                                    likeCount = post.likeCount,
-                                    likedUserList = post.likedUserList
+                Constants.ListenerEmitType.Added -> {
+                    MyLogger.v(
+                        tagPost,
+                        msg = "This is added post type "
+                    )
+                    discoverPostHandling.userPostModel?.let { post ->
+                        post.userId?.let { userId ->
+                            userPostList.add(
+                                UserPostModel(
+                                    repository.getUser(userId).first().data,
+                                    post
                                 )
-                                return@let
+                            )
+                            userPostList.sortByDescending {
+                                it.post?.postUploadingTimeInTimeStamp
                             }
                         }
                     }
-                }
-                MyLogger.d(tagPost, msg = userPostList, isJson = true)
-            }
-        }
+                    MyLogger.d(tagPost, msg = userPostList, isJson = true)
 
-        return Resource.Success(userPostList.toList())
+                }
+
+                Constants.ListenerEmitType.Removed -> {
+                    MyLogger.v(tagPost, msg = "This is removed post type")
+
+                    discoverPostHandling.userPostModel?.let { post ->
+                        post.postId?.let { postId ->
+                            userPostList.forEach { userPost ->
+                                val currentPostId = userPost.post?.postId
+                                if (currentPostId != null && currentPostId == postId) {
+                                    userPostList.remove(userPost)
+                                    return@let
+                                }
+                            }
+                        }
+                    }
+                    MyLogger.d(tagPost, msg = userPostList, isJson = true)
+
+                }
+
+                Constants.ListenerEmitType.Modify -> {
+                    // For Future
+                    MyLogger.v(tagPost, msg = "This modify post type ..")
+                    discoverPostHandling.userPostModel?.let { post ->
+                        post.postId?.let { postId ->
+                            userPostList.forEach { userPost ->
+                                val currentPostId = userPost.post?.postId
+                                if (currentPostId != null && currentPostId == postId) {
+                                    userPost.post = userPost.post?.copy(
+                                        commentCount = post.commentCount,
+                                        likeCount = post.likeCount,
+                                        likedUserList = post.likedUserList
+                                    )
+                                    return@let
+                                }
+                            }
+                        }
+                    }
+                    MyLogger.d(tagPost, msg = userPostList, isJson = true)
+                }
+            }
+
+             Resource.Success(userPostList.toList())
+        } catch (e: Exception) {
+            e.printStackTrace()
+            MyLogger.e(tagPost, msg = giveMeErrorMessage("Handling Following Post " , e.message.toString()))
+            Resource.Success(userPostList.toList())
+        }
     }
 
     //endregion
@@ -218,7 +225,7 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
                 }.launchIn(this)
 
             } else {
-                _followingList.tryEmit(Resource.Error("No Internet Available !"))
+                _followingList.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
             }
         }
     }
@@ -286,8 +293,9 @@ class FollowingPostViewModel(val app: Application) : AndroidViewModel(app) {
     fun setDataLoadedStatus(status: Boolean) {
         _isDataLoaded = status
     }
-    fun removeListener(){
-        _isDataLoaded=false
+
+    fun removeListener() {
+        _isDataLoaded = false
         followingUserListJob?.cancel()
     }
 

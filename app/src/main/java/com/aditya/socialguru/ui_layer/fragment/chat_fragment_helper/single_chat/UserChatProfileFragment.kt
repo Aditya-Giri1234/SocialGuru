@@ -21,6 +21,7 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -41,7 +42,7 @@ class UserChatProfileFragment : Fragment() {
     private lateinit var userId: String  //This is for  userId
     private lateinit var chatRoomId: String  //This is for  chatRoomId
     private var defaultMuteValueForReceiver: Boolean? = null
-
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private var myLoader: MyLoader? = null
     private var userData: User? = null
 
@@ -76,7 +77,7 @@ class UserChatProfileFragment : Fragment() {
         chatRoomId = args.chatRoomId
         initUi()
         subscribeToObserver()
-        getData()
+        getDataWithValidation()
     }
 
     private fun subscribeToObserver() {
@@ -136,11 +137,30 @@ class UserChatProfileFragment : Fragment() {
                         hideDialog()
                         MyLogger.e(tagChat, msg = "Internet Off")
                         loadDefaultSetting()
-                        response.hasBeenMessagedToUser = true
-                        showSnackBar(response.message, isSuccess = false)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
                 }
 
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
             }.launchIn(this)
 
         }
@@ -193,12 +213,15 @@ class UserChatProfileFragment : Fragment() {
         }
     }
 
-    private fun getData() {
+    private fun getDataWithValidation() {
         if (!chatViewModel.isDataLoaded) {
             chatViewModel.setDataLoadedStatus(true)
-            chatViewModel.getUser(userId)
-            chatViewModel.isUserMutedAndListen(userId)
+            getData()
         }
+    }
+    private fun getData(){
+        chatViewModel.getUser(userId)
+        chatViewModel.isUserMutedAndListen(userId)
     }
 
     private fun navigateToImageViewScreen() {

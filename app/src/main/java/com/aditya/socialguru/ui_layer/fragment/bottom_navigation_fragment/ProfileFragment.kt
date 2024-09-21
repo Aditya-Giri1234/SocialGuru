@@ -30,8 +30,10 @@ import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
@@ -61,7 +63,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
     private val imageAvailable = "0"
     private val imageUnAvailable = "1"
     private var myLoader: MyLoader? = null
-
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
     }
@@ -104,49 +106,80 @@ class ProfileFragment : Fragment(), AlertDialogOption {
 
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                profileViewModel.followerCount.onEach {
-                    binding.tvFollowers.text = it.toString()
-                }.launchIn(this)
-                profileViewModel.followingCount.onEach {
-                    binding.tvFollowing.text = it.toString()
-                }.launchIn(this)
-                profileViewModel.postCount.onEach {
-                    binding.tvPost.text = it.toString()
-                }.launchIn(this)
-                profileViewModel.likeCount.onEach {
-                    binding.tvLike.text = it.toString()
-                }.launchIn(this)
-
-                profileViewModel.userSignOut.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            hideDialog()
-                            Helper.showSuccessSnackBar(
-                                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
-                                    R.id.coordLayout
-                                ), "LogOut Successfully!"
-                            )
-                            Helper.setLogout(requireContext())
-                            navigateToOnboardingScreen()
-                        }
-
-                        is Resource.Loading -> {
-                            showDialog()
-                        }
-
-                        is Resource.Error -> {
-                            hideDialog()
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
-                                    R.id.coordLayout
-                                ), response.message.toString()
-                            )
-                        }
+        observeFlow {
+            profileViewModel.followerCount.onEach {
+                if (it==Int.MIN_VALUE){
+                    jobQueue.add {
+                        profileViewModel.subscribeToFollowerCount(AuthManager.currentUserId()!!)
                     }
-                }.launchIn(this)
-            }
+                }else{
+                    binding.tvFollowers.text = it.toString()
+                }
+            }.launchIn(this)
+            profileViewModel.followingCount.onEach {
+                if (it==Int.MIN_VALUE){
+                    jobQueue.add {
+                        profileViewModel.subscribeToFollowingCount(AuthManager.currentUserId()!!)
+                    }
+                }else{
+                    binding.tvFollowing.text = it.toString()
+                }
+            }.launchIn(this)
+            profileViewModel.postCount.onEach {
+                if (it==Int.MIN_VALUE){
+                    jobQueue.add {
+                        profileViewModel.subscribeToPostCount(AuthManager.currentUserId()!!)
+                    }
+                }else{
+                    binding.tvPost.text = it.toString()
+                }
+            }.launchIn(this)
+            profileViewModel.likeCount.onEach {
+                if (it==Int.MIN_VALUE){
+                    jobQueue.add {
+                        profileViewModel.subscribeToLikeCount(AuthManager.currentUserId()!!)
+                    }
+                }else{
+                    binding.tvLike.text = it.toString()
+                }
+            }.launchIn(this)
+
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if(isInternetAvailable){
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
+            }.launchIn(this)
+
+            profileViewModel.userSignOut.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        Helper.showSuccessSnackBar(
+                            (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                                R.id.coordLayout
+                            ), "LogOut Successfully!"
+                        )
+                        Helper.setLogout(requireContext())
+                        navigateToOnboardingScreen()
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        Helper.showSnackBar(
+                            (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                                R.id.coordLayout
+                            ), response.message.toString()
+                        )
+                    }
+                }
+            }.launchIn(this)
         }
     }
 

@@ -18,6 +18,7 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
@@ -42,6 +43,7 @@ import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.bufferWithDelay
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
@@ -78,6 +80,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     private val tagStory = Constants.LogTag.Story
     private val tagPost = Constants.LogTag.Post
     private val userData: MutableList<UserStories> = mutableListOf<UserStories>()
+    private val jobQueue: ArrayDeque<()->Unit> = ArrayDeque()
     private val MAX_VIDEO_SIZE_MB = 30f
     private var myLoader: MyLoader? = null
     private var isFragmentSwitchHappen = true
@@ -210,8 +213,6 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     }
 
-    private var isUserStorySnackBarShouldShow = true
-
 
     //endregion
 
@@ -284,42 +285,44 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                     MyLogger.i(msg = "Response coming in ui screen !")
                     when (response) {
                         is Resource.Success -> {
-                            response.hasBeenMessagedToUser = true
                             userData.clear()
                             response.data?.let {
                                 setData(it)
                             } ?: run {
                                 setData()
-                                if (isUserStorySnackBarShouldShow) {
-                                    Helper.showSnackBar(
-                                        (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                        response.message.toString()
-                                    )
-                                }
                             }
-
-
-                            isUserStorySnackBarShouldShow = false
-
                         }
 
                         is Resource.Loading -> {
-                            isUserStorySnackBarShouldShow = true
                         }
 
                         is Resource.Error -> {
-                            response.hasBeenMessagedToUser = true
-                            if (isUserStorySnackBarShouldShow) {
-                                Helper.showSnackBar(
-                                    (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                    response.message.toString()
-                                )
-                                isUserStorySnackBarShouldShow = false
+                            if (!response.hasBeenMessagedToUser) {
+                                response.hasBeenMessagedToUser = true
+                                when(response.message){
+                                    Constants.ErrorMessage.InternetNotAvailable.message ->{
+                                        jobQueue.add {
+                                            getData()
+                                        }
+                                    }
+                                    else ->{
+                                        showSnackBar(response.message.toString())
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
+            }.launchIn(this)
+
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if(isInternetAvailable){
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
             }.launchIn(this)
 
             // bufferWithDelay is because collector is slow ( MyLoader take some  millisecond time to show ui  and publisher is fast. So it throw / public item and collector collect item and call loader but loader is not initialize at. So when you access it ui , it throw null pointer exception because binding is not initialize.
@@ -387,13 +390,10 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                             msg = "Some error occurred during post uploading :- ${response.message.toString()}"
                         )
                         hideLoader()
-                        Helper.showSnackBar(
-                            (requireActivity() as MainActivity).findViewById(
-                                R.id.coordLayout
-                            ),
-                            response.message.toString()
-                        )
-                        response.hasBeenMessagedToUser = true
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            showSnackBar(response.message.toString())
+                        }
                     }
                 }
             }.launchIn(this)
@@ -631,6 +631,22 @@ class HomeFragment : Fragment(), StoryTypeOptions {
             }
         }, 2000)
 
+    }
+
+    private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
+        if (isSuccess) {
+            Helper.showSuccessSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        } else {
+            Helper.showSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        }
     }
 
 

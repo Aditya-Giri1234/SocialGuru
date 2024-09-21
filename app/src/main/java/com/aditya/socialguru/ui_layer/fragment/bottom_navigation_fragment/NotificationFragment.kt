@@ -35,6 +35,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -55,6 +56,7 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
     private val binding get() = _binding!!
 
     private val tagNotification = Constants.LogTag.Notification
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
 
     private var myLoader: MyLoader? = null
     private val navController get() = (requireActivity() as MainActivity).navController
@@ -94,7 +96,7 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
         }
         initUi()
         subscribeToObserver()
-        getData()
+        getDataWithValidation()
 
     }
 
@@ -116,11 +118,31 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
                     }
 
                     is Resource.Error -> {
-                        showSnackBar(response.message.toString(), false)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    notificationViewModel.setDataLoadedStatus(false) // This is needed because jobQueue is destroy so that data loaded to be false when fragment change
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else->{
+                                    showSnackBar(message = response.message.toString() , isSuccess =false)
+                                }
+                            }
+                        }
                     }
                 }
             }.launchIn(this)
-
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
+            }.launchIn(this)
             notificationViewModel.singleNotificationDelete.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
@@ -261,12 +283,15 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
 
     }
 
-    private fun getData() {
+    private fun getDataWithValidation() {
         MyLogger.w(tagNotification, msg = "Data is loaded ${notificationViewModel.isDataLoaded}")
         if (!notificationViewModel.isDataLoaded) {
-            notificationViewModel.getMyNotificationAndListen()
+           getData()
             notificationViewModel.setDataLoadedStatus(true)
         }
+    }
+    private fun getData(){
+        notificationViewModel.getMyNotificationAndListen()
     }
 
     private fun showPopupMenu() {

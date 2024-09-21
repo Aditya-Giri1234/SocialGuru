@@ -22,6 +22,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -41,6 +42,7 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     private val binding get() = _binding!!
 
     private val tagPost = Constants.LogTag.Post
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
 
 
     private var _discoverPostAdapter: PostAdapter? = null
@@ -94,7 +96,6 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
                             setData(it)
                         } ?: run {
                             setData()
-                            showSnackBar(message = response.message)
                         }
                     }
 
@@ -103,9 +104,28 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
                     }
 
                     is Resource.Error -> {
-                        response.hasBeenMessagedToUser = true
-                        showSnackBar(message = response.message)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
+                }
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
                 }
             }.launchIn(this)
             discoverPostViewModel.likePost.onEach { response ->
@@ -178,7 +198,7 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
             MyLogger.w(tagPost, msg = "list is empty then show no data view !")
             showNoDataView()
         } else {
-            MyLogger.v(tagPost,msg = "Now data is set into homeFragment !")
+            MyLogger.v(tagPost, msg = "Now data is set into homeFragment !")
             hideNoDataView()
         }
 
@@ -255,7 +275,7 @@ class HomeDiscoverPostFragment : Fragment(), OnPostClick {
     }
 
     override fun onSendClick(post: Post) {
-        ShareManager.sharePost(requireContext(),post.postId!!)
+        ShareManager.sharePost(requireContext(), post.postId!!)
     }
 
     override fun onPostClick(postId: String) {

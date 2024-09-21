@@ -44,6 +44,7 @@ import com.aditya.socialguru.domain_layer.helper.disabled
 import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.resizeActivate
 import com.aditya.socialguru.domain_layer.helper.resizeStop
@@ -81,12 +82,14 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     private val binding get() = _binding!!
 
     private val tagChat = Constants.LogTag.Chats
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
 
     private var dialogInvokeReason = Constants.ChatDialogInvokeAction.DeleteSingleChat
     private var isUserAppOpen = false
     private var isUserActiveOnCurrentChat = false
     private var isFirstTimeDataSetOnUi = true
     private val MAX_VIDEO_SIZE_MB = 50f
+    private var isMeidaUploading = false
 
     private val emojiKeyboardTag = 0
     private val emojiPopup by lazy {
@@ -194,7 +197,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
         requireActivity().resizeActivate()
         initUi()
         subscribeToObserver()
-        getData()
+        getDataWithValidation()
     }
 
 
@@ -215,7 +218,19 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                     }
 
                     is Resource.Error -> {
-                        showSnackBar(response.message, isSuccess = false)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getChatDataAndListen()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -239,7 +254,20 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
 
                     is Resource.Error -> {
                         hideDialog()
-                        showSnackBar(response.message, isSuccess = false)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.clear()
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -266,7 +294,19 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
 
                     is Resource.Error -> {
                         hideDialog()
-                        showSnackBar(response.message, isSuccess = false)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        chatViewModel.getGroupMemberDetails(chatRoomId)
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -299,10 +339,12 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                     }
 
                     is Resource.Loading -> {
+                        isMeidaUploading=true
                         showDialog()
                     }
 
                     is Resource.Error -> {
+                        isMeidaUploading=false
                         hideDialog()
                         showSnackBar(response.message, isSuccess = false)
                     }
@@ -362,8 +404,14 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
                         setSendButtonState()
                     }
                 }.launchIn(this)
-
-
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
+            }.launchIn(this)
         }
     }
 
@@ -482,10 +530,13 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
 
     }
 
-    private fun getData() {
+    private fun getDataWithValidation() {
         if (!chatViewModel.isDataLoaded) {
-            chatViewModel.getGroupInfo(chatRoomId)
+            getData()
         }
+    }
+    private fun getData(){
+        chatViewModel.getGroupInfo(chatRoomId)
     }
     private fun getChatDataAndListen(){
         chatViewModel.getGroupChatMessage(chatRoomId)
@@ -871,6 +922,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     }
 
     private fun resetUiScreen() {
+        isMeidaUploading=false
         hideDialog()
         binding.etMessage.text.clear()
         hideMediaPanel()

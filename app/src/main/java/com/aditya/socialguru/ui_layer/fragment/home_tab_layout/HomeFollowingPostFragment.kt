@@ -21,8 +21,8 @@ import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
-import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -40,6 +40,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
     private val binding get() = _binding!!
 
     private val tagPost = Constants.LogTag.Post
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
 
     private var _followingPostAdapter: PostAdapter? = null
     private var myLoader: MyLoader? = null
@@ -75,7 +76,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
         subscribeToObserver()
 
         if (!followingPostViewModel.isDataLoaded) {
-            getData()
+            getData() // This call again again when new fragment become top then back this fragment
             followingPostViewModel.setDataLoadedStatus(true)
         }
     }
@@ -92,10 +93,6 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
                                 setData(it)
                             } ?: run {
                                 setData()
-                                Helper.showSnackBar(
-                                    (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                    response.message.toString()
-                                )
                             }
 
                         }
@@ -105,15 +102,30 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
                         }
 
                         is Resource.Error -> {
-                            response.hasBeenMessagedToUser = true
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                response.message.toString()
-                            )
+                            if (!response.hasBeenMessagedToUser) {
+                                response.hasBeenMessagedToUser = true
+                                when (response.message) {
+                                    Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                        jobQueue.add {
+                                            getData()
+                                        }
+                                    }
+                                    else ->{
+                                        showSnackBar(response.message.toString())
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
             }.launchIn(this)
             followingPostViewModel.likePost.onEach { response ->
                 when (response) {
@@ -126,12 +138,8 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
                     }
 
                     is Resource.Error -> {
-                        response.hasBeenMessagedToUser = true
                         followingPostAdapter.notifyDataSetChanged()
-                        Helper.showSnackBar(
-                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                            response.message.toString()
-                        )
+                        showSnackBar(response.message.toString())
                     }
                 }
             }.launchIn(this)
@@ -152,7 +160,6 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
 
                     is Resource.Error -> {
                         hideDialog()
-                        response.hasBeenMessagedToUser = true
                         showSnackBar(response.message)
                     }
 
@@ -163,9 +170,9 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
                     is Resource.Success -> {
                         MyLogger.i(tagPost, msg = "Following User List response come !")
                         response.data?.let {
-                            if (it.isEmpty()){
+                            if (it.isEmpty()) {
                                 setData()
-                            }else{
+                            } else {
                                 followingPostViewModel.getFollowingPost(it.mapNotNull { it.userId })
                             }
                         } ?: run {
@@ -181,7 +188,16 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
                     is Resource.Error -> {
                         if (!response.hasBeenMessagedToUser) {
                             response.hasBeenMessagedToUser = true
-                            showSnackBar(response.message?.toString())
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(response.message.toString())
+                                }
+                            }
                         }
                     }
                 }
@@ -271,7 +287,7 @@ class HomeFollowingPostFragment : Fragment(), OnPostClick {
     }
 
     override fun onSendClick(post: Post) {
-        ShareManager.sharePost(requireContext(),post.postId!!)
+        ShareManager.sharePost(requireContext(), post.postId!!)
     }
 
     override fun onPostClick(postId: String) {

@@ -1,6 +1,7 @@
 package com.aditya.socialguru
 
 import android.animation.Animator
+import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -9,12 +10,16 @@ import android.content.IntentFilter
 import android.graphics.Color
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
+import android.view.animation.DecelerateInterpolator
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.animation.addListener
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
@@ -38,8 +43,10 @@ import com.aditya.socialguru.databinding.ActivityMainBinding
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
@@ -53,6 +60,7 @@ import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.viewmodel.MainViewModel
 import com.google.android.material.navigation.NavigationBarView
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -68,8 +76,9 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
 
 
     private var bottomMargin: Int = 0
+    private var noInternetHideWork : Job?=null
     private val tagStory = Constants.LogTag.Story
-
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private val mainViewModel by viewModels<MainViewModel>()
     private val pref by lazy {
         SharePref(this@MainActivity)
@@ -221,8 +230,37 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                         }
 
                         is Resource.Error -> {
-                            Helper.showSnackBar(binding.coordLayout, response.message.toString())
+                            if (!response.hasBeenMessagedToUser) {
+                                response.hasBeenMessagedToUser = true
+                                when (response.message) {
+                                    Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                        jobQueue.add {
+                                            mainViewModel.removeAllListener()
+                                            mainViewModel.getUser()
+                                            mainViewModel.listenMySavedPost()
+                                            mainViewModel.listenMyLikedPost()
+                                            mainViewModel.listenAuthOfUser()
+                                        }
+                                    }
+                                    else ->{
+                                        Helper.showSnackBar(binding.coordLayout, response.message.toString())
+                                    }
+                                }
+                            }
                         }
+                    }
+                }.launchIn(this)
+
+                monitorInternet().onEach { isInternetAvailable ->
+                    if (isInternetAvailable) {
+                        hideNoInternet()
+                        jobQueue.forEach {
+                            it.invoke()
+                        }
+                        jobQueue.clear()
+
+                    }else{
+                        showNoInternet()
                     }
                 }.launchIn(this)
 
@@ -241,7 +279,19 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                         }
 
                         is Resource.Error -> {
-                            Helper.showSnackBar(binding.coordLayout, response.message.toString())
+                            if (!response.hasBeenMessagedToUser) {
+                                response.hasBeenMessagedToUser = true
+                                when (response.message) {
+                                    Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                        jobQueue.add {
+                                            getFCMToken()
+                                        }
+                                    }
+                                    else ->{
+                                        Helper.showSnackBar(binding.coordLayout, response.message.toString())
+                                    }
+                                }
+                            }
                         }
                     }
                 }.launchIn(this)
@@ -554,6 +604,90 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
 
     private fun cancelWorker() {
         WorkManager.getInstance(applicationContext).cancelUniqueWork(Constants.MY_CUSTOM_WORKER)
+    }
+    private fun showNoInternet() {
+        noInternetHideWork?.cancel()
+        binding.apply {
+            linearInternet.myShow() // Make it visible
+            linearInternet.setBackgroundColor(giveMeColor(R.color.red))
+            tvNoInternet.text = getString(R.string.no_internet_available)
+            tvNoInternet.setCompoundDrawablesWithIntrinsicBounds(
+                ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_not_internet),
+                null, null, null
+            )
+            enableEdgeToEdge(
+                statusBarStyle =
+                SystemBarStyle.dark(
+                    giveMeColor(R.color.red)
+                )
+            )
+            window.navigationBarColor = Color.BLACK
+            slideDown(linearInternet)
+        }
+    }
+
+    private fun hideNoInternet() {
+        noInternetHideWork?.cancel()
+        binding.apply {
+            linearInternet.setBackgroundColor(giveMeColor(R.color.green))
+            tvNoInternet.text = getString(R.string.internet_available)
+            tvNoInternet.setCompoundDrawablesWithIntrinsicBounds(
+                ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_internet),
+                null, null, null
+            )
+            enableEdgeToEdge(
+                statusBarStyle =
+                SystemBarStyle.dark(
+                    giveMeColor(R.color.green)
+                )
+            )
+            window.navigationBarColor = Color.BLACK
+            noInternetHideWork = lifecycleScope.launch {
+                delay(500)
+                if (::binding.isInitialized) {
+                    slideUp(binding.linearInternet)
+                }
+            }
+        }
+    }
+
+    // Slide down animation (visible)
+    private fun slideDown(view: View) {
+        view.myShow()
+        view.translationY = -view.height.toFloat() // Start position above the view
+        view.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                view.viewTreeObserver.removeOnPreDrawListener(this)
+                val height = view.height.toFloat()
+                ObjectAnimator.ofFloat(view, "translationY", -height, 0f).apply {
+                    duration = 300
+                    interpolator = DecelerateInterpolator()
+                    start()
+                }
+                return true
+            }
+        })
+    }
+
+    // Slide up animation (hide)
+    private fun slideUp(view: View) {
+        val height = view.height.toFloat()
+        ObjectAnimator.ofFloat(view, "translationY", 0f, -height).apply {
+            duration = 300
+            interpolator = DecelerateInterpolator()
+            start()
+            addListener(onEnd = {
+                enableEdgeToEdge(
+                    statusBarStyle =
+                    SystemBarStyle.dark(
+                        Color.BLACK
+                    )
+
+                )
+                window.navigationBarColor = Color.BLACK
+                view.gone()
+            })
+        }
     }
 
     private fun handleDeepLink(intent: Intent) {

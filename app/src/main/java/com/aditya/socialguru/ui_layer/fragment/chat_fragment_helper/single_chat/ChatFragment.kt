@@ -43,6 +43,7 @@ import com.aditya.socialguru.domain_layer.helper.disabled
 import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.resizeActivate
 import com.aditya.socialguru.domain_layer.helper.resizeStop
@@ -78,12 +79,14 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     private val tagChat = Constants.LogTag.Chats
 
     private lateinit var receiverId: String  //This is for receive userId
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private var dialogInvokeReason = Constants.ChatDialogInvokeAction.DeleteSingleChat
     private var isUserAppOpen = false
     private var isUserActiveOnCurrentChat = false
     private var isFirstTimeDataSetOnUi = true
     private val MAX_VIDEO_SIZE_MB = 50f
     private var isReceiverOnlineStatusIsHide = false
+    private var isMediaUploading =false
 
     private val emojiKeyboardTag = 0
     private val emojiPopup by lazy {
@@ -190,7 +193,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         requireActivity().resizeActivate()
         initUi()
         subscribeToObserver()
-        getData()
+        getDataWithValidation()
     }
 
 
@@ -215,7 +218,20 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
 
                     is Resource.Error -> {
                         hideDialog()
-                        showSnackBar(response.message, isSuccess = false)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.clear()
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -241,10 +257,30 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                     }
 
                     is Resource.Error -> {
-                        showSnackBar(response.message, isSuccess = false)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getChatDataAndListen()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
                 }
 
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
             }.launchIn(this)
 
             chatViewModel.sendMessage.onEach { response ->
@@ -273,10 +309,12 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                     }
 
                     is Resource.Loading -> {
+                        isMediaUploading=true
                         showDialog()
                     }
 
                     is Resource.Error -> {
+                        isMediaUploading=false
                         hideDialog()
                         showSnackBar(response.message, isSuccess = false)
                     }
@@ -457,10 +495,13 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
 
     }
 
-    private fun getData() {
+    private fun getDataWithValidation() {
         if (!chatViewModel.isDataLoaded) {
-            chatViewModel.getUser(receiverId)
+            getData()
         }
+    }
+    private fun getData(){
+        chatViewModel.getUser(receiverId)
     }
     private fun getChatDataAndListen(){
         chatViewModel.getChatMessage(chatRoomId)
@@ -702,6 +743,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     }
 
     private fun hideDialog() {
+        if(isMediaUploading) return
         myLoader?.dismiss()
         myLoader = null
     }
@@ -914,6 +956,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     }
 
     private fun resetUiScreen() {
+        isMediaUploading=false
         hideDialog()
         binding.etMessage.text.clear()
         hideMediaPanel()

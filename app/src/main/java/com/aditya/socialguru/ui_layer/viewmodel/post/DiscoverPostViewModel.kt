@@ -65,7 +65,7 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
             }.launchIn(this)
         } else {
             MyLogger.v(tagPost, msg = "Network not available !")
-            _userPost.tryEmit(Resource.Error(message = "Internet not available ."))
+            _userPost.tryEmit(Resource.Error(message = Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 

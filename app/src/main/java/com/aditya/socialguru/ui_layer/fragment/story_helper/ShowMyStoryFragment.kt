@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -23,7 +24,9 @@ import com.aditya.socialguru.databinding.FragmentShowMyStoryBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -43,6 +46,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
     private val binding get() = _binding!!
 
     private val tagStory = Constants.LogTag.Story
+    private val jobQueue: ArrayDeque<()->Unit> = ArrayDeque()
 
     private lateinit var userStories: UserStories
     private var _user: User? = null
@@ -101,10 +105,9 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.lifecycleScope.launch {
+        observeFlow {
             showMyStoryViewModel.myStories.onEach { response ->
                 when (response) {
-
                     is Resource.Success -> {
                         response.data?.let {
                             // show status
@@ -124,12 +127,20 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
                     }
 
                     is Resource.Error -> {
-                        response.hasBeenMessagedToUser = true
                         showNoStatusView()
-                        Helper.showSnackBar(
-                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                            response.message.toString()
-                        )
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -162,15 +173,19 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
                     is Resource.Error -> {
                         Helper.hideLoader()
                         showNoStatusView()
-                        Helper.showSnackBar(
-                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                            response.message.toString()
-                        )
+                        showSnackBar(message = response.message)
                     }
                 }
 
             }.launchIn(this)
-
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
+            }.launchIn(this)
         }
     }
 
@@ -268,7 +283,21 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
             myStoryAdapter.notifyItemChanged(currentItem)
         }
     }
-
+    private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
+        if (isSuccess) {
+            Helper.showSuccessSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        } else {
+            Helper.showSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        }
+    }
     private fun showNoStatusView() {
         binding.apply {
             tvNoStatusView.myShow()

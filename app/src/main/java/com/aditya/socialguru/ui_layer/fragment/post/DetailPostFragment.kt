@@ -39,6 +39,7 @@ import com.aditya.socialguru.domain_layer.helper.disabled
 import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.resizeActivate
 import com.aditya.socialguru.domain_layer.helper.resizeStop
@@ -81,6 +82,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
 
     private val tagPost = Constants.LogTag.Post
     private val tagComment = Constants.LogTag.Comment
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
 
     private var myLoader: MyLoader? = null
     private var imageUri: String? = null
@@ -90,6 +92,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
     private lateinit var post: Post
     private var isCreatorOnline = false
     private var countExceptLoginUser by Delegates.notNull<Int>()
+    private var isMediaUploading =false
 
     private val imageNotLike = "0"
     private val imageLike = "1"
@@ -188,14 +191,13 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
         requireActivity().resizeActivate()
         initUi()
         subscribeToObserver()
-        getData()
+        getDataWithValidation()
 
     }
 
     private fun subscribeToObserver() {
         observeFlow {
             detailPostViewModel.postDetail.onEach { response ->
-
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()
@@ -220,10 +222,29 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
                     is Resource.Error -> {
                         hideDialog()
                         showNoDataView()
-                        showSnackBar(response.message, false)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
                 }
-
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
             }.launchIn(this)
             detailPostViewModel.likePost.onEach { response ->
                 when (response) {
@@ -259,10 +280,12 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
                                 }
 
                                 it.isSuccess -> {
+                                    isMediaUploading=false
                                     resetUiScreen()
                                 }
 
                                 else -> {
+                                    isMediaUploading=false
                                     resetUiScreen()
                                 }
                             }
@@ -271,10 +294,12 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
                     }
 
                     is Resource.Loading -> {
+                        isMediaUploading = true
                         showDialog()
                     }
 
                     is Resource.Error -> {
+                        isMediaUploading=false
                         hideDialog()
                         showSnackBar(response.message, isSuccess = false)
                     }
@@ -535,11 +560,14 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
     }
 
 
-    private fun getData() {
+    private fun getDataWithValidation() {
         if (!detailPostViewModel.isDataLoaded) {
-            detailPostViewModel.getPostById(postId)
             detailPostViewModel.setDataLoadedStatus(true)
+            getData()
         }
+    }
+    private fun getData(){
+        detailPostViewModel.getPostById(postId)
     }
 
     private fun setData(it: UserPostModel) {
@@ -1011,6 +1039,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
     }
 
     private fun hideDialog() {
+        if (isMediaUploading) return
         myLoader?.dismiss()
         myLoader = null
     }

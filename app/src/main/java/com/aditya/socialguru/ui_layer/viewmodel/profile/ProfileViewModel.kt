@@ -138,27 +138,43 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
 
 
     fun subscribeToFollowerCount(userId: String) = viewModelScope.myLaunch{
-        repository.subscribeToFollowerCount(userId).onEach {
-            _followerCount.tryEmit(it)
-        }.launchIn(this)
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.subscribeToFollowerCount(userId).onEach {
+                _followerCount.tryEmit(it)
+            }.launchIn(this)
+        }else{
+            _followerCount.tryEmit(Int.MIN_VALUE)
+        }
     }
 
     fun subscribeToFollowingCount(userId: String) = viewModelScope.myLaunch{
-        repository.subscribeToFollowingCount(userId).onEach {
-            _followingCount.tryEmit(it)
-        }.launchIn(this)
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.subscribeToFollowingCount(userId).onEach {
+                _followingCount.tryEmit(it)
+            }.launchIn(this)
+        }else{
+            _followingCount.tryEmit(Int.MIN_VALUE)
+        }
     }
 
     fun subscribeToPostCount(userId: String) = viewModelScope.myLaunch{
-        repository.subscribeToPostCount(userId).onEach {
-            _postCount.tryEmit(it)
-        }.launchIn(this)
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.subscribeToPostCount(userId).onEach {
+                _postCount.tryEmit(it)
+            }.launchIn(this)
+        }else{
+            _postCount.tryEmit(Int.MIN_VALUE)
+        }
     }
 
     fun subscribeToLikeCount(userId: String) = viewModelScope.myLaunch{
-        repository.subscribeToLikeCount(userId).onEach {
-            _likeCount.tryEmit(it)
-        }.launchIn(this)
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.subscribeToLikeCount(userId).onEach {
+                _likeCount.tryEmit(it)
+            }.launchIn(this)
+        }else{
+            _likeCount.tryEmit(Int.MIN_VALUE)
+        }
     }
 
 
@@ -303,6 +319,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
 
         } else {
             // Do Nothing
+            _userRelationshipStatusUpdate.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
@@ -315,7 +332,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
                 _userDetails.tryEmit(it)
             }.launchIn(this)
         } else {
-            _userDetails.tryEmit(Resource.Error("No Internet Available !"))
+            _userDetails.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
 
     }

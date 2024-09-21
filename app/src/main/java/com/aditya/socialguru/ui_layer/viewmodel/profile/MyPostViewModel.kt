@@ -93,7 +93,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
                 }.launchIn(this)
             } else {
                 MyLogger.v(tagProfile, msg = "Network not available !")
-                _myPost.tryEmit(Resource.Error(message = "Internet not available ."))
+                _myPost.tryEmit(Resource.Error(message = Constants.ErrorMessage.InternetNotAvailable.message))
             }
         }
         jobList.add(job)
@@ -178,7 +178,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
                 }.launchIn(this)
             } else {
                 MyLogger.v(tagProfile, msg = "Network not available !")
-                _myLikedPost.tryEmit(Resource.Error(message = "Internet not available ."))
+                _myLikedPost.tryEmit(Resource.Error(message = Constants.ErrorMessage.InternetNotAvailable.message))
             }
         }
         jobList.add(job)
@@ -315,7 +315,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
                     _commentedPost.tryEmit(handleCommentedPostResponse(it))
                 }.launchIn(this)
             } else {
-                _commentedPost.tryEmit(Resource.Error("No Internet Available !"))
+                _commentedPost.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
             }
         }
     }
@@ -382,7 +382,7 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
                     _savedPostList.tryEmit(handleMySavedPostResponse(it))
                 }.launchIn(this)
             } else {
-                _savedPostList.tryEmit(Resource.Error("No Internet Available !"))
+                _savedPostList.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
             }
         }
     }

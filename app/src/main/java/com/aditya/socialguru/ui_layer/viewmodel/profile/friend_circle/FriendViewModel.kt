@@ -101,7 +101,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             }.launchIn(this)
 
         } else {
-            _followerList.tryEmit(Resource.Error("No Internet Available !"))
+            _followerList.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
@@ -295,7 +295,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             }.launchIn(this)
 
         } else {
-            _friendList.tryEmit(Resource.Error("No Internet Available !"))
+            _friendList.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
@@ -396,7 +396,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
             }.launchIn(this)
 
         } else {
-            _friendRequestList.tryEmit(Resource.Error("No Internet Available !"))
+            _friendRequestList.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 

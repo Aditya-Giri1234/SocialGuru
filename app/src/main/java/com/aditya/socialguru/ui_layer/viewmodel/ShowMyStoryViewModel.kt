@@ -53,7 +53,7 @@ class ShowMyStoryViewModel(val app : Application) : AndroidViewModel(app) {
         } else {
             MyLogger.v(tagStory, msg = "Network not available !")
             _myStories.tryEmit(
-                Resource.Error<UserStories?>(message = "Internet not available ."))
+                Resource.Error<UserStories?>(message = Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 

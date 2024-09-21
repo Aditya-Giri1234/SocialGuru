@@ -26,7 +26,7 @@ object MyLogger {
 
 
     //private var isLogCanShow = (AppMode.getAppMode() == Constants.DefineAppMode.Development)
-    private var isLogCanShow =false
+    private var isLogCanShow =true
 
 
     //region:: Log use case with different scenario

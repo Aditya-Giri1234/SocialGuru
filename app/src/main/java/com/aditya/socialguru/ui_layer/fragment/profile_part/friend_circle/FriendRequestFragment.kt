@@ -16,9 +16,11 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.FragmentFriendRequestBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
+import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -39,7 +41,7 @@ class FriendRequestFragment : Fragment() {
 
     private var _friendRequestAdapter: FriendRequestAdapter? = null
     private val friendRequestAdapter get() = _friendRequestAdapter!!
-
+    private val jobQueue: ArrayDeque<()->Unit> = ArrayDeque()
     private val friendViewModel by viewModels<FriendViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,7 +89,19 @@ class FriendRequestFragment : Fragment() {
                     }
 
                     is Resource.Error -> {
-                        showSnackBar(response.message.toString(), false)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when(response.message){
+                                Constants.ErrorMessage.InternetNotAvailable.message ->{
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(response.message.toString(),false)
+                                }
+                            }
+                        }
                     }
                 }
             }.launchIn(this)
@@ -123,6 +137,14 @@ class FriendRequestFragment : Fragment() {
                         hideDialog()
                         showSnackBar(response.message.toString(), false)
                     }
+                }
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if(isInternetAvailable){
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
                 }
             }.launchIn(this)
         }

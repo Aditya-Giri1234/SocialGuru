@@ -84,7 +84,7 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
             }.launchIn(this)
         } else {
             MyLogger.v(tagStory, msg = "Network not available !")
-            _userStories.tryEmit(Resource.Error(message = "Internet not available ."))
+            _userStories.tryEmit(Resource.Error(message = Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 

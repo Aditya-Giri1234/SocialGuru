@@ -27,6 +27,7 @@ import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -53,6 +54,7 @@ class ShowMyLikedPostFragment(val userId:String) : Fragment(), OnPostClick {
     private var myLoader: MyLoader? = null
 
     private val tagProfile = Constants.LogTag.Profile
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private val myPostViewModel by viewModels<MyPostViewModel>()
 
     private val navController by lazy {
@@ -98,10 +100,6 @@ class ShowMyLikedPostFragment(val userId:String) : Fragment(), OnPostClick {
                                 setData(it)
                             } ?: run {
                                 setData()
-                                Helper.showSnackBar(
-                                    (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                    response.message.toString()
-                                )
                             }
 
                         }
@@ -111,12 +109,28 @@ class ShowMyLikedPostFragment(val userId:String) : Fragment(), OnPostClick {
                         }
 
                         is Resource.Error -> {
-                            response.hasBeenMessagedToUser = true
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                response.message.toString()
-                            )
+                            if (!response.hasBeenMessagedToUser) {
+                                response.hasBeenMessagedToUser = true
+                                when (response.message) {
+                                    Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                        jobQueue.add {
+                                            getData()
+                                        }
+                                    }
+                                    else ->{
+                                        showSnackBar(message = response.message)
+                                    }
+                                }
+                            }
                         }
+                    }
+                }.launchIn(this)
+                requireContext().monitorInternet().onEach { isInternetAvailable ->
+                    if (isInternetAvailable) {
+                        jobQueue.forEach {
+                            it.invoke()
+                        }
+                        jobQueue.clear()
                     }
                 }.launchIn(this)
                 myPostViewModel.likePost.onEach { response ->

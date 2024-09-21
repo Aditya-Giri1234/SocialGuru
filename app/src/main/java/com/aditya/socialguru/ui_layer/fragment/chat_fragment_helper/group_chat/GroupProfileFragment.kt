@@ -32,6 +32,7 @@ import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.isIAmAdminOfThisGroup
 import com.aditya.socialguru.domain_layer.helper.isIAmCreatorOfThisGroup
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -53,6 +54,7 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
     private lateinit var chatRoomId: String
     private lateinit var groupMembers: GroupMembersList
     private  var groupMemberDetails= mutableListOf<GroupMemberDetails>()
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
 
 
     private var defaultDialogOption = EditProfileAlertDialogOption.ExitGroup
@@ -91,7 +93,7 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
     private fun handleInitialization() {
         initUi()
         subscribeToObserver()
-        getData()
+        getDataWithValidation()
     }
 
 
@@ -181,7 +183,19 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
                         if (defaultMuteValueForReceiver == null) {
                             defaultMuteValueForReceiver = false
                         }
-                        showSnackBar(response.message, isSuccess = false)
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -205,8 +219,14 @@ class GroupProfileFragment : Fragment(), AlertDialogOption {
                 }
 
             }.launchIn(this)
-
-
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
+            }.launchIn(this)
         }
     }
 
@@ -362,11 +382,14 @@ navigateToGroupMembersScreen()
         navController.safeNavigate(directions, Helper.giveAnimationNavOption())
     }
 
-    private fun getData() {
+    private fun getDataWithValidation() {
         if (!chatViewModel.isDataLoaded) {
-            chatViewModel.isUserMutedAndListen(chatRoomId)
+            getData()
             chatViewModel.setDataLoadedStatus(true)
         }
+    }
+    private fun getData(){
+        chatViewModel.isUserMutedAndListen(chatRoomId)
     }
 
     private fun setData(groupInfo: GroupInfo) {

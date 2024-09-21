@@ -24,6 +24,7 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -39,7 +40,7 @@ class StartChatFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val tagChat = Constants.LogTag.Chats
-
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private var _friendAdapter: StartChatAdapter? = null
     private val friendAdapter get() = _friendAdapter!!
 
@@ -71,7 +72,7 @@ class StartChatFragment : Fragment() {
         }
         initUi()
         subscribeToObserver()
-        getData()
+        getDataWithValidation()
     }
 
     private fun subscribeToObserver() {
@@ -104,9 +105,27 @@ class StartChatFragment : Fragment() {
 
                         if (!response.hasBeenMessagedToUser) {
                             response.hasBeenMessagedToUser = true
-                            showSnackBar(response.message?.toString())
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        chatViewModel.setDataLoadedStatus(false)
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
                         }
                     }
+                }
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
                 }
             }.launchIn(this)
         }
@@ -169,11 +188,14 @@ class StartChatFragment : Fragment() {
         }
     }
 
-    private fun getData() {
+    private fun getDataWithValidation() {
         if (!chatViewModel.isDataLoaded) {
-            chatViewModel.getFriendListAndListenChange()
             chatViewModel.setDataLoadedStatus(true)
+            getData()
         }
+    }
+    private fun getData(){
+        chatViewModel.getFriendListAndListenChange()
     }
 
     private fun showBackToTopView() {

@@ -217,6 +217,10 @@ class CommentAdapter(val chatMessageOption: ChatMessageOption) :
                         chatMessageOption.onLongMessageClick(this)
                         true
                     }
+                    viewPagerChat.setOnLongClickListener {
+                        chatMessageOption.onLongMessageClick(this)
+                        true
+                    }
                 }
             }
         }

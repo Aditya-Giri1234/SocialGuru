@@ -64,7 +64,8 @@ class NotificationViewModel(val app:Application) : AndroidViewModel(app) {
              }.launchIn(this)
 
          } else {
-             _notificationList.tryEmit(Resource.Error("No Internet Available !"))
+             _notificationList.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable
+                 .message))
          }
     }
     private fun handleNotificationListResponse(listenerHandling: ListenerEmissionType<UserNotificationModel, UserNotificationModel>): Resource<List<UserNotificationModel>> {

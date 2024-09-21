@@ -32,6 +32,7 @@ import androidx.navigation.NavDirections
 import androidx.navigation.NavOptions
 import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.data_layer.model.chat.group.GroupInfo
+import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.google.android.gms.tasks.Task
 import com.google.android.material.textfield.TextInputLayout
@@ -47,16 +48,20 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
@@ -286,7 +291,7 @@ fun (() -> Any).getTime(): Long {
     }
 }
 
-fun Context.monitorInternet(): Flow<Boolean> = callbackFlow{
+/*fun Context.monitorInternet(): Flow<Boolean> = callbackFlow{
 
     val callback=object : ConnectivityManager.NetworkCallback(){
         override fun onAvailable(network: Network) {
@@ -310,8 +315,43 @@ fun Context.monitorInternet(): Flow<Boolean> = callbackFlow{
     }
 
 
-}
+}*/
 
+
+fun Context.monitorInternet(): SharedFlow<Boolean> {
+    // MutableSharedFlow with replay = 1 to keep the latest emitted value
+    val internetState = MutableSharedFlow<Boolean>(
+        replay = 1,
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    val callback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            super.onAvailable(network)
+            internetState.tryEmit(true) // Emit 'true' when network is available
+        }
+
+        override fun onLost(network: Network) {
+            super.onLost(network)
+            internetState.tryEmit(false) // Emit 'false' when network is lost
+        }
+    }
+
+    val manager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    // Register the network callback
+    manager.registerDefaultNetworkCallback(callback)
+
+    // Check the initial network state and emit it
+    val isConnected = SoftwareManager.isNetworkAvailable(this)
+    internetState.tryEmit(isConnected) // Emit the current network state
+
+    // Return the shared flow, and ensure cleanup of the callback when flow is no longer needed
+    return internetState.also {
+        it.onCompletion { manager.unregisterNetworkCallback(callback) }
+    }
+}
 
 
 @OptIn(ExperimentalCoroutinesApi::class)

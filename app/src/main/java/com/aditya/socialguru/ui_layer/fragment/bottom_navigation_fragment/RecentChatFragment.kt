@@ -32,6 +32,7 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
@@ -70,6 +71,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
     private var currentRecentChatDelete: UserRecentModel? = null
 
     private val recentChatList = mutableListOf<UserRecentModel>()
+    private val jobQueue: ArrayDeque<()->Unit> = ArrayDeque()
 
     private val navController by lazy {
         (requireActivity() as MainActivity).navController
@@ -104,8 +106,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
         }
         initUi()
         subscribeToObserver()
-        getData()
-
+        getDataWithValidation()
     }
 
 
@@ -125,10 +126,25 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                     }
 
                     is Resource.Error -> {
-
+                        when(response.message){
+                            Constants.ErrorMessage.InternetNotAvailable.message ->{
+                                chatViewModel.setDataLoadedStatus(false) // This is needed because jobQueue is destroy so that data loaded to be false when fragment change
+                                jobQueue.add {
+                                    getData()
+                                }
+                            }
+                        }
                     }
                 }
 
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if(isInternetAvailable){
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
             }.launchIn(this)
             chatViewModel.deleteRecentChat.onEach { response->
 
@@ -306,11 +322,14 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
 
     }
 
-    private fun getData() {
+    private fun getDataWithValidation() {
         if (!chatViewModel.isDataLoaded) {
             chatViewModel.setDataLoadedStatus(true)
-            chatViewModel.getRecentChat()
+            getData()
         }
+    }
+    private fun getData(){
+        chatViewModel.getRecentChat()
     }
 
     private fun setData(list: List<UserRecentModel>) {

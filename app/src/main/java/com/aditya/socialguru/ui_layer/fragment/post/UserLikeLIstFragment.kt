@@ -6,11 +6,9 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,7 +20,9 @@ import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.FragmentUserLikeLIstBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
@@ -31,7 +31,6 @@ import com.aditya.socialguru.ui_layer.adapter.post.UserAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.post.DetailPostViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 
 class UserLikeLIstFragment : Fragment() {
@@ -43,6 +42,7 @@ class UserLikeLIstFragment : Fragment() {
     private val tagPost = Constants.LogTag.Post
 
     private var _userAdapter: UserAdapter? = null
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private val userAdapter get() = _userAdapter!!
     private lateinit var postId: String
 
@@ -84,51 +84,61 @@ class UserLikeLIstFragment : Fragment() {
 
     private fun subscribeToObservation() {
         MyLogger.v(isFunctionCall = true)
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                myPostViewModel.userList.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.hasBeenMessagedToUser = true
-                            response.data?.let {
-                                setData(it)
-                            } ?: run {
-                                setData()
-                                Helper.showSnackBar(
-                                    (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                    response.message.toString()
-                                )
-                            }
-
-                        }
-
-                        is Resource.Loading -> {
-
-                        }
-
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser = true
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                response.message.toString()
-                            )
+        observeFlow {
+            myPostViewModel.userList.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                        response.data?.let {
+                            setData(it)
+                        } ?: run {
+                            setData()
+                           showSnackBar(response.message.toString(), false)
                         }
                     }
-                }.launchIn(this)
 
-            }
+                    is Resource.Loading -> {
+
+                    }
+
+                    is Resource.Error -> {
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
+                    }
+                }
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
+            }.launchIn(this)
+
         }
     }
 
     private fun initUi() {
-        _userAdapter = UserAdapter {user,_ ->
+        _userAdapter = UserAdapter { user, _ ->
             navigateToProfileViewScreen(user.userId!!)
         }
         binding.apply {
             myToolbar.apply {
                 icBack.myShow()
                 profileImage.gone()
-                tvHeaderUserName.text="Likes"
+                tvHeaderUserName.text = "Likes"
             }
             rvUserList.apply {
                 layoutManager = LinearLayoutManager(requireContext())
@@ -219,6 +229,22 @@ class UserLikeLIstFragment : Fragment() {
         navController.safeNavigate(
             directions, Helper.giveAnimationNavOption()
         )
+    }
+
+    private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
+        if (isSuccess) {
+            Helper.showSuccessSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        } else {
+            Helper.showSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        }
     }
 
 

@@ -12,9 +12,7 @@ import android.widget.PopupWindow
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
 import com.aditya.socialguru.BottomNavigationBarDirections
@@ -29,9 +27,11 @@ import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setCircularBackground
@@ -53,6 +53,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
     private val imageAvailable = "0"
     private val imageUnAvailable = "1"
+    private val jobQueue: ArrayDeque<()->Unit> = ArrayDeque()
     private var myLoader: MyLoader? = null
     private var userDetails: User? = null
     private var defaultDialogOption: ProfileViewDialogOption =
@@ -101,222 +102,251 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     private fun subscribeToObserver() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                profileViewModel.followerCount.onEach {
-                    binding.tvFollowers.text = it.toString()
-                }.launchIn(this)
-                profileViewModel.followingCount.onEach {
-                    binding.tvFollowing.text = it.toString()
-                }.launchIn(this)
-                profileViewModel.postCount.onEach {
-                    binding.tvPost.text = it.toString()
-                }.launchIn(this)
-                profileViewModel.likeCount.onEach {
-                    binding.tvLike.text = it.toString()
-                }.launchIn(this)
+        observeFlow {
+            profileViewModel.followerCount.onEach {
+                binding.tvFollowers.text = it.toString()
+            }.launchIn(this)
+            profileViewModel.followingCount.onEach {
+                binding.tvFollowing.text = it.toString()
+            }.launchIn(this)
+            profileViewModel.postCount.onEach {
+                binding.tvPost.text = it.toString()
+            }.launchIn(this)
+            profileViewModel.likeCount.onEach {
+                binding.tvLike.text = it.toString()
+            }.launchIn(this)
 
-                profileViewModel.followUser.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar("Successfully Following !", true)
-                        }
+            profileViewModel.followUser.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar("Successfully Following !", true)
+                    }
 
-                        is Resource.Loading -> {
-                            showDialog()
-                        }
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
 
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar(response.message)
+                    is Resource.Error -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar(response.message)
+                    }
+                }
+
+            }.launchIn(this)
+            profileViewModel.unFollow.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar("UnFollow Successfully!", true)
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar(response.message)
+                    }
+                }
+
+            }.launchIn(this)
+
+            profileViewModel.sendFriendRequest.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar("Successfully  Friend Request Sent !", true)
+
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar(response.message)
+                    }
+                }
+
+            }.launchIn(this)
+
+            profileViewModel.acceptFriendRequest.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar("Friend Request Accepted !", true)
+
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar(response.message)
+                    }
+                }
+
+            }.launchIn(this)
+
+            profileViewModel.deleteFriendRequest.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar(" Friend Request deleted  successfully !", true)
+                    }
+
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar(response.message)
+                    }
+                }
+
+            }.launchIn(this)
+
+            profileViewModel.userRelationshipStatus.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        response.data?.let {
+                            if (!response.hasBeenMessagedToUser) {
+                                response.hasBeenMessagedToUser = true
+                                setUserRelational(it)
+                            }
                         }
                     }
 
-                }.launchIn(this)
-                profileViewModel.unFollow.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar("UnFollow Successfully!", true)
-                        }
-
-                        is Resource.Loading -> {
-                            showDialog()
-                        }
-
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar(response.message)
-                        }
+                    is Resource.Loading -> {
+                        showDialog()
                     }
 
-                }.launchIn(this)
-
-                profileViewModel.sendFriendRequest.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar("Successfully  Friend Request Sent !", true)
-
-                        }
-
-                        is Resource.Loading -> {
-                            showDialog()
-                        }
-
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar(response.message)
-                        }
-                    }
-
-                }.launchIn(this)
-
-                profileViewModel.acceptFriendRequest.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar("Friend Request Accepted !", true)
-
-                        }
-
-                        is Resource.Loading -> {
-                            showDialog()
-                        }
-
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar(response.message)
-                        }
-                    }
-
-                }.launchIn(this)
-
-                profileViewModel.deleteFriendRequest.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar(" Friend Request deleted  successfully !", true)
-                        }
-
-                        is Resource.Loading -> {
-                            showDialog()
-                        }
-
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar(response.message)
-                        }
-                    }
-
-                }.launchIn(this)
-
-                profileViewModel.userRelationshipStatus.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            hideDialog()
-                            response.data?.let {
-                                if(!response.hasBeenMessagedToUser){
-                                    response.hasBeenMessagedToUser=true
-                                    setUserRelational(it)
+                    is Resource.Error -> {
+                        hideDialog()
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        profileViewModel.getUserRelationshipStatus(userId)
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
                                 }
                             }
                         }
+                    }
+                }
 
-                        is Resource.Loading -> {
-                            showDialog()
-                        }
-
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar(response.message)
+            }.launchIn(this)
+            profileViewModel.userRelationshipStatusUpdate.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.data?.let {
+                            profileViewModel.getUserRelationshipStatus(userId!!)
                         }
                     }
 
-                }.launchIn(this)
-                profileViewModel.userRelationshipStatusUpdate.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.data?.let {
-                                profileViewModel.getUserRelationshipStatus(userId!!)
-                            }
-                        }
-
-                        is Resource.Loading -> {
-                        }
-
-                        is Resource.Error -> {
-                        }
+                    is Resource.Loading -> {
                     }
 
-                }.launchIn(this)
+                    is Resource.Error -> {
+                    }
+                }
 
-                profileViewModel.removeFriend.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar("Removed Successfully !", true)
-                        }
+            }.launchIn(this)
 
-                        is Resource.Loading -> {
-                            showDialog()
-                        }
-
-                        is Resource.Error -> {
-                            response.hasBeenMessagedToUser=true
-                            hideDialog()
-                            showSnackBar(response.message)
-                        }
+            profileViewModel.removeFriend.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar("Removed Successfully !", true)
                     }
 
-                }.launchIn(this)
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
 
-                profileViewModel.userDetails.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            hideDialog()
-                            response.data?.let {
-                                setData(it)
-                                userId?.let {
-                                    lifecycleScope.launch {
-                                        profileViewModel.getUserRelationshipStatus(it)
-                                        it.apply {
-                                            profileViewModel.subscribeToFollowerCount(this)
-                                            profileViewModel.subscribeToFollowingCount(this)
-                                            profileViewModel.subscribeToPostCount(this)
-                                            profileViewModel.subscribeToLikeCount(this)
-                                        }
+                    is Resource.Error -> {
+                        response.hasBeenMessagedToUser = true
+                        hideDialog()
+                        showSnackBar(response.message)
+                    }
+                }
+
+            }.launchIn(this)
+
+            profileViewModel.userDetails.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        response.data?.let {
+                            setData(it)
+                            userId?.let {
+                                lifecycleScope.launch {
+                                    profileViewModel.getUserRelationshipStatus(it)
+                                    it.apply {
+                                        profileViewModel.subscribeToFollowerCount(this)
+                                        profileViewModel.subscribeToFollowingCount(this)
+                                        profileViewModel.subscribeToPostCount(this)
+                                        profileViewModel.subscribeToLikeCount(this)
                                     }
                                 }
                             }
-
                         }
 
-                        is Resource.Loading -> {
-                            showDialog()
-                        }
-
-                        is Resource.Error -> {
-                            hideDialog()
-                            showSnackBar(response.message)
-                        }
                     }
 
-                }.launchIn(this)
-            }
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+
+                    is Resource.Error -> {
+                        hideDialog()
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        profileViewModel.getUser(userId)
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if(isInternetAvailable){
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
+            }.launchIn(this)
         }
     }
 
@@ -400,7 +430,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     private fun getData() {
-        userId?.let {
+        userId.let {
             profileViewModel.getUser(it)
             profileViewModel.listenUserRelationStatus(it)
         }

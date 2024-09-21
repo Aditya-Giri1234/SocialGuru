@@ -81,7 +81,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
 
 
             } else {
-                _user.tryEmit(Resource.Error("Network Not Available !"))
+                _user.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
             }
         }
         jobList.add(job)
@@ -89,9 +89,11 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
 
     fun listenMySavedPost() {
         val job = viewModelScope.myLaunch {
-            repository.listenMySavedPost().onEach {
-                handleSavedPostResponse(it)
-            }.launchIn(this)
+            if(SoftwareManager.isNetworkAvailable(app)){
+                repository.listenMySavedPost().onEach {
+                    handleSavedPostResponse(it)
+                }.launchIn(this)
+            }
         }
         jobList.add(job)
     }
@@ -134,15 +136,19 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
 
     fun listenMyLikedPost() {
         val job = viewModelScope.myLaunch {
-            repository.listenMyLikedPost().onEach {
-                handleLikedPostResponse(it)
-            }.launchIn(this)
+            if (SoftwareManager.isNetworkAvailable(app)){
+                repository.listenMyLikedPost().onEach {
+                    handleLikedPostResponse(it)
+                }.launchIn(this)
+            }
         }
         jobList.add(job)
     }
 
     fun listenAuthOfUser() = viewModelScope.myLaunch {
-        repository.listenAuthOfUser()
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.listenAuthOfUser()
+        }
     }
 
     private fun handleLikedPostResponse(response: List<ListenerEmissionType<LikedPostModel, LikedPostModel>>) {
@@ -184,7 +190,6 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
         _fcmToken.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-
             repository.setFcmToken(token).onEach {
                 if (it.isSuccess) {
                     _fcmToken.tryEmit(Resource.Success(it))
@@ -193,7 +198,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
                 }
             }.launchIn(this)
         } else {
-            _fcmToken.tryEmit(Resource.Error("Network Not Available !"))
+            _fcmToken.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 

@@ -372,6 +372,10 @@ object Constants {
         GroupInfo
     }
 
+    enum class ErrorMessage(val message:String){
+        InternetNotAvailable("Internet Not Available!"),
+    }
+
     // LogLevel
     enum class LogLevel {
         Error,
