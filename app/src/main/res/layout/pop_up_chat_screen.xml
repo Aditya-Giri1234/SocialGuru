@@ -4,6 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
+    app:cardBackgroundColor="@color/white"
     android:layout_margin="@dimen/_10sdp"
     android:elevation="@dimen/_4sdp"
     app:cardCornerRadius="@dimen/_15sdp">
@@ -36,6 +38,7 @@
                 android:src="@drawable/ic_delete" />
 
             <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/tvClear"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_marginStart="@dimen/_8sdp"

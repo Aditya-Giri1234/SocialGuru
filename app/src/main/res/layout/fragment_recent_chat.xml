@@ -41,26 +41,26 @@
                 android:id="@+id/tvRecentChat"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="@dimen/_16ssp"
                 android:fontFamily="@font/poppin_medium"
                 android:text="Recent Chat"
-                android:textColor="@color/white" />
+                android:textColor="@color/white"
+                android:textSize="@dimen/_16ssp" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/expandedStateLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone"
             android:gravity="center"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <EditText
                 android:id="@+id/etSearch"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
                 android:layout_marginHorizontal="@dimen/_5sdp"
+                android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:hint="Search User"
                 android:inputType="textPersonName"
@@ -75,8 +75,8 @@
                 android:layout_width="@dimen/_24sdp"
                 android:layout_height="@dimen/_24sdp"
                 android:contentDescription="Close Icon"
-                android:visibility="gone"
-                android:src="@drawable/ic_close" />
+                android:src="@drawable/ic_close"
+                android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
 
@@ -99,24 +99,23 @@
         android:id="@+id/rvRecentChat"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:visibility="gone"
-        tools:listitem="@layout/sample_recent_chat_layout"
         android:layout_marginTop="@dimen/_10sdp"
-        android:layout_marginBottom="@dimen/_30sdp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/linearHeaderSearch"
-        app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        tools:listitem="@layout/sample_recent_chat_layout" />
 
     <LinearLayout
         android:id="@+id/linearBackToTop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginVertical="@dimen/_20sdp"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="gone"
         android:alpha=".8"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/fBtnStartChat"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -138,12 +137,12 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:fontFamily="@font/poppin_medium"
+            android:includeFontPadding="false"
             android:text="BACK TO TOP"
             android:textColor="@color/white"
-            android:includeFontPadding="false"
-            android:fontFamily="@font/poppin_medium"
-            android:layout_marginTop="@dimen/_10sdp"
-            android:textSize="@dimen/_13ssp"/>
+            android:textSize="@dimen/_13ssp" />
 
 
     </LinearLayout>
@@ -153,13 +152,24 @@
         android:id="@+id/fBtnStartChat"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="@dimen/_20sdp"
-        android:layout_marginVertical="@dimen/_40sdp"
+        android:layout_marginHorizontal="@dimen/_10sdp"
+        android:layout_marginVertical="@dimen/_70sdp"
         android:backgroundTint="@color/lightBlack"
+        android:elevation="8dp"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:text="Start Chat"
+        android:textColor="@color/white"
+        app:cornerRadius="16dp"
         app:icon="@drawable/ic_add"
         app:iconTint="@color/white"
+        app:iconSize="24dp"
+        app:rippleColor="@color/white"
+        app:strokeWidth="2dp"
+        app:strokeColor="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
 
 
     <androidx.constraintlayout.widget.Guideline

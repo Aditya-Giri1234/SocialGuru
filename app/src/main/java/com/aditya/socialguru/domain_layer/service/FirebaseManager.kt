@@ -126,6 +126,7 @@ object FirebaseManager {
     suspend fun getMyStory(userId: String) = StoryManager.getMyStory(userId)
 
     suspend fun deleteStoryById(storyId: String) = StoryManager.deleteStoryById(storyId)
+    suspend fun deleteAllMyStories() = StoryManager.deleteAllMyStories()
 
     suspend fun deleteStaleStories() = StoryManager.deleteStaleStories()
     suspend fun listenMyStoryCount() = StoryManager.listenMyStoryCount()
@@ -140,6 +141,8 @@ object FirebaseManager {
     suspend fun getFollowingPost(userIds: List<String>) = PostManager.getFollowingPost(userIds)
 
     suspend fun getMyPost(userId: String) = PostManager.getMyPost(userId)
+    suspend fun deletePostById(postId: String) = PostManager.deletePostById(postId)
+    suspend fun deleteAllMyPost() = PostManager.deleteAllMyPost()
 
     suspend fun getPostById(postId: String) = PostManager.getPostById(postId)
     suspend fun getMyLikedPost(userId: String) = PostManager.getMyLikedPost(userId)

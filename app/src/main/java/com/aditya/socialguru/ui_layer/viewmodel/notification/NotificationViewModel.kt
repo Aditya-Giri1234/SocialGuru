@@ -6,7 +6,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.notification.UserNotificationModel
-import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
@@ -15,14 +14,11 @@ import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.notification.NotificationRepo
-import com.aditya.socialguru.domain_layer.service.FirebaseManager
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 class NotificationViewModel(val app:Application) : AndroidViewModel(app) {
 
@@ -68,55 +64,51 @@ class NotificationViewModel(val app:Application) : AndroidViewModel(app) {
                  .message))
          }
     }
-    private fun handleNotificationListResponse(listenerHandling: ListenerEmissionType<UserNotificationModel, UserNotificationModel>): Resource<List<UserNotificationModel>> {
+    private fun handleNotificationListResponse(response: List<ListenerEmissionType<UserNotificationModel, UserNotificationModel>>): Resource<List<UserNotificationModel>> {
         MyLogger.v(tagNotification, isFunctionCall = true)
 
         val notificationList =
             notificationList.replayCache[0].data?.toMutableList() ?: mutableListOf<UserNotificationModel>()
 
-        when (listenerHandling.emitChangeType) {
-            Constants.ListenerEmitType.Starting -> {
-                MyLogger.v(
-                    tagNotification,
-                    msg = "This is starting notification type "
-                )
-                notificationList.clear()
-                listenerHandling.responseList?.let {
-                    notificationList.addAll(it.toMutableList() as ArrayList<UserNotificationModel>)
-                    notificationList.sortByDescending { it.notificationData.notificationTimeInTimeStamp }
+        response.forEach {
+            listenerHandling ->
+            when (listenerHandling.emitChangeType) {
+                Constants.ListenerEmitType.Starting -> {
+                   // Don't do anything
                 }
-            }
 
-            Constants.ListenerEmitType.Added -> {
-                MyLogger.v(
-                    tagNotification,
-                    msg = "This is added notification type "
-                )
-                listenerHandling.singleResponse?.let {
-                    notificationList.add(it)
-                    notificationList.sortByDescending { it.notificationData.notificationTimeInTimeStamp }
+                Constants.ListenerEmitType.Added -> {
+                    MyLogger.v(
+                        tagNotification,
+                        msg = "This is added notification type "
+                    )
+                    listenerHandling.singleResponse?.let {
+                        notificationList.add(it)
+                        notificationList.sortByDescending { it.notificationData.notificationTimeInTimeStamp }
+                    }
                 }
-            }
 
-            Constants.ListenerEmitType.Removed -> {
-                MyLogger.v(tagNotification, msg = "This is removed notification type")
+                Constants.ListenerEmitType.Removed -> {
+                    MyLogger.v(tagNotification, msg = "This is removed notification type")
 
-                listenerHandling.singleResponse?.let { data ->
-                    data.notificationData.notificationId.let { userId ->
-                        notificationList.forEach { temp ->
-                            if (temp.notificationData.notificationId == userId) {
-                                notificationList.remove(temp)
-                                notificationList.sortByDescending { it.notificationData.notificationTimeInTimeStamp }
-                                return@let
+                    listenerHandling.singleResponse?.let { data ->
+                        data.notificationData.notificationId.let { userId ->
+                            notificationList.forEach { temp ->
+                                if (temp.notificationData.notificationId == userId) {
+                                    notificationList.remove(temp)
+                                    notificationList.sortByDescending { it.notificationData.notificationTimeInTimeStamp }
+                                    return@let
+                                }
                             }
                         }
                     }
                 }
+
+
+                else -> {}
             }
-
-
-            else -> {}
         }
+
 
         return Resource.Success(notificationList.toList())
     }

@@ -79,8 +79,16 @@
                     android:textSize="@dimen/_12ssp" />
 
             </LinearLayout>
-
-
+            <ImageView
+                android:id="@+id/ivDeletePost"
+                android:layout_width="@dimen/_30sdp"
+                android:layout_height="@dimen/_30sdp"
+                android:layout_marginHorizontal="@dimen/_5sdp"
+                android:padding="@dimen/_3sdp"
+                android:scaleType="centerCrop"
+                app:tint="@color/red"
+                android:visibility="gone"
+                android:src="@drawable/iv_delete" />
 
             <ImageView
                 android:id="@+id/icSave"

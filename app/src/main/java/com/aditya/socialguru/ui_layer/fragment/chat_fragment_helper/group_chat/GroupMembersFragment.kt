@@ -68,6 +68,9 @@ class GroupMembersFragment : Fragment(), AlertDialogOption {
     private var _userAdapter: UserAdapter? = null
     private val userAdapter get() = _userAdapter!!
 
+    private val myData:User? by lazy {
+      groupMembers.find { it.userId==AuthManager.currentUserId()!! }?.user
+    }
     private val chatViewModel by viewModels<ChatViewModel>()
     private val listenChatViewModel by navGraphViewModels<ChatViewModel>(R.id.groupChatFragment)
     private val args by navArgs<GroupChatFragmentArgs>()
@@ -493,7 +496,8 @@ class GroupMembersFragment : Fragment(), AlertDialogOption {
             messageType = Constants.MessageType.Info.type,
             senderId = AuthManager.currentUserId()!!,
             infoMessageType = Constants.InfoType.MakeAdmin.name,
-            addedOrRemovedUserId = currentUserId
+            addedOrRemovedUserId = currentUserId ,
+            senderUserName = myData?.userName
         )
         val lastMessage = GroupLastMessage(
             senderId = AuthManager.currentUserId()!!,
@@ -531,7 +535,8 @@ class GroupMembersFragment : Fragment(), AlertDialogOption {
             messageType = Constants.MessageType.Info.type,
             senderId = AuthManager.currentUserId()!!,
             infoMessageType = Constants.InfoType.RemoveFromAdmin.name,
-            addedOrRemovedUserId = currentUserId
+            addedOrRemovedUserId = currentUserId,
+            senderUserName = myData?.userName
         )
         val lastMessage = GroupLastMessage(
             senderId = AuthManager.currentUserId()!!,
@@ -568,7 +573,9 @@ class GroupMembersFragment : Fragment(), AlertDialogOption {
             senderId = AuthManager.currentUserId()!!,
             infoMessageType = Constants.InfoType.MemberRemoved.name,
             addedOrRemovedUserId = currentUserId,
-            text = groupMembers.find { it.userId == currentUserId }?.user?.userName
+            text = groupMembers.find { it.userId == currentUserId }?.user?.userName,
+            senderUserName = myData?.userName
+
         )
         val lastMessage = GroupLastMessage(
             senderId = AuthManager.currentUserId()!!,

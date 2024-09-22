@@ -10,6 +10,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.navArgs
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
@@ -37,6 +38,7 @@ import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.profile.ProfilePicEditOption
+import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.bumptech.glide.Glide
@@ -44,10 +46,12 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 
 class EditGroupProfileFragment : Fragment(), ProfilePicEditOption {
@@ -61,11 +65,15 @@ class EditGroupProfileFragment : Fragment(), ProfilePicEditOption {
     private lateinit var groupInfo: GroupInfo
     private lateinit var groupMembers: GroupMembersList
 
+
     private var myLoader: MyLoader? = null
     private var currentImage: String? = null
     private var newImage: String? = null
 
     private val args by navArgs<EditGroupProfileFragmentArgs>()
+    private val pref by lazy {
+        SharePref(requireContext())
+    }
     private val chatViewModel by viewModels<ChatViewModel>()
 
 
@@ -171,7 +179,8 @@ class EditGroupProfileFragment : Fragment(), ProfilePicEditOption {
                 groupPic?.let {
                     ivProfile.tag = imageAvailable
                     currentImage = it
-                    Glide.with(ivProfile).load(it).placeholder(R.drawable.ic_group).error(R.drawable.ic_group).into(ivProfile)
+                    Glide.with(ivProfile).load(it).placeholder(R.drawable.ic_group)
+                        .error(R.drawable.ic_group).into(ivProfile)
                 } ?: run {
                     ivProfile.tag = imageUnAvailable
                 }
@@ -249,52 +258,55 @@ class EditGroupProfileFragment : Fragment(), ProfilePicEditOption {
     }
 
     private fun updateGroupInfo() {
+        lifecycleScope.launch {
 
-        val message = GroupMessage(
-            messageId = Helper.getMessageId(),
-            messageType = Constants.MessageType.Info.type,
-            senderId = AuthManager.currentUserId()!!,
-            infoMessageType = Constants.InfoType.GroupDetailsChanged.name,
-            text = getMessageText(),
-        )
-        val lastMessage = GroupLastMessage(
-            senderId = AuthManager.currentUserId()!!,
-            messageType = Constants.MessageType.Info.type,
-            infoMessageType = Constants.InfoType.GroupDetailsChanged.name,
-        )
-        val updatedImage = if (isProfilePicDeleted()) {
-            newImage
-        } else {
-            currentImage
-        }
-        val updatedGroupInfo = groupInfo.copy(
-            groupPic = updatedImage,
-            groupDescription = binding.etGroupDesc.text.toString(),
-            groupName = binding.etGroupName.text.toString(),
-        )
 
-        if (isProfilePicDeleted()) {
-            chatViewModel.updateGroupDetails(
-                message,
-                lastMessage,
-                chatRoomId,
-                groupMembers.members,
-                groupInfo = updatedGroupInfo,
-                deleteImage = currentImage,
-                uploadingImage = newImage
+            val message = GroupMessage(
+                messageId = Helper.getMessageId(),
+                messageType = Constants.MessageType.Info.type,
+                senderId = AuthManager.currentUserId()!!,
+                infoMessageType = Constants.InfoType.GroupDetailsChanged.name,
+                text = getMessageText(),
+                senderUserName =pref.getPrefUser().first()?.userName,
             )
-        } else {
-            chatViewModel.updateGroupDetails(
-                message,
-                lastMessage,
-                chatRoomId,
-                groupMembers.members,
-                groupInfo = updatedGroupInfo,
-                uploadingImage = newImage
+            val lastMessage = GroupLastMessage(
+                senderId = AuthManager.currentUserId()!!,
+                messageType = Constants.MessageType.Info.type,
+                infoMessageType = Constants.InfoType.GroupDetailsChanged.name,
             )
+            val updatedImage = if (isProfilePicDeleted()) {
+                newImage
+            } else {
+                currentImage
+            }
+            val updatedGroupInfo = groupInfo.copy(
+                groupPic = updatedImage,
+                groupDescription = binding.etGroupDesc.text.toString(),
+                groupName = binding.etGroupName.text.toString(),
+            )
+
+            if (isProfilePicDeleted()) {
+                chatViewModel.updateGroupDetails(
+                    message,
+                    lastMessage,
+                    chatRoomId,
+                    groupMembers.members,
+                    groupInfo = updatedGroupInfo,
+                    deleteImage = currentImage,
+                    uploadingImage = newImage
+                )
+            } else {
+                chatViewModel.updateGroupDetails(
+                    message,
+                    lastMessage,
+                    chatRoomId,
+                    groupMembers.members,
+                    groupInfo = updatedGroupInfo,
+                    uploadingImage = newImage
+                )
+            }
+
         }
-
-
     }
 
 
@@ -303,7 +315,7 @@ class EditGroupProfileFragment : Fragment(), ProfilePicEditOption {
             val isTextChange =
                 etGroupName.text.toString() != groupName || etGroupDesc.text.toString() != groupDescription
             val isImageChange = isImageChanged()
-             if(isTextChange || isImageChange){
+            if (isTextChange || isImageChange) {
                 myToolbar.icDone.enabled()
             }
         }
@@ -315,7 +327,7 @@ class EditGroupProfileFragment : Fragment(), ProfilePicEditOption {
             return true
         }
         // Case 2: No change (both null or both same image)
-        if (currentImage == newImage || currentImage!=null && newImage==null && binding.ivProfile.tag == imageAvailable) {
+        if (currentImage == newImage || currentImage != null && newImage == null && binding.ivProfile.tag == imageAvailable) {
             return false
         }
         // Case 3: User picks a new image (both are different)

@@ -968,7 +968,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
     private fun navigateToVideoViewScreen(attachmentVideoUri: Uri?) {
         attachmentVideoUri?.apply {
             val direction: NavDirections =
-                BottomNavigationBarDirections.actionGlobalShowVideoFragment(this)
+                BottomNavigationBarDirections.actionGlobalShowVideoFragment(this , true)
             navController.safeNavigate(direction, Helper.giveAnimationNavOption())
         }
     }
@@ -976,7 +976,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
     private fun navigateToImageViewScreen(attachmentImageUri: Uri?) {
         attachmentImageUri?.apply {
             val direction: NavDirections =
-                BottomNavigationBarDirections.actionGlobalShowImageFragment(this)
+                BottomNavigationBarDirections.actionGlobalShowImageFragment(this , true)
             navController.safeNavigate(direction, Helper.giveAnimationNavOption())
         }
     }

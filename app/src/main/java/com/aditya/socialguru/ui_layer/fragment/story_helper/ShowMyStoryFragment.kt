@@ -1,10 +1,14 @@
 package com.aditya.socialguru.ui_layer.fragment.story_helper
 
+import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.PopupWindow
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -21,6 +25,7 @@ import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.story.Stories
 import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.databinding.FragmentShowMyStoryBinding
+import com.aditya.socialguru.databinding.PopUpChatScreenBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
@@ -29,6 +34,7 @@ import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.SharePref
@@ -46,7 +52,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
     private val binding get() = _binding!!
 
     private val tagStory = Constants.LogTag.Story
-    private val jobQueue: ArrayDeque<()->Unit> = ArrayDeque()
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
 
     private lateinit var userStories: UserStories
     private var _user: User? = null
@@ -57,6 +63,8 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
     private lateinit var userId: String
 
+    private var dialogInvokeType: DialogInvokeTypeForMyStoryScreen =
+        DialogInvokeTypeForMyStoryScreen.ForSingleStatusDelete
     private var isDataLoaded = false
     private val args by navArgs<ShowMyStoryFragmentArgs>()
 
@@ -94,7 +102,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
     }
 
     private fun handleInitialization() {
-        userId=args.userId
+        userId = args.userId
         initUi()
         subscribeToObserver()
         if (!isDataLoaded) {
@@ -136,7 +144,8 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
                                         getData()
                                     }
                                 }
-                                else ->{
+
+                                else -> {
                                     showSnackBar(message = response.message)
                                 }
                             }
@@ -157,7 +166,11 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
                             showNoStatusView()
                         }
                         // This help to handle or change work manager status
-                        requireActivity().sendBroadcast(Intent(Constants.AppBroadCast.StoryChange.name).putExtra(Constants.DATA,2).apply { setPackage(requireContext().packageName) })
+                        requireActivity().sendBroadcast(
+                            Intent(Constants.AppBroadCast.StoryChange.name).putExtra(
+                                Constants.DATA,
+                                2
+                            ).apply { setPackage(requireContext().packageName) })
 
                         Helper.showSuccessSnackBar(
                             (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
@@ -167,6 +180,37 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
                     is Resource.Loading -> {
                         MyLogger.v(tagStory, msg = "Story is loading ....")
+                        Helper.showLoader(requireActivity())
+                    }
+
+                    is Resource.Error -> {
+                        Helper.hideLoader()
+                        showNoStatusView()
+                        showSnackBar(message = response.message)
+                    }
+                }
+
+            }.launchIn(this)
+            showMyStoryViewModel.deleteAllStories.onEach { response ->
+                when (response) {
+
+                    is Resource.Success -> {
+                        Helper.hideLoader()
+//                        showNoStatusView()
+                        // This help to handle or change work manager status
+                        requireActivity().sendBroadcast(
+                            Intent(Constants.AppBroadCast.StoryChange.name).putExtra(
+                                Constants.DATA,
+                                2
+                            ).apply { setPackage(requireContext().packageName) })
+
+                        Helper.showSuccessSnackBar(
+                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                            "All Status Deleted Successfully!"
+                        )
+                    }
+
+                    is Resource.Loading -> {
                         Helper.showLoader(requireActivity())
                     }
 
@@ -194,13 +238,13 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
             rvStatus.apply {
                 layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
                 adapter = myStoryAdapter
-                if (userId  == AuthManager.currentUserId()!!) {
+                if (userId == AuthManager.currentUserId()!!) {
                     setItemTouchListener()
                 }
             }
 
 
-            if (userId!= AuthManager.currentUserId()!!) {
+            if (userId != AuthManager.currentUserId()!!) {
                 tvHeader.text = "Stories"
             }
 
@@ -212,6 +256,9 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
     private fun FragmentShowMyStoryBinding.setListener() {
         icBack.setOnClickListener {
             navController?.navigateUp()
+        }
+        icSetting.setSafeOnClickListener {
+                showPopupMenu()
         }
     }
 
@@ -239,6 +286,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 currentItem = viewHolder.absoluteAdapterPosition
+                dialogInvokeType = DialogInvokeTypeForMyStoryScreen.ForSingleStatusDelete
                 AlertDialog("Are you sure delete this status ?", this@ShowMyStoryFragment).show(
                     childFragmentManager,
                     "MyAlertDialog"
@@ -250,13 +298,40 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
         swipeHelper.attachToRecyclerView(binding.rvStatus)
     }
 
+    private fun showPopupMenu() {
+        // Pop up menu take two thing first one context and second  is in which view is parent so it adjust size accordingly
+        val layoutInflater =
+            requireContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+
+        val bindingPopUp = PopUpChatScreenBinding.inflate(layoutInflater)
+        val popUp = PopupWindow(context)
+        popUp.contentView = bindingPopUp.root
+        popUp.width = LinearLayout.LayoutParams.WRAP_CONTENT
+        popUp.height = LinearLayout.LayoutParams.WRAP_CONTENT
+        popUp.isFocusable = true
+        popUp.isOutsideTouchable = true
+        popUp.setBackgroundDrawable(ColorDrawable())
+        popUp.animationStyle = R.style.popup_window_animation
+        popUp.showAsDropDown(binding.icSetting)
+
+        bindingPopUp.tvClear.text = "Delete All Post "
+        bindingPopUp.linearItemDeleteAll.setSafeOnClickListener {
+            Constants.ChatDialogInvokeAction.ClearChat
+            dialogInvokeType = DialogInvokeTypeForMyStoryScreen.ForAllStatusDelete
+            AlertDialog("Are your sure delete all status ?", this@ShowMyStoryFragment, true).show(
+                childFragmentManager,
+                "MY_Dialog"
+            )
+            popUp.dismiss()
+        }
+    }
 
     private fun performDelete(position: Int) {
         stories[currentItem].storyId?.let { showMyStoryViewModel.deleteStoryById(it) }
     }
 
     private fun setData() {
-        if(userId != AuthManager.currentUserId()){
+        if (userId != AuthManager.currentUserId()) {
             binding.tvHeader.text = user.userName ?: "Stories"
         }
         binding.apply {
@@ -277,12 +352,23 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
     }
 
     override fun onResult(isYes: Boolean) {
-        if (isYes) {
-            performDelete(currentItem)
-        } else {
-            myStoryAdapter.notifyItemChanged(currentItem)
+        when (dialogInvokeType) {
+            DialogInvokeTypeForMyStoryScreen.ForSingleStatusDelete -> {
+                if (isYes) {
+                    performDelete(currentItem)
+                } else {
+                    myStoryAdapter.notifyItemChanged(currentItem)
+                }
+            }
+
+            DialogInvokeTypeForMyStoryScreen.ForAllStatusDelete -> {
+                if (isYes) {
+                showMyStoryViewModel.deleteAllStory()
+                }
+            }
         }
     }
+
     private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
         if (isSuccess) {
             Helper.showSuccessSnackBar(
@@ -298,8 +384,10 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
             )
         }
     }
+
     private fun showNoStatusView() {
         binding.apply {
+            icSetting.gone()
             tvNoStatusView.myShow()
             rvStatus.gone()
         }
@@ -307,6 +395,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
     private fun hideNoStatusView() {
         binding.apply {
+            icSetting.myShow()
             tvNoStatusView.gone()
             rvStatus.myShow()
         }
@@ -317,7 +406,10 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
         super.onDestroyView()
     }
 
-
 }
 
+private enum class DialogInvokeTypeForMyStoryScreen {
+    ForSingleStatusDelete,
+    ForAllStatusDelete
+}
 

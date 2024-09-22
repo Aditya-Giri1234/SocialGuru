@@ -49,6 +49,7 @@ import com.aditya.socialguru.domain_layer.helper.resizeActivate
 import com.aditya.socialguru.domain_layer.helper.resizeStop
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
@@ -623,9 +624,19 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         chatAdapter.submitUser(receiver)
         binding.apply {
             receiver.run {
-                Glide.with(ivProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user)
-                    .error(R.drawable.ic_user).into(ivProfileImage)
+                if (userProfileImage==null){
+                    tvInitial.myShow()
+                    ivProfileImage.gone()
+                    tvInitial.text = userName?.get(0).toString()
+                    tvInitial.setCircularBackground(Helper.setUserProfileColor(this))
+                }else{
+                    tvInitial.gone()
+                    ivProfileImage.myShow()
+                    Glide.with(ivProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user).error(
+                        R.drawable.ic_user).into(ivProfileImage)
+                }
                 tvUserName.text = userName
+
                 isUserAppOpen = userAvailable ?: false
                 this@ChatFragment.isReceiverOnlineStatusIsHide = userSetting
                     ?.isMyOnlineStatusHideEnable ?: isReceiverOnlineStatusIsHide
@@ -980,7 +991,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     private fun navigateToVideoViewScreen(attachmentVideoUri: Uri?) {
         attachmentVideoUri?.apply {
             val direction: NavDirections =
-                BottomNavigationBarDirections.actionGlobalShowVideoFragment(this)
+                BottomNavigationBarDirections.actionGlobalShowVideoFragment(this,  true)
             navController.safeNavigate(direction, Helper.giveAnimationNavOption())
         }
     }
@@ -988,7 +999,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     private fun navigateToImageViewScreen(attachmentImageUri: Uri?) {
         attachmentImageUri?.apply {
             val direction: NavDirections =
-                BottomNavigationBarDirections.actionGlobalShowImageFragment(this)
+                BottomNavigationBarDirections.actionGlobalShowImageFragment(this , true)
             navController.safeNavigate(direction, Helper.giveAnimationNavOption())
         }
     }

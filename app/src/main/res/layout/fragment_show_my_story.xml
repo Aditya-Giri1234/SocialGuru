@@ -31,8 +31,17 @@
             android:fontFamily="@font/poppin_medium"
             android:gravity="center_vertical"
             android:text="My Status"
+            android:layout_weight="1"
             android:textColor="@color/white"
             android:textSize="@dimen/_16ssp" />
+        <ImageView
+            android:id="@+id/icSetting"
+            android:layout_width="@dimen/_24sdp"
+            android:layout_height="@dimen/_24sdp"
+            android:padding="@dimen/_3sdp"
+            android:src="@drawable/three_dot"
+            android:visibility="gone"
+            android:layout_marginEnd="@dimen/_2sdp"/>
 
     </LinearLayout>
 

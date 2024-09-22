@@ -1,5 +1,6 @@
 package com.aditya.socialguru
 
+import android.Manifest
 import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
@@ -7,20 +8,27 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.animation.DecelerateInterpolator
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.animation.addListener
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.PackageManagerCompat
 import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -39,7 +47,9 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.notification.payload.Android
 import com.aditya.socialguru.databinding.ActivityMainBinding
+import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
@@ -55,6 +65,7 @@ import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.MyNotificationManager
 import com.aditya.socialguru.domain_layer.manager.ShareManager
+import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.viewmodel.MainViewModel
@@ -66,9 +77,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.security.Permissions
 import java.time.Duration
 
-class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedListener {
+class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedListener,
+    AlertDialogOption {
 
     private lateinit var binding: ActivityMainBinding
 
@@ -76,14 +89,22 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
 
 
     private var bottomMargin: Int = 0
-    private var noInternetHideWork : Job?=null
+    private var noInternetHideWork: Job? = null
     private val tagStory = Constants.LogTag.Story
+    private val notificationPermission = Manifest.permission.POST_NOTIFICATIONS
+    private var dialogInvokeType = MainActivityDialogInvokation.ForRationDialog
     private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private val mainViewModel by viewModels<MainViewModel>()
     private val pref by lazy {
         SharePref(this@MainActivity)
     }
 
+    private val backPressedCallback = object : OnBackPressedCallback(true) {
+        override fun handleOnBackPressed() {
+            // Custom behavior for back press
+            handleBackPressed()
+        }
+    }
     private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -93,6 +114,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                     mainViewModel.setListenerSetStatus(false)
                     handleStoryChange(2)
                     getData()
+                    askPermission()
                 }
 
                 Constants.AppBroadCast.LogOut.name -> {
@@ -111,6 +133,21 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
             }
         }
 
+    }
+    private val requestNotificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // Permission granted, you can post notifications
+        } else {
+            if (shouldShowRequestPermissionRationale(notificationPermission)) {
+                dialogInvokeType = MainActivityDialogInvokation.ForRationDialog
+                AlertDialog("Enable notifications to stay updated on comments, chat messages, likes, and friend requests. Stay connected!" , this,isForShowDelete = false, negativeMessage = "Cancel" , positiveMessage = "Yes").show(supportFragmentManager,"My_dialog")
+            } else {
+                dialogInvokeType = MainActivityDialogInvokation.ForAppSetting
+                AlertDialog("It looks like notifications are disabled. Enable them in settings to stay updated on comments, messages, likes, and friend requests!" ,this, isForShowDelete = false , negativeMessage = "Cancel" , positiveMessage = "Setting").show(supportFragmentManager,"My_dialog")
+            }
+        }
     }
 
 
@@ -177,6 +214,17 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         subscribeToDestinationChanges()
         getData()
         handleIntent()
+        askPermission()
+    }
+
+    private fun askPermission() {
+        if(AuthManager.currentUserId()!=null){
+            if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU){
+                if (ActivityCompat.checkSelfPermission(this,notificationPermission)!= PackageManager.PERMISSION_GRANTED){
+                    requestNotificationPermissionLauncher.launch(notificationPermission)
+                }
+            }
+        }
     }
 
     private fun handleIntent() {
@@ -242,8 +290,12 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                                             mainViewModel.listenAuthOfUser()
                                         }
                                     }
-                                    else ->{
-                                        Helper.showSnackBar(binding.coordLayout, response.message.toString())
+
+                                    else -> {
+                                        Helper.showSnackBar(
+                                            binding.coordLayout,
+                                            response.message.toString()
+                                        )
                                     }
                                 }
                             }
@@ -259,7 +311,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                         }
                         jobQueue.clear()
 
-                    }else{
+                    } else {
                         showNoInternet()
                     }
                 }.launchIn(this)
@@ -287,8 +339,12 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                                             getFCMToken()
                                         }
                                     }
-                                    else ->{
-                                        Helper.showSnackBar(binding.coordLayout, response.message.toString())
+
+                                    else -> {
+                                        Helper.showSnackBar(
+                                            binding.coordLayout,
+                                            response.message.toString()
+                                        )
                                     }
                                 }
                             }
@@ -370,6 +426,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                 )
             }
         }
+        onBackPressedDispatcher.addCallback(this@MainActivity, backPressedCallback)
     }
 
     private fun showBottomNavigationFotScrollEffect() {
@@ -380,6 +437,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
             binding.localNavHostFragment.layoutParams = param
             bottomApp.myShow()
             fab.show()
+            coordinateBottomAppBar.myShow()
         }
     }
 
@@ -391,6 +449,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
             binding.localNavHostFragment.layoutParams = param
             fab.hide()
             bottomApp.gone()
+            coordinateBottomAppBar.gone()
         }
     }
 
@@ -404,6 +463,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                 }
 
                 override fun onAnimationEnd(p0: Animator) {
+                    binding.coordinateBottomAppBar.gone()
                     binding.bottomApp.gone()
                 }
 
@@ -421,6 +481,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
 
     private fun showBottomNavigation() {
         binding.bottomApp.animate().apply {
+            binding.coordinateBottomAppBar.myShow()
             duration = 300
             translationY(-binding.bottomApp.height.toFloat()) // Move the bottom navigation bar below the screen
             translationY(0f)
@@ -518,9 +579,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         return navController.navigateUp()
     }
 
-    @Deprecated("Deprecated in Java")
-    @SuppressLint("MissingSuperCall")
-    override fun onBackPressed() {
+    fun handleBackPressed() {
         //These is for when add post fragment show bottom to up that time when it end need show top to bottom animation
 
         //For getting exact back stack entry count we need child fragment manager not supportFragment manager
@@ -605,6 +664,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     private fun cancelWorker() {
         WorkManager.getInstance(applicationContext).cancelUniqueWork(Constants.MY_CUSTOM_WORKER)
     }
+
     private fun showNoInternet() {
         noInternetHideWork?.cancel()
         binding.apply {
@@ -615,14 +675,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                 ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_not_internet),
                 null, null, null
             )
-            enableEdgeToEdge(
-                statusBarStyle =
-                SystemBarStyle.dark(
-                    giveMeColor(R.color.red)
-                )
-            )
-            window.navigationBarColor = Color.BLACK
-            slideDown(linearInternet)
+            slideUp(linearInternet)
         }
     }
 
@@ -635,31 +688,24 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                 ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_internet),
                 null, null, null
             )
-            enableEdgeToEdge(
-                statusBarStyle =
-                SystemBarStyle.dark(
-                    giveMeColor(R.color.green)
-                )
-            )
-            window.navigationBarColor = Color.BLACK
             noInternetHideWork = lifecycleScope.launch {
                 delay(500)
                 if (::binding.isInitialized) {
-                    slideUp(binding.linearInternet)
+                    slideDown(binding.linearInternet)
                 }
             }
         }
     }
 
-    // Slide down animation (visible)
-    private fun slideDown(view: View) {
-        view.myShow()
-        view.translationY = -view.height.toFloat() // Start position above the view
+    // Slide up animation (visible from bottom to top)
+    private fun slideUp(view: View) {
+        view.myShow() // Make sure the view is visible
+        view.translationY = view.height.toFloat() // Start from below the view
         view.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
             override fun onPreDraw(): Boolean {
                 view.viewTreeObserver.removeOnPreDrawListener(this)
                 val height = view.height.toFloat()
-                ObjectAnimator.ofFloat(view, "translationY", -height, 0f).apply {
+                ObjectAnimator.ofFloat(view, "translationY", height, 0f).apply {
                     duration = 300
                     interpolator = DecelerateInterpolator()
                     start()
@@ -669,26 +715,19 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         })
     }
 
-    // Slide up animation (hide)
-    private fun slideUp(view: View) {
+    // Slide down animation (hide from top to bottom)
+    private fun slideDown(view: View) {
         val height = view.height.toFloat()
-        ObjectAnimator.ofFloat(view, "translationY", 0f, -height).apply {
+        ObjectAnimator.ofFloat(view, "translationY", 0f, height).apply {
             duration = 300
             interpolator = DecelerateInterpolator()
             start()
             addListener(onEnd = {
-                enableEdgeToEdge(
-                    statusBarStyle =
-                    SystemBarStyle.dark(
-                        Color.BLACK
-                    )
-
-                )
-                window.navigationBarColor = Color.BLACK
-                view.gone()
+                view.gone() // Hide the view after the animation ends
             })
         }
     }
+
 
     private fun handleDeepLink(intent: Intent) {
         MyNotificationManager.clearAllNotification(this)
@@ -800,11 +839,36 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         handleDeepLink(intent)
     }
 
+    override fun onResult(isYes: Boolean) {
+        when (dialogInvokeType) {
+            MainActivityDialogInvokation.ForRationDialog -> {
+                if (isYes) {
+                    requestNotificationPermissionLauncher.launch(notificationPermission)
+                }
+            }
+
+            MainActivityDialogInvokation.ForAppSetting -> {
+                if (isYes) {
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    }
+                    startActivity(intent)
+                }
+            }
+        }
+    }
+
     override fun onDestroy() {
+        backPressedCallback.remove()
         mainViewModel.removeAllListener()
         unregisterReceiver(broadcastReceiver)
         super.onDestroy()
     }
 
 
+}
+
+private enum class MainActivityDialogInvokation {
+    ForRationDialog,
+    ForAppSetting
 }

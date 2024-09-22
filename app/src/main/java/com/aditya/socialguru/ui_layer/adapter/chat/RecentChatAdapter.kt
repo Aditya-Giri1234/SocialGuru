@@ -15,6 +15,7 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
@@ -47,29 +48,38 @@ class RecentChatAdapter(
         RecyclerView.ViewHolder(binding.root) {
         fun bind(item: UserRecentModel) {
             binding.apply {
-                item.user?.apply {
-                    Glide.with(ivProfilePic.context).load(userProfileImage)
+
+                val profileImage = item.user?.userProfileImage ?: item.groupInfo?.groupPic
+                val name = item.user?.userName ?: item.groupInfo?.groupName
+                val id = item.user?.let { Helper.setUserProfileColor(it) } ?: item.groupInfo?.chatRoomId?.let { Helper.setUserProfileColor(it) }
+
+                name?.let {
+                    tvInitial.text = it[0].toString()
+                    tvUserName.text = it
+                }
+
+                if (profileImage == null) {
+                    tvInitial.myShow()
+                    ivProfilePic.gone()
+                    tvInitial.setCircularBackground(id ?: 0)
+                } else {
+                    tvInitial.gone()
+                    ivProfilePic.myShow()
+                    Glide.with(ivProfilePic.context).load(profileImage)
                         .placeholder(R.drawable.ic_user).error(R.drawable.ic_user)
                         .into(ivProfilePic)
-                    tvUserName.text = userName
-                } ?: run {
-                    item.groupInfo?.run {
-                        Glide.with(ivProfilePic.context).load(groupPic)
-                            .placeholder(R.drawable.ic_user).error(R.drawable.ic_user)
-                            .into(ivProfilePic)
-                        tvUserName.text = groupName
-                    }
-
                 }
+
 
                 item.recentChat?.apply {
                     val isSenderIsMe = AuthManager.currentUserId() == senderId
+                    val senderName = userName ?: "Someone"
                     val infoMessage = when (infoMessageType) {
                         Constants.InfoType.GroupCreated.name -> {
                             if (isSenderIsMe) {
                                 "You created this group!"
                             } else {
-                                "Someone added you in this group!"
+                                "$senderName added you in this group!"
                             }
 
                         }
@@ -78,7 +88,7 @@ class RecentChatAdapter(
                             if (isSenderIsMe) {
                                 "You change group details !"
                             } else {
-                                "Someone change group details !"
+                                "$senderName change group details !"
                             }
                         }
 
@@ -109,7 +119,7 @@ class RecentChatAdapter(
                             if (isSenderIsMe) {
                                 "You are now admin of this group!"
                             } else {
-                                "Someone is now admin of this group!"
+                                "$senderName is now admin of this group!"
                             }
                         }
 
@@ -117,7 +127,7 @@ class RecentChatAdapter(
                             if (isSenderIsMe) {
                                 "You not longer admin of this group!"
                             } else {
-                                "Someone not longer admin of this group!"
+                                "$senderName not longer admin of this group!"
                             }
                         }
 
@@ -125,7 +135,7 @@ class RecentChatAdapter(
                             if (addedOrRemovedUserId == AuthManager.currentUserId()) {
                                 "You are now group creator!"
                             } else {
-                                "Someone is now group creator!"
+                                "$senderName is now group creator!"
                             }
                         }
 
@@ -134,7 +144,7 @@ class RecentChatAdapter(
                             if (isSenderIsMe) {
                                 "You exit from this group!"
                             } else {
-                                "Someone is exit from this group!"
+                                " $senderName is exit from this group!"
                             }
                         }
 

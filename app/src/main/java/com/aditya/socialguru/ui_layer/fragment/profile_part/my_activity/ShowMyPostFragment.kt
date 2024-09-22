@@ -20,6 +20,7 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.post.Post
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.databinding.FragmentShowMyPostBinding
+import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
@@ -31,6 +32,7 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.ShareManager
+import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
@@ -40,7 +42,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
 
-class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
+class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick , AlertDialogOption{
 
     private var _binding: FragmentShowMyPostBinding? = null
     private val binding get() = _binding!!
@@ -48,6 +50,7 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
     private var _postAdapter: PostAdapter? = null
     private val postAdapter get() = _postAdapter!!
 
+    private var deletePostId:String?=null
     private var myLoader: MyLoader? = null
     private val tagProfile = Constants.LogTag.Profile
     private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
@@ -142,6 +145,7 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
                     jobQueue.clear()
                 }
             }.launchIn(this)
+
             myPostViewModel.likePost.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
@@ -185,12 +189,38 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
 
                 }
             }.launchIn(this)
+            myPostViewModel.deleteSinglePost.onEach {response ->
+                when(response){
+                    is Resource.Success -> {
+                        hideDialog()
+                        showSnackBar("Post Deleted Successfully !" , isSuccess = true
+                        )
+                    }
+                    is Resource.Loading -> {
+                        showDialog()
+                    }
+                    is Resource.Error -> {
+                        hideDialog()
+                        showSnackBar(response.message)
+                    }
+                }
+            }.launchIn(this)
         }
     }
 
     private fun initUi() {
         MyLogger.v(isFunctionCall = true)
-        _postAdapter = PostAdapter(this@ShowMyPostFragment)
+        _postAdapter = PostAdapter(this@ShowMyPostFragment){
+            deletePostId=it
+            AlertDialog(
+                "Are you sure delete this post ?",
+                this@ShowMyPostFragment,
+                isForShowDelete = false
+            ).show(
+                childFragmentManager,
+                "MyAlertDialog"
+            )
+        }
         binding.apply {
             rvMyPost.apply {
                 layoutManager = LinearLayoutManager(requireContext())
@@ -343,6 +373,14 @@ class ShowMyPostFragment(val userId: String) : Fragment(), OnPostClick {
         myPostViewModel.removeAllListener()
         _binding = null
         super.onDestroyView()
+    }
+
+    override fun onResult(isYes: Boolean) {
+        if (isYes){
+            deletePostId?.let {
+                myPostViewModel.deletePostById(it)
+            }
+        }
     }
 
 

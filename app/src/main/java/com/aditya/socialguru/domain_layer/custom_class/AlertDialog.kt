@@ -1,16 +1,20 @@
 package com.aditya.socialguru.domain_layer.custom_class
 
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isGone
+import androidx.core.view.setPadding
 import androidx.fragment.app.DialogFragment
+import com.aditya.socialguru.R
 import com.aditya.socialguru.databinding.DeleteAlertDialogBinding
+import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 
-class AlertDialog(val message: String, val option: AlertDialogOption? , val isForShowDelete:Boolean=true) : DialogFragment() {
+class AlertDialog(val message: String, val option: AlertDialogOption? , val isForShowDelete:Boolean=true , val negativeMessage:String?=null,val positiveMessage:String?=null) : DialogFragment() {
 
     private var _binding: DeleteAlertDialogBinding? = null
     private val binding get() = _binding!!
@@ -48,6 +52,19 @@ class AlertDialog(val message: String, val option: AlertDialogOption? , val isFo
                 btnView.gone()
                 btnYes.gone()
             }
+            negativeMessage?.let {
+                btnCancel.text = it
+                btnCancel.setPadding(15)
+                btnCancel.setTextColor(requireContext().giveMeColor(R.color.red))
+            }
+            positiveMessage?.let {
+                btnYes.text = it
+                btnYes.setPadding(15)
+                btnYes.setTextColor(requireContext().giveMeColor(R.color.green))
+            }
+            if(negativeMessage!=null || positiveMessage!=null){
+                tvMessage.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            }
             setListener()
         }
     }
@@ -55,11 +72,11 @@ class AlertDialog(val message: String, val option: AlertDialogOption? , val isFo
     private fun DeleteAlertDialogBinding.setListener() {
         btnCancel.setOnClickListener {
             option?.onResult(false)
-            dismiss()
+            dismissNow()
         }
         btnYes.setOnClickListener {
             option?.onResult(true)
-            dismiss()
+            dismissNow()
         }
 
         dialog?.setOnDismissListener {

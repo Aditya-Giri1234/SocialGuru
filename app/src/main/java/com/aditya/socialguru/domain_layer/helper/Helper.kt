@@ -336,6 +336,9 @@ object Helper {
      fun setUserProfileColor(user: User) : Int{
         return generateColorFromUserId(user.userId!!)
     }
+    fun setUserProfileColor(userId: String) : Int{
+        return generateColorFromUserId(userId)
+    }
 
 
     private fun generateColorFromUserId(userId: String): Int {

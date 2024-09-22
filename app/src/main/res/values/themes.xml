@@ -44,6 +44,7 @@
     </style>
 
     <style name="popup_window_animation">
+        <item name="isLightTheme">true</item>
         <item name="android:windowEnterAnimation">@anim/popup_anim</item>
         <item name="android:windowExitAnimation">@anim/popdown_anim</item>
     </style>

@@ -47,7 +47,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -55,8 +54,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
-import kotlin.random.Random
-import kotlin.random.nextLong
 import kotlin.system.measureTimeMillis
 
 /**
@@ -1269,7 +1266,8 @@ object ChatManager {
             lastMessageSeen = Constants.SeenStatus.Sending.status,
             isGroupChat = true,
             infoMessageType = action?.name,
-            addedOrRemovedUserId = addedOrRemovedUserId
+            addedOrRemovedUserId = addedOrRemovedUserId,
+            userName = message.senderUserName
         )
 
 
@@ -1370,7 +1368,10 @@ object ChatManager {
 
             if (groupInfo == null) {
                 scope.launch {
-                    sendNotificationToAllOfflineMember(users.filter { it.memberId != AuthManager.currentUserId()!! }, notificationData)
+                    sendNotificationToAllOfflineMember(
+                        users.filter { it.memberId != AuthManager.currentUserId()!! },
+                        notificationData
+                    )
                 }
             }
 
@@ -1424,7 +1425,8 @@ object ChatManager {
             addedOrRemovedUserId = addedOrRemovedUserId,
             newMembersName = message.newMembersName,
             newMembers = message.newMembers,
-            receiverId = chatRoomId
+            receiverId = chatRoomId,
+            userName = message.senderUserName
         )
 
         val lastMessageRef = chatRef.document(chatRoomId)
@@ -1512,12 +1514,20 @@ object ChatManager {
 
             trySend(UpdateResponse(isSuccess = true, errorMessage = ""))
 
-            launch {
+            launchCoroutineInIOThread {
                 val finalMemberAfterAddMember = (newMembers?.toMutableList() ?: mutableListOf())
                     .apply { addAll(users.mapNotNull { it.memberId }) }
                 updateRecentChat(
                     finalMemberAfterAddMember,
                     commonRecentChat,
+                    chatRoomId
+                )
+            }
+            launchCoroutineInIOThread {
+                updateUnSeenMessageList(
+                    users.mapNotNull { it.memberId }
+                        .filter { it != AuthManager.currentUserId()!! },
+                    updatedMessage,
                     chatRoomId
                 )
             }
@@ -1593,7 +1603,8 @@ object ChatManager {
     suspend fun updateSeenStatusForGroupChatForNotification(chatRoomId: String) {
         try {
             userRef.document(AuthManager.currentUserId()!!).collection(Table.UnSeenMessage.name)
-                .document(chatRoomId).get().await().toObject<UnSeenMessageModel>()?.unSeenMessage?.let {
+                .document(chatRoomId).get().await()
+                .toObject<UnSeenMessageModel>()?.unSeenMessage?.let {
                     updateUnseenMessagesToSeen(chatRoomId, it)
                     userRef.document(AuthManager.currentUserId()!!)
                         .collection(Table.UnSeenMessage.name).document(chatRoomId)
@@ -1648,7 +1659,7 @@ object ChatManager {
                                     if (AuthManager.currentUserId()!! == userId) 0 else unSeenMessageCount
 
                                 commonRecentChat.copy(
-                                    unSeenMessageCount = unSeenMessageCount
+                                    unSeenMessageCount = unSeenMessageCount,
                                 )
                             }
                             recentChatRef
@@ -1705,6 +1716,7 @@ object ChatManager {
                 senderId = secondLastMessage.senderId,
                 lastMessageSeen = secondLastMessage.seenStatus,
                 isGroupChat = true,
+                userName = message.senderUserName
             )
 
 
@@ -2205,11 +2217,13 @@ object ChatManager {
                             async {
                                 firestore.runTransaction { transaction ->
                                     val messageRef = chatRef.document(chatRoomId)
-                                        .collection(Table.Messages.name).document(message.messageId!!)
-                                    val senderRecentChatRef =userRef.document(message.senderId!!)
+                                        .collection(Table.Messages.name)
+                                        .document(message.messageId!!)
+                                    val senderRecentChatRef = userRef.document(message.senderId!!)
                                         .collection(Table.RecentChat.name)
                                         .document(chatRoomId)
-                                    val senderRecentChatData = transaction.get(senderRecentChatRef).toObject<RecentChat>()
+                                    val senderRecentChatData =
+                                        transaction.get(senderRecentChatRef).toObject<RecentChat>()
 
                                     val messageSnapshot = transaction.get(messageRef)
                                     val updatedMessage = messageSnapshot.toObject<GroupMessage>()
@@ -2220,7 +2234,10 @@ object ChatManager {
                                             currentUserId,
                                             message.senderId
                                         )
-                                        transaction.update(messageRef, updatedMessageData.toNormalMap())
+                                        transaction.update(
+                                            messageRef,
+                                            updatedMessageData.toNormalMap()
+                                        )
 
                                         if (senderRecentChatData != null &&
                                             message.messageSentTimeInTimeStamp == senderRecentChatData.lastMessageTimeInTimeStamp
@@ -2332,15 +2349,17 @@ object ChatManager {
                     // Ensure the current user is in the received list if the status is Seen
                     val tempMessageReceivedByUsers =
                         messageData.messageReceivedByUsers?.toMutableList() ?: mutableListOf()
-                    val tempMessageSeenByUsers = messageData.messageSeenByUsers?.toMutableList() ?: mutableListOf()
+                    val tempMessageSeenByUsers =
+                        messageData.messageSeenByUsers?.toMutableList() ?: mutableListOf()
                     if (!tempMessageReceivedByUsers.contains(AuthManager.currentUserId()!!)) {
                         tempMessageReceivedByUsers.add(AuthManager.currentUserId()!!)
                     }
 
 
-                    val isMessageSeenByAllMembers = messageData.sendTimeUsers?.filter { it != senderId }?.all {
-                        tempMessageSeenByUsers.contains(it)
-                    } ?: false
+                    val isMessageSeenByAllMembers =
+                        messageData.sendTimeUsers?.filter { it != senderId }?.all {
+                            tempMessageSeenByUsers.contains(it)
+                        } ?: false
 
                     val isMessageReceivedByAllMembers =
                         messageData.sendTimeUsers?.filter { it != senderId }?.all {

@@ -50,6 +50,7 @@ import com.aditya.socialguru.domain_layer.helper.resizeActivate
 import com.aditya.socialguru.domain_layer.helper.resizeStop
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
@@ -683,8 +684,18 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     private fun setGroupInfo(groupInfo: GroupInfo){
         binding.apply {
             tvGroupName.text = groupInfo.groupName
-            Glide.with(ivProfileImage).load(groupInfo.groupPic).placeholder(R.drawable.ic_user)
-                .error(R.drawable.ic_user).into(ivProfileImage)
+
+            if (groupInfo.groupPic==null){
+                tvInitial.myShow()
+                ivProfileImage.gone()
+                tvInitial.text = groupInfo.groupName?.get(0).toString()
+                tvInitial.setCircularBackground(Helper.setUserProfileColor(groupInfo.chatRoomId!!))
+            }else{
+                tvInitial.gone()
+                ivProfileImage.myShow()
+                Glide.with(ivProfileImage).load(groupInfo.groupPic).placeholder(R.drawable.ic_user)
+                    .error(R.drawable.ic_user).into(ivProfileImage)
+            }
         }
     }
 
@@ -946,7 +957,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     private fun navigateToVideoViewScreen(attachmentVideoUri: Uri?) {
         attachmentVideoUri?.apply {
             val direction: NavDirections =
-                BottomNavigationBarDirections.actionGlobalShowVideoFragment(this)
+                BottomNavigationBarDirections.actionGlobalShowVideoFragment(this , true)
             navController.safeNavigate(direction, Helper.giveAnimationNavOption())
         }
     }
@@ -954,7 +965,7 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     private fun navigateToImageViewScreen(attachmentImageUri: Uri?) {
         attachmentImageUri?.apply {
             val direction: NavDirections =
-                BottomNavigationBarDirections.actionGlobalShowImageFragment(this)
+                BottomNavigationBarDirections.actionGlobalShowImageFragment(this , true)
             navController.safeNavigate(direction, Helper.giveAnimationNavOption())
         }
     }

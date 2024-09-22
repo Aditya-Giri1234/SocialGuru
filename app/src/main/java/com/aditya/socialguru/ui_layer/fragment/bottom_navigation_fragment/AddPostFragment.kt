@@ -401,14 +401,14 @@ class AddPostFragment : Fragment() {
 
     private fun navigateToImageViewFragment(it: Uri) {
         val directions: NavDirections =
-            AddPostFragmentDirections.actionAddPostFragmentToShowImageFragment(it)
+            AddPostFragmentDirections.actionAddPostFragmentToShowImageFragment(it , true)
         navController.safeNavigate(directions, Helper.giveAnimationNavOption())
 
     }
 
     private fun navigateToVideoViewFragment(it: Uri) {
         val directions: NavDirections =
-            AddPostFragmentDirections.actionAddPostFragmentToShowVideoFragment(it)
+            AddPostFragmentDirections.actionAddPostFragmentToShowVideoFragment(it , true)
         navController.safeNavigate(directions, Helper.giveAnimationNavOption())
     }
 

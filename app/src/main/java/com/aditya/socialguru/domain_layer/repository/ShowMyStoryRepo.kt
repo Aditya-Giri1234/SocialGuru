@@ -8,4 +8,6 @@ class ShowMyStoryRepo {
     suspend fun getMyStory(userId: String)= FirebaseManager.getMyStory(userId)
 
     suspend fun deleteStoryById(storyId: String)= FirebaseManager.deleteStoryById(storyId)
+
+    suspend fun deleteAllMyStories() = FirebaseManager.deleteAllMyStories()
 }

@@ -35,6 +35,7 @@ import com.aditya.socialguru.domain_layer.helper.isIAmCreatorOfThisGroup
 import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
@@ -291,7 +292,8 @@ navigateToGroupMembersScreen()
             senderId = AuthManager.currentUserId()!!,
             infoMessageType = Constants.InfoType.MemberExit.name,
             addedOrRemovedUserId = AuthManager.currentUserId(),
-            text = groupMemberDetails.find { it.member.memberId == AuthManager.currentUserId() }?.memberInfo?.userName
+            text = groupMemberDetails.find { it.member.memberId == AuthManager.currentUserId() }?.memberInfo?.userName ,
+            senderUserName = groupMemberDetails.find { it.member.memberId == AuthManager.currentUserId() }?.memberInfo?.userName
 
         )
         val lastMessage = GroupLastMessage(
@@ -399,12 +401,18 @@ navigateToGroupMembersScreen()
                 !(groupInfo.isIAmCreatorOfThisGroup() || groupInfo.isIAmAdminOfThisGroup())
             cardAddMembers.isGone =
                 !(groupInfo.isIAmCreatorOfThisGroup() || groupInfo.isIAmAdminOfThisGroup())
-            if (groupInfo.groupPic != null) {
+
+            if (groupInfo.groupPic==null){
+                tvInitialMain.myShow()
+                tvInitialMain.text = groupInfo.groupName?.get(0).toString()
+                tvInitialMain.setCircularBackground(Helper.setUserProfileColor(groupInfo.chatRoomId!!))
+            }else{
+                tvInitialMain.gone()
                 Glide.with(ivProfileImage).load(groupInfo.groupPic).error(R.drawable.ic_user)
                     .placeholder(R.drawable.ic_user).into(ivProfileImage)
-            } else {
-                Glide.with(ivProfileImage).load(R.drawable.ic_user).into(ivProfileImage)
             }
+
+
             tvGroupDesc.isGone = groupInfo.groupDescription.isNullOrEmpty()
             tvGroupDesc.text = groupInfo.groupDescription
             tvGroupName.text = groupInfo.groupName

@@ -435,30 +435,33 @@ class StartGroupChatFragment : Fragment() {
     }
 
     private fun performAddMember() {
-        val message = GroupMessage(
-            messageId = Helper.getMessageId(),
-            messageType = Constants.MessageType.Info.type,
-            senderId = AuthManager.currentUserId()!!,
-            infoMessageType = Constants.InfoType.MemberAdded.name,
-            newMembers = selectedUser.mapNotNull { it.userId } ,
-            newMembersName = selectedUser.mapNotNull { it.userName }
-        )
-        val lastMessage = GroupLastMessage(
-            senderId = AuthManager.currentUserId()!!,
-            messageType = Constants.MessageType.Info.type,
-            infoMessageType = Constants.InfoType.MemberAdded.name
-        )
+        lifecycleScope.launch {
 
+            val message = GroupMessage(
+                messageId = Helper.getMessageId(),
+                messageType = Constants.MessageType.Info.type,
+                senderId = AuthManager.currentUserId()!!,
+                infoMessageType = Constants.InfoType.MemberAdded.name,
+                newMembers = selectedUser.mapNotNull { it.userId },
+                newMembersName = selectedUser.mapNotNull { it.userName },
+                senderUserName = pref.getPrefUser().first()?.userName
+            )
+            val lastMessage = GroupLastMessage(
+                senderId = AuthManager.currentUserId()!!,
+                messageType = Constants.MessageType.Info.type,
+                infoMessageType = Constants.InfoType.MemberAdded.name
+            )
 
-        chatViewModel.sentGroupInfoMessage(
-            message,
-            lastMessage,
-            chatRoomId!!,
-            groupAlreadyMembers!!.members,
-            action = Constants.InfoType.MemberAdded,
-            groupInfo = groupInfo,
-            newMembers = selectedUser.mapNotNull { it.userId }
-        )
+            chatViewModel.sentGroupInfoMessage(
+                message,
+                lastMessage,
+                chatRoomId!!,
+                groupAlreadyMembers!!.members,
+                action = Constants.InfoType.MemberAdded,
+                groupInfo = groupInfo,
+                newMembers = selectedUser.mapNotNull { it.userId }
+            )
+        }
     }
 
     private fun performCreateChooser() {
@@ -467,7 +470,8 @@ class StartGroupChatFragment : Fragment() {
             messageType = Constants.MessageType.Info.type,
             senderId = AuthManager.currentUserId()!!,
             infoMessageType = Constants.InfoType.NewGroupCreator.name,
-            addedOrRemovedUserId = selectedUser[0].userId
+            addedOrRemovedUserId = selectedUser[0].userId ,
+            senderUserName = selectedUser[0].userName
         )
         val lastMessage = GroupLastMessage(
             senderId = AuthManager.currentUserId()!!,

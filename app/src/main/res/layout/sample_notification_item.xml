@@ -62,6 +62,25 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"/>
+
+                <TextView
+                    android:id="@+id/tvInitial"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:fontFamily="@font/poppins_semi_bold"
+                    android:text="A"
+                    android:textAlignment="center"
+                    android:gravity="center"
+                    android:background="@drawable/circle_shape_bg"
+                    android:visibility="gone"
+                    android:maxLength="1"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/white"
+                    android:textSize="@dimen/_16ssp"
+                    app:layout_constraintTop_toTopOf="@id/ivProfilePic"
+                    app:layout_constraintStart_toStartOf="@id/ivProfilePic"
+                    app:layout_constraintEnd_toEndOf="@id/ivProfilePic"
+                    app:layout_constraintBottom_toBottomOf="@id/ivProfilePic"/>
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"

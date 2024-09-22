@@ -11,6 +11,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
@@ -35,13 +36,16 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.profile.ProfilePicEditOption
+import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.chat.GroupMemberChatAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
 import com.bumptech.glide.Glide
 import com.vanniktech.emoji.EmojiPopup
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 
 class MakingGroupFragment : Fragment(), ProfilePicEditOption {
@@ -59,7 +63,7 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
         )
     }
     private var groupProfileImage: String? = null
-    private val chatRoomId by lazy{
+    private val chatRoomId by lazy {
         Helper.getGroupChatId()
     }
 
@@ -68,6 +72,9 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
     private val memberAdapter get() = _memberAdapter!!
     private var myLoader: MyLoader? = null
 
+    private val pref: SharePref by lazy {
+        SharePref(requireContext())
+    }
     private val args by navArgs<MakingGroupFragmentArgs>()
 
 
@@ -120,7 +127,7 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
                 when (response) {
                     is Resource.Success -> {
                         response.data?.let {
-                            if (it.isSuccess){
+                            if (it.isSuccess) {
                                 hideDialog()
                                 showSnackBar("Group Created Successfully !", true)
                                 navigateToGroupChat()
@@ -130,7 +137,7 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
                     }
 
                     is Resource.Loading -> {
-                        MyLogger.d(tagChat , msg = "Group is making ...")
+                        MyLogger.d(tagChat, msg = "Group is making ...")
                         showDialog()
                     }
 
@@ -143,7 +150,6 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
             }.launchIn(this)
         }
     }
-
 
 
     private fun initUi() {
@@ -252,43 +258,57 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
         if (binding.etGroupName.text.isNullOrBlank()) {
             showSnackBar("Please Enter Group Name !")
         } else {
-            val timestamp=System.currentTimeMillis()
-            val timeStampInText=Helper.formatTimestampToDateAndTime(timestamp)
-            val message = GroupMessage(
-                messageId = Helper.getMessageId(),
-                messageType = Constants.MessageType.Info.type,
-                senderId = AuthManager.currentUserId()!!,
-                infoMessageType = Constants.InfoType.GroupCreated.name
-            )
-            val lastMessage = GroupLastMessage(
-                senderId = AuthManager.currentUserId()!!,
-                messageType = Constants.MessageType.Info.type,
-                infoMessageType = Constants.InfoType.GroupCreated.name,
-            )
-            val groupInfo = GroupInfo(
-                chatRoomId = chatRoomId,
-                groupPic = groupProfileImage,
-                groupName = binding.etGroupName.text.toString(),
-                groupAdmins = listOf(),
-                creatorId = AuthManager.currentUserId()
-            )
-            chatViewModel.sendGroupMessage(
-                message = message,
-                lastMessage = lastMessage,
-                chatRoomId = chatRoomId,
-                userList.map { GroupMember(it.userId,false)}.toMutableList().apply {
-                    add(GroupMember(AuthManager.currentUserId()!!,true , groupJoiningDateInTimeStamp = timestamp, groupJoiningDateInText = timeStampInText))
-                }.toList(),
-                Constants.InfoType.GroupCreated ,groupInfo = groupInfo
-            ){
-                // Do Nothing
+            lifecycleScope.launch {
+                val timestamp = System.currentTimeMillis()
+                val timeStampInText = Helper.formatTimestampToDateAndTime(timestamp)
+                val message = GroupMessage(
+                    messageId = Helper.getMessageId(),
+                    messageType = Constants.MessageType.Info.type,
+                    senderId = AuthManager.currentUserId()!!,
+                    infoMessageType = Constants.InfoType.GroupCreated.name,
+                    senderUserName = pref.getPrefUser().first()?.userName
+                )
+                val lastMessage = GroupLastMessage(
+                    senderId = AuthManager.currentUserId()!!,
+                    messageType = Constants.MessageType.Info.type,
+                    infoMessageType = Constants.InfoType.GroupCreated.name,
+                )
+                val groupInfo = GroupInfo(
+                    chatRoomId = chatRoomId,
+                    groupPic = groupProfileImage,
+                    groupName = binding.etGroupName.text.toString(),
+                    groupAdmins = listOf(),
+                    creatorId = AuthManager.currentUserId()
+                )
+                chatViewModel.sendGroupMessage(
+                    message = message,
+                    lastMessage = lastMessage,
+                    chatRoomId = chatRoomId,
+                    userList.map { GroupMember(it.userId, false) }.toMutableList().apply {
+                        add(
+                            GroupMember(
+                                AuthManager.currentUserId()!!,
+                                true,
+                                groupJoiningDateInTimeStamp = timestamp,
+                                groupJoiningDateInText = timeStampInText
+                            )
+                        )
+                    }.toList(),
+                    Constants.InfoType.GroupCreated, groupInfo = groupInfo
+                ) {
+                    // Do Nothing
+                }
             }
         }
     }
 
     private fun navigateToGroupChat() {
-        val directions : NavDirections = BottomNavigationBarDirections.actionGlobalGroupChatFragment(chatRoomId = chatRoomId)
-        navController.safeNavigate(directions,Helper.giveAnimationNavOption(R.id.startGroupChatFragment,true))
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalGroupChatFragment(chatRoomId = chatRoomId)
+        navController.safeNavigate(
+            directions,
+            Helper.giveAnimationNavOption(R.id.startGroupChatFragment, true)
+        )
     }
 
     private fun showDialog() {

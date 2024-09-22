@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.model.notification.UserNotificationModel
 import com.aditya.socialguru.databinding.SampleNotificationItemBinding
@@ -12,6 +13,8 @@ import com.aditya.socialguru.domain_layer.custom_class.chauthai_library.ViewBind
 import com.aditya.socialguru.domain_layer.helper.Constants.NotificationType
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.bumptech.glide.Glide
 
@@ -55,9 +58,16 @@ class NotificationAdapter(val onNotificationDelete:(data:NotificationData)->Unit
             viewBinderHelper.setOpenOnlyOne(true)
             binding.apply {
                 data.user.let {
-                    if (it.userProfileImage != null) {
-                        Glide.with(ivProfilePic).load(it.userProfileImage).into(ivProfilePic)
+                    if (it.userProfileImage==null){
+                        tvInitial.myShow()
+                        tvInitial.text = it.userName?.get(0).toString()
+                        tvInitial.setCircularBackground(Helper.setUserProfileColor(it))
+                    }else{
+                        tvInitial.gone()
+                        Glide.with(ivProfilePic).load(it.userProfileImage).placeholder(R.drawable.ic_user).error(
+                            R.drawable.ic_user).into(ivProfilePic)
                     }
+
                     data.notificationData.let { notificationData ->
 
                         //Bind swipe layout to this id

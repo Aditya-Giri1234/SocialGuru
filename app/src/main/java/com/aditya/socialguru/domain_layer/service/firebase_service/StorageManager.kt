@@ -13,6 +13,7 @@ import com.google.android.gms.tasks.Tasks
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.UploadTask
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
@@ -27,7 +28,8 @@ object StorageManager {
     private val tagStory=Constants.LogTag.Story
 
     // Firebase storage reference
-    private val storageReference = FirebaseStorage.getInstance().reference
+    private val storage = FirebaseStorage.getInstance()
+    private val storageReference = storage.reference
 
 
 
@@ -234,6 +236,39 @@ object StorageManager {
             close()
         }
     }
+
+    suspend fun deleteFilesFromFirebase(imageUrl: String?, videoUrl: String?) = callbackFlow<UpdateResponse> {
+         try {
+
+             // Use coroutines to delete files concurrently if URLs are not null
+                 val deleteTasks = mutableListOf<Deferred<Void?>>()
+
+                 // Check if imageUrl is not null, and create a delete task
+                 imageUrl?.let { url ->
+                     val imageRef = storage.getReferenceFromUrl(url)
+                     deleteTasks.add(async { imageRef.delete().await() })
+                 }
+
+                 // Check if videoUrl is not null, and create a delete task
+                 videoUrl?.let { url ->
+                     val videoRef = storage.getReferenceFromUrl(url)
+                     deleteTasks.add(async { videoRef.delete().await() })
+                 }
+
+                 // Await all the delete tasks to finish
+                 deleteTasks.awaitAll()
+            // Return success
+            trySend(UpdateResponse(true,""))
+
+        } catch (e: Exception) {
+            // Handle the error
+           trySend(UpdateResponse(false,e.message))
+        }
+        awaitClose{
+            close()
+        }
+    }
+
 
     suspend fun deleteMyAllPostMedia() = callbackFlow<UpdateResponse> {
         val storageImageRef = storageReference.child(Constants.Table.Post.name).child(AuthManager.currentUserId()!!).child(Constants.FolderName.PostImage.name)

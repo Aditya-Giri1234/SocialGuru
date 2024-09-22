@@ -350,45 +350,55 @@ object PostManager {
     //region::Get Random Post (Discover)
 
 
-    suspend fun getDiscoverPost() = callbackFlow<List<ListenerEmissionType<UserPostModel,UserPostModel>>> {
+    suspend fun getDiscoverPost() = callbackFlow<List<ListenerEmissionType<UserPostModel, UserPostModel>>> {
+        try {
+            val discoverPostQuery = firestore.collection(Constants.Table.Post.name)
+                .orderBy(PostTable.POST_UPLOADING_TIME_IN_TIMESTAMP.fieldName, Query.Direction.DESCENDING)
 
-        try{
-            val discoverPostQuery = firestore.collection(Constants.Table.Post.name).orderBy(PostTable.POST_UPLOADING_TIME_IN_TIMESTAMP.fieldName, Query.Direction.DESCENDING)
             discoverPostListener?.remove()
             discoverPostListener = discoverPostQuery.addSnapshotListener { value, error ->
-
                 if (error != null) return@addSnapshotListener
 
                 value?.documentChanges?.let { data ->
                     launch {
-                        val savedList = data.map {
-                            async {
-                                val post = it.document.toObject<Post>()
-                                val changeType = when (it.type) {
-                                    DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
-                                    DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
-                                    DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
-                                }
-                                val userTask = userRef.document(post.userId!!).get().await()
-                                if (!userTask.exists()) return@async null
-                                if (changeType == Constants.ListenerEmitType.Added){
-                                    ListenerEmissionType(
-                                        changeType, singleResponse = UserPostModel(user = userTask.toObject(),post = post)
-                                    )
-                                }else{
-                                    ListenerEmissionType<UserPostModel, UserPostModel>(
-                                        changeType, singleResponse = UserPostModel(post = post)
-                                    )
-                                }
+                        // Define the chunk size, e.g., 20 documents per batch
+                        val chunkSize = 20
+                        val documentChunks = data.chunked(chunkSize)
 
+                        for (chunk in documentChunks) {
+                            val savedList = chunk.map {
+                                async {
+                                    val post = it.document.toObject<Post>()
+                                    val changeType = when (it.type) {
+                                        DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                        DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                        DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                    }
+
+                                    val userTask = userRef.document(post.userId!!).get().await()
+                                    if (!userTask.exists()) return@async null
+
+                                    if (changeType == Constants.ListenerEmitType.Added) {
+                                        ListenerEmissionType(
+                                            changeType, singleResponse = UserPostModel(user = userTask.toObject(), post = post)
+                                        )
+                                    } else {
+                                        ListenerEmissionType<UserPostModel, UserPostModel>(
+                                            changeType, singleResponse = UserPostModel(post = post)
+                                        )
+                                    }
+                                }
+                            }.awaitAll().filterNotNull()
+
+                            // Send the processed chunk to the flow
+                            if (savedList.isNotEmpty()) {
+                                trySend(savedList)
                             }
-                        }.awaitAll().filterNotNull()
-
-                        trySend(savedList)
+                        }
                     }
                 }
             }
-        }catch(e:Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
         }
 
@@ -396,8 +406,8 @@ object PostManager {
             discoverPostListener?.remove()
             channel.close()
         }
-
     }
+
 
 
     //endregion
@@ -1208,6 +1218,36 @@ object PostManager {
 
 
     //region:: Delete All My Post
+
+    suspend fun deletePostById(postId: String) = callbackFlow<UpdateResponse> {
+        try {
+            MyLogger.e(tagDelete, isFunctionCall = true)
+            val postRef =firestore.collection(Table.Post.name)
+                .document(postId)
+            val post = postRef.get().await().toObject(Post::class.java)
+            if (post == null){
+                trySend(UpdateResponse(false,"Post Not Found !"))
+            }else{
+                StorageManager.deleteFilesFromFirebase(post.imageUrl,post.videoUrl).first()
+                postRef.delete().addOnCompleteListener {
+                    if(it.isSuccessful){
+                        launch {
+                            trySend(deleteAllThisPostSubCollection(postId).first())
+                        }
+                    }else{
+                        trySend(UpdateResponse(false,it.exception.toString()))
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            trySend(UpdateResponse(false, e.message))
+        }
+
+        awaitClose {
+            close()
+        }
+    }
 
     suspend fun deleteAllMyPost() = callbackFlow<UpdateResponse> {
         try {

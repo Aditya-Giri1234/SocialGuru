@@ -28,7 +28,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
-class PostAdapter(val onClick: OnPostClick) :
+class PostAdapter(val onClick: OnPostClick , val deletePost:((postId:String)->Unit)?=null) :
     RecyclerView.Adapter<PostAdapter.ViewHolder>() {
     private var job: Job? = null
     private var mySavedPost = mutableListOf<String>()  // Just post id
@@ -266,6 +266,13 @@ class PostAdapter(val onClick: OnPostClick) :
                             if (isLiked) R.drawable.like else R.drawable.not_like
                         )
 
+                            if (deletePost!=null&&userId!=null&&userId==AuthManager.currentUserId()){
+                                ivDeletePost.myShow()
+                            }else{
+                                ivDeletePost.gone()
+                            }
+
+
 
                         ivLike.setSafeOnClickListener {
                             isLiked = !isLiked
@@ -299,7 +306,9 @@ class PostAdapter(val onClick: OnPostClick) :
                             MyLogger.i(Constants.LogTag.Post, msg = "Click on root !")
                             onClick.onPostClick(postId!!)
                         }
-
+                        ivDeletePost.setSafeOnClickListener {
+                            deletePost?.invoke(postId!!)
+                        }
                     }
                 }
             }

@@ -258,6 +258,20 @@ object Constants {
         SENDER_USER_NAME("senderUserName")
     }
 
+    //For Notification Table
+
+    enum class NotificationTable(val fieldName:String) {
+        TYPE("type"),
+        FRIEND_OR_FOLLOWER_ID("friendOrFollowerId"),
+        POST_ID("postId"),
+        NOTIFICATION_TIME_IN_TEXT("notificationTimeInText"),
+        NOTIFICATION_TIME_IN_TIMESTAMP("notificationTimeInTimeStamp"),
+        NOTIFICATION_ID("notificationId"),
+        CHAT_ROOM_ID("chatRoomId"),
+        MESSAGE_ID("messageId"),
+        IS_GROUP_MESSAGE("isGroupMessage")
+    }
+
     //Message Type in chat which help to differentiate between date header and message
 
     enum class MessageType(val type:String){

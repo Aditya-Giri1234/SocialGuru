@@ -24,6 +24,7 @@ import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.ui_layer.viewmodel.chat.ChatViewModel
@@ -206,8 +207,16 @@ class UserChatProfileFragment : Fragment() {
         userData = receiver
         binding.apply {
             receiver.run {
-                Glide.with(ivProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user)
-                    .error(R.drawable.ic_user).into(ivProfileImage)
+                if (userProfileImage==null){
+                    tvInitialMain.myShow()
+                    tvInitialMain.text = userName?.get(0).toString()
+                    tvInitialMain.setCircularBackground(Helper.setUserProfileColor(this))
+                }else{
+                    tvInitialMain.gone()
+                    Glide.with(ivProfileImage).load(userProfileImage).placeholder(R.drawable.ic_user)
+                        .error(R.drawable.ic_user).into(ivProfileImage)
+                }
+
                 tvUserName.text = userName
             }
         }

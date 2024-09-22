@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
 
@@ -57,6 +58,20 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
     )
     val likePost get() = _likePost.asSharedFlow()
 
+    private val _deleteSinglePost = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val deleteSinglePost get() = _deleteSinglePost.asSharedFlow()
+
+    private val _deleteAllPost = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val deleteAllPost get() = _deleteAllPost.asSharedFlow()
+
     private val _savePost = MutableSharedFlow<Resource<UpdateResponse>>(
         0,
         64,
@@ -77,6 +92,13 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
         BufferOverflow.DROP_OLDEST
     )
     val savedPostList get() = _savedPostList.asSharedFlow()
+
+    private val _postCount = MutableSharedFlow<Int>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val postCount: SharedFlow<Int> get() = _postCount.asSharedFlow()
 
 
     //region:: Get My Post
@@ -430,6 +452,51 @@ class MyPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     //endregion
 
+    //region :: Subscribe to post account
+    fun subscribeToPostCount(userId: String) = viewModelScope.myLaunch{
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.subscribeToPostCount(userId).onEach {
+                _postCount.tryEmit(it)
+            }.launchIn(this)
+        }else{
+            _postCount.tryEmit(Int.MIN_VALUE)
+        }
+    }
+    //endregion
+
+    //region:: Delete Post
+
+    fun deletePostById(postId: String) = viewModelScope.launch {
+        _deleteSinglePost.tryEmit(Resource.Loading())
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.deletePostById(postId).onEach {
+                if (it.isSuccess){
+                    _deleteSinglePost.tryEmit(Resource.Success(it))
+                }else{
+                    _deleteSinglePost.tryEmit(Resource.Error("Some error occurred !"))
+                }
+            }.launchIn(this)
+        }else{
+            _deleteSinglePost.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
+        }
+    }
+
+    fun deleteAllMyPost() = viewModelScope.launch {
+        _deleteAllPost.tryEmit(Resource.Loading())
+        if (SoftwareManager.isNetworkAvailable(app)){
+            repository.deleteAllMyPost().onEach {
+                if (it.isSuccess){
+                    _deleteAllPost.tryEmit(Resource.Success(it))
+                }else{
+                    _deleteAllPost.tryEmit(Resource.Error("Some error occurred !"))
+                }
+            }.launchIn(this)
+        }else{
+            _deleteAllPost.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
+        }
+    }
+
+    //endregion
 
 
 

@@ -49,6 +49,7 @@ class ShowVideoFragment : Fragment() {
 
     private val args: ShowVideoFragmentArgs by navArgs()
     private lateinit var videoUri: Uri
+    private var isShareAllow: Boolean =false
 
     private val myPlayer by lazy {
         val loadControl = DefaultLoadControl.Builder()
@@ -101,12 +102,14 @@ class ShowVideoFragment : Fragment() {
 
     private fun handleInitialization() {
         videoUri = args.videoUri
+        isShareAllow = args.isShareAllow
         initUi()
     }
 
 
     private fun initUi() {
         binding.apply {
+            icShare?.isGone = !isShareAllow
             playerView.apply {
                 player = myPlayer
                 val mediaItem = MediaItem.fromUri(videoUri)

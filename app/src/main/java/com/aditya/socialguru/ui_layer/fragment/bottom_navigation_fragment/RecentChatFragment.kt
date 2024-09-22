@@ -250,6 +250,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                     AppBroadcastHelper.setHomeFragmentBackToTopShow(false)
                     if(!etSearch.isFocused){
 //                        reduceMarginFromRoot()
+                        fBtnStartChat.shrink()
                         AppBroadcastHelper.setMainActivityBottomNavHideByScroll(true)
                     }
 
@@ -260,6 +261,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                     AppBroadcastHelper.setHomeFragmentBackToTopShow(true)
                     if(!etSearch.isFocused){
 //                        resetMarginFromRoot()
+                        fBtnStartChat.extend()
                         AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
                     }
 
@@ -271,6 +273,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                     AppBroadcastHelper.setHomeFragmentBackToTopShow(false)
                     if(!etSearch.isFocused){
 //                        resetMarginFromRoot()
+                        fBtnStartChat.extend()
                         AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
 
                     }

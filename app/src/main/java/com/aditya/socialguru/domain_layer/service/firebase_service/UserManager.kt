@@ -6,6 +6,7 @@ import com.aditya.socialguru.data_layer.model.UserSetting
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.model.notification.UserNotificationModel
 import com.aditya.socialguru.data_layer.model.post.Post
+import com.aditya.socialguru.data_layer.model.post.UserPostModel
 import com.aditya.socialguru.data_layer.model.post.comment.CommentedPost
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
@@ -26,6 +27,8 @@ import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.core.OrderBy
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
 import com.google.rpc.context.AttributeContext.Auth
@@ -290,74 +293,52 @@ object UserManager {
     //region:: Notification Related work here
 
     suspend fun getMyNotificationAndListen() =
-        callbackFlow<ListenerEmissionType<UserNotificationModel, UserNotificationModel>> {
+        callbackFlow<List<ListenerEmissionType<UserNotificationModel, UserNotificationModel>>> {
 
             val notificationQuery = userRef.document(AuthManager.currentUserId()!!)
                 .collection(Constants.Table.Notification.name)
 
-            val notificationList = notificationQuery.get().await().toObjects<NotificationData>()
-
-            val userNotificationList =
-                notificationList.filter { it.friendOrFollowerId != null }.mapNotNull {
-                    getUserById(it.friendOrFollowerId!!)?.run {
-                        UserNotificationModel(this, it)
-                    }
-
-                }.toMutableList()
-
-            trySend(
-                ListenerEmissionType(
-                    Constants.ListenerEmitType.Starting,
-                    responseList = userNotificationList.toList()
-                )
-            )
-
-            userNotificationList.clear()
             myNotificationListener?.remove()
             myNotificationListener = notificationQuery.addSnapshotListener { value, error ->
                 if (error != null) return@addSnapshotListener
 
-                if (isFirstTimeMyNotificationListener) {
-                    isFirstTimeMyNotificationListener = false
-                    return@addSnapshotListener
-                }
-                value?.documentChanges?.forEach {
-                    when (it.type) {
-                        DocumentChange.Type.ADDED -> {
-                            launch {
-                                val notificationData = it.document.toObject<NotificationData>()
-                                getUserById(notificationData.friendOrFollowerId!!)?.let {
-                                    trySend(
-                                        ListenerEmissionType(
-                                            Constants.ListenerEmitType.Added,
-                                            singleResponse = UserNotificationModel(
-                                                it,
-                                                notificationData
-                                            )
+
+                value?.documentChanges?.let { data ->
+                    launch {
+                        // Define the chunk size, e.g., 20 documents per batch
+                        val chunkSize = 20
+                        val documentChunks = data.chunked(chunkSize)
+
+                        for (chunk in documentChunks) {
+                            val savedList = chunk.map {
+                                async {
+                                    val notificationData = it.document.toObject<NotificationData>()
+                                    val changeType = when (it.type) {
+                                        DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                        DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                        DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                    }
+
+                                    val userTask = userRef.document(notificationData.friendOrFollowerId!!).get().await()
+                                    if (!userTask.exists()) return@async null
+
+                                    if (changeType == Constants.ListenerEmitType.Added) {
+                                        ListenerEmissionType<UserNotificationModel,UserNotificationModel>(
+                                            changeType, singleResponse = UserNotificationModel(user = userTask.toObject()!!, notificationData = notificationData)
                                         )
-                                    )
+                                    } else {
+                                        ListenerEmissionType(
+                                            changeType, singleResponse = UserNotificationModel(user = userTask.toObject()!!, notificationData = notificationData)
+                                        )
+                                    }
                                 }
+                            }.awaitAll().filterNotNull()
+
+                            // Send the processed chunk to the flow
+                            if (savedList.isNotEmpty()) {
+                                trySend(savedList)
                             }
                         }
-
-                        DocumentChange.Type.REMOVED -> {
-                            launch {
-                                val notificationData = it.document.toObject<NotificationData>()
-                                getUserById(notificationData.friendOrFollowerId!!)?.let {
-                                    trySend(
-                                        ListenerEmissionType(
-                                            Constants.ListenerEmitType.Removed,
-                                            singleResponse = UserNotificationModel(
-                                                it,
-                                                notificationData
-                                            )
-                                        )
-                                    )
-                                }
-                            }
-                        }
-
-                        DocumentChange.Type.MODIFIED -> {}
                     }
                 }
             }
@@ -365,11 +346,6 @@ object UserManager {
 
             // Remember this callback listen in viewmodel scope means until viewmodel destroyed below part not called.
             awaitClose {
-                MyLogger.w(
-                    Constants.LogTag.Notification,
-                    msg = "isFirstTimeMyNotificationListener reset ! "
-                )
-                isFirstTimeMyNotificationListener = true
                 myNotificationListener?.remove()
                 close()
             }
