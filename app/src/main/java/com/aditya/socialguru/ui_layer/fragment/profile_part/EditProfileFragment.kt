@@ -28,6 +28,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.customError
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
+import com.aditya.socialguru.domain_layer.helper.getStringText
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myLaunch
@@ -250,9 +251,10 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
             pref.getPrefUser().first()?.let { user ->
                 withContext(Dispatchers.Main){
                     val newData = user.copy(
-                        userName = binding.tiEtName.text.toString(),
-                        userBio = binding.tiEtBio.text.toString(),
-                        userProfession = binding.tiEtProfession.text.toString(),
+                        userName = binding.tiEtName.getStringText(),
+                        userNameLowerCase = binding.tiEtName.getStringText().lowercase(),
+                        userBio = binding.tiEtBio.getStringText(),
+                        userProfession = binding.tiEtProfession.getStringText(),
                         userProfileImage = if (isProfilePicDeleted()) null else currentImage  // There is put old image reason if image present that is online image and if user delete image it set to null . New image should first store in storage and then get image.
                     )
 
@@ -389,6 +391,11 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
 
     override fun onUpload() {
         pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
+    override fun onPause() {
+        hideKeyboard()
+        super.onPause()
     }
 
     override fun onDestroyView() {

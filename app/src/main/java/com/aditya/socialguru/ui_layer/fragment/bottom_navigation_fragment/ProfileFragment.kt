@@ -109,6 +109,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
         observeFlow {
             profileViewModel.followerCount.onEach {
                 if (it==Int.MIN_VALUE){
+                    profileViewModel.setDataLoadedStatus(false)
                     jobQueue.add {
                         profileViewModel.subscribeToFollowerCount(AuthManager.currentUserId()!!)
                     }
@@ -118,6 +119,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
             }.launchIn(this)
             profileViewModel.followingCount.onEach {
                 if (it==Int.MIN_VALUE){
+                    profileViewModel.setDataLoadedStatus(false)
                     jobQueue.add {
                         profileViewModel.subscribeToFollowingCount(AuthManager.currentUserId()!!)
                     }
@@ -127,6 +129,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
             }.launchIn(this)
             profileViewModel.postCount.onEach {
                 if (it==Int.MIN_VALUE){
+                    profileViewModel.setDataLoadedStatus(false)
                     jobQueue.add {
                         profileViewModel.subscribeToPostCount(AuthManager.currentUserId()!!)
                     }
@@ -136,6 +139,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
             }.launchIn(this)
             profileViewModel.likeCount.onEach {
                 if (it==Int.MIN_VALUE){
+                    profileViewModel.setDataLoadedStatus(false)
                     jobQueue.add {
                         profileViewModel.subscribeToLikeCount(AuthManager.currentUserId()!!)
                     }
@@ -149,6 +153,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
                     jobQueue.forEach {
                         it.invoke()
                     }
+                    profileViewModel.setDataLoadedStatus(true)
                     jobQueue.clear()
                 }
             }.launchIn(this)

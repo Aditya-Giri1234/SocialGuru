@@ -29,7 +29,7 @@ class ChatRepo {
 
     suspend fun updateMessageChatAvailability(status: String,messageId:String,chatRoomId: String ,receiverId:String) = FirebaseManager.updateSeenStatus(status,messageId,chatRoomId ,receiverId)
 
-    suspend fun getRecentChatAndListen() = ChatManager.getRecentChatAndListen()
+    suspend fun getRecentChatAndListen() = FirebaseManager.getRecentChatAndListen()
 
     suspend fun deleteMessage(message: Message,chatRoomId:String,userId:String  , lastMessage: LastMessage?, secondLastMessage:Message?=null) = FirebaseManager.deleteMessage(message,chatRoomId,userId,lastMessage,secondLastMessage)
 

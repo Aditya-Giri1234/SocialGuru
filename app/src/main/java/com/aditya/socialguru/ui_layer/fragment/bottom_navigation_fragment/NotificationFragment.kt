@@ -140,6 +140,7 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
                     jobQueue.forEach {
                         it.invoke()
                     }
+                    notificationViewModel.setDataLoadedStatus(true)
                     jobQueue.clear()
                 }
             }.launchIn(this)

@@ -634,6 +634,10 @@ class AddPostFragment : Fragment() {
         myLoader?.dismiss()
         myLoader = null
     }
+    override fun onPause() {
+        hideKeyboard()
+        super.onPause()
+    }
 
     override fun onDestroyView() {
         MyLogger.v(tagPost, isFunctionCall = true)

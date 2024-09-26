@@ -122,6 +122,8 @@
                 android:text="This post is about how you increase meditation capacity to 10 min. Meditation is awesome thing in life . It increse productivity."
                 android:textColor="@color/white"
                 android:textSize="@dimen/_12ssp"
+                android:autoLink="all"
+                android:linksClickable="true"
                 android:visibility="gone" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -285,6 +287,8 @@
                 android:ellipsize="end"
                 android:fontFamily="@font/poppins_bold"
                 android:text="This post is about how you increase meditation capacity to 10 min. Meditation is awesome thing in life . It increse productivity."
+                android:autoLink="all"
+                android:linksClickable="true"
                 android:textColor="@color/white"
                 android:textSize="@dimen/_12ssp"
                 android:visibility="visible" />

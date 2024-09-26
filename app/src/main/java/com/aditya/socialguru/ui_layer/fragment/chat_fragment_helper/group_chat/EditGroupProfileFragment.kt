@@ -408,6 +408,11 @@ class EditGroupProfileFragment : Fragment(), ProfilePicEditOption {
         pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
 
+    override fun onPause() {
+        hideKeyboard()
+        super.onPause()
+    }
+
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()

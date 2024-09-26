@@ -39,6 +39,7 @@ import com.aditya.socialguru.domain_layer.helper.disabled
 import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.resizeActivate
@@ -1142,7 +1143,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
         }
     }
 
-    override fun onProfileClick() {
+    override fun onProfileClick(userId:String?) {
         // Don't do any thing
     }
 
@@ -1170,6 +1171,11 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
             }
         )
 
+    }
+
+    override fun onPause() {
+        hideKeyboard()
+        super.onPause()
     }
 
     override fun onStop() {

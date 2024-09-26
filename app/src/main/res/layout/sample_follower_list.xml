@@ -3,7 +3,6 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    app:cardUseCompatPadding="true"
     android:background="@color/lightBlack"
     app:cardCornerRadius="@dimen/_15sdp"
     app:cardBackgroundColor="@android:color/transparent"

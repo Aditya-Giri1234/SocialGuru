@@ -67,6 +67,9 @@
             android:textSize="@dimen/_14ssp"
             android:textColor="@color/white"
             android:layout_weight="1"
+            android:autoLink="all"
+            android:linksClickable="true"
+            android:textColorLink="@color/yellow"
             android:fontFamily="@font/poppin_medium" />
 
 

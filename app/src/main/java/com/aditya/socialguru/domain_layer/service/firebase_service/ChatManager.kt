@@ -890,7 +890,6 @@ object ChatManager {
                             }
 
                             DocumentChange.Type.REMOVED -> {
-
                                 trySend(
                                     ListenerEmissionType(
                                         Constants.ListenerEmitType.Removed,

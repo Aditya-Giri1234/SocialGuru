@@ -11,9 +11,9 @@
         android:id="@+id/linearHeader"
         android:layout_width="match_parent"
         android:layout_height="?actionBarSize"
+        android:background="@color/lightBlack"
         android:gravity="center"
         android:orientation="horizontal"
-        android:background="@color/lightBlack"
         android:paddingTop="@dimen/_2sdp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -24,30 +24,33 @@
             android:layout_width="@dimen/_30sdp"
             android:layout_height="wrap_content"
             android:contentDescription="Left Arrow to escape that this screen"
-            android:src="@drawable/ic_left_arrow"/>
+            android:src="@drawable/ic_left_arrow" />
+
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/ivProfileImage"
             android:layout_width="@dimen/_30sdp"
             android:layout_height="match_parent"
             android:layout_marginStart="@dimen/_2sdp"
+            android:src="@drawable/ic_person"
             app:civ_border_color="@color/blue"
-            app:civ_border_width="@dimen/_1sdp"
-            android:src="@drawable/ic_person"/>
+            app:civ_border_width="@dimen/_1sdp" />
+
         <TextView
             android:id="@+id/tvInitial"
             android:layout_width="@dimen/_30sdp"
             android:layout_height="@dimen/_30sdp"
-            android:fontFamily="@font/poppins_semi_bold"
             android:layout_marginStart="@dimen/_5sdp"
+            android:background="@drawable/circle_shape_bg"
+            android:fontFamily="@font/poppins_semi_bold"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLength="1"
             android:text="A"
             android:textAlignment="center"
-            android:gravity="center"
-            android:background="@drawable/circle_shape_bg"
-            android:visibility="gone"
-            android:maxLength="1"
-            android:includeFontPadding="false"
             android:textColor="@color/white"
-            android:textSize="@dimen/_16ssp"/>
+            android:textSize="@dimen/_16ssp"
+            android:visibility="gone" />
+
         <LinearLayout
             android:id="@+id/linearUserStatus"
             android:layout_width="match_parent"
@@ -60,26 +63,27 @@
                 android:id="@+id/tvUserName"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:text="Aditya Giri"
-                android:gravity="center_vertical"
-                android:textColor="@color/white"
-                android:fontFamily="@font/poppin_medium"
-                android:textSize="@dimen/_12ssp"
                 android:layout_weight="1"
+                android:ellipsize="end"
+                android:fontFamily="@font/poppin_medium"
+                android:gravity="center_vertical"
                 android:maxLines="1"
-                android:ellipsize="end"/>
+                android:text="Aditya Giri"
+                android:textColor="@color/white"
+                android:textSize="@dimen/_12ssp" />
+
             <TextView
                 android:id="@+id/tvOnlineStatus"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:text="Online"
-                android:visibility="visible"
-                android:textColor="@color/white"
-                android:fontFamily="@font/poppin_medium"
-                android:textSize="@dimen/_10ssp"
                 android:layout_weight="1"
+                android:ellipsize="end"
+                android:fontFamily="@font/poppin_medium"
                 android:maxLines="1"
-                android:ellipsize="end"/>
+                android:text="Online"
+                android:textColor="@color/white"
+                android:textSize="@dimen/_10ssp"
+                android:visibility="visible" />
 
         </LinearLayout>
 
@@ -87,9 +91,9 @@
             android:id="@+id/icMore"
             android:layout_width="@dimen/_30sdp"
             android:layout_height="match_parent"
-            android:paddingVertical="@dimen/_12sdp"
             android:contentDescription="Left Arrow to escape that this screen"
-            android:src="@drawable/three_dot"/>
+            android:paddingVertical="@dimen/_12sdp"
+            android:src="@drawable/three_dot" />
 
 
     </LinearLayout>
@@ -99,41 +103,41 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:visibility="gone"
-        tools:listitem="@layout/sample_receiver_message_view"
+        app:layout_constraintBottom_toTopOf="@id/linearFooter"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
         app:layout_constraintStart_toStartOf="@id/guidelineStart"
         app:layout_constraintTop_toBottomOf="@id/linearHeader"
-        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
-        app:layout_constraintBottom_toTopOf="@id/linearFooter"/>
+        tools:listitem="@layout/sample_receiver_message_view" />
 
     <LinearLayout
         android:id="@+id/noDataView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:gravity="center"
+        android:orientation="vertical"
 
-        app:layout_constraintStart_toStartOf="@id/guidelineStart"
-        app:layout_constraintTop_toBottomOf="@id/linearHeader"
+        app:layout_constraintBottom_toTopOf="@id/linearFooter"
         app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
-        app:layout_constraintBottom_toTopOf="@id/linearFooter">
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"
+        app:layout_constraintTop_toBottomOf="@id/linearHeader">
 
         <ImageView
             android:layout_width="@dimen/_40sdp"
             android:layout_height="@dimen/_40sdp"
             android:contentDescription="Emoji Selector Button"
-            app:tint="@color/white"
-            android:src="@drawable/ic_no_chat_view"/>
+            android:src="@drawable/ic_no_chat_view"
+            app:tint="@color/white" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/_5sdp"
+            android:fontFamily="@font/poppin_medium"
             android:text="Send your first message."
             android:textColor="@color/white"
-            android:fontFamily="@font/poppin_medium"
-            android:textSize="@dimen/_16ssp"
-            android:layout_marginTop="@dimen/_5sdp"/>
+            android:textSize="@dimen/_16ssp" />
 
     </LinearLayout>
-
 
 
     <LinearLayout
@@ -141,43 +145,47 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constrainedWidth="true"
         android:paddingHorizontal="@dimen/_2sdp"
         android:paddingVertical="@dimen/_2sdp"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constrainedWidth="true"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_gravity="bottom"
+            android:layout_weight="1"
             android:orientation="vertical">
+
             <LinearLayout
                 android:id="@+id/linearAttachment"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:background="@drawable/create_post_text_bg"
-                android:padding="@dimen/_10sdp"
-                android:visibility="gone"
                 android:layout_marginStart="@dimen/_5sdp"
-                android:layout_marginBottom="@dimen/_10sdp">
+                android:layout_marginBottom="@dimen/_10sdp"
+                android:background="@drawable/create_post_text_bg"
+                android:orientation="horizontal"
+                android:padding="@dimen/_10sdp"
+                android:visibility="gone">
+
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardImageMessage"
                     android:layout_width="0dp"
                     android:layout_height="@dimen/_125sdp"
-                    app:strokeColor="@color/lightWhite"
-                    app:strokeWidth="@dimen/_1sdp"
-                    android:visibility="gone"
                     android:layout_weight="1"
+                    android:visibility="gone"
                     app:cardBackgroundColor="@color/black"
-                    app:cardCornerRadius="@dimen/_15sdp">
+                    app:cardCornerRadius="@dimen/_15sdp"
+                    app:strokeColor="@color/lightWhite"
+                    app:strokeWidth="@dimen/_1sdp">
+
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/constImageSendMessage"
                         android:layout_width="match_parent"
-                        android:maxWidth="@dimen/_150sdp"
-                        android:layout_height="match_parent">
+                        android:layout_height="match_parent"
+                        android:maxWidth="@dimen/_150sdp">
 
                         <ImageView
                             android:id="@+id/ivImageSendMessage"
@@ -202,31 +210,33 @@
                             android:id="@+id/ivCancleImage"
                             android:layout_width="@dimen/_30sdp"
                             android:layout_height="@dimen/_30sdp"
-                            android:src="@drawable/ic_close"
-                            android:padding="@dimen/_5sdp"
-                            android:background="@drawable/shape_cross_bg"
                             android:layout_margin="@dimen/_5sdp"
+                            android:background="@drawable/shape_cross_bg"
+                            android:padding="@dimen/_5sdp"
+                            android:src="@drawable/ic_close"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </com.google.android.material.card.MaterialCardView>
+
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardVideoMessage"
                     android:layout_width="0dp"
                     android:layout_height="@dimen/_125sdp"
-                    app:strokeColor="@color/lightWhite"
-                    android:layout_weight="1"
-                    app:strokeWidth="@dimen/_1sdp"
-                    android:visibility="gone"
                     android:layout_marginStart="@dimen/_10sdp"
+                    android:layout_weight="1"
+                    android:visibility="gone"
                     app:cardBackgroundColor="@color/black"
-                    app:cardCornerRadius="@dimen/_15sdp">
+                    app:cardCornerRadius="@dimen/_15sdp"
+                    app:strokeColor="@color/lightWhite"
+                    app:strokeWidth="@dimen/_1sdp">
+
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/constVideoSendMessage"
                         android:layout_width="match_parent"
-                        android:maxWidth="@dimen/_150sdp"
-                        android:layout_height="match_parent">
+                        android:layout_height="match_parent"
+                        android:maxWidth="@dimen/_150sdp">
 
                         <ImageView
                             android:id="@+id/ivVideoSendMessage"
@@ -251,10 +261,10 @@
                             android:id="@+id/ivCancleVideo"
                             android:layout_width="@dimen/_30sdp"
                             android:layout_height="@dimen/_30sdp"
-                            android:src="@drawable/ic_close"
-                            android:padding="@dimen/_5sdp"
-                            android:background="@drawable/shape_cross_bg"
                             android:layout_margin="@dimen/_5sdp"
+                            android:background="@drawable/shape_cross_bg"
+                            android:padding="@dimen/_5sdp"
+                            android:src="@drawable/ic_close"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
 
@@ -262,69 +272,72 @@
                             android:id="@+id/ivPlayVideo"
                             android:layout_width="@dimen/_50sdp"
                             android:layout_height="@dimen/_50sdp"
-                            android:src="@drawable/ic_play"
                             android:layout_margin="@dimen/_5sdp"
-                            app:layout_constraintStart_toStartOf="parent"
+                            android:src="@drawable/ic_play"
+                            app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintBottom_toBottomOf="parent" />
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:layout_marginEnd="@dimen/_5sdp"
                 android:layout_weight="1"
                 android:background="@drawable/chat_message_bg"
-                android:paddingVertical="@dimen/_8sdp"
-                android:paddingHorizontal="@dimen/_10sdp"
-                android:layout_marginEnd="@dimen/_5sdp"
-                android:layout_gravity="bottom"
                 android:gravity="bottom"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/_10sdp"
+                android:paddingVertical="@dimen/_8sdp">
+
                 <ImageView
                     android:id="@+id/icEmoji"
                     android:layout_width="@dimen/_20sdp"
                     android:layout_height="@dimen/_20sdp"
-                    android:contentDescription="Emoji Selector Button"
-                    android:tag="0"
                     android:layout_gravity="bottom"
-                    app:tint="@color/lightWhite"
-                    android:src="@drawable/emoji"/>
+                    android:contentDescription="Emoji Selector Button"
+                    android:src="@drawable/emoji"
+                    android:tag="0"
+                    app:tint="@color/lightWhite" />
+
                 <EditText
                     android:id="@+id/etMessage"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Type Message.."
-                    android:textColorHint="@color/lightWhite"
-                    android:textColor="@color/white"
-                    android:background="@android:color/transparent"
-                    android:maxLines="5"
-                    android:inputType="textMultiLine|text"
+                    android:layout_marginHorizontal="@dimen/_5sdp"
                     android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:fontFamily="@font/poppin_medium"
+                    android:hint="Type Message.."
+                    android:inputType="textMultiLine|text"
                     android:justificationMode="inter_word"
-                    android:layout_marginHorizontal="@dimen/_5sdp"
-                    android:textSize="@dimen/_14ssp"
-                    android:fontFamily="@font/poppin_medium"/>
+                    android:maxLines="5"
+                    android:textColor="@color/white"
+                    android:textColorHint="@color/lightWhite"
+                    android:textSize="@dimen/_14ssp" />
 
-<!--                <ImageView
-                    android:id="@+id/icCamera"
-                    android:layout_width="@dimen/_20sdp"
-                    android:layout_height="@dimen/_20sdp"
-                    android:contentDescription="Emoji Selector Button"
-                    android:layout_gravity="bottom"
-                    app:tint="@color/lightWhite"
-                    android:layout_marginHorizontal="@dimen/_5sdp"
-                    android:src="@drawable/ic_camera"/>-->
+                <!--                <ImageView
+                                    android:id="@+id/icCamera"
+                                    android:layout_width="@dimen/_20sdp"
+                                    android:layout_height="@dimen/_20sdp"
+                                    android:contentDescription="Emoji Selector Button"
+                                    android:layout_gravity="bottom"
+                                    app:tint="@color/lightWhite"
+                                    android:layout_marginHorizontal="@dimen/_5sdp"
+                                    android:src="@drawable/ic_camera"/>-->
                 <ImageView
                     android:id="@+id/icAttachment"
                     android:layout_width="@dimen/_20sdp"
                     android:layout_height="@dimen/_20sdp"
-                    android:contentDescription="Emoji Selector Button"
                     android:layout_gravity="bottom"
-                    app:tint="@color/lightWhite"
-                    android:src="@drawable/ic_attachment"/>
+                    android:contentDescription="Emoji Selector Button"
+                    android:src="@drawable/ic_attachment"
+                    app:tint="@color/lightWhite" />
 
             </LinearLayout>
         </LinearLayout>
@@ -334,29 +347,35 @@
             android:id="@+id/btnSend"
             android:layout_width="@dimen/_35sdp"
             android:layout_height="@dimen/_35sdp"
-            android:layout_marginTop="@dimen/_5sdp"
             android:layout_gravity="bottom"
+            android:layout_marginTop="@dimen/_5sdp"
+            android:background="@drawable/circular_shape_button"
             android:backgroundTint="@color/green"
             android:paddingStart="@dimen/_2sdp"
-            app:tint="@color/black"
-            android:background="@drawable/circular_shape_button"
-            android:src="@drawable/ic_send" />
+            android:src="@drawable/ic_send"
+            app:tint="@color/black" />
 
     </LinearLayout>
 
     <ImageButton
         android:id="@+id/backToBottom"
-        android:layout_width="@dimen/_30sdp"
-        android:layout_height="@dimen/_30sdp"
-        android:background="@drawable/circle_shape_bg"
-        android:src="@drawable/ic_right_arrow"
-        android:rotation="90"
-        android:visibility="gone"
-        android:backgroundTint="@color/grey"
-        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
-        app:layout_constraintBottom_toTopOf="@id/linearFooter"
+        android:layout_width="@dimen/_40sdp"
+        android:layout_height="@dimen/_40sdp"
+        android:layout_marginHorizontal="@dimen/_10sdp"
         android:layout_marginVertical="@dimen/_10sdp"
-        android:layout_marginHorizontal="@dimen/_10sdp"/>
+        android:background="@drawable/circle_gradient_bg"
+        android:clickable="true"
+        android:elevation="6dp"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+        android:padding="@dimen/_8sdp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_down_arrow_without_line"
+        android:stateListAnimator="@animator/button_press_state"
+        app:tint="@android:color/white"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/linearFooter"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guidelineStart"
@@ -371,8 +390,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_constraintGuide_end="@dimen/_5sdp" />
-
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

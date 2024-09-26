@@ -345,17 +345,23 @@
 
     <ImageButton
         android:id="@+id/backToBottom"
-        android:layout_width="@dimen/_30sdp"
-        android:layout_height="@dimen/_30sdp"
-        android:background="@drawable/circle_shape_bg"
-        android:src="@drawable/ic_right_arrow"
-        android:rotation="90"
-        android:visibility="gone"
-        android:backgroundTint="@color/grey"
-        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
-        app:layout_constraintBottom_toTopOf="@id/linearFooter"
+        android:layout_width="@dimen/_40sdp"
+        android:layout_height="@dimen/_40sdp"
+        android:layout_marginHorizontal="@dimen/_10sdp"
         android:layout_marginVertical="@dimen/_10sdp"
-        android:layout_marginHorizontal="@dimen/_10sdp"/>
+        android:background="@drawable/circle_gradient_bg"
+        android:clickable="true"
+        android:elevation="6dp"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+        android:padding="@dimen/_8sdp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_down_arrow_without_line"
+        android:stateListAnimator="@animator/button_press_state"
+        app:tint="@android:color/white"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/linearFooter"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guidelineStart"

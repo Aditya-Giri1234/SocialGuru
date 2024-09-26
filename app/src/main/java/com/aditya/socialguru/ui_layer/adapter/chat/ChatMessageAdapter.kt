@@ -337,7 +337,7 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
 
 
                     ivProfileImage.setSafeOnClickListener {
-                        chatMessageOption.onProfileClick()
+                        chatMessageOption.onProfileClick(senderId)
                     }
                     root.setSafeOnClickListener {
                         chatMessageOption.onMessageClick(this)

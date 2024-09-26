@@ -8,6 +8,6 @@ interface ChatMessageOption {
     fun onVideoClick()  : (Uri) -> Unit
     fun <T> onMessageClick(message: T)
     fun <T> onLongMessageClick(message: T)
-    fun onProfileClick()
+    fun onProfileClick(userId:String?)
 
 }

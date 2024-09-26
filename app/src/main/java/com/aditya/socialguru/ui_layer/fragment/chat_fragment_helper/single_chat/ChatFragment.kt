@@ -43,6 +43,7 @@ import com.aditya.socialguru.domain_layer.helper.disabled
 import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.resizeActivate
@@ -988,6 +989,13 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         val direction:NavDirections=ChatFragmentDirections.actionChatFragmentToUserChatProfileFragment(chatRoomId,receiverId)
         navController.safeNavigate(direction,Helper.giveAnimationNavOption())
     }
+
+    private fun navigateToProfileViewScreen(userId:String){
+        val direction:NavDirections=ChatFragmentDirections.actionGlobalProfileViewFragment(userId)
+        navController.safeNavigate(direction,Helper.giveAnimationNavOption())
+    }
+
+
     private fun navigateToVideoViewScreen(attachmentVideoUri: Uri?) {
         attachmentVideoUri?.apply {
             val direction: NavDirections =
@@ -1007,6 +1015,11 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     override fun onResume() {
         chatViewModel.updateUserAvailabilityForChatRoom(chatRoomId, isIAmUser1, true)
         super.onResume()
+    }
+
+    override fun onPause() {
+        hideKeyboard()
+        super.onPause()
     }
 
     override fun onStop() {
@@ -1051,8 +1064,12 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
         )
     }
 
-    override fun onProfileClick() {
-        navigateToChatProfileScreen()
+    override fun onProfileClick(userId:String?) {
+        if (userId==null){
+            navigateToChatProfileScreen()
+        }else{
+            navigateToProfileViewScreen(userId)
+        }
     }
 
     override fun onAttachmentImageClick() {

@@ -127,6 +127,9 @@
                     android:justificationMode="inter_word"
                     android:textSize="@dimen/_14ssp"
                     android:fontFamily="@font/poppins_regular"
+                    android:autoLink="all"
+                    android:linksClickable="true"
+                    android:textColorLink="@color/blue"
                     android:textColor="@color/lightWhite"
                     android:layout_marginTop="@dimen/_4sdp"/>
 

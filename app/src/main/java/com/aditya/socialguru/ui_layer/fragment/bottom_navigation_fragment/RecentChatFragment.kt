@@ -143,6 +143,7 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                     jobQueue.forEach {
                         it.invoke()
                     }
+                    chatViewModel.setDataLoadedStatus(true)
                     jobQueue.clear()
                 }
             }.launchIn(this)

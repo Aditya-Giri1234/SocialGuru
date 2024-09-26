@@ -304,6 +304,10 @@ class SearchUserGlobalFragment : Fragment() {
         }
     }
 
+    override fun onPause() {
+        hideKeyboard()
+        super.onPause()
+    }
 
     override fun onDestroyView() {
         hideKeyboard()

@@ -91,6 +91,9 @@
                 android:fontFamily="@font/poppin_medium"
                 android:layout_marginStart="@dimen/_10sdp"
                 android:text="Message Received ...."
+                android:autoLink="all"
+                android:linksClickable="true"
+                android:textColorLink="@color/blue"
                 android:textColor="@color/white"
                 android:textSize="@dimen/_14ssp" />
 

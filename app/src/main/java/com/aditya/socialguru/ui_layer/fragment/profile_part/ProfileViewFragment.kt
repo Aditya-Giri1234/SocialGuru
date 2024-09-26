@@ -518,7 +518,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
     private fun Button.setFollowingBackground() {
         setBackgroundColor(requireContext().giveMeColor(R.color.green))
-        setTextColor(requireContext().giveMeColor(R.color.black))
+        setTextColor(requireContext().giveMeColor(R.color.white))
         text = getString(R.string.following)
     }
 
@@ -542,7 +542,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
     private fun Button.setAlreadyFriendBackground() {
         setBackgroundColor(requireContext().giveMeColor(R.color.green))
-        setTextColor(requireContext().giveMeColor(R.color.black))
+        setTextColor(requireContext().giveMeColor(R.color.white))
         text = getString(R.string.already_friend)
     }
 

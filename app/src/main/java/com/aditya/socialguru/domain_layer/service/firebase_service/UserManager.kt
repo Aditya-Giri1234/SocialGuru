@@ -1219,10 +1219,11 @@ object UserManager {
 
 
         val resultList = mutableListOf<FriendCircleData>()
+        val lowerCaseQuery = query.lowercase()
 
         userRef
-            .whereGreaterThanOrEqualTo(Constants.UserTable.USERNAME.fieldName, query)
-            .whereLessThanOrEqualTo(Constants.UserTable.USERNAME.fieldName, query + "\uf8ff")
+            .whereGreaterThanOrEqualTo(Constants.UserTable.USERNAME_LOWERCASE.fieldName, lowerCaseQuery)
+            .whereLessThanOrEqualTo(Constants.UserTable.USERNAME_LOWERCASE.fieldName, lowerCaseQuery + "\uf8ff")
             .get()
             .addOnSuccessListener { documents ->
                 for (document in documents) {

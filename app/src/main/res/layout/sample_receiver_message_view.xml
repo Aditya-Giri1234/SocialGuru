@@ -121,6 +121,9 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/poppin_medium"
                 android:text="Message Received ...."
+                android:autoLink="all"
+                android:linksClickable="true"
+                android:textColorLink="@color/blue"
                 android:textColor="@color/white"
                 android:textSize="@dimen/_14ssp" />
 

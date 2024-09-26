@@ -131,6 +131,7 @@ object Constants {
     enum class UserTable(val fieldName: String) {
         USERID("userId"),
         USERNAME("userName"),
+        USERNAME_LOWERCASE("userNameLowerCase"),
         USER_BIO("userBio"),
         USER_PROFESSION("userProfession"),
         USER_EMAIL_ID("userEmailId"),

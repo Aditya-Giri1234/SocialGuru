@@ -363,7 +363,7 @@ class GroupChatAdapter(val chatMessageOption: ChatMessageOption) :
 
 
                     ivProfileImage.setSafeOnClickListener {
-                        chatMessageOption.onMessageClick(this)
+                        chatMessageOption.onProfileClick(this.senderId)
                     }
                     tvSenderName.setSafeOnClickListener {
                         chatMessageOption.onMessageClick(this)

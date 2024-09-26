@@ -241,6 +241,11 @@ class WriteTextStoryFragment : Fragment() {
         return brightness < minThreshold || brightness > maxThreshold
     }
 
+    override fun onPause() {
+        hideKeyboard()
+        super.onPause()
+    }
+
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()

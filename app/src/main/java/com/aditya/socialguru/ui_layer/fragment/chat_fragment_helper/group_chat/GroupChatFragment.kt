@@ -44,6 +44,7 @@ import com.aditya.socialguru.domain_layer.helper.disabled
 import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.resizeActivate
@@ -950,6 +951,11 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
         }
     }
 
+    private fun navigateToProfileViewScreen(userId:String){
+        val direction: NavDirections = BottomNavigationBarDirections.actionGlobalProfileViewFragment(userId)
+        navController.safeNavigate(direction, Helper.giveAnimationNavOption())
+    }
+
     private fun navigateToChatProfileScreen(){
         val direction: NavDirections =GroupChatFragmentDirections.actionGroupChatFragmentToGroupProfileFragment(chatRoomId , GroupMembersList(groupMembers) )
         navController.safeNavigate(direction, Helper.giveAnimationNavOption())
@@ -973,6 +979,10 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
     override fun onResume() {
         chatViewModel.updateGroupMemberOnlineStatus(chatRoomId, true)
         super.onResume()
+    }
+    override fun onPause() {
+        hideKeyboard()
+        super.onPause()
     }
 
     override fun onStop() {
@@ -1019,8 +1029,12 @@ class GroupChatFragment : Fragment() , AlertDialogOption, ChatMessageOption,
         )
     }
 
-    override fun onProfileClick() {
-        navigateToChatProfileScreen()
+    override fun onProfileClick(userId: String?) {
+        if (userId==null){
+            navigateToChatProfileScreen()
+        }else{
+            navigateToProfileViewScreen(userId)
+        }
     }
 
     override fun onAttachmentImageClick() {
