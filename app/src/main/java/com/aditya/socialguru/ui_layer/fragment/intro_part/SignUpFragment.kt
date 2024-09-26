@@ -145,7 +145,7 @@ class SignUpFragment : Fragment() {
                 )
                 authViewModel.createUser(
                     User(
-                        null,
+                        userId = null,
                         userName = tiEtName.getStringText(),
                         userNameLowerCase = tiEtName.getStringText().lowercase(),
                         userBio = tiEtBio.getStringText(),

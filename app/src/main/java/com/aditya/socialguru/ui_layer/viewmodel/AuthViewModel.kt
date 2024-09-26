@@ -53,11 +53,12 @@ class AuthViewModel(val app: Application) : AndroidViewModel(app) {
             val fcmToken: String? = FCMTokenManager.generateToken().first()
             val saveUser = User(
                 result.first!!.uid,
-                user.userName,
-                user.userBio,
-                user.userProfession,
-                user.userEmailId,
-                user.userPassword, fcmToken = fcmToken
+                userName = user.userName,
+                userNameLowerCase = user.userNameLowerCase,
+                userBio = user.userBio,
+                userProfession = user.userProfession,
+                userEmailId = user.userEmailId,
+                userPassword = user.userPassword, fcmToken = fcmToken
             )
             val saveResult = repositoryImpl.saveUserToDatabase(saveUser)
             if (saveResult.first) {
