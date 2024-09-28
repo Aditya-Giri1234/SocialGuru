@@ -137,10 +137,10 @@
                     android:padding="@dimen/_10sdp"
                     android:shadowColor="@color/black"
                     android:shadowDx="0"
-                    android:shadowDy="2"
-                    android:shadowRadius="2"
+                    android:shadowDy="1"
+                    android:shadowRadius="1"
                     android:text="Hi, I am a cool and passionate Android developer! Feel free to send a friend request and follow me to see my posts about mobile tech."
-                    android:textColor="@color/white"
+                    android:textColor="@color/black"
                     android:textColorLink="@color/blue"
                     android:textSize="@dimen/_16ssp" />
 
