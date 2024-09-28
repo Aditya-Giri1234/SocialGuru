@@ -29,10 +29,19 @@
         android:id="@+id/friendCircleFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.FriendCircleFragment"
         android:label="fragment_friend_circle"
-        tools:layout="@layout/fragment_friend_circle" />
+        tools:layout="@layout/fragment_friend_circle" >
+        <action
+            android:id="@+id/action_friendCircleFragment_to_pendingFriendRequestFragment"
+            app:destination="@id/pendingFriendRequestFragment" />
+    </fragment>
     <fragment
         android:id="@+id/settingFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.SettingFragment"
         android:label="fragment_setting"
         tools:layout="@layout/fragment_setting" />
+    <fragment
+        android:id="@+id/pendingFriendRequestFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.friend_circle.PendingFriendRequestFragment"
+        android:label="fragment_pending_friend_request"
+        tools:layout="@layout/fragment_pending_friend_request" />
 </navigation>

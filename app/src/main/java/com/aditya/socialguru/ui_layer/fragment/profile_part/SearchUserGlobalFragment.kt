@@ -290,6 +290,7 @@ class SearchUserGlobalFragment : Fragment() {
 
     private fun showNoDataView() {
         binding.apply {
+            noDataView.text ="Oops! We couldn’t find any users matching your search."
             noDataView.myShow()
             rvSearchUser.gone()
             progressBar.gone()

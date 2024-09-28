@@ -17,6 +17,7 @@ import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -45,7 +46,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
 
     private val _removeFollower =
         MutableSharedFlow<Resource<UpdateResponse>>(
-            1, 64, BufferOverflow.DROP_OLDEST
+            0, 64, BufferOverflow.DROP_OLDEST
         )
     val removeFollower get() = _removeFollower.asSharedFlow()
 
@@ -55,10 +56,16 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
         )
     val followingList get() = _followingList.asSharedFlow()
 
+    private val _pendingRequestList =
+        MutableSharedFlow<Resource<List<FriendCircleData>>>(
+            1, 64, BufferOverflow.DROP_OLDEST
+        )
+    val pendingRequestList get() = _pendingRequestList.asSharedFlow()
+
 
     private val _unFollow =
         MutableSharedFlow<Resource<UpdateResponse>>(
-            1, 64, BufferOverflow.DROP_OLDEST
+            0, 64, BufferOverflow.DROP_OLDEST
         )
     val unFollow get() = _unFollow.asSharedFlow()
 
@@ -71,23 +78,51 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
 
     private val _removeFriend =
         MutableSharedFlow<Resource<UpdateResponse>>(
-            1, 64, BufferOverflow.DROP_OLDEST
+            0, 64, BufferOverflow.DROP_OLDEST
         )
     val removeFriend get() = _removeFriend.asSharedFlow()
 
     private val _acceptFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
-        1,
+        0,
         64,
         BufferOverflow.DROP_OLDEST
     )
     val acceptFriendRequest get() = _acceptFriendRequest.asSharedFlow()
 
+    private val _declineFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val declineFriendRequest get() = _declineFriendRequest.asSharedFlow()
+
     private val _deleteFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
-        1,
+        0,
         64,
         BufferOverflow.DROP_OLDEST
     )
     val deleteFriendRequest get() = _deleteFriendRequest.asSharedFlow()
+
+    private val _deleteAllFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val deleteAllFriendRequest get() = _deleteAllFriendRequest.asSharedFlow()
+
+    private val _acceptAllFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val acceptAllFriendRequest get() = _acceptAllFriendRequest.asSharedFlow()
+
+    private val _declineAllFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val declineAllFriendRequest get() = _declineAllFriendRequest.asSharedFlow()
 
 
     //region:: Follower Operation
@@ -166,7 +201,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
         _removeFollower.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.removeFollower(userId).onEach {
+            repository.removeFollower(userId).first() {
                 if (it.isSuccess) {
                     _removeFollower.tryEmit(Resource.Success(it))
                 } else {
@@ -179,7 +214,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
                         )
                     )
                 }
-            }.launchIn(this)
+            }
         } else {
             _removeFollower.tryEmit(Resource.Error("No Internet Available !"))
         }
@@ -264,7 +299,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
         _unFollow.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.unFollow(userId).onEach {
+            repository.unFollow(userId).first() {
                 if (it.isSuccess) {
                     _unFollow.tryEmit(Resource.Success(it))
                 } else {
@@ -277,7 +312,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
                         )
                     )
                 }
-            }.launchIn(this)
+            }
         } else {
             _unFollow.tryEmit(Resource.Error("No Internet Available !"))
         }
@@ -344,7 +379,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
                         friendList.forEach { temp ->
                             if (temp.userId == userId) {
                                 friendList.remove(temp)
-                                friendList.sortBy { it.timeStamp }
+                                friendList.sortByDescending { it.timeStamp }
                                 return@let
                             }
                         }
@@ -363,7 +398,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
         _removeFriend.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.removeFriend(userId).onEach {
+            repository.removeFriend(userId).first() {
                 if (it.isSuccess) {
                     _removeFriend.tryEmit(Resource.Success(it))
                 } else {
@@ -376,7 +411,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
                         )
                     )
                 }
-            }.launchIn(this)
+            }
         } else {
             _removeFriend.tryEmit(Resource.Error("No Internet Available !"))
         }
@@ -444,7 +479,7 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
                         friendRequestList.forEach { temp ->
                             if (temp.userId == userId) {
                                 friendRequestList.remove(temp)
-                                friendRequestList.sortBy { it.timeStamp }
+                                friendRequestList.sortByDescending { it.timeStamp }
                                 return@let
                             }
                         }
@@ -464,13 +499,13 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
         if (SoftwareManager.isNetworkAvailable(app)) {
             repository.acceptFriendRequest(
                 AuthManager.currentUserId()!!, followedId
-            ).onEach {
+            ).first() {
                 if (it.isSuccess) {
                     _acceptFriendRequest.tryEmit(Resource.Success(it))
                 } else {
                     _acceptFriendRequest.tryEmit(Resource.Error(it.errorMessage))
                 }
-            }.launchIn(this)
+            }
 
         } else {
             _acceptFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
@@ -478,19 +513,153 @@ class FriendViewModel(val app: Application) : AndroidViewModel(app) {
     }
 
     fun declineFriendRequest(followedId: String) = viewModelScope.myLaunch{
+        _declineFriendRequest.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.declineFriendRequest(AuthManager.currentUserId()!!, followedId).first() {
+                if (it.isSuccess) {
+                    _declineFriendRequest.tryEmit(Resource.Success(it))
+                } else {
+                    _declineFriendRequest.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }
+
+        } else {
+            _declineFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    fun acceptAllFriendRequest(friendIds: List<String>) = viewModelScope.myLaunch{
+        _acceptAllFriendRequest.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.acceptAllFriendRequest(friendIds).first() {
+                if (it.isSuccess) {
+                    _acceptAllFriendRequest.tryEmit(Resource.Success(it))
+                } else {
+                    _acceptAllFriendRequest.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }
+
+        } else {
+            _acceptAllFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    fun declineAllFriendRequest(friendIds: List<String>) = viewModelScope.myLaunch{
+        _declineAllFriendRequest.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.declineAllFriendRequest(friendIds).first() {
+                if (it.isSuccess) {
+                    _declineAllFriendRequest.tryEmit(Resource.Success(it))
+                } else {
+                    _declineAllFriendRequest.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }
+
+        } else {
+            _declineAllFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    //endregion
+
+    //region:: Pending Request Operation
+
+    fun getPendingFriendRequestAndListenChange() = viewModelScope.myLaunch {
+        _pendingRequestList.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.getPendingFriendRequestAndListenChange().onEach {
+                _pendingRequestList.tryEmit(handlePendingRequestResponse(it))
+            }.launchIn(this)
+
+        } else {
+            _pendingRequestList.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
+        }
+    }
+
+    private fun handlePendingRequestResponse(response: List<ListenerEmissionType<FriendCircleData, FriendCircleData>>): Resource<List<FriendCircleData>> {
+        MyLogger.v(tagProfile, isFunctionCall = true)
+
+        val pendingList =
+            pendingRequestList.replayCache[0].data?.toMutableList() ?: mutableListOf<FriendCircleData>()
+
+        response.forEach {listenerHandling->
+            when (listenerHandling.emitChangeType) {
+                Constants.ListenerEmitType.Starting -> {
+                   //Don't do any thing
+                }
+
+
+                Constants.ListenerEmitType.Added -> {
+                    MyLogger.v(
+                        tagProfile,
+                        msg = listenerHandling.singleResponse, isJson = true,
+                        jsonTitle = "This is added pendign request type"
+                    )
+
+                    listenerHandling.singleResponse?.let {
+                        pendingList.add(it)
+                        pendingList.sortByDescending { it.timeStamp }
+                    }
+                }
+
+                Constants.ListenerEmitType.Removed -> {
+                    MyLogger.v(tagProfile, msg = "This is removed pending request type")
+
+                    listenerHandling.singleResponse?.let { pendingRequest ->
+                        pendingRequest.userId?.let { userId ->
+                            pendingList.forEach { temp ->
+                                if (temp.userId == userId) {
+                                    pendingList.remove(temp)
+                                    pendingList.sortByDescending { it.timeStamp }
+                                    return@let
+                                }
+                            }
+                        }
+                    }
+                }
+
+
+                else -> {}
+            }
+        }
+
+
+        return Resource.Success(pendingList.toList())
+    }
+
+    fun deleteFriendRequest(followedId: String) = viewModelScope.myLaunch{
         _deleteFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.declineFriendRequest(AuthManager.currentUserId()!!, followedId).onEach {
+            repository.deleteFriendRequest(AuthManager.currentUserId()!!, followedId).first() {
                 if (it.isSuccess) {
                     _deleteFriendRequest.tryEmit(Resource.Success(it))
                 } else {
                     _deleteFriendRequest.tryEmit(Resource.Error(it.errorMessage))
                 }
-            }.launchIn(this)
-
+            }
         } else {
             _deleteFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
+        }
+    }
+
+    fun deleteAllFriendRequest(friendIds: List<String>) = viewModelScope.myLaunch{
+        _deleteAllFriendRequest.tryEmit(Resource.Loading())
+
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            repository.deleteAllFriendRequest(friendIds).first() {
+                if (it.isSuccess) {
+                    _deleteAllFriendRequest.tryEmit(Resource.Success(it))
+                } else {
+                    _deleteAllFriendRequest.tryEmit(Resource.Error(it.errorMessage))
+                }
+            }
+        } else {
+            _deleteAllFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
         }
     }
 

@@ -199,8 +199,10 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
                     }
 
                     if (filteredList.isEmpty()) {
+                        binding.noDataView.text = "Oops! We couldn’t find any chats matching your search."
                         showNoDataView()
                     } else {
+                        binding.noDataView.text = "You haven’t chatted with anyone recently. Reach out to a friend!"
                         hideNoDataView()
                         recentChatAdaptper.submitList(filteredList)
                     }
@@ -500,6 +502,13 @@ class RecentChatFragment : Fragment(), StartChatDialogOption, AlertDialogOption 
     }
 
     //endregion
+
+
+    override fun onPause() {
+        binding.linearBackToTop.gone()
+        super.onPause()
+    }
+
     override fun onDestroyView() {
         binding.etSearch.hideKeyboardAndFocus()
         _binding = null

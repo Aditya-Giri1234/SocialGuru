@@ -1,6 +1,7 @@
 package com.aditya.socialguru.domain_layer.manager
 
 import android.util.Log
+import com.aditya.socialguru.AppConfig
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Constants.LogTag
 import com.aditya.socialguru.domain_layer.helper.Constants.LogLevel
@@ -26,7 +27,7 @@ object MyLogger {
 
 
     //private var isLogCanShow = (AppMode.getAppMode() == Constants.DefineAppMode.Development)
-    private var isLogCanShow =true
+    private var isLogCanShow = AppConfig.LOG_CAN_SHOW
 
 
     //region:: Log use case with different scenario

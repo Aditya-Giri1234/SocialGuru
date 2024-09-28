@@ -9,7 +9,7 @@ class CommentRepo {
 
     suspend fun sendComment(
         comment: Comment, isCreatorOnline: Boolean
-    ) = CommentManager.sendComment(comment, isCreatorOnline)
+    ) = FirebaseManager.sendComment(comment, isCreatorOnline)
 
     suspend fun deleteComment(comment: Comment) = FirebaseManager.deleteComment(comment)
     suspend fun getCommentAndListen(postId: String) = FirebaseManager.getCommentAndListen(postId)

@@ -3,13 +3,13 @@ package com.aditya.socialguru.ui_layer.fragment.profile_part.friend_circle
 import android.content.Context
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -19,7 +19,9 @@ import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.FragmentFriendRequestBinding
-import com.aditya.socialguru.databinding.PopUpFriendRequestBinding
+import com.aditya.socialguru.databinding.FragmentPendingFriendRequestBinding
+import com.aditya.socialguru.databinding.PopUpChatScreenBinding
+import com.aditya.socialguru.databinding.PopUpPendingRequestBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
@@ -32,25 +34,24 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.ui_layer.adapter.profile.friend_circle.FriendRequestAdapter
+import com.aditya.socialguru.ui_layer.adapter.profile.friend_circle.PendingFriendRequestAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.profile.friend_circle.FriendViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
 
-class FriendRequestFragment : Fragment(), AlertDialogOption {
+class PendingFriendRequestFragment : Fragment(), AlertDialogOption {
 
-    private var _binding: FragmentFriendRequestBinding? = null
+    private var _binding: FragmentPendingFriendRequestBinding? = null
     private val binding get() = _binding!!
 
     private var myLoader: MyLoader? = null
-    private var dialogInvokeType = FriendRequestDialogInvokeType.Accept_All
     private val navController get() = (requireActivity() as MainActivity).navController
 
-    private var _friendRequestAdapter: FriendRequestAdapter? = null
-    private val friendRequestAdapter get() = _friendRequestAdapter!!
-    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
+    private var _pendingFriendRequestAdapter: PendingFriendRequestAdapter? = null
+    private val pendingFriendRequestAdapter get() = _pendingFriendRequestAdapter!!
+    private val jobQueue: ArrayDeque<()->Unit> = ArrayDeque()
     private val friendViewModel by viewModels<FriendViewModel>()
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +61,7 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        _binding = FragmentFriendRequestBinding.inflate(layoutInflater)
+        _binding = FragmentPendingFriendRequestBinding.inflate(layoutInflater)
         return binding.root
     }
 
@@ -70,10 +71,10 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
     }
 
     private fun handleInitialization() {
-        _friendRequestAdapter = FriendRequestAdapter({
+        _pendingFriendRequestAdapter = PendingFriendRequestAdapter({
             navigateToProfileView(it)
-        }) { it, isDecline ->
-            onResultOfDeclineOrAccept(it, isDecline)
+        }) { it ->
+            onActionOfFriendRequest(it)
         }
         initUi()
         subscribeToObserver()
@@ -83,7 +84,7 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
 
     private fun subscribeToObserver() {
         observeFlow {
-            friendViewModel.friendRequestList.onEach { response ->
+            friendViewModel.pendingRequestList.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
                         response.data?.let {
@@ -99,27 +100,26 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
                     is Resource.Error -> {
                         if (!response.hasBeenMessagedToUser) {
                             response.hasBeenMessagedToUser = true
-                            when (response.message) {
-                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                            when(response.message){
+                                Constants.ErrorMessage.InternetNotAvailable.message ->{
                                     jobQueue.add {
                                         friendViewModel.setDataLoadedStatus(false)
                                         getData()
                                     }
                                 }
-
-                                else -> {
-                                    showSnackBar(response.message.toString(), false)
+                                else ->{
+                                    showSnackBar(response.message.toString(),false)
                                 }
                             }
                         }
                     }
                 }
             }.launchIn(this)
-            friendViewModel.declineFriendRequest.onEach { response ->
+            friendViewModel.deleteFriendRequest.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()
-                        showSnackBar("Friend Request Decline Successfully!", true)
+                        showSnackBar("Friend Request Withdraw Successfully!", true)
                     }
 
                     is Resource.Loading -> {
@@ -132,11 +132,12 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
                     }
                 }
             }.launchIn(this)
-            friendViewModel.acceptFriendRequest.onEach { response ->
+
+            friendViewModel.deleteAllFriendRequest.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
                         hideDialog()
-                        showSnackBar("Friend Request Accept Successfully!", true)
+                        showSnackBar("All Friend Request Withdraw Successfully!", true)
                     }
 
                     is Resource.Loading -> {
@@ -149,8 +150,9 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
                     }
                 }
             }.launchIn(this)
+
             requireContext().monitorInternet().onEach { isInternetAvailable ->
-                if (isInternetAvailable) {
+                if(isInternetAvailable){
                     jobQueue.forEach {
                         it.invoke()
                     }
@@ -164,14 +166,14 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
         binding.apply {
             myToolbar.apply {
                 profileImage.gone()
-                tvHeaderUserName.text = "Friend Request"
+                tvHeaderUserName.text = "Pending Friend Request"
                 icSetting.gone()
                 icBack.myShow()
             }
 
-            rvFriendRequest.apply {
+            rvPendingFriendRequest.apply {
                 layoutManager = LinearLayoutManager(requireContext())
-                adapter = friendRequestAdapter
+                adapter = pendingFriendRequestAdapter
                 setHasFixedSize(true)
                 isMotionEventSplittingEnabled = false
             }
@@ -180,7 +182,7 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
         }
     }
 
-    private fun FragmentFriendRequestBinding.setListener() {
+    private fun FragmentPendingFriendRequestBinding.setListener() {
         myToolbar.icBack.setSafeOnClickListener {
             navController.navigateUp()
         }
@@ -190,10 +192,11 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
     }
 
 
+
     private fun getData() {
         if (!friendViewModel.isDataLoaded) {
             friendViewModel.setDataLoadedStatus(true)
-            friendViewModel.getAndListenFriendRequestComeEvent()
+            friendViewModel.getPendingFriendRequestAndListenChange()
         }
 
     }
@@ -204,15 +207,7 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
         } else {
             hideNoDataView()
         }
-        friendRequestAdapter.submitList(friendCircleData)
-    }
-
-    private fun onResultOfDeclineOrAccept(userId: String, decline: Boolean) {
-        if (decline) {
-            friendViewModel.declineFriendRequest(userId)
-        } else {
-            friendViewModel.acceptFriendRequest(userId)
-        }
+        pendingFriendRequestAdapter.submitList(friendCircleData)
     }
 
     private fun showPopUp() {
@@ -220,7 +215,7 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
         val layoutInflater =
             requireContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
 
-        val bindingPopUp = PopUpFriendRequestBinding.inflate(layoutInflater)
+        val bindingPopUp = PopUpPendingRequestBinding.inflate(layoutInflater)
         val popUp = PopupWindow(context)
         popUp.contentView = bindingPopUp.root
         popUp.width = LinearLayout.LayoutParams.WRAP_CONTENT
@@ -231,27 +226,17 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
         popUp.animationStyle = R.style.popup_window_animation
         popUp.showAsDropDown(binding.myToolbar.icSetting)
 
-
-
-        bindingPopUp.linearItemAcceptAllFriendRequest.setSafeOnClickListener {
-            dialogInvokeType = FriendRequestDialogInvokeType.Accept_All
-            AlertDialog(
-                "Are your sure accept all friend request ?",
-                this@FriendRequestFragment,
-                true
-            ).show(childFragmentManager, "MY_Dialog")
+        bindingPopUp.linearAllDeletePendingRequest.setSafeOnClickListener {
+            AlertDialog("Are your sure withdraw all friend request ?", this@PendingFriendRequestFragment, true).show(
+                childFragmentManager,
+                "MY_Dialog"
+            )
             popUp.dismiss()
         }
+    }
 
-        bindingPopUp.linearItemDeleteAllFriendRequest.setSafeOnClickListener {
-            dialogInvokeType = FriendRequestDialogInvokeType.Decline_All
-            AlertDialog(
-                "Are your sure decline all friend request ?",
-                this@FriendRequestFragment,
-                true
-            ).show(childFragmentManager, "MY_Dialog")
-            popUp.dismiss()
-        }
+    private fun onActionOfFriendRequest(userId: String) {
+        friendViewModel.deleteFriendRequest(userId)
     }
 
     private fun navigateToProfileView(userId: String) {
@@ -265,7 +250,7 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
     private fun showNoDataView() {
         binding.apply {
             myToolbar.icSetting.gone()
-            rvFriendRequest.gone()
+            rvPendingFriendRequest.gone()
             noDataView.myShow()
         }
     }
@@ -273,7 +258,7 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
     private fun hideNoDataView() {
         binding.apply {
             myToolbar.icSetting.myShow()
-            rvFriendRequest.myShow()
+            rvPendingFriendRequest.myShow()
             noDataView.gone()
         }
     }
@@ -303,32 +288,17 @@ class FriendRequestFragment : Fragment(), AlertDialogOption {
         }
     }
 
-    override fun onResult(isYes: Boolean) {
-        if (isYes) {
-            when (dialogInvokeType) {
-                FriendRequestDialogInvokeType.Accept_All -> {
-                    friendViewModel.acceptAllFriendRequest(
-                        friendRequestAdapter.getData().mapNotNull { it.userId })
-                }
-
-                FriendRequestDialogInvokeType.Decline_All -> {
-                    friendViewModel.declineAllFriendRequest(
-                        friendRequestAdapter.getData().mapNotNull { it.userId })
-                }
-            }
-        }
-    }
-
     override fun onDestroyView() {
-        binding.rvFriendRequest.adapter = null
-        _friendRequestAdapter = null
+        binding.rvPendingFriendRequest.adapter = null
+        _pendingFriendRequestAdapter = null
         _binding = null
         super.onDestroyView()
     }
 
-}
-
-private enum class FriendRequestDialogInvokeType {
-    Accept_All,
-    Decline_All
+    override fun onResult(isYes: Boolean) {
+        if(isYes){
+            friendViewModel.deleteAllFriendRequest(
+                pendingFriendRequestAdapter.getData().mapNotNull { it.userId })
+        }
+    }
 }

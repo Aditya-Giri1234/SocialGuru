@@ -5,13 +5,27 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/black"
-    tools:context=".ui_layer.fragment.profile_part.my_activity.ShowMyPostFragment">
+    tools:context=".ui_layer.fragment.profile_part.friend_circle.PendingFriendRequestFragment">
+
+    <include
+        android:id="@+id/myToolbar"
+        layout="@layout/custom_toolbar" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_1sdp"
+        android:layout_marginTop="?actionBarSize"
+        android:background="@color/lightWhite"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/tvNoDataView"
+        android:id="@+id/noDataView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="It’s empty here. Create a post to get started!"
+        android:text="You have no pending friend requests."
         android:textColor="@color/white"
         android:textSize="@dimen/_16ssp"
         android:fontFamily="@font/poppins_semi_bold"
@@ -25,15 +39,17 @@
         app:layout_constraintVertical_bias="0.5" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvMyPost"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:id="@+id/rvPendingFriendRequest"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constrainedHeight="true"
         android:visibility="gone"
-        android:nestedScrollingEnabled="false"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_marginTop="@dimen/_2sdp"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"
+        app:layout_constraintTop_toTopOf="@id/guidelineUp"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+        app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"
+        />
 
     <LinearLayout
         android:id="@+id/linearBackToTop"
@@ -75,6 +91,32 @@
 
     </LinearLayout>
 
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_begin="@dimen/_10sdp" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineEnd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_end="@dimen/_10sdp" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineBottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_end="@dimen/_10sdp" />
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineUp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_begin="?actionBarSize" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

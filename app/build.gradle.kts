@@ -55,6 +55,39 @@ android {
         viewBinding = true
         dataBinding = true
     }
+    sourceSets {
+        getByName("main") {
+            java.srcDir(layout.buildDirectory.dir("generated/source/appConfig"))
+        }
+    }
+
+}
+
+tasks.register("generateAppConfig") {
+    // Use the layout.buildDirectory property instead of buildDir
+    val outputDir = layout.buildDirectory.dir("generated/source/appConfig")
+
+    doLast {
+        val appConfigDir = outputDir.get().asFile
+        if (!appConfigDir.exists()) {
+            appConfigDir.mkdirs()
+        }
+
+        val appConfigFile = File(appConfigDir, "AppConfig.kt")
+        val logCanShow = false
+        appConfigFile.writeText("""
+            package ${android.namespace}
+            object AppConfig {
+                const val LOG_CAN_SHOW = $logCanShow
+            }
+        """.trimIndent())
+
+        println("AppConfig.kt file generated at ${appConfigFile.path}")
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn("generateAppConfig")
 }
 
 dependencies {

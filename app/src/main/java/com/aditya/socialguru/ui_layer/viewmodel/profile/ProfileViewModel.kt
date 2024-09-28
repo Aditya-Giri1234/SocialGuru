@@ -18,6 +18,7 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -60,7 +61,7 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
 
 
     private val _userSignOut = MutableSharedFlow<Resource<UpdateResponse>>(
-        1,
+        0,
         64,
         BufferOverflow.DROP_OLDEST
     )
@@ -74,42 +75,42 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
     val userDetails: SharedFlow<Resource<User>> get() = _userDetails.asSharedFlow()
 
     private val _followUser = MutableSharedFlow<Resource<UpdateResponse>>(
-        1,
+        0,
         64,
         BufferOverflow.DROP_OLDEST
     )
     val followUser get() = _followUser.asSharedFlow()
 
     private val _unFollow = MutableSharedFlow<Resource<UpdateResponse>>(
-        1,
+        0,
         64,
         BufferOverflow.DROP_OLDEST
     )
     val unFollow get() = _unFollow.asSharedFlow()
 
     private val _sendFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
-        1,
+        0,
         64,
         BufferOverflow.DROP_OLDEST
     )
     val sendFriendRequest get() = _sendFriendRequest.asSharedFlow()
 
     private val _acceptFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
-        1,
+        0,
         64,
         BufferOverflow.DROP_OLDEST
     )
     val acceptFriendRequest get() = _acceptFriendRequest.asSharedFlow()
 
     private val _deleteFriendRequest = MutableSharedFlow<Resource<UpdateResponse>>(
-        1,
+        0,
         64,
         BufferOverflow.DROP_OLDEST
     )
     val deleteFriendRequest get() = _deleteFriendRequest.asSharedFlow()
 
     private val _removeFriend = MutableSharedFlow<Resource<UpdateResponse>>(
-        1,
+        0,
         64,
         BufferOverflow.DROP_OLDEST
     )
@@ -182,9 +183,9 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _userSignOut.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.signOut().onEach {
+            repository.signOut().first() {
                 _userSignOut.tryEmit(Resource.Success(it))
-            }.launchIn(this)
+            }
         } else {
             _userSignOut.tryEmit(Resource.Error("No Internet Available !"))
         }
@@ -194,13 +195,13 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _followUser.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.followUser(AuthManager.currentUserId()!!, followedId).onEach {
+            repository.followUser(AuthManager.currentUserId()!!, followedId).first() {
                 if (it.isSuccess) {
                     _followUser.tryEmit(Resource.Success(it))
                 } else {
                     _followUser.tryEmit(Resource.Error(it.errorMessage))
                 }
-            }.launchIn(this)
+            }
 
         } else {
             _followUser.tryEmit(Resource.Error("No Internet Available !"))
@@ -211,13 +212,13 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _unFollow.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.unFollow(followedId).onEach {
+            repository.unFollow(followedId).first() {
                 if (it.isSuccess) {
                     _unFollow.tryEmit(Resource.Success(it))
                 } else {
                     _unFollow.tryEmit(Resource.Error(it.errorMessage))
                 }
-            }.launchIn(this)
+            }
 
         } else {
             _unFollow.tryEmit(Resource.Error("No Internet Available !"))
@@ -228,13 +229,13 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _sendFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.sendFriendRequest(AuthManager.currentUserId()!!, followedId).onEach {
+            repository.sendFriendRequest(AuthManager.currentUserId()!!, followedId).first() {
                 if (it.isSuccess) {
                     _sendFriendRequest.tryEmit(Resource.Success(it))
                 } else {
                     _sendFriendRequest.tryEmit(Resource.Error(it.errorMessage))
                 }
-            }.launchIn(this)
+            }
 
         } else {
             _sendFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
@@ -247,13 +248,13 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         if (SoftwareManager.isNetworkAvailable(app)) {
             repository.acceptFriendRequest(
                 AuthManager.currentUserId()!!, followedId
-            ).onEach {
+            ).first() {
                 if (it.isSuccess) {
                     _acceptFriendRequest.tryEmit(Resource.Success(it))
                 } else {
                     _acceptFriendRequest.tryEmit(Resource.Error(it.errorMessage))
                 }
-            }.launchIn(this)
+            }
 
         } else {
             _acceptFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
@@ -264,13 +265,13 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _deleteFriendRequest.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.deleteFriendRequest(AuthManager.currentUserId()!!, followedId).onEach {
+            repository.deleteFriendRequest(AuthManager.currentUserId()!!, followedId).first() {
                 if (it.isSuccess) {
                     _deleteFriendRequest.tryEmit(Resource.Success(it))
                 } else {
                     _deleteFriendRequest.tryEmit(Resource.Error(it.errorMessage))
                 }
-            }.launchIn(this)
+            }
 
         } else {
             _deleteFriendRequest.tryEmit(Resource.Error("No Internet Available !"))
@@ -281,18 +282,20 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _removeFriend.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.removeFriend(followedId).onEach {
+            repository.removeFriend(followedId).first() {
                 if (it.isSuccess) {
                     _removeFriend.tryEmit(Resource.Success(it))
                 } else {
                     _removeFriend.tryEmit(Resource.Error(it.errorMessage))
                 }
-            }.launchIn(this)
+            }
 
         } else {
             _removeFriend.tryEmit(Resource.Error("No Internet Available !"))
         }
     }
+
+
 
     fun getUserRelationshipStatus(followedId: String) = viewModelScope.myLaunch{
         _userRelationshipStatus.tryEmit(Resource.Loading())
@@ -311,9 +314,11 @@ class ProfileViewModel(val app: Application) : AndroidViewModel(app) {
         _userRelationshipStatusUpdate.tryEmit(Resource.Loading())
 
         if (SoftwareManager.isNetworkAvailable(app)) {
-            repository.listenUserRelationStatus(followedId).onEach {
+            repository.listenUserRelationStatus(followedId).onEach() {
                 if (it.isSuccess) {
                     _userRelationshipStatusUpdate.tryEmit(Resource.Success(it))
+                }else{
+                    _userRelationshipStatusUpdate.tryEmit(Resource.Error(it.errorMessage))
                 }
             }.launchIn(this)
 

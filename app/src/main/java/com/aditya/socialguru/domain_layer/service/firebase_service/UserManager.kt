@@ -32,11 +32,14 @@ import com.google.firebase.firestore.core.OrderBy
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
 import com.google.rpc.context.AttributeContext.Auth
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -80,6 +83,8 @@ object UserManager {
 
     private val userRelationListeners = mutableListOf<ListenerRegistration>()
     private var isFirstTimeUserStatusUpdateListListener = true
+
+    private var pendingFriendRequestListener : ListenerRegistration?=null
 
 
     suspend fun saveUser(user: User): Pair<Boolean, String?> {
@@ -816,6 +821,51 @@ object UserManager {
             }
         }
 
+    suspend fun getPendingFriendRequestAndListenChange() = callbackFlow<List<ListenerEmissionType<FriendCircleData, FriendCircleData>>> {
+        val userId = AuthManager.currentUserId()!!
+        val pendingFriendRequestRef = userRef.document(userId).collection(Constants.Table.PendingRequest.name)
+
+        pendingFriendRequestListener = pendingFriendRequestRef.addSnapshotListener { value, error ->
+            if(error!=null) return@addSnapshotListener
+
+            launch {
+                value?.documentChanges?.let {
+                    val chunkedData = it.chunked(20)
+                    for (data in chunkedData){
+                        val friendListData =data.map {
+                            async {
+                                val changeType = when(it.type){
+                                    DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                    DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                    DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                }
+                                var friendData = it.document.toObject<FriendCircleData>()
+
+                                val userData  = getUserById(friendData.userId!!)
+                                if (userData==null){
+                                    null
+                                }else{
+                                    friendData = friendData.copy(
+                                        user = userData
+                                    )
+                                    ListenerEmissionType<FriendCircleData,FriendCircleData>(changeType, singleResponse = friendData)
+                                }
+
+                            }
+                        }.awaitAll().filterNotNull()
+                        trySend(friendListData)
+                    }
+                }
+            }
+        }
+
+        awaitClose {
+            pendingFriendRequestListener?.remove()
+            close()
+        }
+
+    }
+
     suspend fun removeFollower(userId: String) = callbackFlow<UpdateResponse> {
         val followerRef = userRef.document(AuthManager.currentUserId()!!)
             .collection(Constants.Table.Follower.name).document(userId)
@@ -991,6 +1041,62 @@ object UserManager {
             }
         }
 
+    suspend fun deleteAllFriendRequest(friendIds: List<String>) = callbackFlow<UpdateResponse> {
+        // Create a list to hold the deletion operations
+        val deletionTasks = mutableListOf<Deferred<UpdateResponse>>()
+        val currentUserId = AuthManager.currentUserId()!!
+        // Launch a coroutine scope
+        coroutineScope {
+            // Iterate over each friendId to create delete operations
+            for (friendId in friendIds) {
+                // Launch async operation for each friendId
+                val task = async {
+                    val friendRef = userRef.document(currentUserId)
+                        .collection(Constants.Table.PendingRequest.name)
+                        .document(friendId) // Assuming currentUserId is the userId of the requester
+
+                    val myUserRef = userRef.document(friendId)
+                        .collection(Constants.Table.FriendRequest.name)
+                        .document(currentUserId)
+
+                    try {
+                        // Perform batch delete
+                        firestore.runBatch { batch ->
+                            batch.delete(myUserRef)
+                            batch.delete(friendRef)
+                        }.await()
+
+                        // Return success response
+                        UpdateResponse(true, "")
+                    } catch (e: Exception) {
+                        // Return failure response with error message
+                        UpdateResponse(false, e.message ?: "Unknown error")
+                    }
+                }
+
+                deletionTasks.add(task)
+            }
+
+            // Await completion of all tasks
+            val results = deletionTasks.awaitAll()
+
+            // Check if all requests were successful
+            val isSuccess = results.all { it.isSuccess }
+
+            // Send the overall response
+            if (isSuccess) {
+                trySend(UpdateResponse(true, "All friend requests deleted."))
+            } else {
+                // You can customize the error message as needed
+                trySend(UpdateResponse(false, "Some friend requests could not be declined."))
+            }
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
     suspend fun declineFriendRequest(userId: String, friendId: String) =
         callbackFlow<UpdateResponse> {
 
@@ -1015,6 +1121,62 @@ object UserManager {
                 close()
             }
         }
+
+    suspend fun declineAllFriendRequest(friendIds: List<String>) = callbackFlow<UpdateResponse> {
+        // Create a list to hold the deletion operations
+        val deletionTasks = mutableListOf<Deferred<UpdateResponse>>()
+        val currentUserId = AuthManager.currentUserId()!!
+        // Launch a coroutine scope
+        coroutineScope {
+            // Iterate over each friendId to create delete operations
+            for (friendId in friendIds) {
+                // Launch async operation for each friendId
+                val task = async {
+                    val friendRef = userRef.document(friendId)
+                        .collection(Constants.Table.PendingRequest.name)
+                        .document(currentUserId) // Assuming currentUserId is the userId of the requester
+
+                    val myUserRef = userRef.document(currentUserId)
+                        .collection(Constants.Table.FriendRequest.name)
+                        .document(friendId)
+
+                    try {
+                        // Perform batch delete
+                        firestore.runBatch { batch ->
+                            batch.delete(myUserRef)
+                            batch.delete(friendRef)
+                        }.await()
+
+                        // Return success response
+                        UpdateResponse(true, "")
+                    } catch (e: Exception) {
+                        // Return failure response with error message
+                        UpdateResponse(false, e.message ?: "Unknown error")
+                    }
+                }
+
+                deletionTasks.add(task)
+            }
+
+            // Await completion of all tasks
+            val results = deletionTasks.awaitAll()
+
+            // Check if all requests were successful
+            val isSuccess = results.all { it.isSuccess }
+
+            // Send the overall response
+            if (isSuccess) {
+                trySend(UpdateResponse(true, "All friend requests declined."))
+            } else {
+                // You can customize the error message as needed
+                trySend(UpdateResponse(false, "Some friend requests could not be declined."))
+            }
+        }
+
+        awaitClose {
+            close()
+        }
+    }
 
     suspend fun acceptFriendRequest(userId: String, friendId: String) =
         callbackFlow<UpdateResponse> {
@@ -1063,6 +1225,40 @@ object UserManager {
                 close()
             }
         }
+
+
+    suspend fun acceptAllFriendRequest(friendIds: List<String>) = callbackFlow<UpdateResponse> {
+        val userId= AuthManager.currentUserId()!!
+        // Create a list to hold the deferred results for each accept operation
+        val deferredResults = friendIds.map { friendId ->
+            async {
+                // Call the acceptFriendRequest function for each friendId
+                acceptFriendRequest(userId, friendId).first()
+            }
+        }
+
+        // Collect results from all deferred calls
+        try {
+            // Await all results
+            val results = deferredResults.awaitAll()
+
+            // Check if all operations were successful
+            val allSuccess = results.all { it.isSuccess }
+
+            // You can also aggregate error messages if needed
+            val errorMessages = results.filterNot { it.isSuccess }.joinToString(", ") { it.errorMessage.toString() }
+
+            // Send the final result
+            trySend(UpdateResponse(allSuccess, errorMessages)).isSuccess
+        } catch (e: Exception) {
+            trySend(UpdateResponse(false, e.message ?: "Error occurred during accepting all friend requests."))
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
 
     suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String) =
         callbackFlow<UserRelationshipStatus> {

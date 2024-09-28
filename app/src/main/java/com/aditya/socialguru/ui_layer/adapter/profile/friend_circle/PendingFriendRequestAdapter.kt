@@ -8,8 +8,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
-import com.aditya.socialguru.databinding.SampleFollowerListBinding
 import com.aditya.socialguru.databinding.SampleFriendRequestListBinding
+import com.aditya.socialguru.databinding.SamplePendingRequestItemBinding
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
@@ -17,7 +17,7 @@ import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.bumptech.glide.Glide
 
-class FriendRequestAdapter(val itemClick:(userId:String)->Unit, val onResult:(userId:String , isDecline:Boolean)->Unit) : RecyclerView.Adapter<FriendRequestAdapter.ViewHolder>(){
+class PendingFriendRequestAdapter(val itemClick:(userId:String)->Unit, val onResult:(userId:String)->Unit) : RecyclerView.Adapter<PendingFriendRequestAdapter.ViewHolder>(){
 
     companion object{
         val callback=object : DiffUtil.ItemCallback<FriendCircleData>(){
@@ -39,7 +39,7 @@ class FriendRequestAdapter(val itemClick:(userId:String)->Unit, val onResult:(us
         notifyDataSetChanged()
     }
 
-    inner class ViewHolder(val binding: SampleFriendRequestListBinding): RecyclerView.ViewHolder(binding.root){
+    inner class ViewHolder(val binding: SamplePendingRequestItemBinding): RecyclerView.ViewHolder(binding.root){
         fun bind(user: User){
             user.apply {
                 binding.apply {
@@ -57,11 +57,8 @@ class FriendRequestAdapter(val itemClick:(userId:String)->Unit, val onResult:(us
                     tvFriendName.text=userName
 
 
-                    btnDecline.setSafeOnClickListener {
-                        onResult(user.userId!! , true)
-                    }
-                    btnAccept.setSafeOnClickListener {
-                        onResult(user.userId!!,false)
+                    btnWithdraw.setSafeOnClickListener {
+                        onResult(user.userId!!)
                     }
 
                     root.setSafeOnClickListener {
@@ -74,9 +71,9 @@ class FriendRequestAdapter(val itemClick:(userId:String)->Unit, val onResult:(us
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return  ViewHolder(
-            SampleFriendRequestListBinding.inflate(
+            SamplePendingRequestItemBinding.inflate(
                 LayoutInflater.from(parent.context) ,parent,false
-        ))
+            ))
     }
 
     override fun getItemCount(): Int {
@@ -87,5 +84,5 @@ class FriendRequestAdapter(val itemClick:(userId:String)->Unit, val onResult:(us
         differ.currentList[position].user?.let { holder.bind(it) }
     }
 
-    fun getData() : List<FriendCircleData> = differ.currentList
+    fun getData():List<FriendCircleData> = differ.currentList
 }

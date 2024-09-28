@@ -63,14 +63,14 @@
                 android:layout_marginStart="@dimen/_5sdp"
                 android:gravity="center|start">
                 <Button
-                    android:id="@+id/btnDecline"
+                    android:id="@+id/btnWithdraw"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
-                    android:text="Decline"
+                    android:text="Withdraw Request"
                     android:textColor="@color/white"
                     android:textAllCaps="false"
                     app:cornerRadius="@dimen/_30sdp"
-                    android:backgroundTint="@color/red"
+                    android:backgroundTint="@color/grey"
                     android:fontFamily="@font/poppins_regular"
                     android:textSize="@dimen/_12ssp"
                     android:visibility="visible"
@@ -79,23 +79,7 @@
                     app:layout_constraintStart_toStartOf="@id/linearProfile"
                     app:layout_constraintTop_toBottomOf="@id/linearProfile"
                     app:layout_constraintEnd_toEndOf="@id/linearProfile"/>
-                <Button
-                    android:id="@+id/btnAccept"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:text="Accept"
-                    android:textColor="@color/white"
-                    android:textAllCaps="false"
-                    app:cornerRadius="@dimen/_30sdp"
-                    android:backgroundTint="@color/blue"
-                    android:fontFamily="@font/poppins_regular"
-                    android:textSize="@dimen/_12ssp"
-                    android:visibility="visible"
-                    android:layout_marginEnd="@dimen/_5sdp"
-                    android:layout_marginStart="@dimen/_5sdp"
-                    app:layout_constraintStart_toStartOf="@id/linearProfile"
-                    app:layout_constraintTop_toBottomOf="@id/linearProfile"
-                    app:layout_constraintEnd_toEndOf="@id/linearProfile"/>
+
             </LinearLayout>
 
 

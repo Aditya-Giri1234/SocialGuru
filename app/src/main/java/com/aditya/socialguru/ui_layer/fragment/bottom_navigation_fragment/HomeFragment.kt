@@ -719,6 +719,11 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         super.onResume()
     }
 
+    override fun onPause() {
+        binding.linearBackToTop.gone()
+        super.onPause()
+    }
+
     override fun onStoryTypeSelect(selectedStoryType: Constants.StoryType) {
         when (selectedStoryType) {
             Constants.StoryType.Text -> {

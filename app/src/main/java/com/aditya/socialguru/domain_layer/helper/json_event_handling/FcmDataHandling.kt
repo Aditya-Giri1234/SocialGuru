@@ -177,17 +177,16 @@ object FcmDataHandling : HandleJsonData {
                 SharePref(context).getPrefUser().first()?.let { user ->
                     val userSetting = user.userSetting
                     if (userSetting == null || userSetting.isPostNotificationMute != true) {
-                        FirebaseManager.getUser(it).onEach {
+                        FirebaseManager.getUser(it).first().let{
                             it.data?.let {
                                 MyNotificationManager.showLikeInPostNotification(
                                     it,
                                     notificationData,
                                     context
                                 )
-//                                    MyNotificationManager.showGroupPostNotification(context)
                                 MyNotificationManager.showGroupSummaryNotification(context)
                             }
-                        }.launchIn(this)
+                        }
                     }
                 }
             }
@@ -203,7 +202,7 @@ object FcmDataHandling : HandleJsonData {
                 SharePref(context).getPrefUser().first()?.let { user ->
                     val userSetting = user.userSetting
                     if(userSetting==null || userSetting.isFriendCircleNotificationMute!=true){
-                        FirebaseManager.getUser(it).onEach {
+                        FirebaseManager.getUser(it).first().let {
                             it.data?.let {
                                 MyNotificationManager.showFriendRequestComeNotification(
                                     it,
@@ -213,7 +212,7 @@ object FcmDataHandling : HandleJsonData {
 //                                    MyNotificationManager.showGroupFriendCircleNotification(context)
                                 MyNotificationManager.showGroupSummaryNotification(context)
                             }
-                        }.launchIn(this)
+                        }
                     }
                 }
             }
@@ -229,7 +228,7 @@ object FcmDataHandling : HandleJsonData {
                 SharePref(context).getPrefUser().first()?.let { user ->
                     val userSetting = user.userSetting
                     if(userSetting==null || userSetting.isFriendCircleNotificationMute!=true){
-                        FirebaseManager.getUser(it).onEach {
+                        FirebaseManager.getUser(it).first().let {
                             it.data?.let {
                                 MyNotificationManager.showAcceptFriendRequestNotification(
                                     it,
@@ -239,7 +238,7 @@ object FcmDataHandling : HandleJsonData {
 //                                    MyNotificationManager.showGroupFriendCircleNotification(context)
                                 MyNotificationManager.showGroupSummaryNotification(context)
                             }
-                        }.launchIn(this)
+                        }
                     }
                 }
             }
@@ -255,7 +254,7 @@ object FcmDataHandling : HandleJsonData {
                 SharePref(context).getPrefUser().first()?.let { user ->
                     val userSetting = user.userSetting
                     if(userSetting==null || userSetting.isFriendCircleNotificationMute!=true){
-                        FirebaseManager.getUser(it).onEach {
+                        FirebaseManager.getUser(it).first().let {
                             it.data?.let {
                                 MyNotificationManager.showNewFollowerNotification(
                                     it,
@@ -265,7 +264,7 @@ object FcmDataHandling : HandleJsonData {
 //                                    MyNotificationManager.showGroupFriendCircleNotification(context)
                                 MyNotificationManager.showGroupSummaryNotification(context)
                             }
-                        }.launchIn(this)
+                        }
                     }
                 }
             }

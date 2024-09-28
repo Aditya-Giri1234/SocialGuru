@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <color name="black">#FF000000</color>
+    <color name="darkGray">#121212</color>
     <color name="white">#FFFFFFFF</color>
     <color name="lightWhite">#B9B7B7</color>
     <color name="yellow">#FFEB3B</color>
@@ -24,6 +25,8 @@
     <color name="purple">#9C27B0 </color>   // For Single Chat Media message.
     <color name="amber">#FFC107 </color>  // For New Friend Request.
     <color name="pink">#FF4081  </color>  // For Like Post.
+    <color name="darkBlue">#FF1E88E5</color>
+    <color name="lightBlue">#FFB3E5FC</color>
 
 
     <color name="mtrl_textinput_default_box_stroke_color" tools:override="true">#fff</color>

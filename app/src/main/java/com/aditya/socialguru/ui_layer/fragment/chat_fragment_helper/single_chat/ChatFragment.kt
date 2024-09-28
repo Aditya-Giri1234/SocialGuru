@@ -89,6 +89,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
     private val MAX_VIDEO_SIZE_MB = 50f
     private var isReceiverOnlineStatusIsHide = false
     private var isMediaUploading =false
+    private var lastMessage:LastMessage?=null
 
     private val emojiKeyboardTag = 0
     private val emojiPopup by lazy {
@@ -240,6 +241,7 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
             }.launchIn(this)
 
             chatViewModel.lastMessage.onEach {
+                lastMessage = it
                 updateUserAvailability(it)
             }.launchIn(this)
 
@@ -641,6 +643,11 @@ class ChatFragment : Fragment(), AlertDialogOption, ChatMessageOption, OnAttachm
                 isUserAppOpen = userAvailable ?: false
                 this@ChatFragment.isReceiverOnlineStatusIsHide = userSetting
                     ?.isMyOnlineStatusHideEnable ?: isReceiverOnlineStatusIsHide
+
+               // For when user set or unset his last time seen setting
+                lastMessage?.let {
+                    updateUserAvailability(it)
+                }
             }
         }
     }

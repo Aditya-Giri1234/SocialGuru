@@ -123,20 +123,27 @@
                     android:id="@+id/tvBio"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="@dimen/_50sdp"
-                    android:layout_marginTop="@dimen/_20sdp"
-                    android:background="@drawable/shape_media_upload_bg"
+                    android:layout_marginTop="@dimen/_8sdp"
+                    android:layout_marginBottom="@dimen/_8sdp"
+                    android:autoLink="all"
+                    android:background="@drawable/profile_bio_bg"
+                    android:elevation="4dp"
                     android:fontFamily="@font/poppins_regular"
                     android:gravity="center"
                     android:includeFontPadding="false"
                     android:justificationMode="inter_word"
-                    android:padding="@dimen/_8sdp"
-                    android:text="Hii , i am  cool and passionate android developer and feet free to send friend requst and follow me to see my post about mobile tech."
-                    android:autoLink="all"
                     android:linksClickable="true"
+                    android:minHeight="@dimen/_50sdp"
+                    android:padding="@dimen/_10sdp"
+                    android:shadowColor="@color/black"
+                    android:shadowDx="0"
+                    android:shadowDy="2"
+                    android:shadowRadius="2"
+                    android:text="Hi, I am a cool and passionate Android developer! Feel free to send a friend request and follow me to see my posts about mobile tech."
+                    android:textColor="@color/white"
                     android:textColorLink="@color/blue"
-                    android:textColor="@color/lightWhite"
-                    android:textSize="@dimen/_14ssp" />
+                    android:textSize="@dimen/_16ssp" />
+
 
                 <Button
                     android:layout_width="match_parent"
@@ -233,7 +240,6 @@
                     android:orientation="vertical">
 
 
-
                     <TextView
                         android:id="@+id/tvFollowers"
                         android:layout_width="wrap_content"
@@ -244,6 +250,7 @@
                         android:text="0"
                         android:textColor="@color/deep_dark_orange"
                         android:textSize="@dimen/_16ssp" />
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -270,7 +277,6 @@
                     android:orientation="vertical">
 
 
-
                     <TextView
                         android:id="@+id/tvFollowing"
                         android:layout_width="wrap_content"
@@ -281,6 +287,7 @@
                         android:text="0"
                         android:textColor="@color/blue"
                         android:textSize="@dimen/_16ssp" />
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -319,7 +326,6 @@
                     android:orientation="vertical">
 
 
-
                     <TextView
                         android:id="@+id/tvPost"
                         android:layout_width="wrap_content"
@@ -330,6 +336,7 @@
                         android:text="0"
                         android:textColor="@color/green"
                         android:textSize="@dimen/_16ssp" />
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -356,7 +363,6 @@
                     android:orientation="vertical">
 
 
-
                     <TextView
                         android:id="@+id/tvLike"
                         android:layout_width="wrap_content"
@@ -367,6 +373,7 @@
                         android:text="0"
                         android:textColor="@color/deep_pink"
                         android:textSize="@dimen/_16ssp" />
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

@@ -245,9 +245,9 @@ object CommentManager {
 
 
         }.addOnSuccessListener {
-            if (!isCreatorOnline) {
+            if (!isCreatorOnline&&(comment.postCreatorId!! != AuthManager.currentUserId()!!)) {
                 NotificationSendingManager.sendNotification(
-                    comment.postCreatorId!!, notificationData
+                    comment.postCreatorId, notificationData
                 )
             }
 

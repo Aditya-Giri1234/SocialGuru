@@ -110,11 +110,11 @@ object Helper {
 
 
     fun customToast(context: Context, msg: CharSequence, duration: Int, isNeeded: Boolean = false) {
-//        if (isNeeded) {
+        if (isNeeded) {
         toast?.cancel();
         toast = Toast.makeText(context, msg, duration)
         toast?.show();
-//        }
+        }
     }
 
     fun showLoader(activity: Activity) {

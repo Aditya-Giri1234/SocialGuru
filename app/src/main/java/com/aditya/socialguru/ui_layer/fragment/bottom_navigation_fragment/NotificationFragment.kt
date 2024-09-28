@@ -411,6 +411,11 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
         }
     }
 
+    override fun onPause() {
+        binding.linearBackToTop.gone()
+        super.onPause()
+    }
+
     override fun onDestroyView() {
         _notificationAdapter = null
         _binding = null

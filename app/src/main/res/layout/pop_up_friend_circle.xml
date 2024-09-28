@@ -4,6 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
     app:cardBackgroundColor="@color/white"
     android:layout_margin="@dimen/_10sdp"
     android:elevation="@dimen/_4sdp"
@@ -20,45 +21,10 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
-            android:id="@+id/linearItemPostRequest"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="@dimen/_10sdp"
-            android:paddingVertical="@dimen/_5sdp"
-            android:gravity="start|center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="@dimen/_20sdp"
-                android:layout_height="@dimen/_20sdp"
-                app:tint="@color/black"
-                android:src="@drawable/activity" />
-
-            <androidx.appcompat.widget.AppCompatTextView
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_marginStart="@dimen/_8sdp"
-                android:fontFamily="@font/poppin_medium"
-                android:gravity="center"
-                android:text="Post"
-                android:textColor="@color/black"
-                android:textSize="@dimen/_12ssp" />
-
-        </LinearLayout>
-
-
-        <View
-            android:id="@+id/viewDevider1"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/_1sdp"
-            android:alpha=".1"
-            android:layout_marginVertical="@dimen/_5sdp"
-            android:background="@color/black" />
 
         <LinearLayout
-            android:id="@+id/linearItemStories"
-            android:layout_width="wrap_content"
+            android:id="@+id/linearPendingFriendRequest"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingVertical="@dimen/_5sdp"
             android:paddingHorizontal="@dimen/_10sdp"
@@ -69,15 +35,16 @@
                 android:layout_width="@dimen/_20sdp"
                 android:layout_height="@dimen/_20sdp"
                 app:tint="@color/black"
-                android:src="@drawable/status" />
+                android:src="@drawable/ic_friend_request" />
 
             <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/tvClear"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_marginStart="@dimen/_8sdp"
                 android:fontFamily="@font/poppin_medium"
                 android:gravity="center"
-                android:text="Stories"
+                android:text="Pending Friend Requests"
                 android:textColor="@color/black"
                 android:textSize="@dimen/_12ssp" />
 

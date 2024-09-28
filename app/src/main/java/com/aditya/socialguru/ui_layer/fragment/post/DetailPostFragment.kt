@@ -260,10 +260,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
                     is Resource.Error -> {
                         response.hasBeenMessagedToUser = true
                         resetToPreviousIconOnLike()
-                        Helper.showSnackBar(
-                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                            response.message.toString()
-                        )
+                        showSnackBar(response.message.toString())
                     }
                 }
             }.launchIn(this)
@@ -1017,6 +1014,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
 
     private fun showNoDataView() {
         binding.apply {
+            noDataView.text="Oops! Something went wrong while loading the post. Please try again."
             linearParent.gone()
             noDataView.myShow()
             linearFooter.gone()

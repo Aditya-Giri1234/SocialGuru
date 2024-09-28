@@ -231,7 +231,7 @@ class StoryShowFragment : Fragment() {
                            override fun onError() {
                                progressBar.gone()
                                Helper.customToast(requireContext(),"Some error occurred during video loading !" ,
-                                   Toast.LENGTH_SHORT)
+                                   Toast.LENGTH_SHORT,true)
 
                                handleNextStoryChange()
                            }
