@@ -8,12 +8,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.fragment.navArgs
+import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.databinding.FragmentImageShowBinding
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
-import com.aditya.socialguru.domain_layer.helper.shareImage
-import com.aditya.socialguru.ui_layer.activity.ContainerActivity
+import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
@@ -28,8 +29,9 @@ class ShowImageFragment : Fragment() {
 
     private val args:ShowImageFragmentArgs by navArgs()
     private lateinit var imageUri: Uri
+    private  var isShareAllow:Boolean =false
 
-    private val navController get() = (requireActivity() as ContainerActivity).navController
+    private val navController get() = (requireActivity() as MainActivity).navController
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
@@ -49,11 +51,17 @@ class ShowImageFragment : Fragment() {
 
     private fun handleInitialization() {
         imageUri=args.imageUri
+        isShareAllow=args.isShareAllow
         initUi()
     }
 
     private fun initUi() {
         binding.apply {
+            if (isShareAllow){
+                icShare.myShow()
+            }else{
+                icShare.gone()
+            }
             Glide.with(ivImage).load(imageUri).error(R.drawable.no_image_found).addListener(object : RequestListener<Drawable?> {
                 override fun onLoadFailed(
                     e: GlideException?,
@@ -87,7 +95,7 @@ class ShowImageFragment : Fragment() {
         }
 
         icShare.setSafeOnClickListener {
-            requireContext().shareImage(imageUri)
+            ShareManager.shareImage(requireContext(),imageUri)
         }
 
     }

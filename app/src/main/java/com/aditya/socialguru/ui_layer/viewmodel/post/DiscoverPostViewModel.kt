@@ -4,20 +4,22 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
-import com.aditya.socialguru.data_layer.model.post.PostListenerEmissionType
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
+import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
+import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.post.DiscoverPostRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
 
@@ -34,98 +36,136 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
         64,
         BufferOverflow.DROP_OLDEST
     )
-    val userPost: SharedFlow<Resource<List<UserPostModel>>> get() = _userPost.asSharedFlow()
+    val userPost get() = _userPost.asSharedFlow()
+
+    private val _likePost = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val likePost get() = _likePost.asSharedFlow()
+
+    private val _savePost = MutableSharedFlow<Resource<UpdateResponse>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val savePost get() = _savePost.asSharedFlow()
 
 
     //region:: Get Discover Post
 
-     fun getDiscoverPost() = viewModelScope.launch {
+     fun getDiscoverPost() = viewModelScope.myLaunch {
         _userPost.tryEmit(Resource.Loading())
         MyLogger.v(tagPost, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
             MyLogger.v(tagPost, msg = "Network available !")
             repository.getDiscoverPost().onEach {
-                MyLogger.d(tagPost, msg = it.userPostList, isJson = true)
                 _userPost.tryEmit(handleGetDiscover(it))
             }.launchIn(this)
         } else {
             MyLogger.v(tagPost, msg = "Network not available !")
-            _userPost.tryEmit(Resource.Error(message = "Internet not available ."))
+            _userPost.tryEmit(Resource.Error(message = Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
-    private suspend fun handleGetDiscover(discoverPostHandling: PostListenerEmissionType): Resource<List<UserPostModel>> {
+    private suspend fun handleGetDiscover(response: List<ListenerEmissionType<UserPostModel, UserPostModel>>): Resource<List<UserPostModel>> {
 
         MyLogger.v(tagPost, isFunctionCall = true)
 
-        val userPostList = userPost.replayCache[0].data?.toMutableList() ?: mutableListOf<UserPostModel>()
+        val userPostList =
+            userPost.replayCache[0].data?.toMutableList() ?: mutableListOf<UserPostModel>()
 
-        when (discoverPostHandling.emitChangeType) {
-            Constants.ListenerEmitType.Starting -> {
-                MyLogger.v(
-                    tagPost,
-                    msg = "This is starting story type :- ${discoverPostHandling.userPostList}"
-                )
-                discoverPostHandling.userPostList?.let {
-                    userPostList.addAll(it.toMutableList() as ArrayList<UserPostModel>)
-                    userPostList.sortByDescending { it.post?.postUploadingTimeInTimeStamp }
+        response.forEach {
+            when (it.emitChangeType) {
+                Constants.ListenerEmitType.Starting -> {
+                    // Don't do any thing here
                 }
-            }
 
-            Constants.ListenerEmitType.Added -> {
-                MyLogger.v(
-                    tagPost,
-                    msg = "This is added post type :- ${discoverPostHandling.userPostModel}"
-                )
-                discoverPostHandling.userPostModel?.let { post ->
-                    post.userId?.let { userId ->
-                        userPostList.add(
-                            UserPostModel(
-                                repository.getUser(userId).first().data,
-                                post
-                            )
-                        )
-                        userPostList.sortByDescending {
-                            it.post?.postUploadingTimeInTimeStamp
+                Constants.ListenerEmitType.Added -> {
+                    it.singleResponse?.let {
+                        userPostList.add(it)
+                    }
+                }
+
+                Constants.ListenerEmitType.Removed -> {
+                    it.singleResponse?.post?.postId?.let { postId ->
+                        val removePost = userPostList.find { it.post?.postId == postId }
+
+                        if (removePost != null) {
+                            userPostList.remove(removePost)
                         }
                     }
-                    MyLogger.d(tagPost, msg = userPostList, isJson = true)
                 }
-                MyLogger.d(tagPost, msg = userPostList, isJson = true)
 
-            }
-
-            Constants.ListenerEmitType.Removed -> {
-                MyLogger.v(tagPost, msg = "This is removed post type")
-
-                discoverPostHandling.userPostModel?.let { post ->
-                    post.userId?.let { userId ->
-                        userPostList.forEach { userPost ->
-                            if (userPost.user?.userId == userId) {
-                                userPostList.remove(userPost)
-                                userPostList.sortByDescending { it.post?.postUploadingTimeInTimeStamp }
-                                return@let
-                            }
+                Constants.ListenerEmitType.Modify -> {
+                    // Don't do anything
+                    it.singleResponse?.post?.postId?.let { postId ->
+                        val modifyPost = userPostList.find { it.post?.postId == postId }
+                        modifyPost?.apply {
+                            this.post = it.singleResponse.post
                         }
                     }
-                    MyLogger.d(tagPost, msg = userPostList, isJson = true)
                 }
-                MyLogger.d(tagPost, msg = userPostList, isJson = true)
-
-            }
-
-            Constants.ListenerEmitType.Modify -> {
-                //There we get updated like and comment count post data
             }
         }
 
+        userPostList.sortByDescending {
+            it.post?.postUploadingTimeInTimeStamp
+        }
+        MyLogger.v(
+            Constants.LogTag.JobManager,
+            msg = userPostList.map { it.post },
+            jsonTitle = "Post List After Sort !",
+            isJson = true)
         return Resource.Success(userPostList.toList())
     }
 
     //endregion
 
-    fun setDataLoadedStatus(status:Boolean){
-        _isDataLoaded=status
+    // region:: Update like post count
+
+    fun updateLikeCount(postId: String, postCreatorUserId: String, isLiked: Boolean) =
+        viewModelScope.myLaunch {
+            _likePost.tryEmit(Resource.Loading())
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                repository.updateLikeCount(postId, postCreatorUserId, isLiked).onEach {
+                    if (it.isSuccess) {
+                        _likePost.tryEmit(Resource.Success(it))
+                    } else {
+                        _likePost.tryEmit(Resource.Error("Some error occurred !"))
+                    }
+
+                }.launchIn(this)
+            } else {
+                _likePost.tryEmit(Resource.Error("No Internet Available !"))
+            }
+        }
+
+    //endregion
+
+    //region:: Update post saved state
+
+    fun updatePostSaveStatus(postId: String) =
+        viewModelScope.myLaunch {
+            _savePost.tryEmit(Resource.Loading())
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                repository.updatePostSaveStatus(postId).onEach {
+                    if (it.isSuccess) {
+                        _savePost.tryEmit(Resource.Success(it))
+                    } else {
+                        _savePost.tryEmit(Resource.Error("Some error occurred !"))
+                    }
+                }.launchIn(this)
+            } else {
+                _savePost.tryEmit(Resource.Error("No Internet Available !"))
+            }
+        }
+
+    //endregion
+
+    fun setDataLoadedStatus(status: Boolean) {
+        _isDataLoaded = status
     }
 
 }

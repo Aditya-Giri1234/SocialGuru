@@ -10,9 +10,11 @@ import com.aditya.socialguru.data_layer.model.story.StoryListenerEmissionType
 import com.aditya.socialguru.data_layer.model.story.StoryText
 import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.HomeRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -45,12 +47,13 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
     private var _isDataLoaded = false
      val isDataLoaded get() = _isDataLoaded
 
+
     fun uploadStory(
         storyType: Constants.StoryType,
         uri: Uri? = null,
         text: StoryText? = null,
         user: User
-    ) = viewModelScope.launch {
+    ) = viewModelScope. myLaunch{
         _uploadStories.tryEmit(Resource.Loading())
         MyLogger.v(tagStory, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
@@ -70,18 +73,18 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
     //region:: Get all story
 
     @OptIn(FlowPreview::class)
-    suspend fun getAllStory(userId: String) = viewModelScope.launch {
+     fun getAllStory(userId: String) = viewModelScope.myLaunch {
         _userStories.tryEmit(Resource.Loading())
         MyLogger.v(tagStory, msg = "Request sending ....")
         if (SoftwareManager.isNetworkAvailable(app)) {
             MyLogger.v(tagStory, msg = "Network available !")
             repository.getAllStory(userId).onEach {
-                MyLogger.d(tagStory, msg = it.userStoryList, isJson = true)
+                MyLogger.v(tagStory, msg = it.userStoryList, isJson = true)
                 _userStories.tryEmit(handleGetAllStory(it))
             }.launchIn(this)
         } else {
             MyLogger.v(tagStory, msg = "Network not available !")
-            _userStories.tryEmit(Resource.Error(message = "Internet not available ."))
+            _userStories.tryEmit(Resource.Error(message = Constants.ErrorMessage.InternetNotAvailable.message))
         }
     }
 
@@ -89,14 +92,15 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
 
         MyLogger.v(tagStory, isFunctionCall = true)
 
-        var userStoryList =
+        val userStoryList =
             userStories.replayCache[0].data?.toMutableList() ?: mutableListOf<UserStories>()
 
         when (storyHandling.emitChangeType) {
             Constants.StoryEmitType.Starting -> {
+
                 MyLogger.v(
                     tagStory,
-                    msg = "This is starting story type :- ${storyHandling.userStoryList}"
+                    msg = "This is starting story type "
                 )
                 userStoryList.clear()
                 storyHandling.userStoryList?.let {
@@ -105,7 +109,7 @@ class HomeViewModel(val app: Application) : AndroidViewModel(app) {
             }
 
             Constants.StoryEmitType.Added -> {
-                MyLogger.v(tagStory, msg = "This is added story type :- ${storyHandling.story}")
+                MyLogger.v(tagStory, msg = "This is added story type")
                 storyHandling.story?.let { story ->
                     story.userId?.let { userId ->
                         if (userStoryList.isEmpty()) {

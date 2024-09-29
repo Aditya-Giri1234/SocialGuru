@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="end"
+    android:paddingVertical="@dimen/_5sdp"
+    android:paddingHorizontal="@dimen/_2sdp">
+
+    <LinearLayout
+        android:id="@+id/linearMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/sender_message_bg"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/constMedia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:layout_weight="1"
+            android:layout_marginVertical="@dimen/_10sdp"
+            android:fitsSystemWindows="false"
+            android:minWidth="@dimen/_150sdp"
+            android:minHeight="@dimen/_150sdp">
+
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/viewPagerChat"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="@color/lightBlack"
+                android:clickable="true"
+                android:layoutDirection="ltr"
+                android:orientation="horizontal"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+
+            <com.tbuonomo.viewpagerdotsindicator.DotsIndicator
+                android:id="@+id/dots_indicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:dotsColor="@color/grey"
+                app:dotsCornerRadius="@dimen/_6sdp"
+                app:dotsSize="@dimen/_8sdp"
+                app:dotsSpacing="@dimen/_3sdp"
+                app:dotsWidthFactor="2.5"
+                app:layout_constraintBottom_toBottomOf="@id/viewPagerChat"
+                app:layout_constraintEnd_toEndOf="@id/viewPagerChat"
+                app:layout_constraintStart_toStartOf="@id/viewPagerChat"
+                android:layout_marginBottom="@dimen/_5sdp"
+                app:progressMode="true"
+                app:selectedDotColor="@color/white" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <TextView
+            android:id="@+id/tvMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Aditya is android developer ..."
+            android:textSize="@dimen/_14ssp"
+            android:textColor="@color/white"
+            android:layout_weight="1"
+            android:autoLink="all"
+            android:linksClickable="true"
+            android:textColorLink="@color/yellow"
+            android:fontFamily="@font/poppin_medium" />
+
+
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:layout_marginEnd="@dimen/_5sdp"
+        android:layout_marginTop="@dimen/_5sdp"
+        app:layout_constraintTop_toBottomOf="@id/linearMessage"
+        app:layout_constraintEnd_toEndOf="@id/linearMessage">
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="bottom|end"
+            android:text="11:50 pm"
+            android:textSize="@dimen/_12ssp"
+            android:textColor="@color/lightWhite"
+            android:fontFamily="@font/poppins_regular" />
+        <ImageView
+            android:id="@+id/ivMessageSeenStatus"
+            android:layout_width="@dimen/_20sdp"
+            android:layout_height="@dimen/_20sdp"
+            android:layout_marginStart="@dimen/_5sdp"
+            android:src="@drawable/ic_message_sent"/>
+    </LinearLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

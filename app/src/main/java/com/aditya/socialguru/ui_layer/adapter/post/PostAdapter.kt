@@ -6,19 +6,52 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.post.PostImageVideoModel
 import com.aditya.socialguru.data_layer.model.post.UserPostModel
+import com.aditya.socialguru.data_layer.model.post.post_meta_data.SavedPostModel
 import com.aditya.socialguru.databinding.SamplePostLayoutBinding
+import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.runOnUiThread
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
-class PostAdapter(val onClick: OnPostClick) :
+class PostAdapter(val onClick: OnPostClick , val deletePost:((postId:String)->Unit)?=null) :
     RecyclerView.Adapter<PostAdapter.ViewHolder>() {
+    private var job: Job? = null
+    private var mySavedPost = mutableListOf<String>()  // Just post id
+    private var myLikedPost = mutableListOf<String>()  // Just post id
+
+    init {
+        job = launchCoroutineInIOThread {
+            AppBroadcastHelper.savedPost.onEach {
+                mySavedPost.clear()
+                mySavedPost.addAll(it.mapNotNull { it.postId })
+                runOnUiThread {
+                    notifyDataSetChanged()
+                }
+            }.launchIn(this)
+            AppBroadcastHelper.likedPost.onEach {
+                myLikedPost.clear()
+                myLikedPost.addAll(it.mapNotNull { it.postId })
+//                runOnUiThread {
+//                    notifyDataSetChanged()
+//                }
+            }.launchIn(this)
+        }
+    }
 
     companion object {
         private val callback = object : DiffUtil.ItemCallback<UserPostModel>() {
@@ -69,8 +102,10 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.OnlyImage.name -> {
-                                tvPostBottom.gone()
+                                tvPost.gone()
+                                constMedia.myShow()
                                 dotsIndicator.gone()
+                                tvPostBottom.gone()
                                 linearBottomHeader.context.apply {
                                     linearBottomHeader.setMargin(
                                         com.intuit.sdp.R.dimen._1sdp,
@@ -89,8 +124,10 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.OnlyVideo.name -> {
-                                tvPostBottom.gone()
+                                tvPost.gone()
+                                constMedia.myShow()
                                 dotsIndicator.gone()
+                                tvPostBottom.gone()
                                 linearBottomHeader.context.apply {
                                     linearBottomHeader.setMargin(
                                         com.intuit.sdp.R.dimen._1sdp,
@@ -108,8 +145,11 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.TextAndImage.name -> {
-                                tvPostBottom.text = text
+                                tvPost.gone()
+                                constMedia.myShow()
                                 dotsIndicator.gone()
+                                tvPostBottom.myShow()
+                                tvPostBottom.text = text
                                 listOf(
                                     PostImageVideoModel(
                                         imageUrl, true
@@ -118,8 +158,11 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.TextAndVideo.name -> {
-                                tvPostBottom.text = text
+                                tvPost.gone()
+                                constMedia.myShow()
                                 dotsIndicator.gone()
+                                tvPostBottom.myShow()
+                                tvPostBottom.text = text
                                 listOf(
                                     PostImageVideoModel(
                                         videoUrl, false
@@ -128,6 +171,9 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.ImageAndVideo.name -> {
+                                tvPost.gone()
+                                constMedia.myShow()
+                                dotsIndicator.myShow()
                                 tvPostBottom.gone()
                                 linearBottomHeader.context.apply {
                                     linearBottomHeader.setMargin(
@@ -149,6 +195,10 @@ class PostAdapter(val onClick: OnPostClick) :
                             }
 
                             Constants.PostType.All.name -> {
+                                tvPost.gone()
+                                constMedia.myShow()
+                                dotsIndicator.myShow()
+                                tvPostBottom.myShow()
                                 tvPostBottom.text = text
                                 listOf(
                                     PostImageVideoModel(
@@ -180,8 +230,57 @@ class PostAdapter(val onClick: OnPostClick) :
                         tvComment.text = "$commentCount Comments"
 
 
+                        var isLiked =
+                            likedUserList?.contains(AuthManager.currentUserId()!!) ?: false
+
+                        // This is for when click like button then result show as soon as possible so that below calculation help to fast calculation
+                       /* MyLogger.w(
+                            Constants.LogTag.Post,
+                            msg = "Index :- $absoluteAdapterPosition and isLiked $isLiked and liked User list := $likedUserList"
+                        )*/
+                        MyLogger.d(Constants.LogTag.Post,msg = "Index :- $absoluteAdapterPosition and postType $postType")
+                        val countExceptLoginUser =
+                            if (isLiked) (likeCount?.let { it - 1 } ?: 0) else likeCount ?: 0
+
+//                        ivLike.setImageResource(if (isLiked) R.drawable.like else R.drawable.not_like)
+
+                        // set time
+                        if (postUploadingTimeInTimeStamp != null) {
+                            tvPostTime.myShow()
+                            tvPostTime.text =
+                                Helper.getTimeForPostAndComment(postUploadingTimeInTimeStamp)
+                        } else {
+                            tvPostTime.gone()
+                        }
+
+                        // Now Look Forward see , this post is saved or not
+                        val isISaveThisPost = mySavedPost.contains(postId)
+                        icSave.setImageResource(
+                            if (isISaveThisPost) R.drawable.ic_save else R.drawable.ic_un_save
+                        )
+
+                        // Now Look Forward see , this post is liked or not
+                        val isILikeThisPost = myLikedPost.contains(postId)  // This is line is use less now but don't delete now.
+
+                        ivLike.setImageResource(
+                            if (isLiked) R.drawable.like else R.drawable.not_like
+                        )
+
+                            if (deletePost!=null&&userId!=null&&userId==AuthManager.currentUserId()){
+                                ivDeletePost.myShow()
+                            }else{
+                                ivDeletePost.gone()
+                            }
+
+
+
                         ivLike.setSafeOnClickListener {
-                            onClick.onLikeClick()
+                            isLiked = !isLiked
+                            val tempCount =
+                                if (isLiked) countExceptLoginUser + 1 else countExceptLoginUser
+                            tvLike.text = "${tempCount} Likes"
+                            ivLike.setImageResource(if (isLiked) R.drawable.like else R.drawable.not_like)
+                            onClick.onLikeClick(this@run)
                         }
 
                         ivComment.setSafeOnClickListener {
@@ -189,11 +288,11 @@ class PostAdapter(val onClick: OnPostClick) :
                         }
 
                         ivSend.setSafeOnClickListener {
-                            onClick.onSendClick()
+                            onClick.onSendClick(this@run)
                         }
 
-                        ivSetting.setSafeOnClickListener {
-                            onClick.onSettingClick()
+                        icSave.setSafeOnClickListener {
+                            postId?.let { it1 -> onClick.onSettingClick(it1) }
                         }
 
                         viewPagerClickSupport.setOnClickListener {
@@ -207,14 +306,25 @@ class PostAdapter(val onClick: OnPostClick) :
                             MyLogger.i(Constants.LogTag.Post, msg = "Click on root !")
                             onClick.onPostClick(postId!!)
                         }
-
+                        ivDeletePost.setSafeOnClickListener {
+                            deletePost?.invoke(postId!!)
+                        }
                     }
                 }
             }
-            userPost.user?.run {
+            userPost.user?.let {
                 binding.apply {
-                    Glide.with(ivPostUserImage).load(userProfileImage).into(ivPostUserImage)
-                    tvPostUserName.text = userName
+                    if (it.userProfileImage==null){
+                        tvInitial.myShow()
+                        ivPostUserImage.gone()
+                        tvInitial.text = it.userName?.get(0).toString()
+                        tvInitial.setCircularBackground(Helper.setUserProfileColor(it))
+                    }else{
+                        tvInitial.gone()
+                        ivPostUserImage.myShow()
+                        Glide.with(ivPostUserImage).load(it.userProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivPostUserImage)
+                    }
+                    tvPostUserName.text = it.userName
                 }
             }
         }
@@ -231,13 +341,12 @@ class PostAdapter(val onClick: OnPostClick) :
     }
 
 
-
     override fun getItemCount(): Int {
         return differ.currentList.size
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(differ.currentList[position])
+        holder.bind(differ.currentList[holder.absoluteAdapterPosition])
     }
 
 
@@ -252,6 +361,11 @@ class PostAdapter(val onClick: OnPostClick) :
             )
             this.layoutParams = layoutParams
         }
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        job?.cancel()
+        super.onDetachedFromRecyclerView(recyclerView)
     }
 
 }

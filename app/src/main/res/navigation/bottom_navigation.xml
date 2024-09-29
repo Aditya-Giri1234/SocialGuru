@@ -3,9 +3,400 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/bottom_navigation_bar"
-    app:startDestination="@id/home_fragment_bar">
+    app:startDestination="@id/splashFragment">
     <include app:graph="@navigation/home_fragment_bar" />
     <include app:graph="@navigation/rescent_chat_fragment_bar" />
     <include app:graph="@navigation/notification_fragment_bar" />
     <include app:graph="@navigation/profile_fragment_bar" />
+
+    <fragment
+        android:id="@+id/onboardingScreenFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.intro_part.OnboardingScreenFragment"
+        android:label="fragment_onboarding_screen"
+        tools:layout="@layout/fragment_onboarding_screen">
+        <action
+            android:id="@+id/action_onboardingScreenFragment_to_signInFragment"
+            app:destination="@id/signInFragment" />
+        <action
+            android:id="@+id/action_onboardingScreenFragment_to_addPostFragment"
+            app:destination="@id/addPostFragment" />
+        <action
+            android:id="@+id/action_onboardingScreenFragment_to_showImageFragment"
+            app:destination="@id/showImageFragment" />
+        <action
+            android:id="@+id/action_onboardingScreenFragment_to_showVideoFragment"
+            app:destination="@id/showVideoFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/signInFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.intro_part.SignInFragment"
+        android:label="fragment_sign_in"
+        tools:layout="@layout/fragment_sign_in">
+        <action
+            android:id="@+id/action_signInFragment_to_signUpFragment"
+            app:destination="@id/signUpFragment" />
+        <action
+            android:id="@+id/action_signInFragment_to_home_fragment_bar"
+            app:destination="@id/home_fragment_bar" />
+    </fragment>
+    <fragment
+        android:id="@+id/signUpFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.intro_part.SignUpFragment"
+        android:label="fragment_sign_up"
+        tools:layout="@layout/fragment_sign_up">
+        <action
+            android:id="@+id/action_signUpFragment_to_signInFragment"
+            app:destination="@id/signInFragment" />
+        <action
+            android:id="@+id/action_signUpFragment_to_home_fragment_bar"
+            app:destination="@id/home_fragment_bar" />
+    </fragment>
+    <fragment
+        android:id="@+id/addPostFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.AddPostFragment"
+        android:label="fragment_add_post"
+        tools:layout="@layout/fragment_add_post">
+        <action
+            android:id="@+id/action_addPostFragment_to_showImageFragment"
+            app:destination="@id/showImageFragment" />
+        <action
+            android:id="@+id/action_addPostFragment_to_showVideoFragment"
+            app:destination="@id/showVideoFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/showImageFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.helper.ShowImageFragment"
+        android:label="fragment_image_show"
+        tools:layout="@layout/fragment_image_show">
+        <argument
+            android:name="imageUri"
+            app:argType="android.net.Uri" />
+        <argument
+            android:name="isShareAllow"
+            app:argType="boolean"
+            android:defaultValue="false" />
+    </fragment>
+    <fragment
+        android:id="@+id/showVideoFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.helper.ShowVideoFragment"
+        android:label="fragment_show_video"
+        tools:layout="@layout/fragment_show_video">
+        <argument
+            android:name="videoUri"
+            app:argType="android.net.Uri" />
+        <argument
+            android:name="isShareAllow"
+            app:argType="boolean"
+            android:defaultValue="false" />
+    </fragment>
+    <fragment
+        android:id="@+id/splashFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.intro_part.SplashFragment"
+        android:label="fragment_splash"
+        tools:layout="@layout/fragment_splash">
+        <action
+            android:id="@+id/action_splashFragment_to_home_fragment_bar"
+            app:destination="@id/home_fragment_bar" />
+        <action
+            android:id="@+id/action_splashFragment_to_onboardingScreenFragment"
+            app:destination="@id/onboardingScreenFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/detailPostFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragment"
+        android:label="fragment_detail_post"
+        tools:layout="@layout/fragment_detail_post">
+        <action
+            android:id="@+id/action_detailPostFragment2_to_profileViewFragment3"
+            app:destination="@id/profileViewFragment" />
+        <argument
+            android:name="postId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_detailPostFragment2_to_showImageFragment"
+            app:destination="@id/showImageFragment" />
+        <action
+            android:id="@+id/action_detailPostFragment2_to_showVideoFragment"
+            app:destination="@id/showVideoFragment" />
+        <deepLink
+            android:id="@+id/deepLink2"
+            android:autoVerify="true"
+            app:uri="com.aditya.socialguru/post/{postId}" />
+    </fragment>
+    <fragment
+        android:id="@+id/userLikeLIstFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.post.UserLikeLIstFragment"
+        android:label="fragment_user_like_l_ist"
+        tools:layout="@layout/fragment_user_like_l_ist">
+        <action
+            android:id="@+id/action_userLikeLIstFragment_to_profileViewFragment3"
+            app:destination="@id/profileViewFragment" />
+        <argument
+            android:name="postId"
+            app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/showMyStoryFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.story_helper.ShowMyStoryFragment"
+        android:label="fragment_show_my_story"
+        tools:layout="@layout/fragment_show_my_story">
+        <action
+            android:id="@+id/action_showMyStoryFragment_to_storyShowFragment"
+            app:destination="@id/storyShowFragment" />
+        <argument
+            android:name="userId"
+            app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/storyShowFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.story_helper.StoryShowFragment"
+        android:label="fragment_story_show"
+        tools:layout="@layout/fragment_story_show">
+        <argument
+            android:name="userStory"
+            app:argType="com.aditya.socialguru.data_layer.model.story.UserStories" />
+    </fragment>
+    <fragment
+        android:id="@+id/myActivityFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.MyActivityFragment"
+        android:label="fragment_my_activity"
+        tools:layout="@layout/fragment_my_activity">
+        <action
+            android:id="@+id/action_myActivityFragment_to_detailPostFragment2"
+            app:destination="@id/detailPostFragment" />
+        <argument
+            android:name="userId"
+            app:argType="string" />
+        <argument
+            android:name="userDetail"
+            app:argType="com.aditya.socialguru.data_layer.model.User" />
+    </fragment>
+    <action
+        android:id="@+id/action_global_showMyStoryFragment"
+        app:destination="@id/showMyStoryFragment" />
+    <action
+        android:id="@+id/action_global_profileViewFragment"
+        app:destination="@id/profileViewFragment"
+        app:launchSingleTop="true" />
+    <action
+        android:id="@+id/action_global_detailPostFragment"
+        app:destination="@id/detailPostFragment"
+        app:launchSingleTop="true" />
+    <action
+        android:id="@+id/action_global_addPostFragment"
+        app:destination="@id/addPostFragment" />
+    <action
+        android:id="@+id/action_global_myActivityFragment"
+        app:destination="@id/myActivityFragment" />
+    <action
+        android:id="@+id/action_global_storyShowFragment"
+        app:destination="@id/storyShowFragment" />
+    <fragment
+        android:id="@+id/chatFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.single_chat.ChatFragment"
+        android:label="fragment_chat"
+        tools:layout="@layout/fragment_chat">
+        <action
+            android:id="@+id/action_chatFragment_to_userChatProfileFragment"
+            app:destination="@id/userChatProfileFragment" />
+        <argument
+            android:name="userId"
+            app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/userChatProfileFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.single_chat.UserChatProfileFragment"
+        android:label="fragment_user_chat_profile"
+        tools:layout="@layout/fragment_user_chat_profile">
+        <argument
+            android:name="chatRoomId"
+            app:argType="string" />
+        <argument
+            android:name="userId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_userChatProfileFragment_to_chatMediaFragment"
+            app:destination="@id/chatMediaFragment" />
+    </fragment>
+    <action
+        android:id="@+id/action_global_chatFragment"
+        app:destination="@id/chatFragment" />
+    <action
+        android:id="@+id/action_global_onboardingScreenFragment"
+        app:destination="@id/onboardingScreenFragment" />
+    <argument
+        android:name="userId"
+        app:argType="string" />
+    <action
+        android:id="@+id/action_global_showImageFragment"
+        app:destination="@id/showImageFragment" />
+    <action
+        android:id="@+id/action_global_showVideoFragment"
+        app:destination="@id/showVideoFragment" />
+    <fragment
+        android:id="@+id/chatMediaFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.ChatMediaFragment"
+        android:label="fragment_chat_media"
+        tools:layout="@layout/fragment_chat_media">
+        <argument
+            android:name="chatRoomId"
+            app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/groupChatFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.group_chat.GroupChatFragment"
+        android:label="fragment_group_chat"
+        tools:layout="@layout/fragment_group_chat">
+        <argument
+            android:name="chatRoomId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_groupChatFragment_to_groupProfileFragment"
+            app:destination="@id/groupProfileFragment" />
+    </fragment>
+    <action
+        android:id="@+id/action_global_groupChatFragment"
+        app:destination="@id/groupChatFragment" />
+    <fragment
+        android:id="@+id/groupProfileFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.group_chat.GroupProfileFragment"
+        android:label="fragment_group_profile"
+        tools:layout="@layout/fragment_group_profile">
+        <action
+            android:id="@+id/action_groupProfileFragment_to_chatMediaFragment"
+            app:destination="@id/chatMediaFragment" />
+        <argument
+            android:name="chatRoomId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_groupProfileFragment_to_editGroupProfileFragment"
+            app:destination="@id/editGroupProfileFragment" />
+        <argument
+            android:name="groupMembers"
+            app:argType="com.aditya.socialguru.data_layer.model.chat.group.GroupMembersList" />
+        <action
+            android:id="@+id/action_groupProfileFragment_to_groupMembersFragment"
+            app:destination="@id/groupMembersFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/editGroupProfileFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.group_chat.EditGroupProfileFragment"
+        android:label="EditGroupProfileFragment">
+        <argument
+            android:name="chatRoomId"
+            app:argType="string" />
+        <argument
+            android:name="groupInfo"
+            app:argType="com.aditya.socialguru.data_layer.model.chat.group.GroupInfo" />
+        <argument
+            android:name="groupMembers"
+            app:argType="com.aditya.socialguru.data_layer.model.chat.group.GroupMembersList" />
+    </fragment>
+    <fragment
+        android:id="@+id/startGroupChatFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.group_chat.StartGroupChatFragment"
+        android:label="fragment_start_group_chat"
+        tools:layout="@layout/fragment_start_group_chat">
+        <action
+            android:id="@+id/action_startGroupChatFragment_to_makingGroupFragment"
+            app:destination="@id/makingGroupFragment" />
+        <argument
+            android:name="type"
+            app:argType="string" />
+        <argument
+            android:name="groupAlreadyMembers"
+            android:defaultValue="@null"
+            app:argType="com.aditya.socialguru.data_layer.model.chat.group.GroupMembersList"
+            app:nullable="true" />
+        <argument
+            android:name="groupInfo"
+            android:defaultValue="@null"
+            app:argType="com.aditya.socialguru.data_layer.model.chat.group.GroupInfo"
+            app:nullable="true" />
+        <argument
+            android:name="chatRoomId"
+            app:argType="string"
+            app:nullable="true" />
+    </fragment>
+    <fragment
+        android:id="@+id/makingGroupFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.group_chat.MakingGroupFragment"
+        android:label="fragment_making_group"
+        tools:layout="@layout/fragment_making_group">
+        <argument
+            android:name="users"
+            app:argType="com.aditya.socialguru.data_layer.model.Users" />
+    </fragment>
+    <action
+        android:id="@+id/action_global_startGroupChatFragment"
+        app:destination="@id/startGroupChatFragment" />
+    <fragment
+        android:id="@+id/groupMembersFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.group_chat.GroupMembersFragment"
+        android:label="fragment_group_members"
+        tools:layout="@layout/fragment_group_members">
+        <argument
+            android:name="chatRoomId"
+            app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/searchUserGlobalFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.SearchUserGlobalFragment"
+        android:label="fragment_search_user_global"
+        tools:layout="@layout/fragment_search_user_global" />
+    <action
+        android:id="@+id/action_global_searchUserGlobalFragment"
+        app:destination="@id/searchUserGlobalFragment" />
+    <fragment
+        android:id="@+id/mySavedPostFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.post.MySavedPostFragment"
+        android:label="fragment_my_saved_post"
+        tools:layout="@layout/fragment_my_saved_post" />
+    <action
+        android:id="@+id/action_global_mySavedPostFragment"
+        app:destination="@id/mySavedPostFragment" />
+    <dialog
+        android:id="@+id/emailPasswordChangeDialog"
+        tools:layout="@layout/password_email_change_bottom_layout"
+        android:name="com.aditya.socialguru.ui_layer.fragment.dialog_fragment.EmailPasswordChangeDialog"
+        android:label="EmailPasswordChangeDialog">
+        <argument
+            android:name="bottomSheetOpenFor"
+            app:argType="string" />
+    </dialog>
+    <action
+        android:id="@+id/action_global_emailPasswordChangeDialog"
+        app:destination="@id/emailPasswordChangeDialog" />
+    <dialog
+        android:id="@+id/notificationSettingDialog"
+        tools:layout="@layout/notification_setting_dialog"
+        android:name="com.aditya.socialguru.ui_layer.fragment.dialog_fragment.NotificationSettingDialog"
+        android:label="NotificationSettingDialog" >
+        <argument
+            android:name="startX"
+            app:argType="long" />
+        <argument
+            android:name="startY"
+            app:argType="long" />
+    </dialog>
+    <action
+        android:id="@+id/action_global_notificationSettingDialog"
+        app:destination="@id/notificationSettingDialog" />
+
+    <fragment
+        android:id="@+id/profileViewFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragment"
+        android:label="fragment_profile_view"
+        tools:layout="@layout/fragment_profile_view">
+        <argument
+            android:name="userId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_profileViewFragment_to_myActivityFragment"
+            app:destination="@id/myActivityFragment" />
+        <deepLink
+            android:id="@+id/deepLink"
+            android:autoVerify="true"
+            app:uri="socialguru.aditya/{userId}" />
+    </fragment>
 </navigation>

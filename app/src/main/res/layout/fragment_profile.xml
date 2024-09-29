@@ -12,29 +12,29 @@
         android:id="@+id/linearHeader"
         android:layout_width="0dp"
         android:layout_height="?actionBarSize"
-        android:orientation="horizontal"
         android:gravity="center"
+        android:orientation="horizontal"
         android:paddingHorizontal="@dimen/_10sdp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Profile"
-            android:textSize="@dimen/_20ssp"
+            android:layout_marginTop="@dimen/_4sdp"
             android:layout_weight="1"
             android:fontFamily="@font/poppins_semi_bold"
+            android:text="Profile"
             android:textColor="@color/white"
-            android:layout_marginTop="@dimen/_4sdp"/>
+            android:textSize="@dimen/_20ssp" />
 
 
         <ImageView
             android:id="@+id/ivProfileOption"
             android:layout_width="@dimen/_22sdp"
             android:layout_height="@dimen/_22sdp"
-            android:src="@drawable/three_dot"/>
+            android:src="@drawable/three_dot" />
 
 
     </LinearLayout>
@@ -42,13 +42,13 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginBottom="@dimen/_20sdp"
         android:fillViewport="true"
         android:orientation="vertical"
-        android:layout_marginBottom="@dimen/_20sdp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/linearHeader"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/linearHeader">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -59,12 +59,12 @@
                 android:id="@+id/linearProfile"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
                 android:gravity="center"
-                app:layout_constraintTop_toTopOf="@id/guideLineUp"
+                android:orientation="vertical"
                 app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
                 app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="@id/guideLineStart">
+                app:layout_constraintStart_toStartOf="@id/guideLineStart"
+                app:layout_constraintTop_toTopOf="@id/guideLineUp">
 
 
                 <de.hdodenhof.circleimageview.CircleImageView
@@ -72,112 +72,137 @@
                     android:layout_width="@dimen/_90sdp"
                     android:layout_height="@dimen/_90sdp"
                     android:src="@drawable/ic_user"
+                    android:tag="0"
                     app:civ_border_color="@color/blue"
                     app:civ_border_overlay="false"
-                    android:tag="0"
                     app:civ_border_width="@dimen/_1sdp" />
+
+                <TextView
+                    android:id="@+id/tvInitialMain"
+                    android:layout_width="@dimen/_90sdp"
+                    android:layout_height="@dimen/_90sdp"
+                    android:layout_marginStart="@dimen/_5sdp"
+                    android:background="@drawable/circle_shape_bg"
+                    android:fontFamily="@font/poppins_bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:maxLength="1"
+                    android:text="A"
+                    android:textAlignment="center"
+                    android:textColor="@color/white"
+                    android:textSize="@dimen/_30ssp"
+                    android:visibility="gone" />
+
 
                 <TextView
                     android:id="@+id/tvUserName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Aditya Giri"
-                    android:textSize="@dimen/_22ssp"
+                    android:layout_marginTop="@dimen/_4sdp"
                     android:fontFamily="@font/poppins_semi_bold"
+                    android:text="Aditya Giri"
                     android:textColor="@color/white"
-                    android:layout_marginTop="@dimen/_4sdp"/>
+                    android:textSize="@dimen/_22ssp" />
 
                 <TextView
                     android:id="@+id/tvProffesion"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Android Developer"
-                    android:textSize="@dimen/_16ssp"
+                    android:layout_marginTop="@dimen/_4sdp"
                     android:fontFamily="@font/poppin_medium"
+                    android:text="Android Developer"
                     android:textColor="@color/green"
-                    android:layout_marginTop="@dimen/_4sdp"/>
+                    android:textSize="@dimen/_16ssp" />
 
                 <TextView
                     android:id="@+id/tvBio"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Hii , i am  cool and passionate android developer and feet free to send friend requst and follow me to see my post about mobile tech."
-                    android:includeFontPadding="false"
-                    android:padding="@dimen/_8sdp"
-                    android:gravity="center"
-                    android:letterSpacing="0.02"
-                    android:background="@drawable/shape_media_upload_bg"
-                    android:justificationMode="inter_word"
-                    android:textSize="@dimen/_14ssp"
+                    android:layout_marginTop="@dimen/_8sdp"
+                    android:layout_marginBottom="@dimen/_8sdp"
+                    android:autoLink="all"
+                    android:background="@drawable/profile_bio_bg"
+                    android:elevation="4dp"
                     android:fontFamily="@font/poppins_regular"
-                    android:textColor="@color/lightWhite"
-                    android:layout_marginTop="@dimen/_4sdp"/>
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:justificationMode="inter_word"
+                    android:linksClickable="true"
+                    android:minHeight="@dimen/_50sdp"
+                    android:padding="@dimen/_10sdp"
+                    android:shadowColor="@color/black"
+                    android:shadowDx="0"
+                    android:shadowDy="1"
+                    android:shadowRadius="1"
+                    android:text="Hi, I am a cool and passionate Android developer! Feel free to send a friend request and follow me to see my posts about mobile tech."
+                    android:textColor="@color/lightBlack"
+                    android:textColorLink="@color/blue"
+                    android:textSize="@dimen/_16ssp" />
+
 
                 <Button
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Send Friend Request"
-                    android:textColor="@color/white"
-                    android:textAllCaps="false"
-                    app:cornerRadius="@dimen/_30sdp"
+                    android:layout_marginHorizontal="@dimen/_20sdp"
+                    android:layout_marginTop="@dimen/_10sdp"
                     android:backgroundTint="@color/deep_dark_orange"
                     android:fontFamily="@font/poppins_regular"
+                    android:text="Send Friend Request"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
                     android:textSize="@dimen/_14ssp"
-                    android:layout_marginTop="@dimen/_10sdp"
-                    android:layout_marginHorizontal="@dimen/_20sdp"
                     android:visibility="gone"
+                    app:cornerRadius="@dimen/_30sdp"
+                    app:layout_constraintEnd_toEndOf="@id/linearProfile"
                     app:layout_constraintStart_toStartOf="@id/linearProfile"
-                    app:layout_constraintTop_toBottomOf="@id/linearProfile"
-                    app:layout_constraintEnd_toEndOf="@id/linearProfile"/>
+                    app:layout_constraintTop_toBottomOf="@id/linearProfile" />
 
 
             </LinearLayout>
-
-
-
 
 
             <LinearLayout
                 android:id="@+id/linearFollower"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
                 android:layout_marginTop="@dimen/_20sdp"
-                android:weightSum="2"
-                android:padding="@dimen/_5sdp"
                 android:background="@drawable/shape_media_upload_bg"
                 android:backgroundTint="@color/lightBlack"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="@dimen/_5sdp"
+                android:weightSum="2"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
                 app:layout_constraintStart_toStartOf="@id/guideLineStart"
-                app:layout_constraintTop_toBottomOf="@id/linearProfile"
-                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                app:layout_constraintTop_toBottomOf="@id/linearProfile">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
                     android:layout_weight="1"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:orientation="vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Followers"
-                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:fontFamily="@font/poppin_medium"
-                        android:textColor="@color/white"/>
+                        android:text="Followers"
+                        android:textColor="@color/white"
+                        android:textSize="@dimen/_16ssp" />
+
                     <TextView
                         android:id="@+id/tvFollowers"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppins_bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:fontFamily="@font/poppins_bold"
-                        android:textColor="@color/deep_dark_orange"/>
+                        android:text="0"
+                        android:textColor="@color/deep_dark_orange"
+                        android:textSize="@dimen/_16ssp" />
 
                 </LinearLayout>
 
@@ -185,33 +210,35 @@
                 <View
                     android:layout_width="@dimen/_2sdp"
                     android:layout_height="match_parent"
-                    android:background="@color/lightWhite"/>
+                    android:background="@color/lightWhite" />
+
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
                     android:layout_weight="1"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:orientation="vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Following"
-                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:fontFamily="@font/poppin_medium"
-                        android:textColor="@color/white"/>
+                        android:text="Following"
+                        android:textColor="@color/white"
+                        android:textSize="@dimen/_16ssp" />
+
                     <TextView
                         android:id="@+id/tvFollowing"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppins_bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:fontFamily="@font/poppins_bold"
-                        android:textColor="@color/blue"/>
+                        android:text="0"
+                        android:textColor="@color/blue"
+                        android:textSize="@dimen/_16ssp" />
 
                 </LinearLayout>
 
@@ -221,43 +248,44 @@
                 android:id="@+id/linearPostLike"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
                 android:layout_marginTop="@dimen/_20sdp"
-                android:weightSum="2"
-                android:padding="@dimen/_5sdp"
                 android:background="@drawable/shape_media_upload_bg"
                 android:backgroundTint="@color/lightBlack"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="@dimen/_5sdp"
+                android:weightSum="2"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
                 app:layout_constraintStart_toStartOf="@id/guideLineStart"
-                app:layout_constraintTop_toBottomOf="@id/linearFollower"
-                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                app:layout_constraintTop_toBottomOf="@id/linearFollower">
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
                     android:layout_weight="1"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:orientation="vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Post"
-                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:fontFamily="@font/poppin_medium"
-                        android:textColor="@color/white"/>
+                        android:text="Post"
+                        android:textColor="@color/white"
+                        android:textSize="@dimen/_16ssp" />
+
                     <TextView
                         android:id="@+id/tvPost"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppins_bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:fontFamily="@font/poppins_bold"
-                        android:textColor="@color/green"/>
+                        android:text="0"
+                        android:textColor="@color/green"
+                        android:textSize="@dimen/_16ssp" />
 
                 </LinearLayout>
 
@@ -265,33 +293,35 @@
                 <View
                     android:layout_width="@dimen/_2sdp"
                     android:layout_height="match_parent"
-                    android:background="@color/lightWhite"/>
+                    android:background="@color/lightWhite" />
+
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
                     android:layout_weight="1"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:orientation="vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Like"
-                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:fontFamily="@font/poppin_medium"
-                        android:textColor="@color/white"/>
+                        android:text="Like"
+                        android:textColor="@color/white"
+                        android:textSize="@dimen/_16ssp" />
+
                     <TextView
                         android:id="@+id/tvLike"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppins_bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:fontFamily="@font/poppins_bold"
-                        android:textColor="@color/deep_pink"/>
+                        android:text="0"
+                        android:textColor="@color/deep_pink"
+                        android:textSize="@dimen/_16ssp" />
 
                 </LinearLayout>
 
@@ -303,35 +333,32 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                app:layout_constraintGuide_begin="@dimen/_20sdp"/>
+                app:layout_constraintGuide_begin="@dimen/_20sdp" />
 
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guideLineBottom"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                app:layout_constraintGuide_end="@dimen/_20sdp"/>
+                app:layout_constraintGuide_end="@dimen/_20sdp" />
+
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guideLineStart"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                app:layout_constraintGuide_begin="@dimen/_10sdp"/>
+                app:layout_constraintGuide_begin="@dimen/_10sdp" />
+
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guidelineEnd"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                app:layout_constraintGuide_end="@dimen/_10sdp"/>
-
-
-
-
+                app:layout_constraintGuide_end="@dimen/_10sdp" />
 
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

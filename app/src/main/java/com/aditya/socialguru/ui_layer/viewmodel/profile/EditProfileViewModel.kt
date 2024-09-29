@@ -7,6 +7,7 @@ import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.profile.EditProfileRepository
@@ -37,7 +38,7 @@ class EditProfileViewModel(val app: Application) : AndroidViewModel(app) {
     val userUpdateStatus: SharedFlow<Resource<UpdateResponse>> = _userUpdateStatus
 
 
-    fun updateProfile(user: User,oldImage:String?=null,newImage:String?=null) = viewModelScope.launch {
+    fun updateProfile(user: User,oldImage:String?=null,newImage:String?=null) = viewModelScope.myLaunch{
         _userUpdateStatus.tryEmit(Resource.Loading())
         if (SoftwareManager.isNetworkAvailable(app)) {
 

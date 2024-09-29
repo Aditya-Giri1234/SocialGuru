@@ -5,6 +5,9 @@ object Constants {
 
     const val TYPE = "TYPE"
     const val DATA = "DATA"
+    const val MY_CUSTOM_WORKER = "MY_CUSTOM_WORKER"
+    const val IS_FCM_INTENT="IS_FCM_INTENT"
+    const val FCM_INTENT_FOR="FCM_INTENT_FOR"
 
     //Notification  Constant
 
@@ -26,13 +29,13 @@ object Constants {
     const val REQUEST_FRIEND = "RequestFriend"
 
 
-    enum class FragmentNavigation {
-        OnBoardingFragment,
-        SignInFragment,
-        AddPostFragment ,
-        ImageFragment,
-        VideoFragment
+    enum class AppBroadCast{
+        LogIn,
+        LogOut ,
+        StoryChange
     }
+
+
 
 
     enum class FolderName {
@@ -40,18 +43,22 @@ object Constants {
         StoryVideo,
         PostImage,
         PostVideo,
-        ProfilePic
-    }
-
-
-
-    enum class IntentTable {
-        MediaUri,
-        FragmentNavigation
+        ProfilePic,
+        ChatImage,
+        ChatVideo ,
+        CommentVideo,
+        CommentImage
     }
 
     enum class BroadcastType {
         StoryUploading
+    }
+
+    enum class FcmIntentFor{
+        ProfileScreen,
+        SingleChatScreen,
+        GroupChatScreen ,
+        PostScreen
     }
 
     enum class StoryUploadState(val status:String) {
@@ -90,13 +97,29 @@ object Constants {
         Stories,
         User,
         Post,
+        Like,
         Comment,
-        Follower,
-        Following,
-        Friend,
-        FriendRequest ,
-        PendingRequest,
-        Notification
+        Commenters,
+        CommentedPost,
+        Follower, //
+        Following,//
+        Friend,//
+        FriendRequest , //
+        PendingRequest, //
+        Notification, //
+        MyLikedPost, //
+        Chats ,
+        Messages,
+        LastMessage,
+        RecentChat, //
+        Media,
+        ChatMuteNotification , //
+        GroupChat ,
+        GroupMember ,
+        GroupInfo,
+        UnSeenMessage ,  //
+        SavedPost ,  //
+        LikedPost //
     }
 
     enum class FriendStatus {
@@ -104,9 +127,11 @@ object Constants {
     }
 
 
+
     enum class UserTable(val fieldName: String) {
         USERID("userId"),
         USERNAME("userName"),
+        USERNAME_LOWERCASE("userNameLowerCase"),
         USER_BIO("userBio"),
         USER_PROFESSION("userProfession"),
         USER_EMAIL_ID("userEmailId"),
@@ -115,11 +140,13 @@ object Constants {
         LOG_IN_TIME_IN_TEXT("loginTimeInText"),
         LOG_IN_TIME_IN_TIMESTAMP("loginTimeInTimeStamp"),
         FCM_TOKEN("fcmToken"),
-        POST_COUNT("postCount")
+        POST_COUNT("postCount"),
+        USER_AVAILABLE("userAvailable") ,
+        USER_SETTING("userSetting")
     }
 
     enum class StoryTable(val fieldName: String) {
-        USERID("userId"),
+        USER_ID("userId"),
         STORY_ID("storyId"),
         STORY_UPLOADING_TIME_IN_TEXT("storyUploadingTimeInText"),
         STORY_UPLOADING_TIME_IN_TIMESTAMP("storyUploadingTimeInTimeStamp"),
@@ -144,7 +171,132 @@ object Constants {
         POST_UPLOADING_TIME_IN_TEXT("postUploadingTimeInText"),
         POST_UPLOADING_TIME_IN_TIMESTAMP("postUploadingTimeInTimeStamp"),
         COMMENT_COUNT("commentCount"),
-        LIKE_COUNT("likeCount")
+        LIKE_COUNT("likeCount"),
+        LIKED_USER_LIST("likedUserList"),
+        IS_CREATOR_ONLINE("isCreatorOnline")
+    }
+
+    enum class CommentTable(val fieldName: String) {
+        COMMENT_ID("commentId"),
+        USER_ID("userId"),
+        POST_COMMENT_ID("postCommentId"),
+        POST_ID("postId"),
+        POST_CREATOR_ID("postCreatorId"),
+        COMMENT_TYPE("commentType"),
+        TEXT("text"),
+        IMAGE_URI("imageUri"),
+        VIDEO_URI("videoUri"),
+        USER_NAME("userName"),
+        COMMENT_UPLOADING_TIME_IN_TIMESTAMP("commentUploadingTimeInTimestamp"),
+        COMMENT_UPLOADING_TIME_IN_TEXT("commentUploadingTimeInText")
+    }
+
+    enum class MessageTable(val fieldName: String){
+        MESSAGE_ID("messageId"),
+        MESSAGE_TYPE("messageType"),
+        TEXT("text"),
+        IMAGE_URI("imageUri"),
+        VIDEO_URI("videoUri"),
+        SENDER_ID("senderId"),
+        RECEIVER_ID("receiverId"),
+        MESSAGE_SENT_TIME_IN_TIMESTAMP("messageSentTimeInTimeStamp"),
+        MESSAGE_SEND_TIME_IN_TEXT("messageSendTimeInText"),
+        SEEN_STATUS("seenStatus")
+    }
+
+    //This is for chat seen status help to set tick status on message
+    enum class SeenStatus(val status:String){
+        Sending("Message is now sending to server"),
+        Send("Message Sent To Server"),
+        Received("Message Received To User"),
+        MessageSeen("Message seen by receiver")
+    }
+
+    enum class LastMessageTable(val fieldName:String){
+        SENDER_ID("senderId"),
+        RECEIVER_ID("receiverId"),
+        MESSAGE_TYPE("messageType"),
+        MESSAGE("message"),
+        CHAT_TYPE("chatType"),
+        UNSEEN_MESSAGE_COUNT("unSeenMessageCount"),
+        LAST_MESSAGE_SENT_TIME_IN_TIMESTAMP("lastMessageSentTimeInTimeStamp"),
+        LAST_MESSAGE_SENT_TIME_IN_TEXT("lastMessageSentTimeInText"),
+        IS_USER_1_ONLINE("isUser1Online"),
+        IS_USER_2_ONLINE("isUser2Online") ,
+        USER_1_LAST_ONLINE_TIMESTAMP("user1LastOnlineTimeStamp"),
+        USER_2_LAST_ONLINE_TIMESTAMP("user2LastOnlineTimeStamp")
+    }
+
+    enum class RecentChatTable(val fieldName:String){
+        CHAT_ROOM_ID("chatRoomId"),
+        LAST_MESSAGE_TIME_IN_TIMESTAMP("lastMessageTimeInTimeStamp"),
+        LAST_MESSAGE_TIME_IN_TEXT("lastMessageTimeInText"),
+        UNSEEN_MESSAGE_COUNT("unSeenMessageCount"),
+        MESSAGE("message"),
+        LAST_MESSAGE_TYPE("lastMessageType"),
+        RECEIVER_ID("receiverId"),
+        LAST_MESSAGE_SEEN("lastMessageSeen"),
+        SENDER_ID("senderId"),
+        USER_ID("userId")
+    }
+
+    enum class GroupMessageTable(val fieldName: String){
+        MESSAGE_ID("messageId"),
+        MESSAGE_TYPE("messageType"),
+        CHAT_TYPE("chatType"),
+        TEXT("text"),
+        IMAGE_URI("imageUri"),
+        VIDEO_URI("videoUri"),
+        SENDER_ID("senderId"),
+        MESSAGE_SENT_TIME_IN_TIMESTAMP("messageSentTimeInTimeStamp"),
+        MESSAGE_SEND_TIME_IN_TEXT("messageSendTimeInText"),
+        SEEN_STATUS("seenStatus"),
+        INFO_MESSAGE_TYPE("infoMessageType"),
+        ADDED_OR_REMOVED_USER_ID("addedOrRemovedUserId"),
+        SEND_TIME_USERS("sendTimeUsers"),
+        MESSAGE_RECEIVED_BY_USERS("messageReceivedByUsers"),
+        MESSAGE_SEEN_BY_USERS("messageSeenByUsers") ,
+        SENDER_USER_NAME("senderUserName")
+    }
+
+    //For Notification Table
+
+    enum class NotificationTable(val fieldName:String) {
+        TYPE("type"),
+        FRIEND_OR_FOLLOWER_ID("friendOrFollowerId"),
+        POST_ID("postId"),
+        NOTIFICATION_TIME_IN_TEXT("notificationTimeInText"),
+        NOTIFICATION_TIME_IN_TIMESTAMP("notificationTimeInTimeStamp"),
+        NOTIFICATION_ID("notificationId"),
+        CHAT_ROOM_ID("chatRoomId"),
+        MESSAGE_ID("messageId"),
+        IS_GROUP_MESSAGE("isGroupMessage")
+    }
+
+    //Message Type in chat which help to differentiate between date header and message
+
+    enum class MessageType(val type:String){
+        Chat("Chat Message"),
+        DateHeader("Date Header"),
+        Info("Info Message")
+    }
+    enum class LastMessageType(val type:String){
+        Text("TextMessage"),
+        Media("MediaMessage"),
+        Info("InfoMessage")
+    }
+
+    // This is for group message where we need to extra info
+
+    enum class InfoType{
+        MemberAdded,
+        MemberRemoved,
+        GroupCreated,
+        GroupDetailsChanged,
+        NewGroupCreator,
+        MakeAdmin,
+        RemoveFromAdmin,
+        MemberExit
     }
 
 
@@ -181,7 +333,13 @@ object Constants {
         ACCEPT_FRIEND_REQUEST,
         FRIEND_REQUEST_COME,
         LIKE_IN_POST,
-        COMMENT_IN_POST
+        COMMENT_IN_POST,
+        SINGLE_CHAT,
+        GROUP_CHAT
+    }
+    enum class NotificationRemoteInput{
+        SingleChatReply,
+        GroupChatReply
     }
 
     // NotificationPriority
@@ -190,9 +348,47 @@ object Constants {
         High("high")
     }
 
+    //This is for which action invoke dialog in chat fragment
+    enum class ChatDialogInvokeAction(val invokeReason:String){
+        ClearChat("Clear all chat!"),
+        DeleteSingleChat("Delete Single Chat !")
+    }
+
     //For Json Handling
     enum class DataSource {
         FCM
+    }
+
+    //For Members Add , Creator Choose , Start Group Chat
+
+    enum class MembersAddType{
+        StartGroup,
+        CreatorChoose,
+        MembersAdd
+    }
+
+    // For Setting Bottom Sheet
+
+    enum class BottomSheetOpenFor{
+        EmailUpdate,
+        PasswordChange,
+        PasswordReset
+    }
+
+    //Intent Table
+
+    enum class IntentTable{
+        LogOutOrDeleteAccountActivityHappened ,
+        ReplyMessage,
+        SenderId ,
+        NotificationId,
+        ChatRoomId,
+        UserData,
+        GroupInfo
+    }
+
+    enum class ErrorMessage(val message:String){
+        InternetNotAvailable("Internet Not Available!"),
     }
 
     // LogLevel
@@ -244,6 +440,7 @@ object Constants {
         Story("📸"),
         Post("✍️"),
         Chats("💬"),
-        Notification("🔔")
+        Notification("🔔"),
+        Comment("💭")
     }
 }

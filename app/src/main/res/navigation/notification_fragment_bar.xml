@@ -9,5 +9,14 @@
         android:id="@+id/notificationFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.NotificationFragment"
         android:label="fragment_notification"
-        tools:layout="@layout/fragment_notification" />
+        tools:layout="@layout/fragment_notification" >
+        <action
+            android:id="@+id/action_notificationFragment_to_friendRequestFragment"
+            app:destination="@id/friendRequestFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/friendRequestFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.friend_circle.FriendRequestFragment"
+        android:label="fragment_friend_request"
+        tools:layout="@layout/fragment_friend_request" />
 </navigation>

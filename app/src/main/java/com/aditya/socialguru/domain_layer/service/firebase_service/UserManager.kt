@@ -2,28 +2,44 @@ package com.aditya.socialguru.domain_layer.service.firebase_service
 
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.UserSetting
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
+import com.aditya.socialguru.data_layer.model.notification.UserNotificationModel
 import com.aditya.socialguru.data_layer.model.post.Post
+import com.aditya.socialguru.data_layer.model.post.UserPostModel
+import com.aditya.socialguru.data_layer.model.post.comment.CommentedPost
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
 import com.aditya.socialguru.data_layer.shared_model.UpdateResponse
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Constants.Table
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.await
 import com.aditya.socialguru.domain_layer.helper.convertParseUri
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
+import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.NotificationSendingManager
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.core.OrderBy
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
+import com.google.rpc.context.AttributeContext.Auth
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -36,6 +52,7 @@ object UserManager {
 
     private val tagLogin = Constants.LogTag.LogIn
     private val tagProfile = Constants.LogTag.Profile
+    private val tagDelete = Constants.LogTag.ForceLogout
 
 
     //Firebase firestore
@@ -61,8 +78,13 @@ object UserManager {
     private var friendRequestListListener: ListenerRegistration? = null
     private var isFirstTimeFriendRequestListListener = true
 
+    private var myNotificationListener: ListenerRegistration? = null
+    private var isFirstTimeMyNotificationListener = true
+
     private val userRelationListeners = mutableListOf<ListenerRegistration>()
     private var isFirstTimeUserStatusUpdateListListener = true
+
+    private var pendingFriendRequestListener : ListenerRegistration?=null
 
 
     suspend fun saveUser(user: User): Pair<Boolean, String?> {
@@ -152,24 +174,28 @@ object UserManager {
 
     suspend fun getUserByIdAsync(userId: String): Flow<Resource<User>> {
         return callbackFlow {
-            val docRef = firestore.collection(Constants.Table.User.name).document(userId)
-            try {
-                val documentSnapshot = docRef.get().await()
-                if (!documentSnapshot.exists()) {
-                    trySend(Resource.Error("User not found!"))
+            firestore.collection(Constants.Table.User.name).document(userId)
+                .addSnapshotListener { value, error ->
+                    if (error != null) {
+                        trySend(Resource.Error(error.message))
+                        return@addSnapshotListener
+                    }
+                    value?.let { documentSnapshot ->
+                        try {
+                            val user = documentSnapshot.toObject(User::class.java)
+
+                            if (user != null) {
+                                trySend(Resource.Success(user))
+                            } else {
+                                trySend(Resource.Error("User Not Found !"))
+                            }
+
+                        } catch (e: Exception) {
+                            trySend(Resource.Error("Error getting user: ${e.message}"))
+                        }
+                    }
                 }
 
-                val user = documentSnapshot.toObject(User::class.java)
-
-                if (user != null) {
-                    trySend(Resource.Success(user))
-                } else {
-                    trySend(Resource.Error("User document found but data is null!"))
-                }
-
-            } catch (e: Exception) {
-                trySend(Resource.Error("Error getting user: ${e.message}"))
-            }
 
             awaitClose {
                 channel.close()
@@ -178,14 +204,35 @@ object UserManager {
 
     }
 
+
     suspend fun getUserById(userId: String): User? {
         val docRef = firestore.collection(Constants.Table.User.name).document(userId)
         return try {
             docRef.get().await().toObject(User::class.java)
         } catch (e: Exception) {
+            e.printStackTrace()
             null
         }
+    }
 
+    suspend fun getAllUserByIds(userIds: List<String>) = callbackFlow<List<FriendCircleData>> {
+        try {
+            val userListWork = userIds.map {
+                async {
+                    getUserById(it)
+                }
+            }
+            val userList = userListWork.awaitAll().filterNotNull().map {
+                FriendCircleData(it.userId!!, user = it)
+            }
+            trySend(userList)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        awaitClose {
+            close()
+        }
     }
 
     private suspend fun getAllUser(): Flow<List<User>> {
@@ -226,8 +273,140 @@ object UserManager {
         }
     }
 
+    suspend fun logoutUser() = callbackFlow<UpdateResponse> {
+        getUserById(AuthManager.currentUserId()!!)?.let {
+            val timestamp = System.currentTimeMillis()
+            val timeInText = Helper.formatTimestampToDateAndTime(timestamp)
+            val updatedUser = it.copy(
+                fcmToken = "",
+                userAvailable = false,
+                logoutTimeInText = timeInText,
+                logoutTimeInTimeStamp = timestamp
+            )
+            userRef.document(AuthManager.currentUserId()!!).set(updatedUser).addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+        } ?: trySend(UpdateResponse(false, "User Not Found"))
+        awaitClose {
+            close()
+        }
+    }
+
+
+    //region:: Notification Related work here
+
+    suspend fun getMyNotificationAndListen() =
+        callbackFlow<List<ListenerEmissionType<UserNotificationModel, UserNotificationModel>>> {
+
+            val notificationQuery = userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.Notification.name)
+
+            myNotificationListener?.remove()
+            myNotificationListener = notificationQuery.addSnapshotListener { value, error ->
+                if (error != null) return@addSnapshotListener
+
+
+                value?.documentChanges?.let { data ->
+                    launch {
+                        // Define the chunk size, e.g., 20 documents per batch
+                        val chunkSize = 20
+                        val documentChunks = data.chunked(chunkSize)
+
+                        for (chunk in documentChunks) {
+                            val savedList = chunk.map {
+                                async {
+                                    val notificationData = it.document.toObject<NotificationData>()
+                                    val changeType = when (it.type) {
+                                        DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                        DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                        DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                    }
+
+                                    val userTask = userRef.document(notificationData.friendOrFollowerId!!).get().await()
+                                    if (!userTask.exists()) return@async null
+
+                                    if (changeType == Constants.ListenerEmitType.Added) {
+                                        ListenerEmissionType<UserNotificationModel,UserNotificationModel>(
+                                            changeType, singleResponse = UserNotificationModel(user = userTask.toObject()!!, notificationData = notificationData)
+                                        )
+                                    } else {
+                                        ListenerEmissionType(
+                                            changeType, singleResponse = UserNotificationModel(user = userTask.toObject()!!, notificationData = notificationData)
+                                        )
+                                    }
+                                }
+                            }.awaitAll().filterNotNull()
+
+                            // Send the processed chunk to the flow
+                            if (savedList.isNotEmpty()) {
+                                trySend(savedList)
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            // Remember this callback listen in viewmodel scope means until viewmodel destroyed below part not called.
+            awaitClose {
+                myNotificationListener?.remove()
+                close()
+            }
+        }
+
+    suspend fun deleteSingleNotification(notificationId: String) = callbackFlow<UpdateResponse> {
+        userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.Notification.name).document(notificationId).delete()
+            .addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun deleteAllNotification() = callbackFlow<UpdateResponse> {
+
+        val notificationRef = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.Notification.name)
+
+        try {
+            // Get all documents in the Notification collection
+            val querySnapshot = notificationRef.get().await()
+            val batch = firestore.batch()
+
+            // Add delete operations to the batch
+            for (document in querySnapshot.documents) {
+                batch.delete(document.reference)
+            }
+
+            // Commit the batch
+            batch.commit().addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+
+        } catch (e: Exception) {
+            trySend(UpdateResponse(false, e.message))
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
+
     //region:: Listen user relation
 
+    /**
+     *This help to update status on  button of follow and friend by listening change below sub collection
+     */
     fun listenUserRelationStatus(friendId: String) = callbackFlow<UpdateResponse> {
         removeUserStatusListeners()
         val collectionList = listOf(
@@ -285,10 +464,11 @@ object UserManager {
     fun listenFriendRequestComeEvent() =
         callbackFlow<ListenerEmissionType<FriendCircleData, FriendCircleData>> {
 
-            val friendRequestRef= userRef.document(AuthManager.currentUserId()!!).collection(Constants.Table.FriendRequest.name)
-            var friendRequestList=friendRequestRef.get().await().toObjects<FriendCircleData>()
+            val friendRequestRef = userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.FriendRequest.name)
+            var friendRequestList = friendRequestRef.get().await().toObjects<FriendCircleData>()
 
-            friendRequestList=friendRequestList.map {
+            friendRequestList = friendRequestList.map {
                 it.copy(
                     user = it.userId?.let { it1 -> getUserById(it1) }
                 )
@@ -303,7 +483,7 @@ object UserManager {
 
             friendRequestList.clear()
             friendRequestListListener?.remove()
-            friendRequestListListener =friendRequestRef.addSnapshotListener { value, error ->
+            friendRequestListListener = friendRequestRef.addSnapshotListener { value, error ->
 
                 if (error != null) return@addSnapshotListener
 
@@ -346,7 +526,7 @@ object UserManager {
             }
 
             awaitClose {
-                isFirstTimeFriendRequestListListener=true
+                isFirstTimeFriendRequestListListener = true
                 friendRequestListListener?.remove()
                 close()
             }
@@ -389,7 +569,12 @@ object UserManager {
                 it.timeStamp
             }
 
-            MyLogger.v(Constants.LogTag.Profile, msg = followerList)
+            MyLogger.v(
+                Constants.LogTag.Profile,
+                msg = followerList,
+                isJson = true,
+                jsonTitle = "Follower List "
+            )
 
             trySend(
                 ListenerEmissionType(
@@ -476,7 +661,7 @@ object UserManager {
             followingList.sortBy {
                 it.timeStamp
             }
-            MyLogger.v(tagProfile, msg = followingList, isJson = true)
+            MyLogger.v(tagProfile, msg = followingList, isJson = true, jsonTitle = "Following List")
 
             trySend(
                 ListenerEmissionType(
@@ -500,12 +685,21 @@ object UserManager {
                     value.documentChanges.forEach {
                         when (it.type) {
                             DocumentChange.Type.ADDED -> {
-                                trySend(
-                                    ListenerEmissionType(
-                                        Constants.ListenerEmitType.Added,
-                                        singleResponse = it.document.toObject<FriendCircleData>()
+                                launch {
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Added,
+                                            singleResponse = it.document.toObject<FriendCircleData>()
+                                                .let {
+                                                    it.copy(
+                                                        user = it.userId?.let { getUserById(it) }
+                                                    )
+                                                }
+
+                                        )
                                     )
-                                )
+                                }
+
                             }
 
                             DocumentChange.Type.REMOVED -> {
@@ -552,7 +746,12 @@ object UserManager {
                 it.timeStamp
             }
 
-            MyLogger.v(Constants.LogTag.Profile, msg = friendList)
+            MyLogger.v(
+                Constants.LogTag.Profile,
+                msg = friendList,
+                isJson = true,
+                jsonTitle = "Friend List "
+            )
 
             trySend(
                 ListenerEmissionType(
@@ -576,21 +775,32 @@ object UserManager {
                     value.documentChanges.forEach {
                         when (it.type) {
                             DocumentChange.Type.ADDED -> {
-                                trySend(
-                                    ListenerEmissionType(
-                                        Constants.ListenerEmitType.Added,
-                                        singleResponse = it.document.toObject<FriendCircleData>()
+                                launch {
+                                    trySend(
+                                        ListenerEmissionType(
+                                            Constants.ListenerEmitType.Added,
+                                            singleResponse = it.document.toObject<FriendCircleData>()
+                                                .run {
+                                                    copy(user = this.userId?.let { it1 ->
+                                                        getUserById(
+                                                            it1
+                                                        )
+                                                    })
+                                                }
+                                        )
                                     )
-                                )
+                                }
                             }
 
                             DocumentChange.Type.REMOVED -> {
+
                                 trySend(
                                     ListenerEmissionType(
                                         Constants.ListenerEmitType.Removed,
                                         singleResponse = it.document.toObject<FriendCircleData>()
                                     )
                                 )
+
                             }
 
                             DocumentChange.Type.MODIFIED -> {}
@@ -610,6 +820,51 @@ object UserManager {
                 close()
             }
         }
+
+    suspend fun getPendingFriendRequestAndListenChange() = callbackFlow<List<ListenerEmissionType<FriendCircleData, FriendCircleData>>> {
+        val userId = AuthManager.currentUserId()!!
+        val pendingFriendRequestRef = userRef.document(userId).collection(Constants.Table.PendingRequest.name)
+
+        pendingFriendRequestListener = pendingFriendRequestRef.addSnapshotListener { value, error ->
+            if(error!=null) return@addSnapshotListener
+
+            launch {
+                value?.documentChanges?.let {
+                    val chunkedData = it.chunked(20)
+                    for (data in chunkedData){
+                        val friendListData =data.map {
+                            async {
+                                val changeType = when(it.type){
+                                    DocumentChange.Type.ADDED -> Constants.ListenerEmitType.Added
+                                    DocumentChange.Type.MODIFIED -> Constants.ListenerEmitType.Modify
+                                    DocumentChange.Type.REMOVED -> Constants.ListenerEmitType.Removed
+                                }
+                                var friendData = it.document.toObject<FriendCircleData>()
+
+                                val userData  = getUserById(friendData.userId!!)
+                                if (userData==null){
+                                    null
+                                }else{
+                                    friendData = friendData.copy(
+                                        user = userData
+                                    )
+                                    ListenerEmissionType<FriendCircleData,FriendCircleData>(changeType, singleResponse = friendData)
+                                }
+
+                            }
+                        }.awaitAll().filterNotNull()
+                        trySend(friendListData)
+                    }
+                }
+            }
+        }
+
+        awaitClose {
+            pendingFriendRequestListener?.remove()
+            close()
+        }
+
+    }
 
     suspend fun removeFollower(userId: String) = callbackFlow<UpdateResponse> {
         val followerRef = userRef.document(AuthManager.currentUserId()!!)
@@ -707,12 +962,7 @@ object UserManager {
             batch.set(followedRef, myData)
             batch.set(notificationRef, notificationData)
         }.addOnSuccessListener {
-            launch {
-                userRef.document(followedId).get().await().toObject<User>()?.fcmToken?.let {
-                    NotificationSendingManager.sendNewFollowerNotification(it, notificationData)
-                }
-            }
-
+            NotificationSendingManager.sendNotification(followedId, notificationData)
             trySend(UpdateResponse(true, ""))
         }.addOnFailureListener {
             trySend(UpdateResponse(false, it.message))
@@ -754,11 +1004,7 @@ object UserManager {
             batch.set(friendRef, myData)
             batch.set(notificationRef, notificationData)
         }.addOnSuccessListener {
-            launch {
-                userRef.document(friendId).get().await().toObject<User>()?.fcmToken?.let {
-                    NotificationSendingManager.sendNewFollowerNotification(it, notificationData)
-                }
-            }
+            NotificationSendingManager.sendNotification(friendId, notificationData)
             trySend(UpdateResponse(true, ""))
         }.addOnFailureListener {
             trySend(UpdateResponse(false, it.message))
@@ -794,6 +1040,143 @@ object UserManager {
                 close()
             }
         }
+
+    suspend fun deleteAllFriendRequest(friendIds: List<String>) = callbackFlow<UpdateResponse> {
+        // Create a list to hold the deletion operations
+        val deletionTasks = mutableListOf<Deferred<UpdateResponse>>()
+        val currentUserId = AuthManager.currentUserId()!!
+        // Launch a coroutine scope
+        coroutineScope {
+            // Iterate over each friendId to create delete operations
+            for (friendId in friendIds) {
+                // Launch async operation for each friendId
+                val task = async {
+                    val friendRef = userRef.document(currentUserId)
+                        .collection(Constants.Table.PendingRequest.name)
+                        .document(friendId) // Assuming currentUserId is the userId of the requester
+
+                    val myUserRef = userRef.document(friendId)
+                        .collection(Constants.Table.FriendRequest.name)
+                        .document(currentUserId)
+
+                    try {
+                        // Perform batch delete
+                        firestore.runBatch { batch ->
+                            batch.delete(myUserRef)
+                            batch.delete(friendRef)
+                        }.await()
+
+                        // Return success response
+                        UpdateResponse(true, "")
+                    } catch (e: Exception) {
+                        // Return failure response with error message
+                        UpdateResponse(false, e.message ?: "Unknown error")
+                    }
+                }
+
+                deletionTasks.add(task)
+            }
+
+            // Await completion of all tasks
+            val results = deletionTasks.awaitAll()
+
+            // Check if all requests were successful
+            val isSuccess = results.all { it.isSuccess }
+
+            // Send the overall response
+            if (isSuccess) {
+                trySend(UpdateResponse(true, "All friend requests deleted."))
+            } else {
+                // You can customize the error message as needed
+                trySend(UpdateResponse(false, "Some friend requests could not be declined."))
+            }
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun declineFriendRequest(userId: String, friendId: String) =
+        callbackFlow<UpdateResponse> {
+
+            val friendRef =
+                userRef.document(friendId).collection(Constants.Table.PendingRequest.name)
+                    .document(userId)
+            val myUserRef =
+                userRef.document(userId).collection(Constants.Table.FriendRequest.name)
+                    .document(friendId)
+
+            firestore.runBatch { batch ->
+                batch.delete(myUserRef)
+                batch.delete(friendRef)
+            }.addOnSuccessListener {
+                trySend(UpdateResponse(true, ""))
+            }.addOnFailureListener {
+                trySend(UpdateResponse(false, it.message))
+            }.await()
+
+
+            awaitClose {
+                close()
+            }
+        }
+
+    suspend fun declineAllFriendRequest(friendIds: List<String>) = callbackFlow<UpdateResponse> {
+        // Create a list to hold the deletion operations
+        val deletionTasks = mutableListOf<Deferred<UpdateResponse>>()
+        val currentUserId = AuthManager.currentUserId()!!
+        // Launch a coroutine scope
+        coroutineScope {
+            // Iterate over each friendId to create delete operations
+            for (friendId in friendIds) {
+                // Launch async operation for each friendId
+                val task = async {
+                    val friendRef = userRef.document(friendId)
+                        .collection(Constants.Table.PendingRequest.name)
+                        .document(currentUserId) // Assuming currentUserId is the userId of the requester
+
+                    val myUserRef = userRef.document(currentUserId)
+                        .collection(Constants.Table.FriendRequest.name)
+                        .document(friendId)
+
+                    try {
+                        // Perform batch delete
+                        firestore.runBatch { batch ->
+                            batch.delete(myUserRef)
+                            batch.delete(friendRef)
+                        }.await()
+
+                        // Return success response
+                        UpdateResponse(true, "")
+                    } catch (e: Exception) {
+                        // Return failure response with error message
+                        UpdateResponse(false, e.message ?: "Unknown error")
+                    }
+                }
+
+                deletionTasks.add(task)
+            }
+
+            // Await completion of all tasks
+            val results = deletionTasks.awaitAll()
+
+            // Check if all requests were successful
+            val isSuccess = results.all { it.isSuccess }
+
+            // Send the overall response
+            if (isSuccess) {
+                trySend(UpdateResponse(true, "All friend requests declined."))
+            } else {
+                // You can customize the error message as needed
+                trySend(UpdateResponse(false, "Some friend requests could not be declined."))
+            }
+        }
+
+        awaitClose {
+            close()
+        }
+    }
 
     suspend fun acceptFriendRequest(userId: String, friendId: String) =
         callbackFlow<UpdateResponse> {
@@ -831,11 +1214,7 @@ object UserManager {
                 batch.set(friendFriendRef, myData)
                 batch.set(notificationRef, notificationData)
             }.addOnSuccessListener {
-                launch {
-                    userRef.document(friendId).get().await().toObject<User>()?.fcmToken?.let {
-                        NotificationSendingManager.sendNewFollowerNotification(it, notificationData)
-                    }
-                }
+                NotificationSendingManager.sendNotification(friendId, notificationData)
                 trySend(UpdateResponse(true, ""))
             }.addOnFailureListener {
                 trySend(UpdateResponse(false, it.message))
@@ -846,6 +1225,40 @@ object UserManager {
                 close()
             }
         }
+
+
+    suspend fun acceptAllFriendRequest(friendIds: List<String>) = callbackFlow<UpdateResponse> {
+        val userId= AuthManager.currentUserId()!!
+        // Create a list to hold the deferred results for each accept operation
+        val deferredResults = friendIds.map { friendId ->
+            async {
+                // Call the acceptFriendRequest function for each friendId
+                acceptFriendRequest(userId, friendId).first()
+            }
+        }
+
+        // Collect results from all deferred calls
+        try {
+            // Await all results
+            val results = deferredResults.awaitAll()
+
+            // Check if all operations were successful
+            val allSuccess = results.all { it.isSuccess }
+
+            // You can also aggregate error messages if needed
+            val errorMessages = results.filterNot { it.isSuccess }.joinToString(", ") { it.errorMessage.toString() }
+
+            // Send the final result
+            trySend(UpdateResponse(allSuccess, errorMessages)).isSuccess
+        } catch (e: Exception) {
+            trySend(UpdateResponse(false, e.message ?: "Error occurred during accepting all friend requests."))
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
 
     suspend fun getUserRelationshipStatus(currentUserId: String, targetUserId: String) =
         callbackFlow<UserRelationshipStatus> {
@@ -986,5 +1399,319 @@ object UserManager {
 
     //endregion
 
+    //region:: Update UserAvailability
+
+    suspend fun updateUserAvailability(isUserAvailable: Boolean) {
+        userRef.document(AuthManager.currentUserId()!!)
+            .update(Constants.UserTable.USER_AVAILABLE.fieldName, isUserAvailable).await()
+    }
+
+    //endregion
+
+
+    //region :: Search User
+
+    suspend fun findUser(query: String) = callbackFlow<List<FriendCircleData>> {
+
+
+        val resultList = mutableListOf<FriendCircleData>()
+        val lowerCaseQuery = query.lowercase()
+
+        userRef
+            .whereGreaterThanOrEqualTo(Constants.UserTable.USERNAME_LOWERCASE.fieldName, lowerCaseQuery)
+            .whereLessThanOrEqualTo(Constants.UserTable.USERNAME_LOWERCASE.fieldName, lowerCaseQuery + "\uf8ff")
+            .get()
+            .addOnSuccessListener { documents ->
+                for (document in documents) {
+                    document.toObject(User::class.java).let {
+                        resultList.add(FriendCircleData(it.userId, user = it))
+                    }
+                }
+                resultList.sortBy { it.user?.userName }
+                trySend(resultList)
+            }
+            .addOnFailureListener { exception ->
+                // Handle the error here
+                trySend(emptyList())
+            }
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
+
+    //region:: Delete My id from follower and following and friend and friend request
+
+    suspend fun deleteMyUserRelation() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        launchCoroutineInIOThread {
+            val deleteWorkFollower = async {
+                deleteMyFollower()
+            }
+            val deleteWorkFollowing = async {
+                deleteMyFollowing()
+            }
+            val deleteWorkFriend = async {
+                deleteMyFriend()
+            }
+            val deleteWorkPendingRequest = async {
+                deleteMyPendingRequest()
+            }
+            val deleteWorkFriendRequest = async {
+                deleteMyFriendRequest()
+            }
+            deleteWorkFollower.await()
+            deleteWorkFollowing.await()
+            deleteWorkFriend.await()
+            deleteWorkPendingRequest.await()
+            deleteWorkFriendRequest.await()
+
+        }.join()
+    }
+
+    private suspend fun deleteMyFollower() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val myFollowerList = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.Follower.name).get().await()
+        if (myFollowerList.isEmpty) return
+        launchCoroutineInIOThread {
+            MyLogger.w(tagDelete, msg = "Delete My Follower Start ....")
+            val deleteWork = myFollowerList.map {
+                async {
+                    userRef.document(it.id).collection(Table.Following.name)
+                        .document(AuthManager.currentUserId()!!).delete()
+                }
+            }
+            deleteWork.awaitAll()
+            MyLogger.w(tagDelete, msg = "Delete My Follower Done ....")
+        }
+    }
+
+    private suspend fun deleteMyFollowing() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val myFollowingList = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.Following.name).get().await()
+        if (myFollowingList.isEmpty) return
+        launchCoroutineInIOThread {
+            MyLogger.w(tagDelete, msg = "Delete My Following Start ....")
+            val deleteWork = myFollowingList.map {
+                async {
+                    userRef.document(it.id).collection(Table.Follower.name)
+                        .document(AuthManager.currentUserId()!!).delete()
+                }
+            }
+            deleteWork.awaitAll()
+            MyLogger.w(tagDelete, msg = "Delete My Following Done ....")
+        }
+    }
+
+    private suspend fun deleteMyFriend() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val myFriendList =
+            userRef.document(AuthManager.currentUserId()!!).collection(Constants.Table.Friend.name)
+                .get().await()
+        if (myFriendList.isEmpty) return
+        launchCoroutineInIOThread {
+            MyLogger.w(tagDelete, msg = "Delete My Friend Start ....")
+            val deleteWork = myFriendList.map {
+                async {
+                    userRef.document(it.id).collection(Table.Friend.name)
+                        .document(AuthManager.currentUserId()!!).delete()
+                }
+            }
+            deleteWork.awaitAll()
+            MyLogger.w(tagDelete, msg = "Delete My Friend Done ....")
+        }
+    }
+
+    private suspend fun deleteMyPendingRequest() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val myPendingRequestList = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.PendingRequest.name).get().await()
+        if (myPendingRequestList.isEmpty) return
+        launchCoroutineInIOThread {
+            MyLogger.w(tagDelete, msg = "Delete My Pending Request Start ....")
+            val deleteWork = myPendingRequestList.map {
+                async {
+                    userRef.document(it.id).collection(Table.FriendRequest.name)
+                        .document(AuthManager.currentUserId()!!).delete()
+                }
+            }
+            deleteWork.awaitAll()
+            MyLogger.w(tagDelete, msg = "Delete My Pending Request Done ....")
+        }
+    }
+
+    private suspend fun deleteMyFriendRequest() {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val myPendingRequestList = userRef.document(AuthManager.currentUserId()!!)
+            .collection(Constants.Table.FriendRequest.name).get().await()
+        if (myPendingRequestList.isEmpty) return
+        launchCoroutineInIOThread {
+            MyLogger.w(tagDelete, msg = "Delete My Friend Request Start ....")
+            val deleteWork = myPendingRequestList.map {
+                async {
+                    userRef.document(it.id).collection(Table.PendingRequest.name)
+                        .document(AuthManager.currentUserId()!!).delete()
+                }
+            }
+            deleteWork.awaitAll()
+            MyLogger.w(tagDelete, msg = "Delete My Friend Request Done ....")
+        }
+    }
+
+    //endregion
+
+    //region:: Delete All My Sub Collection
+
+    suspend fun deleteAllMySubCollection() = callbackFlow<UpdateResponse> {
+        MyLogger.e(tagDelete, isFunctionCall = true)
+        val collectionRefs = listOf(
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.Follower.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.Following.name),
+            userRef.document(AuthManager.currentUserId()!!).collection(Constants.Table.Friend.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.FriendRequest.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.PendingRequest.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.Notification.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.MyLikedPost.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.SavedPost.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.LikedPost.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.UnSeenMessage.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.ChatMuteNotification.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.RecentChat.name),
+            userRef.document(AuthManager.currentUserId()!!)
+                .collection(Constants.Table.CommentedPost.name)
+        )
+        deleteCollection(collectionRefs).onEach {
+            MyLogger.i(tagDelete, msg = "All Collection is deleted !")
+            trySend(it)
+        }.launchIn(this)
+
+        awaitClose {
+            close()
+        }
+    }
+
+     suspend fun deleteCollection(collectionRefs: List<CollectionReference>) =
+        callbackFlow<UpdateResponse> {
+            MyLogger.e(tagDelete, isFunctionCall = true)
+            try {
+                MyLogger.w(tagDelete, msg = "Delete Delete Collection Start ....")
+                collectionRefs.map { collectionRef ->
+                    async {
+                        MyLogger.w(
+                            tagDelete,
+                            msg = "Delete collectionRef :- $collectionRef Start ...."
+                        )
+                        // Get all documents in the collection
+                        val documents = collectionRef.get().await().documents
+
+                        // Batch delete documents
+                        val batchSize = 500 // Firestore batch limit
+                        var batch = firestore.batch()
+                        var counter = 0
+
+                        for (document in documents) {
+                            batch.delete(document.reference)
+                            counter++
+
+                            // Commit the batch every batchSize documents
+                            if (counter % batchSize == 0) {
+                                batch.commit().await()
+                                batch = firestore.batch()
+                            }
+                        }
+
+                        // Commit the remaining documents
+                        if (counter % batchSize != 0) {
+                            batch.commit().await()
+                        }
+                        MyLogger.w(
+                            tagDelete,
+                            msg = "Delete collectionRef :- $collectionRef End ...."
+                        )
+                    }
+                }.awaitAll()
+                MyLogger.w(tagDelete, msg = "Delete Delete Collection End ....")
+                trySend(UpdateResponse(true, "")) // All documents deleted successfully
+            } catch (e: FirebaseFirestoreException) {
+                e.printStackTrace()
+                trySend(UpdateResponse(false, e.message)) // Failed to delete all documents
+            } catch (e: Exception) {
+                e.printStackTrace()
+                trySend(UpdateResponse(false, e.message)) // Failed to delete all documents
+            }
+            awaitClose {
+                close()
+            }
+        }
+
+
+
+    //endregion
+
+    //region:: User Setting
+
+    suspend fun updateUserSetting(userSetting: UserSetting) = callbackFlow<UpdateResponse> {
+        try {
+            userRef.document(AuthManager.currentUserId()!!).update(Constants.UserTable.USER_SETTING.fieldName ,userSetting).addOnCompleteListener {
+                if (it.isSuccessful){
+                    trySend(UpdateResponse(true,""))
+                }else{
+                    trySend(UpdateResponse(false ,it.exception?.message.toString()))
+                }
+            }
+        }catch (e:Exception){
+            e.printStackTrace()
+            trySend(UpdateResponse(true , ""))
+        }
+        awaitClose {
+            close()
+        }
+    }
+
+     suspend fun updateUserEmail(newEmailId:String) = callbackFlow<UpdateResponse> {
+
+        userRef.document(AuthManager.currentUserId()!!).update(Constants.UserTable.USER_EMAIL_ID.fieldName ,newEmailId).addOnCompleteListener {
+            if (it.isSuccessful){
+                trySend(UpdateResponse(true ,""))
+            }else{
+                trySend(UpdateResponse(false, it.exception?.toString()))
+            }
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+    suspend fun updateUserPassword(newPassword:String) = callbackFlow<UpdateResponse> {
+
+        userRef.document(AuthManager.currentUserId()!!).update(Constants.UserTable.USER_PASSWORD.fieldName ,newPassword).addOnCompleteListener {
+            if (it.isSuccessful){
+                trySend(UpdateResponse(true ,""))
+            }else{
+                trySend(UpdateResponse(false, it.exception?.toString()))
+            }
+        }
+
+        awaitClose {
+            close()
+        }
+    }
+
+    //endregion
 
 }

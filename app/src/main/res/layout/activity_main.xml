@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
+    android:fitsSystemWindows="false"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black"
@@ -29,15 +30,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
 
+
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/localNavHostFragment"
             android:name="androidx.navigation.fragment.NavHostFragment"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_gravity="top"
+            app:layout_constrainedHeight="true"
             app:defaultNavHost="true"
+
             android:layout_marginBottom="?actionBarSize"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/linearInternet"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -46,8 +49,8 @@
         <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:id="@+id/coordinateBottomAppBar"
             android:layout_width="0dp"
-            android:layout_height="@dimen/_75sdp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_height="@dimen/_80sdp"
+            app:layout_constraintBottom_toTopOf="@id/linearInternet"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent">
 
@@ -58,7 +61,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="
 bottom"
-                android:visibility="visible"
+                android:visibility="gone"
                 app:backgroundTint="@color/lightBlack"
                 app:fabCradleMargin="@dimen/_8sdp"
                 app:fabCradleRoundedCornerRadius="@dimen/_15sdp"
@@ -82,11 +85,36 @@ bottom"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@drawable/ic_add"
-                android:visibility="visible"
+                android:visibility="gone"
                 app:backgroundTint="#FFE501"
                 app:layout_anchor="@id/bottomApp" />
 
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+        <LinearLayout
+            android:id="@+id/linearInternet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:background="@color/green"
+            android:orientation="horizontal"
+            android:padding="@dimen/_2sdp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+            <TextView
+                android:id="@+id/tvNoInternet"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/internet_available"
+                android:drawableLeft="@drawable/ic_internet"
+                android:gravity="center_vertical"
+                android:drawablePadding="@dimen/_10sdp"
+                android:textColor="@color/white"
+                android:textSize="@dimen/_12ssp"
+                android:fontFamily="@font/poppins_bold"/>
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

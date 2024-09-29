@@ -9,6 +9,10 @@ import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.user_action.FriendCircleData
 import com.aditya.socialguru.databinding.SampleFollowerListBinding
+import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.bumptech.glide.Glide
 
@@ -36,12 +40,20 @@ class FriendAdapter(val isFollowing :Boolean,val itemClick:(userId:String)->Unit
 
     inner class ViewHolder(val binding:SampleFollowerListBinding):RecyclerView.ViewHolder(binding.root){
         fun bind(user: User){
-            user.apply {
+            user.let {
                 binding.apply {
-                    userProfileImage?.let {
-                        Glide.with(ivFollowerProfilePic).load(it).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivFollowerProfilePic)
+                    if (it.userProfileImage==null){
+                        tvInitial.myShow()
+                        ivFollowerProfilePic.gone()
+                        tvInitial.text = it.userName?.get(0).toString()
+                        tvInitial.setCircularBackground(Helper.setUserProfileColor(it))
+                    }else{
+                        tvInitial.gone()
+                        ivFollowerProfilePic.myShow()
+                        Glide.with(ivFollowerProfilePic).load(it.userProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(ivFollowerProfilePic)
                     }
-                    tvFollowerName.text=userName
+
+                    tvFollowerName.text=it.userName
 
                     if(isFollowing){
                         btnFollow.text="UnFollow"
@@ -52,7 +64,7 @@ class FriendAdapter(val isFollowing :Boolean,val itemClick:(userId:String)->Unit
                     }
 
                     root.setSafeOnClickListener {
-                        itemClick(userId!!)
+                        itemClick(user.userId!!)
                     }
                 }
             }

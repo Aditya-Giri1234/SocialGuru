@@ -9,5 +9,19 @@
         android:id="@+id/recentChatFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.RecentChatFragment"
         android:label="fragment_recent_chat"
-        tools:layout="@layout/fragment_recent_chat" />
+        tools:layout="@layout/fragment_recent_chat" >
+        <action
+            android:id="@+id/action_recentChatFragment_to_startChatFragment"
+            app:destination="@id/startChatFragment" />
+        <action
+            android:id="@+id/action_recentChatFragment_to_startGroupChatFragment"
+            app:destination="@id/startGroupChatFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/startChatFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.chat_fragment_helper.single_chat.StartChatFragment"
+        android:label="fragment_start_chat"
+        tools:layout="@layout/fragment_start_chat" />
+
+
 </navigation>

@@ -20,6 +20,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.databinding.FragmentUpdateProfileBinding
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.dialog.ProfilePicEditDialog
@@ -27,20 +28,26 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.customError
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
+import com.aditya.socialguru.domain_layer.helper.getStringText
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.hideKeyboard
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.removeErrorOnTextChanged
+import com.aditya.socialguru.domain_layer.helper.runOnUiThread
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.profile.ProfilePicEditOption
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.ui_layer.viewmodel.profile.EditProfileViewModel
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class EditProfileFragment : Fragment(), ProfilePicEditOption {
@@ -109,7 +116,7 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
     }
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 editProfileViewModel.userUpdateStatus.onEach { response ->
                     when (response) {
@@ -121,7 +128,7 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
                                 ), "Profile Updated !"
                             )
 
-                            navController?.value?.navigateUp()
+                            navController.navigateUp()
                         }
 
                         is Resource.Loading -> {
@@ -142,22 +149,15 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
 
     private fun initUi() {
         binding.apply {
-
             myToolbar.apply {
                 profileImage.gone()
                 icBack.myShow()
                 tvHeaderUserName.text = "Edit Profile"
             }
 
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 pref.getPrefUser().first()?.let { user ->
-                    user.userProfileImage?.let {
-                        ivProfile.tag = imageAvailable
-                        currentImage = it
-                        Glide.with(ivProfile).load(it).into(ivProfile)
-                    } ?: run {
-                        ivProfile.tag = imageUnAvailable
-                    }
+                    showInitial(user)
                     tiEtName.setText(user.userName)
                     tiEtProfession.setText(user.userProfession)
                     tiEtBio.setText(user.userBio)
@@ -172,7 +172,7 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
     private fun FragmentUpdateProfileBinding.setListener() {
 
         myToolbar.icBack.setSafeOnClickListener {
-            navController?.value?.navigateUp()
+            navController.navigateUp()
         }
 
         root.setOnTouchListener { v, event ->
@@ -198,7 +198,7 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
         }
 
         binding.icEdit.setSafeOnClickListener {
-            if (currentImage == null) {
+            if (ivProfile.tag == imageUnAvailable) {
                 pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             } else {
                 ProfilePicEditDialog(this@EditProfileFragment).show(
@@ -247,27 +247,31 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
     }
 
     private fun saveUser() {
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             pref.getPrefUser().first()?.let { user ->
-                val newData = user.copy(
-                    userName = binding.tiEtName.text.toString(),
-                    userBio = binding.tiEtBio.text.toString(),
-                    userProfession = binding.tiEtProfession.text.toString(),
-                    userProfileImage = if (isProfilePicDeleted()) null else currentImage  // There is put old image reason if image present that is online image and if user delete image it set to null . New image should first store in storage and then get image.
-                )
-                user.userId?.let {
-                    if (isProfilePicDeleted()) {
-                        MyLogger.d(
-                            tagProfile,
-                            msg = "Profile pic is deleted , currentImage:- $currentImage  - newImage:- $newImage"
-                        )
-                        editProfileViewModel.updateProfile(newData, currentImage, newImage)
-                    } else {
-                        MyLogger.d(
-                            tagProfile,
-                            msg = "Profile pic is not deleted , currentImage:- $currentImage  - newImage:- $newImage"
-                        )
-                        editProfileViewModel.updateProfile(newData, newImage = newImage)
+                withContext(Dispatchers.Main){
+                    val newData = user.copy(
+                        userName = binding.tiEtName.getStringText(),
+                        userNameLowerCase = binding.tiEtName.getStringText().lowercase(),
+                        userBio = binding.tiEtBio.getStringText(),
+                        userProfession = binding.tiEtProfession.getStringText(),
+                        userProfileImage = if (isProfilePicDeleted()) null else currentImage  // There is put old image reason if image present that is online image and if user delete image it set to null . New image should first store in storage and then get image.
+                    )
+
+                    user.userId?.let {
+                        if (isProfilePicDeleted()) {
+                            MyLogger.d(
+                                tagProfile,
+                                msg = "Profile pic is deleted , currentImage:- $currentImage  - newImage:- $newImage"
+                            )
+                            editProfileViewModel.updateProfile(newData, currentImage, newImage)
+                        } else {
+                            MyLogger.d(
+                                tagProfile,
+                                msg = "Profile pic is not deleted , currentImage:- $currentImage  - newImage:- $newImage"
+                            )
+                            editProfileViewModel.updateProfile(newData, newImage = newImage)
+                        }
                     }
                 }
             }
@@ -278,15 +282,15 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
     private fun validateDate(): Boolean {
         binding.apply {
             return when {
-                tiEtName.text.isNullOrEmpty() -> {
+                tiEtName.text.isNullOrBlank()-> {
                     tilName.customError("Name must not null !")
                 }
 
-                tiEtProfession.text.isNullOrEmpty() -> {
+                tiEtProfession.text.isNullOrBlank() -> {
                     tilProfession.customError("Profession must not null !")
                 }
 
-                tiEtBio.text.isNullOrEmpty() -> {
+                tiEtBio.text.isNullOrBlank()-> {
                     tilBio.customError("Bio must not null !")
                 }
 
@@ -298,17 +302,59 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
 
     }
 
+    private fun showInitial(user: User?=null, image:String?=null){
+        binding.apply {
+            when {
+                user != null -> {
+                    // Initial case when data load
+                    runOnUiThread {
+                        if (user.userProfileImage==null){
+                            tvEditInitial.myShow()
+                            tvEditInitial.text = user.userName?.get(0).toString()
+                            tvEditInitial.setCircularBackground(Helper.setUserProfileColor(user))
+                            ivProfile.tag= imageUnAvailable
+                        }else{
+                            tvEditInitial.gone()
+                            Glide.with(ivProfile).load(user.userProfileImage).placeholder(R.drawable.ic_user).error(
+                                R.drawable.ic_user).into(ivProfile)
+                            ivProfile.tag = imageAvailable
+                        }
+                    }
+                }
+
+                else -> {
+                    // this is case where user delete image or pick image
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        pref.getPrefUser().first()?.let { user ->
+                            runOnUiThread {
+                                if (image==null){
+                                    tvEditInitial.myShow()
+                                    tvEditInitial.text = user.userName?.get(0).toString()
+                                    tvEditInitial.setCircularBackground(Helper.setUserProfileColor(user))
+                                    ivProfile.tag = imageUnAvailable
+                                }else{
+                                    tvEditInitial.gone()
+                                    Glide.with(ivProfile).load(image).placeholder(R.drawable.ic_user).error(
+                                        R.drawable.ic_user).into(ivProfile)
+                                    ivProfile.tag = imageAvailable
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun setImageOnProfileView(uri: Uri) {
         newImage = uri.toString()
-        Glide.with(binding.ivProfile).load(newImage).into(binding.ivProfile)
-        binding.ivProfile.tag=imageAvailable
+        showInitial(image = uri.toString())
     }
 
     private fun removeImageFromProfileView(){
         binding.apply {
             newImage = null  //Assure newImage should null and currentImage not change
-            ivProfile.setImageResource(R.drawable.ic_user)
-            ivProfile.tag = imageUnAvailable
+            showInitial()
         }
     }
 
@@ -345,6 +391,11 @@ class EditProfileFragment : Fragment(), ProfilePicEditOption {
 
     override fun onUpload() {
         pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
+    override fun onPause() {
+        hideKeyboard()
+        super.onPause()
     }
 
     override fun onDestroyView() {

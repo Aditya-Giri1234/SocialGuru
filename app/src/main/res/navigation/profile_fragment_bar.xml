@@ -14,9 +14,6 @@
             android:id="@+id/action_profileFragment_to_updateProfileFragment2"
             app:destination="@id/updateProfileFragment2" />
         <action
-            android:id="@+id/action_profileFragment_to_myActivityFragment"
-            app:destination="@id/myActivityFragment" />
-        <action
             android:id="@+id/action_profileFragment_to_friendCircleFragment"
             app:destination="@id/friendCircleFragment" />
         <action
@@ -29,18 +26,13 @@
         android:label="fragment_update_profile"
         tools:layout="@layout/fragment_update_profile" />
     <fragment
-        android:id="@+id/myActivityFragment"
-        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.MyActivityFragment"
-        android:label="fragment_my_activity"
-        tools:layout="@layout/fragment_my_activity" />
-    <fragment
         android:id="@+id/friendCircleFragment"
         android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.FriendCircleFragment"
         android:label="fragment_friend_circle"
         tools:layout="@layout/fragment_friend_circle" >
         <action
-            android:id="@+id/action_friendCircleFragment_to_profileViewFragment"
-            app:destination="@id/profileViewFragment" />
+            android:id="@+id/action_friendCircleFragment_to_pendingFriendRequestFragment"
+            app:destination="@id/pendingFriendRequestFragment" />
     </fragment>
     <fragment
         android:id="@+id/settingFragment"
@@ -48,12 +40,8 @@
         android:label="fragment_setting"
         tools:layout="@layout/fragment_setting" />
     <fragment
-        android:id="@+id/profileViewFragment"
-        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragment"
-        android:label="fragment_profile_view"
-        tools:layout="@layout/fragment_profile_view" >
-        <argument
-            android:name="userId"
-            app:argType="string" />
-    </fragment>
+        android:id="@+id/pendingFriendRequestFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.friend_circle.PendingFriendRequestFragment"
+        android:label="fragment_pending_friend_request"
+        tools:layout="@layout/fragment_pending_friend_request" />
 </navigation>

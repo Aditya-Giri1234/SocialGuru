@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/black"
+    tools:context=".ui_layer.fragment.helper.VideoTrimmingFragment">
+
+    <include
+        android:id="@+id/myToolbar"
+        layout="@layout/custom_toolbar"/>
+    <View
+        android:id="@+id/view"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_1sdp"
+        android:background="@color/lightWhite"
+        android:layout_marginTop="?actionBarSize"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <com.redevrx.video_trimmer.view.VideoEditor
+        android:id="@+id/video_trimmer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="@dimen/_10sdp"
+        android:layout_marginTop="@dimen/_5sdp"
+        app:layout_constraintBottom_toTopOf="@+id/btnSaveVideo"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/view"
+        app:layout_constraintVertical_bias="0.0">
+
+    </com.redevrx.video_trimmer.view.VideoEditor>
+
+    <Button
+        android:id="@+id/btnSaveVideo"
+        android:layout_width="0dp"
+        android:layout_marginStart="@dimen/_10sdp"
+        android:layout_marginEnd="@dimen/_10sdp"
+        android:paddingVertical="@dimen/_10sdp"
+        android:layout_height="wrap_content"
+        app:cornerRadius="@dimen/_30sdp"
+        android:text="Crop &amp; Upload"
+        android:textAllCaps="false"
+        android:fontFamily="@font/poppin_medium"
+        android:textColor="@color/black"
+        android:backgroundTint="@color/yellow"
+        android:textSize="@dimen/_12ssp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

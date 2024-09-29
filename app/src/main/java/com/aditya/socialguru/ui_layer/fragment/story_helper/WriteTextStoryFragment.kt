@@ -20,6 +20,7 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.hideKeyboard
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -63,7 +64,7 @@ class WriteTextStoryFragment : Fragment() {
     private var currentFont = R.font.roboto_medium
     private var currentColor = Color.BLACK
 
-    private val navController get() = (requireActivity() as MainActivity).navController?.value
+    private val navController get() = (requireActivity() as MainActivity).navController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -118,7 +119,6 @@ class WriteTextStoryFragment : Fragment() {
                     )
                 )
             }
-
         }
         etStatus.setOnTouchListener { v, event ->
             MyLogger.v(tagStory, msg = "Now user touch on edit status view !")
@@ -147,7 +147,7 @@ class WriteTextStoryFragment : Fragment() {
             navController?.navigateUp()
         }
 
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             etStatus.getQueryTextChangeStateFlow().debounce(100).distinctUntilChanged()
                 .flatMapLatest {
                     if (it.startsWith(" ")) {
@@ -173,8 +173,9 @@ class WriteTextStoryFragment : Fragment() {
                         Constants.DATA,
                         StoryText(etStatus.text.toString(), currentFont ,currentColor)
                     )
+                    setPackage(requireContext().packageName)
                 })
-                navController?.navigateUp()
+                navController.navigateUp()
             }
 
         }
@@ -238,6 +239,11 @@ class WriteTextStoryFragment : Fragment() {
         val minThreshold = 50.0  // Adjusted to make it less restrictive
         val maxThreshold = 205.0 // Adjusted to make it less restrictive
         return brightness < minThreshold || brightness > maxThreshold
+    }
+
+    override fun onPause() {
+        hideKeyboard()
+        super.onPause()
     }
 
     override fun onDestroyView() {

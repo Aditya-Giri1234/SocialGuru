@@ -96,7 +96,7 @@ class MyStoryAdapter(val onItemClick:()->Unit) : RecyclerView.Adapter<MyStoryAda
             }
 
             binding.tvStatusUploadingDuration.text= stories.storyUploadingTimeInTimeStamp?.let {
-                Helper.timeDifference(
+                Helper.getTimeAgo(
                     it
                 )
             }

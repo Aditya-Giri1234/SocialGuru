@@ -3,18 +3,16 @@ package com.aditya.socialguru.ui_layer.fragment.profile_part.friend_circle
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -24,27 +22,28 @@ import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.ui_layer.adapter.profile.friend_circle.FriendAdapter
-import com.aditya.socialguru.ui_layer.fragment.profile_part.FriendCircleFragmentDirections
 import com.aditya.socialguru.ui_layer.viewmodel.profile.friend_circle.FriendViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 
-class FollowingFragment : Fragment() ,AlertDialogOption {
-    private var _binding: FragmentFollowingBinding?=null
+class FollowingFragment : Fragment(), AlertDialogOption {
+    private var _binding: FragmentFollowingBinding? = null
     private val binding get() = _binding!!
 
 
     private val tagProfile = Constants.LogTag.Profile
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
 
     private val followingViewModel by viewModels<FriendViewModel>()
 
@@ -67,7 +66,7 @@ class FollowingFragment : Fragment() ,AlertDialogOption {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        _binding=FragmentFollowingBinding.inflate(layoutInflater)
+        _binding = FragmentFollowingBinding.inflate(layoutInflater)
         return binding.root
     }
 
@@ -78,7 +77,7 @@ class FollowingFragment : Fragment() ,AlertDialogOption {
     }
 
     private fun handleInitialization() {
-        _followingAdapter = FriendAdapter( true, {
+        _followingAdapter = FriendAdapter(true, {
             navigateToUserDetailsScreen(it)
         }) {
             AlertDialog(
@@ -102,74 +101,89 @@ class FollowingFragment : Fragment() ,AlertDialogOption {
 
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                followingViewModel.followingList.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            MyLogger.v(tagProfile, msg = "Following List response come !")
-                            MyLogger.v(
-                                tagProfile,
-                                msg = response.data,
-                                isJson = true,
-                                jsonTitle = "Following List"
-                            )
-                            response.data?.let {
-                                setData(it)
-                            } ?: run {
-                                setData()
-                                MyLogger.w(tagProfile, msg = "Following list is empty !")
-                            }
+        observeFlow {
+            followingViewModel.followingList.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        MyLogger.i(tagProfile, msg = "Following List response come !")
+                        MyLogger.d(
+                            tagProfile,
+                            msg = response.data,
+                            isJson = true,
+                            jsonTitle = "Following List"
+                        )
+                        response.data?.let {
+                            setData(it)
+                        } ?: run {
+                            setData()
+                            MyLogger.w(tagProfile, msg = "Following list is empty !")
                         }
+                    }
 
-                        is Resource.Loading -> {
-                            MyLogger.v(tagProfile, msg = "Following List is fetching ...")
-                        }
+                    is Resource.Loading -> {
+                        MyLogger.v(tagProfile, msg = "Following List is fetching ...")
+                    }
 
-                        is Resource.Error -> {
-                            MyLogger.e(
-                                tagProfile,
-                                msg = giveMeErrorMessage(
-                                    "Fetching Following List",
-                                    response.message.toString()
-                                )
+                    is Resource.Error -> {
+                        MyLogger.e(
+                            tagProfile,
+                            msg = giveMeErrorMessage(
+                                "Fetching Following List",
+                                response.message.toString()
                             )
+                        )
 
-                            if (!response.hasBeenMessagedToUser) {
-                                response.hasBeenMessagedToUser = true
-                                showSnackBar(response.message?.toString())
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
                             }
                         }
                     }
-                }.launchIn(this)
-                followingViewModel.unFollow.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            hideDialog()
-                            MyLogger.v(tagProfile, msg = "UnFollow successfully!")
-                            showSnackBar("Follower Removed Successfully !", isSuccess = true)
-                        }
+                }
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
+            }.launchIn(this)
+            followingViewModel.unFollow.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        MyLogger.v(tagProfile, msg = "UnFollow successfully!")
+                        showSnackBar("Follower Removed Successfully !", isSuccess = true)
+                    }
 
-                        is Resource.Loading -> {
-                            MyLogger.v(tagProfile, msg = "UnFollowing ...")
-                            showDialog()
-                        }
+                    is Resource.Loading -> {
+                        MyLogger.v(tagProfile, msg = "UnFollowing ...")
+                        showDialog()
+                    }
 
-                        is Resource.Error -> {
-                            hideDialog()
-                            MyLogger.e(
-                                tagProfile,
-                                msg = response.message
-                            )
+                    is Resource.Error -> {
+                        hideDialog()
+                        MyLogger.e(
+                            tagProfile,
+                            msg = response.message
+                        )
 
-                            if (!response.hasBeenMessagedToUser) {
-                                response.hasBeenMessagedToUser = true
-                                showSnackBar(response.message?.toString())
-                            }
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            showSnackBar(response.message?.toString())
                         }
                     }
-                }.launchIn(this)
-            }
+                }
+            }.launchIn(this)
         }
     }
 
@@ -280,8 +294,11 @@ class FollowingFragment : Fragment() ,AlertDialogOption {
     }
 
     private fun navigateToUserDetailsScreen(userId: String) {
-        val direction: NavDirections = FriendCircleFragmentDirections.actionFriendCircleFragmentToProfileViewFragment(userId)
-        navController?.value?.safeNavigate(direction, Helper.giveAnimationNavOption())
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalProfileViewFragment(userId)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
     override fun onResult(isYes: Boolean) {

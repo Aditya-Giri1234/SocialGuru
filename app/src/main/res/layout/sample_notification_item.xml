@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="@dimen/_10sdp"
+    android:paddingVertical="@dimen/_5sdp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/lightBlack">
+
+    <com.aditya.socialguru.domain_layer.custom_class.chauthai_library.SwipeRevealLayout
+        android:id="@+id/swipe_layout"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        app:dragEdge="right"
+        app:mode="same_level"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:ignore="MissingClass">
+        <FrameLayout
+            android:id="@+id/frameDelete"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent">
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/menuDelete"
+                android:layout_width="@dimen/_40sdp"
+                android:layout_height="@dimen/_40sdp"
+                android:background="@color/red"
+                android:elevation="0dp"
+                app:cardBackgroundColor="@color/red"
+                app:cardElevation="0dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/tx_clear"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="@dimen/_10sdp"
+                    android:layout_gravity="center"
+                    android:backgroundTint="@color/white"
+                    android:background="@drawable/iv_delete" />
+            </androidx.cardview.widget.CardView>
+
+
+        </FrameLayout>
+        <FrameLayout
+            android:id="@+id/frame_grp_main"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/ivProfilePic"
+                    android:layout_width="@dimen/_35sdp"
+                    android:layout_height="@dimen/_35sdp"
+                    android:src="@drawable/ic_person"
+                    app:civ_border_width="@dimen/_1sdp"
+                    app:civ_border_color="@color/blue"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"/>
+
+                <TextView
+                    android:id="@+id/tvInitial"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:fontFamily="@font/poppins_semi_bold"
+                    android:text="A"
+                    android:textAlignment="center"
+                    android:gravity="center"
+                    android:background="@drawable/circle_shape_bg"
+                    android:visibility="gone"
+                    android:maxLength="1"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/white"
+                    android:textSize="@dimen/_16ssp"
+                    app:layout_constraintTop_toTopOf="@id/ivProfilePic"
+                    app:layout_constraintStart_toStartOf="@id/ivProfilePic"
+                    app:layout_constraintEnd_toEndOf="@id/ivProfilePic"
+                    app:layout_constraintBottom_toBottomOf="@id/ivProfilePic"/>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:layout_marginStart="@dimen/_10sdp"
+                    app:layout_constraintTop_toTopOf="@id/ivProfilePic"
+                    app:layout_constraintStart_toEndOf="@id/ivProfilePic"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintBottom_toBottomOf="@id/ivProfilePic">
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/tvNotificationMessage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Aditya follows you."
+                        android:textColor="@color/white"
+                        android:fontFamily="@font/poppins_semi_bold"
+                        android:textSize="@dimen/_12ssp"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:justificationMode="none"
+                        app:layout_constraintStart_toEndOf="@id/ivProfilePic"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"/>
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/tvNotificationTime"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="1 min ago."
+                        android:textColor="@color/white"
+                        android:fontFamily="@font/poppins_regular"
+                        android:textSize="@dimen/_10ssp"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:justificationMode="none"
+                        android:layout_marginStart="@dimen/_5sdp"
+                        android:layout_marginTop="@dimen/_10sdp"
+                        app:layout_constraintStart_toStartOf="@id/tvNotificationMessage"
+                        app:layout_constraintTop_toBottomOf="@id/tvNotificationMessage"
+                        app:layout_constraintEnd_toEndOf="@id/tvNotificationMessage"/>
+
+                </LinearLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </FrameLayout>
+    </com.aditya.socialguru.domain_layer.custom_class.chauthai_library.SwipeRevealLayout>
+
+
+
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

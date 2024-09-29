@@ -16,9 +16,11 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        jcenter()
         maven { url=uri("https://jitpack.io") }
     }
 }
 
 rootProject.name = "SocialGuru"
 include(":app")
+include(":video-trimmer")

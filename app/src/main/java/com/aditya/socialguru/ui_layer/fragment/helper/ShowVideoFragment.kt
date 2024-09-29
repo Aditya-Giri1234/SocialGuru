@@ -21,20 +21,27 @@ import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.exoplayer.util.EventLogger
 import androidx.navigation.fragment.navArgs
+import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.databinding.FragmentShowVideoBinding
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.hide
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
-import com.aditya.socialguru.domain_layer.helper.shareVideo
 import com.aditya.socialguru.domain_layer.manager.MyLogger
-import com.aditya.socialguru.ui_layer.activity.ContainerActivity
+import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.aditya.socialguru.ui_layer.viewmodel.VideoViewModel
 import com.google.android.material.animation.AnimationUtils
 
 
+@UnstableApi
 class ShowVideoFragment : Fragment() {
 
     private var _binding: FragmentShowVideoBinding? = null
@@ -42,9 +49,24 @@ class ShowVideoFragment : Fragment() {
 
     private val args: ShowVideoFragmentArgs by navArgs()
     private lateinit var videoUri: Uri
+    private var isShareAllow: Boolean =false
 
     private val myPlayer by lazy {
-        ExoPlayer.Builder(requireContext()).build()
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                15000,    // Minimum buffer before playback starts (in milliseconds)
+                50000,    // Maximum buffer before stopping fetching more data
+                2500,  // Buffer required for playback to resume
+                5000 // Buffer required after rebuffering
+            )
+            .build()
+        val trackSelector = DefaultTrackSelector(requireContext())
+        val eventLogger = EventLogger(trackSelector)
+        val player =ExoPlayer.Builder(requireContext())
+            .setLoadControl(loadControl)
+            .build()
+        player.addAnalyticsListener(eventLogger)
+        player
     }
     private val videoViewModel: VideoViewModel by viewModels()
 
@@ -57,7 +79,7 @@ class ShowVideoFragment : Fragment() {
     }
 
 
-    private val navController get() = (requireActivity() as ContainerActivity).navController
+    private val navController get() = (requireActivity() as MainActivity).navController
 
 
 
@@ -80,19 +102,21 @@ class ShowVideoFragment : Fragment() {
 
     private fun handleInitialization() {
         videoUri = args.videoUri
+        isShareAllow = args.isShareAllow
         initUi()
     }
 
 
     private fun initUi() {
         binding.apply {
+            icShare?.isGone = !isShareAllow
             playerView.apply {
                 player = myPlayer
                 val mediaItem = MediaItem.fromUri(videoUri)
                 myPlayer.setMediaItem(mediaItem)
                 myPlayer.seekTo(videoViewModel.playerPosition)
                 myPlayer.prepare()
-                myPlayer.play()
+                myPlayer.playWhenReady=true
             }
 
             if (videoViewModel.isFirstTimeFragmentCreated){
@@ -144,7 +168,7 @@ class ShowVideoFragment : Fragment() {
 
         //This null check come because i remove this view from landscape mode
         icShare?.setSafeOnClickListener {
-            requireContext().shareVideo(videoUri)
+            ShareManager.shareVideo(requireContext(),videoUri)
         }
 
         icFullscreen.setSafeOnClickListener {
@@ -165,7 +189,7 @@ class ShowVideoFragment : Fragment() {
         }
 
 
-        binding.root.setOnApplyWindowInsetsListener { v, insets ->
+        root.setOnApplyWindowInsetsListener { v, insets ->
             // Apply the insets as padding to the view
             v.setPadding(
                 insets.systemWindowInsetLeft,
@@ -175,6 +199,31 @@ class ShowVideoFragment : Fragment() {
             )
             insets
         }
+        myPlayer.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                super.onPlaybackStateChanged(playbackState)
+                when (playbackState) {
+                    ExoPlayer.STATE_IDLE -> {
+                        MyLogger.d(msg = "STATE_IDLE")
+                    }
+
+                    ExoPlayer.STATE_BUFFERING -> {
+                        MyLogger.d(msg = "STATE_BUFFERING")
+                        progressBar?.myShow()
+                        playerView.hide()
+                    }
+
+                    ExoPlayer.STATE_READY -> {
+                        MyLogger.d(msg = "STATE_READY")
+                        progressBar?.gone()
+                        playerView.myShow()
+                    }
+                    ExoPlayer.STATE_ENDED -> {
+                        MyLogger.d(msg = "STATE_ENDED")
+                    }
+                }
+            }
+        })
     }
 
     private fun handleFullScreenClick() {

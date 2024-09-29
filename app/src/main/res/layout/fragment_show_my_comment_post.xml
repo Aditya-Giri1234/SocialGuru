@@ -8,17 +8,72 @@
     tools:context=".ui_layer.fragment.profile_part.my_activity.ShowMyCommentPostFragment">
 
     <TextView
+        android:id="@+id/tvNoDataView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="No Commented Post Found."
-        android:fontFamily="@font/poppin_medium"
+        android:text="It’s quiet here. Leave a comment to join the discussion!"
         android:textColor="@color/white"
         android:textSize="@dimen/_16ssp"
+        android:fontFamily="@font/poppins_semi_bold"
+        android:gravity="center"
+        android:paddingHorizontal="@dimen/_20sdp"
+        android:textAlignment="center"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.5" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvCommentedPost"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:nestedScrollingEnabled="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/linearBackToTop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="@dimen/_60sdp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:alpha=".8"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:background="@drawable/circle_shape_for_button"
+            android:backgroundTint="@color/blue">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:rotation="90"
+                android:src="@drawable/ic_left_arrow_without_line" />
+
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BACK TO TOP"
+            android:textColor="@color/white"
+            android:includeFontPadding="false"
+            android:fontFamily="@font/poppin_medium"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:textSize="@dimen/_13ssp"/>
+
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

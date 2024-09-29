@@ -4,6 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
@@ -17,14 +19,16 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
+import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.setFragmentResultListener
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -36,21 +40,32 @@ import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.bufferWithDelay
+import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
+import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.StoryTypeOptions
 import com.aditya.socialguru.domain_layer.service.SharePref
+import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.NormalPagerAdapter
 import com.aditya.socialguru.ui_layer.adapter.StoryAdapter
 import com.aditya.socialguru.ui_layer.fragment.dialog_fragment.StoryTypeOptionDialog
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeDiscoverPostFragment
 import com.aditya.socialguru.ui_layer.fragment.home_tab_layout.HomeFollowingPostFragment
 import com.aditya.socialguru.ui_layer.viewmodel.bottom_navigation_bar.HomeViewModel
-import kotlinx.coroutines.async
+import com.bumptech.glide.Glide
+import com.canhub.cropper.CropImageContract
+import com.canhub.cropper.CropImageContractOptions
+import com.canhub.cropper.CropImageOptions
+import com.canhub.cropper.CropImageView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -66,91 +81,120 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     private val tagStory = Constants.LogTag.Story
     private val tagPost = Constants.LogTag.Post
     private val userData: MutableList<UserStories> = mutableListOf<UserStories>()
+    private val jobQueue: ArrayDeque<()->Unit> = ArrayDeque()
     private val MAX_VIDEO_SIZE_MB = 30f
     private var myLoader: MyLoader? = null
     private var isFragmentSwitchHappen = true
+    private var videoFileName: String? = null
 
-    private var _storyAdapter:StoryAdapter?=null
-    private val storyAdapter get()=_storyAdapter!!
+    private var _storyAdapter: StoryAdapter? = null
+    private val storyAdapter get() = _storyAdapter!!
 
-
-
+    companion object {
+        const val VideoTrimResult = "VideoTrimResult"
+        const val VideoTrimRequest = "VideoTrimRequest"
+        const val VideoTrimFileName = "VideoTrimFileName"
+    }
 
     // Don't use lazy it lead to memory leak and not leave old view when fragment switching and come back this view that time thi variable if initialize with lazy that not leave old view and crash app
-    private var _pagerAdapter:NormalPagerAdapter?=null
-    private val pagerAdapter get()=_pagerAdapter!!
+    private var _pagerAdapter: NormalPagerAdapter? = null
+    private val pagerAdapter get() = _pagerAdapter!!
 
 
-    private val navController get() = (requireActivity() as MainActivity).navController?.value
+    private val navController get() = (requireActivity() as MainActivity).navController
 
     private val pref by lazy {
         SharePref(requireContext())
     }
 
 
-    private val homeViewModel: HomeViewModel by viewModels()
+    private val homeViewModel: HomeViewModel by activityViewModels()
 
-    val pickImage = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        // Callback is invoked after the user selects a media item or closes the
-        // photo picker.
-        if (uri != null) {
-            MyLogger.v(tagStory, msg = "User select pic now send to server !")
-            handleUserSelectedMedia(Constants.StoryType.Image, uri)
-
+    private val cropImage = registerForActivityResult(CropImageContract()) { result ->
+        if (result.isSuccessful) {
+            // Use the cropped image URI.
+            val croppedImageUri = result.uriContent
+            handleUserSelectedMedia(Constants.StoryType.Image, croppedImageUri)
         } else {
-            MyLogger.v(tagStory, msg = "User revoke or cancel upload story !")
+            // An error occurred.
+            val exception = result.error
+            // Handle the error.
         }
     }
 
-    val pickVideo = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        // Callback is invoked after the user selects a media item or closes the
-        // photo picker.
-        if (uri != null) {
-
-
-            val videoLength = Helper.getVideoSize(requireActivity(), uri)
-
-            when {
-                videoLength == -1f -> {
-                    MyLogger.e(
-                        tagStory,
-                        msg = "User selected video length is -1 means some error occurred !"
+    private val pickImage =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            // Callback is invoked after the user selects a media item or closes the
+            // photo picker.
+            if (uri != null) {
+                MyLogger.v(tagStory, msg = "User select pic now send to server !")
+                cropImage.launch(
+                    CropImageContractOptions(
+                        uri = uri,
+                        cropImageOptions = CropImageOptions(
+                            guidelines = CropImageView.Guidelines.ON,
+                            outputCompressFormat = Bitmap.CompressFormat.PNG,
+                            activityBackgroundColor = requireContext().giveMeColor(R.color.lightBlack),
+                            toolbarColor = requireContext().giveMeColor(R.color.black)
+                        )
                     )
-                    Helper.showSnackBar(
-                        (requireActivity() as MainActivity).findViewById(
-                            R.id.coordLayout
-                        ),
-                        "Some error occurred during video fetching  , may be file size to large!"
-                    )
-                }
+                )
 
-                videoLength >= MAX_VIDEO_SIZE_MB -> {
-                    MyLogger.e(
-                        tagStory,
-                        msg = "User selected video length is $videoLength and max lenght :- $MAX_VIDEO_SIZE_MB  which exceeded ! "
-                    )
-                    Helper.showSnackBar(
-                        (requireActivity() as MainActivity).findViewById(
-                            R.id.coordLayout
-                        ), "Video length exceeded , max length is $MAX_VIDEO_SIZE_MB mb !"
-                    )
-                }
-
-                else -> {
-                    MyLogger.v(
-                        tagStory,
-                        msg = "User selected video length is $videoLength and max length :- $MAX_VIDEO_SIZE_MB  which is not exceeded 😁! "
-                    )
-                    MyLogger.v(tagStory, msg = "User select video now send to server !")
-                    handleUserSelectedMedia(Constants.StoryType.Video, uri)
-                }
+            } else {
+                MyLogger.v(tagStory, msg = "User revoke or cancel upload story !")
             }
-
-
-        } else {
-            MyLogger.v(tagStory, msg = "User revoke or cancel upload story !")
         }
-    }
+
+    private val pickVideo =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            // Callback is invoked after the user selects a media item or closes the
+            // photo picker.
+            if (uri != null) {
+
+
+                val videoLength = Helper.getVideoSize(requireActivity(), uri)
+
+                when {
+                    videoLength == -1f -> {
+                        MyLogger.e(
+                            tagStory,
+                            msg = "User selected video length is -1 means some error occurred !"
+                        )
+                        Helper.showSnackBar(
+                            (requireActivity() as MainActivity).findViewById(
+                                R.id.coordLayout
+                            ),
+                            "Some error occurred during video fetching  , may be file size to large!"
+                        )
+                    }
+
+                    videoLength >= MAX_VIDEO_SIZE_MB -> {
+                        MyLogger.e(
+                            tagStory,
+                            msg = "User selected video length is $videoLength and max lenght :- $MAX_VIDEO_SIZE_MB  which exceeded ! "
+                        )
+                        Helper.showSnackBar(
+                            (requireActivity() as MainActivity).findViewById(
+                                R.id.coordLayout
+                            ), "Video length exceeded , max length is $MAX_VIDEO_SIZE_MB mb !"
+                        )
+                    }
+
+                    else -> {
+                        MyLogger.v(
+                            tagStory,
+                            msg = "User selected video length is $videoLength and max length :- $MAX_VIDEO_SIZE_MB  which is not exceeded 😁! "
+                        )
+                        MyLogger.v(tagStory, msg = "User select video now send to server !")
+                        navigateToVideoTrimScreen(uri.toString())
+                    }
+                }
+
+
+            } else {
+                MyLogger.v(tagStory, msg = "User revoke or cancel upload story !")
+            }
+        }
 
     private val broadcastManager = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -170,14 +214,20 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     }
 
-    private var isUserStorySnackBarShouldShow = true
-
 
     //endregion
 
     //region:: Top level function
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setFragmentResultListener(VideoTrimRequest) { requestKey, bundle ->
+            // We use a String here, but any type that can be put in a Bundle is supported.
+            val result = bundle.getString(VideoTrimResult)
+            videoFileName = bundle.getString(VideoTrimFileName)
+            result?.let {
+                handleUserSelectedMedia(Constants.StoryType.Video, result.toUri())
+            }
+        }
         subscribeToBroadcastReceiver()
         MyLogger.v(isFunctionCall = true)
     }
@@ -195,7 +245,6 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         MyLogger.v(isFunctionCall = true)
 
         handleInitialization()
@@ -207,7 +256,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
         initUi()
         subscribeToObserver()
-        //This flag help me when i navigate to other app and come back to this fragment then fragment state maintain so that if frament scrolled already then fragment go to previous scroll position which trigger to nested scroll listener down scroll logic. So below help me to skip first time down scroll when navigate happen between fragment.
+        //This flag help me when i navigate to other app and come back to this fragment then fragment state maintain so that if fragment scrolled already then fragment go to previous scroll position which trigger to nested scroll listener down scroll logic. So below help me to skip first time down scroll when navigate happen between fragment.
         isFragmentSwitchHappen = true
         if (!homeViewModel.isDataLoaded) {
             getData()
@@ -217,146 +266,156 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
     private fun subscribeToBroadcastReceiver() {
-        val filter = IntentFilter()
-        filter.addAction(Constants.BroadcastType.StoryUploading.name)
+        if (!homeViewModel.isDataLoaded) {
+            val filter = IntentFilter()
+            filter.addAction(Constants.BroadcastType.StoryUploading.name)
 
-        ContextCompat.registerReceiver(
-            requireContext(),
-            broadcastManager,
-            filter,
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
+            ContextCompat.registerReceiver(
+                requireContext(),
+                broadcastManager,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }
     }
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                homeViewModel.userStories.onEach { response ->
-                    response.let {
-                        MyLogger.d(msg = "Response coming and it was $response")
-                        when (response) {
-                            is Resource.Success -> {
-                                response.hasBeenMessagedToUser = true
-                                userData.clear()
-                                response.data?.let {
-                                    setData(it)
-                                } ?: run {
-                                    setData()
-                                    if (isUserStorySnackBarShouldShow) {
-                                        Helper.showSnackBar(
-                                            (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                            response.message.toString()
-                                        )
-                                    }
-                                }
-                                isUserStorySnackBarShouldShow = false
-
-                            }
-
-                            is Resource.Loading -> {
-                                isUserStorySnackBarShouldShow = true
-                            }
-
-                            is Resource.Error -> {
-                                response.hasBeenMessagedToUser = true
-                                if (isUserStorySnackBarShouldShow) {
-                                    Helper.showSnackBar(
-                                        (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                                        response.message.toString()
-                                    )
-                                    isUserStorySnackBarShouldShow = false
-                                }
-                            }
-                        }
-                    }
-
-                }.launchIn(this)
-
-                // bufferWithDelay is because collector is slow ( MyLoader take some  millisecond time to show ui  and publisher is fast. So it throw / public item and collector collect item and call loader but loader is not initialize at. So when you access it ui , it throw null pointer exception because binding is not initialize.
-                AppBroadcastHelper.uploadStories.bufferWithDelay(100).onEach {
-                    MyLogger.v(tagStory, isFunctionCall = true)
-                    when (it.first) {
-                        Constants.StoryUploadState.StartUploading, Constants.StoryUploadState.Uploading, Constants.StoryUploadState.SavingStory -> {
-                            myLoader?.setLoadingStatus(it.first.status, it.second ?: 0)
-                        }
-
-                        Constants.StoryUploadState.UploadingFail, Constants.StoryUploadState.UrlNotGet -> {
-                            MyLogger.e(
-                                tagStory,
-                                msg = "Something went wrong :- ${it.first.name} occurred !"
-                            )
-                            hideLoader()
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(
-                                    R.id.coordLayout
-                                ), "Story uploading failed !"
-                            )
-                        }
-
-                        Constants.StoryUploadState.StoryUploadedSuccessfully -> {
-                            MyLogger.v(
-                                tagStory,
-                                msg = "Loader is show with  StoryUploadedSuccessfully state ..."
-                            )
-                            hideLoader()
-                            Helper.showSuccessSnackBar(
-                                (requireActivity() as MainActivity).findViewById(
-                                    R.id.coordLayout
-                                ), "Story uploaded successfully !"
-                            )
-                        }
-                    }
-                }.launchIn(this)
-
-                homeViewModel.uploadStories.onEach { response ->
+        observeFlow {
+            homeViewModel.userStories.onEach { response ->
+                response.let {
+                    MyLogger.i(msg = "Response coming in ui screen !")
                     when (response) {
                         is Resource.Success -> {
-                            // Do nothing here
+                            userData.clear()
+                            response.data?.let {
+                                setData(it)
+                            } ?: run {
+                                setData()
+                            }
                         }
 
                         is Resource.Loading -> {
-                            MyLogger.v(
-                                tagStory,
-                                msg = "Story uploading now and now loader is showing !"
-                            )
-                            showLoader()
                         }
 
                         is Resource.Error -> {
-                            MyLogger.e(
-                                tagStory,
-                                msg = "Some error occurred during post uploading :- ${response.message.toString()}"
-                            )
-                            hideLoader()
-                            Helper.showSnackBar(
-                                (requireActivity() as MainActivity).findViewById(
-                                    R.id.coordLayout
-                                ),
-                                response.message.toString()
-                            )
-                            response.hasBeenMessagedToUser = true
+                            if (!response.hasBeenMessagedToUser) {
+                                response.hasBeenMessagedToUser = true
+                                when(response.message){
+                                    Constants.ErrorMessage.InternetNotAvailable.message ->{
+                                        jobQueue.add {
+                                            getData()
+                                        }
+                                    }
+                                    else ->{
+                                        showSnackBar(response.message.toString())
+                                    }
+                                }
+                            }
                         }
                     }
-                }.launchIn(this)
+                }
 
-                AppBroadcastHelper.homeFragmentBackToTopShow.onEach {
-                    if (it) {
-                        MyLogger.w(tagPost, msg = "Back To Top show event come!")
-                        showBackToTopView()
-                    } else {
-                        binding.linearBackToTop.gone()
-                    }
-                }.launchIn(this)
+            }.launchIn(this)
 
-                AppBroadcastHelper.homeScrollBackToTopClick.onEach {
-                    if (it) {
-                        MyLogger.i(tagPost, msg = "Back To Top click event come !")
-                        binding.nestedRVHome.smoothScrollTo(0, 0)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if(isInternetAvailable){
+                    jobQueue.forEach {
+                        it.invoke()
                     }
-                }.launchIn(this)
-            }
+                    jobQueue.clear()
+                }
+            }.launchIn(this)
+
+            // bufferWithDelay is because collector is slow ( MyLoader take some  millisecond time to show ui  and publisher is fast. So it throw / public item and collector collect item and call loader but loader is not initialize at. So when you access it ui , it throw null pointer exception because binding is not initialize.
+            AppBroadcastHelper.uploadStories.bufferWithDelay(100).onEach {
+                MyLogger.v(tagStory, isFunctionCall = true)
+                when (it.first) {
+                    Constants.StoryUploadState.StartUploading, Constants.StoryUploadState.Uploading, Constants.StoryUploadState.SavingStory -> {
+                        myLoader?.setLoadingStatus(it.first.status, it.second ?: 0)
+                    }
+
+                    Constants.StoryUploadState.UploadingFail, Constants.StoryUploadState.UrlNotGet -> {
+                        MyLogger.e(
+                            tagStory,
+                            msg = "Something went wrong :- ${it.first.name} occurred !"
+                        )
+                        hideLoader()
+                        Helper.deleteCacheFile(requireContext(), videoFileName)
+                        Helper.showSnackBar(
+                            (requireActivity() as MainActivity).findViewById(
+                                R.id.coordLayout
+                            ), "Story uploading failed !"
+                        )
+                    }
+
+                    Constants.StoryUploadState.StoryUploadedSuccessfully -> {
+                        MyLogger.v(
+                            tagStory,
+                            msg = "Loader is show with  StoryUploadedSuccessfully state ..."
+                        )
+                        // This help to handle or change work manager status
+                        requireActivity().sendBroadcast(
+                            Intent(Constants.AppBroadCast.StoryChange.name).putExtra(
+                                Constants.DATA,
+                                2
+                            ).setPackage(requireContext().packageName)
+                        )
+                        hideLoader()
+                        Helper.deleteCacheFile(requireContext(), videoFileName)
+                        Helper.showSuccessSnackBar(
+                            (requireActivity() as MainActivity).findViewById(
+                                R.id.coordLayout
+                            ), "Story uploaded successfully !"
+                        )
+                    }
+                }
+            }.launchIn(this)
+
+            homeViewModel.uploadStories.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        // Do nothing here
+                    }
+
+                    is Resource.Loading -> {
+                        MyLogger.v(
+                            tagStory,
+                            msg = "Story uploading now and now loader is showing !"
+                        )
+                        showLoader()
+                    }
+
+                    is Resource.Error -> {
+                        MyLogger.e(
+                            tagStory,
+                            msg = "Some error occurred during post uploading :- ${response.message.toString()}"
+                        )
+                        hideLoader()
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            showSnackBar(response.message.toString())
+                        }
+                    }
+                }
+            }.launchIn(this)
+            pref.getPrefUser().onEach {
+                storyAdapter.setUserData(it)
+            }.launchIn(this)
+
+            AppBroadcastHelper.homeFragmentBackToTopShow.onEach {
+                if (it) {
+                    showBackToTopView()
+                } else {
+                    binding.linearBackToTop.gone()
+                }
+            }.launchIn(this)
+
+            AppBroadcastHelper.homeScrollBackToTopClick.onEach {
+                if (it) {
+                    binding.nestedRVHome.smoothScrollTo(0, 0)
+                }
+            }.launchIn(this)
         }
-
     }
 
 
@@ -365,7 +424,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     //region:: Ui initialization
     private fun initUi() {
         MyLogger.v(isFunctionCall = true)
-        _storyAdapter=StoryAdapter({
+        _storyAdapter = StoryAdapter({
             MyLogger.v(tagStory, msg = "User want upload story !")
             StoryTypeOptionDialog(this@HomeFragment).show(childFragmentManager, "MyStoryDialogView")
         }, { stories ->
@@ -382,13 +441,35 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                 myToolbar.icSetting.myShow()
                 adapter = storyAdapter
 
+                myToolbar.apply {
+                    lifecycleScope.myLaunch {
+                        pref.getPrefUser().first()?.let {
+                            runOnUiThread {
+                                tvHeaderUserName.text = it.userName
+
+                                if (it.userProfileImage == null) {
+                                    tvInitial.myShow()
+                                    profileImage.gone()
+                                    tvInitial.text = it.userName?.get(0).toString()
+                                    tvInitial.setCircularBackground(Helper.setUserProfileColor(it))
+
+                                } else {
+                                    profileImage.myShow()
+                                    tvInitial.gone()
+                                    Glide.with(profileImage).load(it.userProfileImage)
+                                        .placeholder(R.drawable.ic_user).error(R.drawable.ic_user)
+                                        .into(profileImage)
+                                }
+
+                            }
+                        }
+                    }
+                }
 
             }
 
 
-            val username = lifecycleScope.async {
-                binding.myToolbar.tvHeaderUserName.text = pref.getPrefUser().first()?.userName
-            }
+
 
             setUpViewPager()
             setListener()
@@ -413,6 +494,12 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     }
 
     private fun FragmentHomeBinding.setListener() {
+        myToolbar.profileImage.setSafeOnClickListener {
+            navigateToProfileViewFragment()
+        }
+        myToolbar.tvInitial.setSafeOnClickListener {
+            navigateToProfileViewFragment()
+        }
         myToolbar.icSetting.setOnClickListener {
             showPopupMenu()
         }
@@ -424,7 +511,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
             if (scrollY > oldScrollY) {
                 //Scroll Down
                 if (!isFragmentSwitchHappen) {
-                    MyLogger.v(tagPost, msg = "Down scroll")
+//                    MyLogger.v(tagPost, msg = "Down scroll")
                     AppBroadcastHelper.setHomeFragmentBackToTopShow(false)
                     AppBroadcastHelper.setMainActivityBottomNavHideByScroll(true)
                 } else {
@@ -434,7 +521,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
             }
             if (scrollY < oldScrollY) {
                 //Scroll Up
-                MyLogger.v(tagPost, msg = "Up scroll")
+//                MyLogger.v(tagPost, msg = "Up scroll")
                 AppBroadcastHelper.setHomeFragmentBackToTopShow(true)
                 AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
 
@@ -442,7 +529,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
             if (scrollY == 0) {
                 //Top Scroll
-                MyLogger.v(tagPost, msg = "Top Scroll")
+//                MyLogger.v(tagPost, msg = "Top Scroll")
                 AppBroadcastHelper.setHomeFragmentBackToTopShow(false)
                 AppBroadcastHelper.setMainActivityBottomNavHideByScroll(false)
             }
@@ -455,17 +542,14 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     //region:: UI utility function
 
     private fun getData() {
-        lifecycleScope.launch {
-            pref.getPrefUser().first()?.userId?.let {
-                homeViewModel.getAllStory(it)
-            } ?: run {
-                MyLogger.w(tagStory, msg = "Get All Story is fail  due to used id is null !")
-            }
-        }
+        homeViewModel.getAllStory(AuthManager.currentUserId()!!)
     }
 
     private fun setData(userStories: List<UserStories> = mutableListOf()) {
         MyLogger.v(isFunctionCall = true)
+
+//        lifecycleScope.launch {
+//            val user = pref.getPrefUser().first()
 
         if (userData.isEmpty()) {
             userData.add(0, UserStories(null, null))
@@ -474,6 +558,8 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
         MyLogger.v(msg = "Now data is set into homeFragment !")
         storyAdapter.submitList(userData.toList())
+//        }
+
     }
 
     private fun showPopupMenu() {
@@ -492,24 +578,49 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         popUp.animationStyle = R.style.popup_window_animation
         popUp.showAsDropDown(binding.myToolbar.icSetting)
 
-        bindingPopUp.linearItemStatus.setSafeOnClickListener {
+        bindingPopUp.linearItemStatus.setOnClickListener {
             navigateToShowMyStatus()
+            popUp.dismiss()
+        }
+
+        bindingPopUp.linearSearchUser.setOnClickListener {
+            navigateToSearchUserScreen()
             popUp.dismiss()
         }
 
 
     }
 
+    private fun navigateToSearchUserScreen() {
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalSearchUserGlobalFragment()
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
+    }
+
     private fun navigateToShowMyStatus() {
         val directions: NavDirections =
-            HomeFragmentDirections.actionHomeFragmentToShowMyStoryFragment()
-        navController?.safeNavigate(directions)
+            BottomNavigationBarDirections.actionGlobalShowMyStoryFragment(AuthManager.currentUserId()!!)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
     private fun navigateToStoryShow(stories: UserStories) {
         val directions: NavDirections =
-            HomeFragmentDirections.actionHomeFragmentToStoryShowFragment(stories)
-        navController?.safeNavigate(directions, Helper.giveAnimationNavOption())
+            BottomNavigationBarDirections.actionGlobalStoryShowFragment(stories)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
+    }
+
+    private fun navigateToProfileViewFragment() {
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalProfileViewFragment(AuthManager.currentUserId()!!)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
     private fun showBackToTopView() {
@@ -523,6 +634,22 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     }
 
+    private fun showSnackBar(message: String?, isSuccess: Boolean = false) {
+        if (isSuccess) {
+            Helper.showSuccessSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        } else {
+            Helper.showSnackBar(
+                (requireActivity() as MainActivity).findViewById<CoordinatorLayout>(
+                    R.id.coordLayout
+                ), message.toString()
+            )
+        }
+    }
+
 
     //region:: Upload story helper
 
@@ -531,7 +658,6 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         uri: Uri? = null,
         text: StoryText? = null
     ) {
-
         lifecycleScope.launch {
             try {
                 pref.getPrefUser().first()?.let {
@@ -546,14 +672,20 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                     tagStory,
                     msg = "Some error occurred during uploading story  :- ${e.message}"
                 )
-                Helper.showSnackBar(
-                    (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
-                    e.message.toString()
-                )
-
+                runOnUiThread {
+                    Helper.showSnackBar(
+                        (requireActivity() as MainActivity).findViewById(R.id.coordLayout),
+                        e.message.toString()
+                    )
+                }
             }
-
         }
+    }
+
+    private fun navigateToVideoTrimScreen(videoUri: String) {
+        val directions: NavDirections =
+            HomeFragmentDirections.actionHomeFragmentToVideoTrimmingFragment(videoUri)
+        navController.safeNavigate(directions, Helper.giveAnimationNavOption())
     }
 
 
@@ -568,7 +700,7 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     private fun hideLoader() {
         MyLogger.w(tagStory, isFunctionCall = true)
-        lifecycleScope.launch {
+        lifecycleScope.myLaunch {
             delay(100)
             myLoader?.dismiss()
             myLoader = null
@@ -585,6 +717,11 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     override fun onResume() {
         MyLogger.v(isFunctionCall = true)
         super.onResume()
+    }
+
+    override fun onPause() {
+        binding.linearBackToTop.gone()
+        super.onPause()
     }
 
     override fun onStoryTypeSelect(selectedStoryType: Constants.StoryType) {
@@ -617,9 +754,9 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     override fun onDestroyView() {
         MyLogger.v(isFunctionCall = true)
-        _storyAdapter=null
-        _pagerAdapter=null
-        binding.rvStories.adapter=null
+        _storyAdapter = null
+        _pagerAdapter = null
+        binding.rvStories.adapter = null
         binding.viewPagerHome.adapter = null
         _binding = null
         super.onDestroyView()
@@ -627,7 +764,11 @@ class HomeFragment : Fragment(), StoryTypeOptions {
 
     override fun onDestroy() {
         MyLogger.v(isFunctionCall = true)
-        requireContext().unregisterReceiver(broadcastManager)
+        val navHostFragment = requireActivity().supportFragmentManager.fragments.first()
+        if (navHostFragment.childFragmentManager.backStackEntryCount == 0) {
+            MyLogger.w(tagStory, msg = "Broadcast receiver is now unregister !")
+            requireContext().unregisterReceiver(broadcastManager)
+        }
         super.onDestroy()
     }
     //endregion

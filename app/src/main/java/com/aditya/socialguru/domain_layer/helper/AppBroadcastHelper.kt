@@ -1,6 +1,8 @@
 package com.aditya.socialguru.domain_layer.helper
 
 import com.aditya.socialguru.data_layer.model.post.PostUploadingResponse
+import com.aditya.socialguru.data_layer.model.post.post_meta_data.LikedPostModel
+import com.aditya.socialguru.data_layer.model.post.post_meta_data.SavedPostModel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -48,6 +50,26 @@ object AppBroadcastHelper {
 
     val homeScrollBackToTopClick get() = _homeScrollBackToTopClick.asSharedFlow()
 
+    private val _savedPost = MutableSharedFlow<List<SavedPostModel>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+
+    val savedPost get() = _savedPost.asSharedFlow()
+
+    private val _likedPost = MutableSharedFlow<List<LikedPostModel>>(
+        1,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+
+    val likedPost get() = _likedPost.asSharedFlow()
+
+
+
+
+
     fun setStoryUploadState(state: Constants.StoryUploadState, percentage: Int? = null) {
         _uploadStories.tryEmit(Pair(state, percentage))
     }
@@ -66,5 +88,13 @@ object AppBroadcastHelper {
 
     fun setHomeScrollBackToTopClick(isClick:Boolean){
         _homeScrollBackToTopClick.tryEmit(isClick)
+    }
+
+    fun setSavedPostList (list: List<SavedPostModel>){
+        _savedPost.tryEmit(list)
+    }
+
+    fun setLikedPostList (list: List<LikedPostModel>){
+        _likedPost.tryEmit(list)
     }
 }

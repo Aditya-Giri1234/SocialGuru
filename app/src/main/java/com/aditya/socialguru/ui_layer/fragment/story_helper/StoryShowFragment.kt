@@ -51,7 +51,7 @@ class StoryShowFragment : Fragment() {
     private var currentStatusIndex = 0
     private val tagStory = Constants.LogTag.Story
 
-    private val navController get() = (requireActivity() as MainActivity).navController?.value
+    private val navController get() = (requireActivity() as MainActivity).navController
     private val mediaController: MediaController by lazy {
         MediaController(requireContext())
     }
@@ -167,13 +167,12 @@ class StoryShowFragment : Fragment() {
         next.setOnClickListener {
           handleNextStoryChange()
         }
-        videoStatus.viewTreeObserver.addOnGlobalLayoutListener {
+        videoStatus.addOnLayoutChangeListener { v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
             MyLogger.w(tagStory, msg = "Video view layout change !")
             if (_binding != null) {
                 closeVideoIfPlay()
             }
         }
-
 
     }
 
@@ -232,7 +231,7 @@ class StoryShowFragment : Fragment() {
                            override fun onError() {
                                progressBar.gone()
                                Helper.customToast(requireContext(),"Some error occurred during video loading !" ,
-                                   Toast.LENGTH_SHORT)
+                                   Toast.LENGTH_SHORT,true)
 
                                handleNextStoryChange()
                            }

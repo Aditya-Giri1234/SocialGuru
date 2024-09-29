@@ -3,12 +3,318 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/black"
     tools:context=".ui_layer.fragment.profile_part.SettingFragment">
 
     <include
         android:id="@+id/myToolbar"
         layout="@layout/custom_toolbar" />
+
+    <View
+        android:id="@+id/view"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_1sdp"
+        android:layout_marginTop="?actionBarSize"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:background="@color/lightWhite"/>
+
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/nestedScroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constrainedHeight="true"
+        android:layout_marginBottom="@dimen/_10sdp"
+        android:fillViewport="true"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@id/btnDelete"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/view">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardStoryRemove"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_30sdp"
+                app:cardBackgroundColor="@color/lightBlack"
+                app:cardCornerRadius="@dimen/_10sdp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/_10sdp">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Remove Story"
+                            android:textColor="@color/white"
+                            android:textSize="@dimen/_16ssp"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/poppin_medium"/>
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="If select then story remove after 24 hour after when you upload."
+                            android:layout_weight="1"
+                            android:textColor="@color/lightWhite"
+                            android:textSize="@dimen/_12ssp"
+                            android:fontFamily="@font/poppin_medium"/>
+                    </LinearLayout>
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchRemoveStory"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:thumb="@drawable/toggle_thumb"
+                        app:switchMinWidth="@dimen/_50sdp"
+                        android:layout_marginHorizontal="@dimen/_5sdp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:track="@drawable/toggle_track" />
+
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardHideLastSeen"
+                android:layout_width="0dp"
+                android:layout_height="?actionBarSize"
+                android:layout_marginTop="@dimen/_30sdp"
+                app:cardBackgroundColor="@color/lightBlack"
+                app:cardCornerRadius="@dimen/_10sdp"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintTop_toBottomOf="@id/cardStoryRemove"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/_10sdp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Hide Last Seeen"
+                        android:textColor="@color/white"
+                        android:layout_weight="1"
+                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"/>
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchLastSeen"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:thumb="@drawable/toggle_thumb"
+                        app:switchMinWidth="@dimen/_50sdp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:track="@drawable/toggle_track" />
+
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardUpdateEmailSetting"
+                android:layout_width="0dp"
+                android:layout_height="?actionBarSize"
+                android:layout_marginTop="@dimen/_30sdp"
+                app:cardBackgroundColor="@color/lightBlack"
+                app:cardCornerRadius="@dimen/_10sdp"
+                app:layout_constraintTop_toBottomOf="@id/cardHideLastSeen"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/_10sdp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Update Email"
+                        android:textColor="@color/white"
+                        android:layout_weight="1"
+                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"/>
+
+                    <ImageView
+                        android:id="@+id/ivMediaEmail"
+                        android:layout_width="@dimen/_40sdp"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/ic_right_arrow_without_line"
+                        app:tint="@color/white"/>
+
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardChangePasswordSetting"
+                android:layout_width="0dp"
+                android:layout_height="?actionBarSize"
+                android:layout_marginTop="@dimen/_30sdp"
+                app:cardBackgroundColor="@color/lightBlack"
+                app:cardCornerRadius="@dimen/_10sdp"
+                app:layout_constraintTop_toBottomOf="@id/cardUpdateEmailSetting"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/_10sdp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Change Password"
+                        android:textColor="@color/white"
+                        android:layout_weight="1"
+                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"/>
+
+                    <ImageView
+                        android:id="@+id/ivMediaPassword"
+                        android:layout_width="@dimen/_40sdp"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/ic_right_arrow_without_line"
+                        app:tint="@color/white"/>
+
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardResetPasswordSetting"
+                android:layout_width="0dp"
+                android:layout_height="?actionBarSize"
+                android:layout_marginTop="@dimen/_30sdp"
+                app:cardBackgroundColor="@color/lightBlack"
+                app:cardCornerRadius="@dimen/_10sdp"
+                app:layout_constraintTop_toBottomOf="@id/cardChangePasswordSetting"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/_10sdp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Reset Password"
+                        android:textColor="@color/white"
+                        android:layout_weight="1"
+                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"/>
+
+                    <ImageView
+                        android:id="@+id/ivMediaResetPassword"
+                        android:layout_width="@dimen/_40sdp"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/ic_right_arrow_without_line"
+                        app:tint="@color/white"/>
+
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardNotificationSetting"
+                android:layout_width="0dp"
+                android:layout_height="?actionBarSize"
+                android:layout_marginTop="@dimen/_30sdp"
+                app:cardBackgroundColor="@color/lightBlack"
+                app:cardCornerRadius="@dimen/_10sdp"
+                app:layout_constraintTop_toBottomOf="@id/cardResetPasswordSetting"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/_10sdp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Handle Notification"
+                        android:textColor="@color/white"
+                        android:layout_weight="1"
+                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"/>
+
+                    <ImageView
+                        android:id="@+id/ivMediaNotification"
+                        android:layout_width="@dimen/_40sdp"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/ic_right_arrow_without_line"
+                        app:tint="@color/white"/>
+
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineStart"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_begin="@dimen/_15sdp" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineEnd"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_end="@dimen/_15sdp" />
+
+
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineBottom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                app:layout_constraintGuide_end="@dimen/_10sdp" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <Button
+        android:id="@+id/btnDelete"
+        android:layout_width="match_parent"
+        android:layout_height="?actionBarSize"
+        android:text="Delete Account"
+        android:backgroundTint="@color/red"
+        android:textSize="@dimen/_16ssp"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

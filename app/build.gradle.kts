@@ -14,11 +14,13 @@ android {
 
 
 
-    // Index.List and dependencies have duplicate file so remove one during gradle build
+    // Index.List , LICENSE.md  ,META-INF/NOTICE.md and dependencies have duplicate file so remove one during gradle build
     packaging {
         resources {
             excludes += "META-INF/INDEX.LIST"
             excludes +="META-INF/DEPENDENCIES"
+            excludes +="META-INF/LICENSE.md"
+            excludes +="META-INF/NOTICE.md"
         }
     }
 
@@ -34,7 +36,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -51,7 +53,41 @@ android {
 
     buildFeatures {
         viewBinding = true
+        dataBinding = true
     }
+    sourceSets {
+        getByName("main") {
+            java.srcDir(layout.buildDirectory.dir("generated/source/appConfig"))
+        }
+    }
+
+}
+
+tasks.register("generateAppConfig") {
+    // Use the layout.buildDirectory property instead of buildDir
+    val outputDir = layout.buildDirectory.dir("generated/source/appConfig")
+
+    doLast {
+        val appConfigDir = outputDir.get().asFile
+        if (!appConfigDir.exists()) {
+            appConfigDir.mkdirs()
+        }
+
+        val appConfigFile = File(appConfigDir, "AppConfig.kt")
+        val logCanShow = false
+        appConfigFile.writeText("""
+            package ${android.namespace}
+            object AppConfig {
+                const val LOG_CAN_SHOW = $logCanShow
+            }
+        """.trimIndent())
+
+        println("AppConfig.kt file generated at ${appConfigFile.path}")
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn("generateAppConfig")
 }
 
 dependencies {
@@ -63,6 +99,8 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.firebase.storage.ktx)
     implementation(libs.androidx.media3.exoplayer.hls)
+    implementation(libs.androidx.databinding.compiler)
+    implementation(libs.androidx.core.animation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -70,6 +108,9 @@ dependencies {
 
     //For Memory Leak
 //    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+
+    //add Module
+    implementation(project(mapOf("path" to ":video-trimmer")))
 
     //For text size
     implementation("com.intuit.sdp:sdp-android:1.1.1")
@@ -89,9 +130,11 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     ksp("com.github.bumptech.glide:ksp:4.15.1")
 
+    // WorkManager dependency
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
+
 
     //Firebase Dependency
-
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-storage")
@@ -140,4 +183,10 @@ dependencies {
 
     //Google Auth
     implementation("com.google.auth:google-auth-library-oauth2-http:1.23.0")
+
+
+    //Image Crop
+    implementation("com.vanniktech:android-image-cropper:4.6.0")
+
+
 }

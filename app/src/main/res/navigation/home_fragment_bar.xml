@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/home_fragment_bar"
-    app:startDestination="@id/supportHomeFragment">
+    app:startDestination="@id/homeFragment">
 
 
 
@@ -16,23 +16,8 @@
             android:id="@+id/action_homeFragment_to_writeTextStoryFragment"
             app:destination="@id/writeTextStoryFragment" />
         <action
-            android:id="@+id/action_homeFragment_to_storyShowFragment"
-            app:destination="@id/storyShowFragment" />
-        <action
-            android:id="@+id/action_homeFragment_to_showMyStoryFragment"
-            app:destination="@id/showMyStoryFragment" />
-        <action
-            android:id="@+id/action_homeFragment_to_detailPostFragment"
-            app:destination="@id/detailPostFragment" />
-    </fragment>
-    <fragment
-        android:id="@+id/supportHomeFragment"
-        android:name="com.aditya.socialguru.ui_layer.fragment.bottom_navigation_fragment.SupportHomeFragment"
-        android:label="fragment_support_home"
-        tools:layout="@layout/fragment_support_home" >
-        <action
-            android:id="@+id/action_supportHomeFragment_to_homeFragment"
-            app:destination="@id/homeFragment" />
+            android:id="@+id/action_homeFragment_to_videoTrimmingFragment"
+            app:destination="@id/videoTrimmingFragment" />
     </fragment>
     <fragment
         android:id="@+id/writeTextStoryFragment"
@@ -40,42 +25,12 @@
         android:label="fragment_write_text_story"
         tools:layout="@layout/fragment_write_text_story" />
     <fragment
-        android:id="@+id/storyShowFragment"
-        android:name="com.aditya.socialguru.ui_layer.fragment.story_helper.StoryShowFragment"
-        android:label="fragment_story_show"
-        tools:layout="@layout/fragment_story_show" >
+        android:id="@+id/videoTrimmingFragment"
+        android:name="com.aditya.socialguru.ui_layer.fragment.helper.VideoTrimmingFragment"
+        android:label="fragment_video_trimming"
+        tools:layout="@layout/fragment_video_trimming" >
         <argument
-            android:name="userStory"
-            app:argType="com.aditya.socialguru.data_layer.model.story.UserStories" />
-    </fragment>
-    <fragment
-        android:id="@+id/showMyStoryFragment"
-        android:name="com.aditya.socialguru.ui_layer.fragment.story_helper.ShowMyStoryFragment"
-        android:label="fragment_show_my_story"
-        tools:layout="@layout/fragment_show_my_story" >
-        <action
-            android:id="@+id/action_showMyStoryFragment_to_storyShowFragment"
-            app:destination="@id/storyShowFragment" />
-    </fragment>
-    <fragment
-        android:id="@+id/detailPostFragment"
-        android:name="com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragment"
-        android:label="fragment_detail_post"
-        tools:layout="@layout/fragment_detail_post" >
-        <argument
-            android:name="postId"
-            app:argType="string" />
-        <action
-            android:id="@+id/action_detailPostFragment_to_profileViewFragment2"
-            app:destination="@id/profileViewFragment2" />
-    </fragment>
-    <fragment
-        android:id="@+id/profileViewFragment2"
-        android:name="com.aditya.socialguru.ui_layer.fragment.profile_part.ProfileViewFragment"
-        android:label="fragment_profile_view"
-        tools:layout="@layout/fragment_profile_view" >
-        <argument
-            android:name="userId"
+            android:name="videoUri"
             app:argType="string" />
     </fragment>
 </navigation>

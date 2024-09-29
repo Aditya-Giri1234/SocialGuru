@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/black"
+    tools:context=".ui_layer.fragment.chat_fragment_helper.group_chat.GroupProfileFragment">
+
+    <include
+        android:id="@+id/myToolbar"
+        layout="@layout/custom_toolbar" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:layout_marginTop="?actionBarSize"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <View
+                android:id="@+id/view"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/_1sdp"
+                android:background="@color/lightWhite"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/ivProfileImage"
+                android:layout_width="@dimen/_100sdp"
+                android:layout_height="@dimen/_100sdp"
+                android:layout_marginStart="@dimen/_2sdp"
+                app:civ_border_color="@color/blue"
+                app:civ_border_width="@dimen/_1sdp"
+                android:src="@drawable/ic_group"
+                android:layout_marginTop="@dimen/_20sdp"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintTop_toTopOf="@id/view"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd"/>
+            <TextView
+                android:id="@+id/tvInitialMain"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:fontFamily="@font/poppins_semi_bold"
+                android:text="A"
+                android:textAlignment="center"
+                android:gravity="center"
+                android:background="@drawable/circle_shape_bg"
+                android:visibility="gone"
+                android:maxLength="1"
+                android:includeFontPadding="false"
+                android:textColor="@color/white"
+                android:textSize="@dimen/_40ssp"
+                app:layout_constraintTop_toTopOf="@id/ivProfileImage"
+                app:layout_constraintStart_toStartOf="@id/ivProfileImage"
+                app:layout_constraintEnd_toEndOf="@id/ivProfileImage"
+                app:layout_constraintBottom_toBottomOf="@id/ivProfileImage"/>
+
+            <ImageView
+                android:id="@+id/ivEditGroupInfo"
+                android:layout_width="@dimen/_24sdp"
+                android:layout_height="@dimen/_24sdp"
+                android:layout_marginStart="@dimen/_2sdp"
+                android:src="@drawable/ic_edit"
+                android:padding="@dimen/_5sdp"
+                android:visibility="gone"
+                android:background="@drawable/circle_shape_bg"
+                app:layout_constraintStart_toEndOf="@id/ivProfileImage"
+                app:layout_constraintTop_toTopOf="@id/ivProfileImage"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd"/>
+
+            <TextView
+                android:id="@+id/tvGroupName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:paddingHorizontal="@dimen/_10sdp"
+                android:maxWidth="@dimen/_400sdp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:maxLength="75"
+                android:ellipsize="end"
+                android:textColor="@color/white"
+                android:fontFamily="@font/poppin_medium"
+                android:textSize="@dimen/_16ssp"
+                android:layout_marginTop="@dimen/_10sdp"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+                app:layout_constraintTop_toBottomOf="@id/ivProfileImage"/>
+            <TextView
+                android:id="@+id/tvGroupDesc"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:visibility="gone"
+                android:paddingHorizontal="@dimen/_10sdp"
+                android:maxWidth="@dimen/_400sdp"
+                android:gravity="center"
+                android:maxLines="5"
+                android:maxLength="150"
+                android:ellipsize="end"
+                android:minHeight="@dimen/_100sdp"
+                android:maxHeight="@dimen/_150sdp"
+                android:background="@drawable/rounded_white_border_bg"
+                android:textColor="@color/white"
+                android:fontFamily="@font/poppin_medium"
+                android:textSize="@dimen/_14ssp"
+                android:layout_marginTop="@dimen/_10sdp"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+                app:layout_constraintTop_toBottomOf="@id/tvGroupName"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMuteNotification"
+                android:layout_width="0dp"
+                android:layout_height="?actionBarSize"
+                android:layout_marginTop="@dimen/_30sdp"
+                app:cardBackgroundColor="@color/lightBlack"
+                app:cardCornerRadius="@dimen/_10sdp"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintTop_toBottomOf="@id/tvGroupDesc"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/_10sdp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Mute Notification"
+                        android:textColor="@color/white"
+                        android:layout_weight="1"
+                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"/>
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchMute"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:thumb="@drawable/toggle_thumb"
+                        app:switchMinWidth="@dimen/_50sdp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:track="@drawable/toggle_track" />
+
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMedia"
+                android:layout_width="0dp"
+                android:layout_height="?actionBarSize"
+                android:layout_marginTop="@dimen/_20sdp"
+                app:cardBackgroundColor="@color/lightBlack"
+                app:cardCornerRadius="@dimen/_10sdp"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintTop_toBottomOf="@id/cardMuteNotification"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/_10sdp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Media"
+                        android:textColor="@color/white"
+                        android:layout_weight="1"
+                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"/>
+
+                    <ImageView
+                        android:id="@+id/ivMedia"
+                        android:layout_width="@dimen/_40sdp"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/ic_right_arrow_without_line"
+                        app:tint="@color/white"/>
+
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardGroupMembers"
+                android:layout_width="0dp"
+                android:layout_height="?actionBarSize"
+                android:layout_marginTop="@dimen/_20sdp"
+                app:cardBackgroundColor="@color/lightBlack"
+                app:cardCornerRadius="@dimen/_10sdp"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintTop_toBottomOf="@id/cardMedia"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/_10sdp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Members"
+                        android:textColor="@color/white"
+                        android:layout_weight="1"
+                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"/>
+
+                    <ImageView
+                        android:id="@+id/ivGroupMember"
+                        android:layout_width="@dimen/_40sdp"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/ic_right_arrow_without_line"
+                        app:tint="@color/white"/>
+
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAddMembers"
+                android:layout_width="0dp"
+                android:layout_height="?actionBarSize"
+                android:layout_marginTop="@dimen/_20sdp"
+                app:cardBackgroundColor="@color/lightBlack"
+                app:cardCornerRadius="@dimen/_10sdp"
+                android:visibility="gone"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintTop_toBottomOf="@id/cardGroupMembers"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/_10sdp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Add Members"
+                        android:textColor="@color/white"
+                        android:layout_weight="1"
+                        android:textSize="@dimen/_16ssp"
+                        android:fontFamily="@font/poppin_medium"/>
+
+                    <ImageView
+                        android:id="@+id/ivAddMember"
+                        android:layout_width="@dimen/_40sdp"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/ic_right_arrow_without_line"
+                        app:tint="@color/white"/>
+
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <Button
+                android:id="@+id/btnLeaveGroup"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Leave Group"
+                android:textColor="@color/white"
+                app:cornerRadius="@dimen/_20sdp"
+                android:backgroundTint="@color/red"
+                android:textAllCaps="false"
+                android:textSize="@dimen/_15ssp"
+                android:padding="@dimen/_5sdp"
+                android:layout_marginVertical="@dimen/_10sdp"
+                app:layout_constraintStart_toStartOf="@id/guidelineStart"
+                app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+                app:layout_constraintTop_toBottomOf="@id/cardAddMembers"
+                app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"/>
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineStart"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_begin="@dimen/_15sdp" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineEnd"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_end="@dimen/_15sdp" />
+
+
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineBottom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                app:layout_constraintGuide_end="@dimen/_10sdp" />
+
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

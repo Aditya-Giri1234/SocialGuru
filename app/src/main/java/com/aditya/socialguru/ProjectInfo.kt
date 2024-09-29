@@ -14,7 +14,6 @@ package com.aditya.socialguru
 //endregion
 
 
-
 //region:: Follower , Friend, Following
 
 
@@ -22,5 +21,18 @@ package com.aditya.socialguru
 * Pending Request :-> When user send friend request then this request store user pending request collection.
 * Friend Request :-> When user receive friend request then this request store user friend request collection.
 * */
+
+//endregion
+
+
+//region:: Chat Terminology
+
+/**
+ * MessageType :-> This refer text , image  and video  or there combination of them in one message.
+ *
+ * ChatType :-> This refer that this is message , date header or info type message.
+ *
+ *  Exception :- In notification data there chat type used for just differentiate is this text or media type notification.
+ * */
 
 //endregion

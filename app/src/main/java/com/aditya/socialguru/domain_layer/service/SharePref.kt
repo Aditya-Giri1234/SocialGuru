@@ -2,6 +2,7 @@ package com.aditya.socialguru.domain_layer.service
 
 import android.content.Context
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -26,6 +27,7 @@ class SharePref(val context: Context) {
     private object PreferencesKeys {
         val USER_KEY = stringPreferencesKey("USER_KEY")
         val FCM_TOKEN= stringPreferencesKey("FCM_TOKEN")
+        val IS_SPLASH_VISITED = booleanPreferencesKey("IS_SPLASH_VISITED")
     }
 
     suspend fun setFcmToken(fcmToken:String){

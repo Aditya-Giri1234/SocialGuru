@@ -96,6 +96,9 @@
                 android:padding="@dimen/_10sdp"
                 android:textColor="@color/white"
                 android:textSize="@dimen/_14ssp"
+                android:autoLink="all"
+                android:linksClickable="true"
+                android:textColorLink="@color/blue"
                 app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
                 app:layout_constraintStart_toStartOf="@id/guidelineStart"
                 app:layout_constraintTop_toBottomOf="@id/linearHeader" />
@@ -163,9 +166,6 @@
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </com.google.android.material.card.MaterialCardView>
-
-
-
 
             </LinearLayout>
 

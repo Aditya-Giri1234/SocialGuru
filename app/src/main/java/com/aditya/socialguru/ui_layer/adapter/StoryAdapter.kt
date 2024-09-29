@@ -10,13 +10,16 @@ import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.aditya.socialguru.R
+import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.story.UserStories
 import com.aditya.socialguru.databinding.AddStoryLayoutBinding
 import com.aditya.socialguru.databinding.SampleStoriesLayoutBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.hide
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.bumptech.glide.Glide
@@ -47,21 +50,27 @@ class StoryAdapter(
     private val tagStory=Constants.LogTag.Story
     private val TYPE_AVAIBLE = 0
     private val TYPE_UPLOAD = 1
+    private var userData: User?=null
 
     private val differ = AsyncListDiffer(this, callback)
 
     fun submitList(list: List<UserStories>) {
         differ.submitList(list)
+        notifyDataSetChanged()
     }
 
+
+    fun setUserData(user: User?) {
+        userData = user
+        notifyItemChanged(0)
+    }
     private inner class AvailableStoryViewHolder(val binding: SampleStoriesLayoutBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(data: UserStories) {
             binding.apply {
-                profileImage.setImageResource(
-                    R.drawable.person
-                )
+                Glide.with(profileImage).load(data.user?.userProfileImage).placeholder(R.drawable.ic_person).error(R.drawable.ic_person).into(profileImage)
+
                 tvProfileName.text = data.user?.userName ?: "Unknown"
                 tvStoryCount.text = "${data.stories?.size ?: 0} stories"
                 data.stories?.get(0)?.let { story ->
@@ -129,6 +138,18 @@ class StoryAdapter(
         RecyclerView.ViewHolder(view.root) {
         fun bind(data: UserStories) {
             view.apply {
+                userData?.let {
+                    if (it.userProfileImage==null){
+                        tvInitial.myShow()
+                        profileImage.gone()
+                        tvInitial.text = it.userName?.get(0).toString()
+                        tvInitial.setCircularBackground(Helper.setUserProfileColor(it))
+                    }else{
+                        tvInitial.gone()
+                        profileImage.myShow()
+                        Glide.with(profileImage).load(it.userProfileImage).placeholder(R.drawable.ic_user).error(R.drawable.ic_user).into(profileImage)
+                    }
+                }
                 root.setOnClickListener {
                     MyLogger.w(msg = "Story Adapter is clicked!")
                 }

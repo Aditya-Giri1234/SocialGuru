@@ -8,5 +8,11 @@ data class NotificationData(
     val postId:String?=null,
     val notificationTimeInText:String?=null,
     val notificationTimeInTimeStamp:String?=null,
-    val notificationId:String?=null
+    val notificationId:String?=null,
+    val chatRoomId:String?=null,
+    val messageId:String?=null,  // also work for comment Id
+
+    //For Group Chat
+    @field:JvmField
+    val isGroupMessage:String?=null // Data in string when sending to fcm notification
 )

@@ -56,16 +56,11 @@ class PostImageVideoAdapter(
         RecyclerView.ViewHolder(binding.root) {
         fun bind(data: PostImageVideoModel) {
             binding.apply {
-                ivVideoPost.setSafeOnClickListener {
-                    data.url?.let {
-                        onImageClick(it.convertParseUri())
-                    }
+                linearloader.setSafeOnClickListener {
+                    // Do nothing
+                    MyLogger.w(msg = "Loader is clicked !")
                 }
-                constVideo.setSafeOnClickListener {
-                    data.url?.let {
-                        onVideoClick(it.convertParseUri())
-                    }
-                }
+
                 Glide.with(ivVideoPost).load(data.url ?: "")
                     .addListener(object : RequestListener<Drawable?> {
                         override fun onLoadFailed(
@@ -90,6 +85,16 @@ class PostImageVideoAdapter(
                         ): Boolean {
                             linearloader.gone()
                             constVideo.isGone = data.isImage
+                            ivVideoPost.setSafeOnClickListener {
+                                data.url?.let {
+                                    onImageClick(it.convertParseUri())
+                                }
+                            }
+                            constVideo.setSafeOnClickListener {
+                                data.url?.let {
+                                    onVideoClick(it.convertParseUri())
+                                }
+                            }
                             return false
                         }
                     }).into(ivVideoPost)

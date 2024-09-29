@@ -9,12 +9,10 @@ import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -24,19 +22,19 @@ import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.giveMeErrorMessage
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.ui_layer.adapter.profile.friend_circle.FriendAdapter
-import com.aditya.socialguru.ui_layer.fragment.profile_part.FriendCircleFragmentDirections
 import com.aditya.socialguru.ui_layer.viewmodel.profile.friend_circle.FriendViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 
 class FollowerFragment : Fragment(), AlertDialogOption {
@@ -45,6 +43,7 @@ class FollowerFragment : Fragment(), AlertDialogOption {
     private val binding get() = _binding!!
 
     private val tagProfile = Constants.LogTag.Profile
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
 
     private val followerViewModel by viewModels<FriendViewModel>()
 
@@ -80,7 +79,7 @@ class FollowerFragment : Fragment(), AlertDialogOption {
     }
 
     private fun handleInitialization() {
-        _followerAdapter = FriendAdapter(false,{
+        _followerAdapter = FriendAdapter(false, {
             navigateToUserDetailsScreen(it)
         }) {
             AlertDialog(
@@ -104,74 +103,89 @@ class FollowerFragment : Fragment(), AlertDialogOption {
 
 
     private fun subscribeToObserver() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                followerViewModel.followerList.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            MyLogger.v(tagProfile, msg = "Follower List response come !")
-                            MyLogger.v(
-                                tagProfile,
-                                msg = response.data,
-                                isJson = true,
-                                jsonTitle = "Follower List"
-                            )
-                            response.data?.let {
-                                setData(it)
-                            } ?: run {
-                                setData()
-                                MyLogger.w(tagProfile, msg = "Follower list is empty !")
-                            }
+        observeFlow {
+            followerViewModel.followerList.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        MyLogger.i(tagProfile, msg = "Follower List response come !")
+                        MyLogger.d(
+                            tagProfile,
+                            msg = response.data,
+                            isJson = true,
+                            jsonTitle = "Follower List"
+                        )
+                        response.data?.let {
+                            setData(it)
+                        } ?: run {
+                            setData()
+                            MyLogger.w(tagProfile, msg = "Follower list is empty !")
                         }
+                    }
 
-                        is Resource.Loading -> {
-                            MyLogger.v(tagProfile, msg = "Follower List is fetching ...")
-                        }
+                    is Resource.Loading -> {
+                        MyLogger.v(tagProfile, msg = "Follower List is fetching ...")
+                    }
 
-                        is Resource.Error -> {
-                            MyLogger.e(
-                                tagProfile,
-                                msg = giveMeErrorMessage(
-                                    "Fetching Follower List",
-                                    response.message.toString()
-                                )
+                    is Resource.Error -> {
+                        MyLogger.e(
+                            tagProfile,
+                            msg = giveMeErrorMessage(
+                                "Fetching Follower List",
+                                response.message.toString()
                             )
+                        )
 
-                            if (!response.hasBeenMessagedToUser) {
-                                response.hasBeenMessagedToUser = true
-                                showSnackBar(response.message?.toString())
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            when (response.message) {
+                                Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                    jobQueue.add {
+                                        getData()
+                                    }
+                                }
+                                else ->{
+                                    showSnackBar(message = response.message)
+                                }
                             }
                         }
                     }
-                }.launchIn(this)
-                followerViewModel.removeFollower.onEach { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            hideDialog()
-                            MyLogger.v(tagProfile, msg = "Follower is removed !")
-                            showSnackBar("Follower Removed Successfully !", isSuccess = true)
-                        }
+                }
+            }.launchIn(this)
+            requireContext().monitorInternet().onEach { isInternetAvailable ->
+                if (isInternetAvailable) {
+                    jobQueue.forEach {
+                        it.invoke()
+                    }
+                    jobQueue.clear()
+                }
+            }.launchIn(this)
+            followerViewModel.removeFollower.onEach { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        hideDialog()
+                        MyLogger.v(tagProfile, msg = "Follower is removed !")
+                        showSnackBar("Follower Removed Successfully !", isSuccess = true)
+                    }
 
-                        is Resource.Loading -> {
-                            MyLogger.v(tagProfile, msg = "Follower is removing ...")
-                            showDialog()
-                        }
+                    is Resource.Loading -> {
+                        MyLogger.v(tagProfile, msg = "Follower is removing ...")
+                        showDialog()
+                    }
 
-                        is Resource.Error -> {
-                            hideDialog()
-                            MyLogger.e(
-                                tagProfile,
-                                msg = response.message
-                            )
+                    is Resource.Error -> {
+                        hideDialog()
+                        MyLogger.e(
+                            tagProfile,
+                            msg = response.message
+                        )
 
-                            if (!response.hasBeenMessagedToUser) {
-                                response.hasBeenMessagedToUser = true
-                                showSnackBar(response.message?.toString())
-                            }
+                        if (!response.hasBeenMessagedToUser) {
+                            response.hasBeenMessagedToUser = true
+                            showSnackBar(response.message?.toString())
                         }
                     }
-                }.launchIn(this)
-            }
+                }
+            }.launchIn(this)
         }
     }
 
@@ -284,8 +298,11 @@ class FollowerFragment : Fragment(), AlertDialogOption {
     }
 
     private fun navigateToUserDetailsScreen(userId: String) {
-        val direction: NavDirections = FriendCircleFragmentDirections.actionFriendCircleFragmentToProfileViewFragment(userId)
-        navController?.value?.safeNavigate(direction,Helper.giveAnimationNavOption())
+        val directions: NavDirections =
+            BottomNavigationBarDirections.actionGlobalProfileViewFragment(userId)
+        navController.safeNavigate(
+            directions, Helper.giveAnimationNavOption()
+        )
     }
 
     override fun onResult(isYes: Boolean) {

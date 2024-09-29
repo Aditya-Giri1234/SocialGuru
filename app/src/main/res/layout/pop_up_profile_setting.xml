@@ -4,6 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
+    app:cardBackgroundColor="@color/white"
     android:layout_margin="@dimen/_10sdp"
     android:elevation="@dimen/_4sdp"
     app:cardCornerRadius="@dimen/_15sdp">
@@ -75,6 +77,39 @@
                 android:fontFamily="@font/poppin_medium"
                 android:gravity="center"
                 android:text="Your Activity"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_12ssp" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_1sdp"
+            android:alpha=".1"
+            android:layout_marginVertical="@dimen/_5sdp"
+            android:background="@color/black" />
+        <LinearLayout
+            android:id="@+id/linearItemSavedPost"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="@dimen/_5sdp"
+            android:paddingHorizontal="@dimen/_10sdp"
+            android:gravity="start|center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="@dimen/_20sdp"
+                android:layout_height="@dimen/_20sdp"
+                android:tint="@color/black"
+                android:src="@drawable/ic_save" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/_8sdp"
+                android:fontFamily="@font/poppin_medium"
+                android:gravity="center"
+                android:text="Saved Post"
                 android:textColor="@color/black"
                 android:textSize="@dimen/_12ssp" />
 
