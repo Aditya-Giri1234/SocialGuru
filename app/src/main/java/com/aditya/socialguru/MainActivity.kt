@@ -40,6 +40,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
+<<<<<<< HEAD
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.work.BackoffPolicy
@@ -48,6 +49,10 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.notification.payload.Android
+=======
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.setupWithNavController
+>>>>>>> 16696ed (Updata backstack management)
 import com.aditya.socialguru.databinding.ActivityMainBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
@@ -60,8 +65,12 @@ import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
+<<<<<<< HEAD
 import com.aditya.socialguru.domain_layer.helper.worker.MyWorker
 import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
+=======
+import com.aditya.socialguru.domain_layer.helper.show
+>>>>>>> 16696ed (Updata backstack management)
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.MyNotificationManager
 import com.aditya.socialguru.domain_layer.manager.ShareManager
@@ -86,6 +95,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     private lateinit var binding: ActivityMainBinding
 
     lateinit var navController: NavController
+<<<<<<< HEAD
 
 
     private var bottomMargin: Int = 0
@@ -150,6 +160,9 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         }
     }
 
+=======
+    private var loader: MyLoader? = null
+>>>>>>> 16696ed (Updata backstack management)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -212,6 +225,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         initUi()
         subscribeToObserver()
         subscribeToDestinationChanges()
+<<<<<<< HEAD
         getData()
         handleIntent()
         askPermission()
@@ -247,6 +261,8 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                 handleDeepLink(intent)
             }
         }
+=======
+>>>>>>> 16696ed (Updata backstack management)
     }
 
     private fun subscribeToObserver() {
@@ -359,13 +375,18 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     @SuppressLint("RestrictedApi")
     private fun subscribeToDestinationChanges() {
         MyLogger.v(isFunctionCall = true)
+<<<<<<< HEAD
         lifecycleScope.launch {
             navController.addOnDestinationChangedListener { controller, destination, arguments ->
+=======
+        navController.addOnDestinationChangedListener { controller, destination, arguments ->
+>>>>>>> 16696ed (Updata backstack management)
                 val bottomBarDestination = setOf(
                     R.id.homeFragment,
                     R.id.recentChatFragment,
                     R.id.notificationFragment,
-                    R.id.profileFragment
+                    R.id.profileFragment ,
+                    R.id.updateProfileFragment2
                 )
                 MyLogger.d(msg = "Destination is change occurred :- ${destination.label}")
                 if (bottomBarDestination.contains(destination.id)) {
@@ -389,7 +410,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                     hideBottomNavigation()
                 }
             }
-        }
+
     }
 
     private fun initUi() {
@@ -398,8 +419,16 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
             navController =
                 (supportFragmentManager.findFragmentById(R.id.localNavHostFragment) as NavHostFragment).findNavController()
             bottomNavigationView.menu[2].isEnabled = false
+<<<<<<< HEAD
             bottomNavigationView.setupWithNavController(navController)
             bottomNavigationView.setOnItemReselectedListener(this@MainActivity)
+=======
+            val navHostFragment=(supportFragmentManager.findFragmentById(R.id.localNavHostFragment) as NavHostFragment)
+            navController=navHostFragment.navController
+
+            bottomNavigationView.setupWithNavController(navController)
+
+>>>>>>> 16696ed (Updata backstack management)
             setListener()
         }
     }
@@ -576,6 +605,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     }
 
     override fun onSupportNavigateUp(): Boolean {
+<<<<<<< HEAD
         return navController.navigateUp()
     }
 
@@ -872,3 +902,9 @@ private enum class MainActivityDialogInvokation {
     ForRationDialog,
     ForAppSetting
 }
+=======
+        return navController.navigateUp() || super.onSupportNavigateUp()
+    }
+
+}
+>>>>>>> 16696ed (Updata backstack management)

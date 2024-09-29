@@ -87,8 +87,12 @@ class HomeFragment : Fragment(), StoryTypeOptions {
     private var isFragmentSwitchHappen = true
     private var videoFileName: String? = null
 
+<<<<<<< HEAD
     private var _storyAdapter: StoryAdapter? = null
     private val storyAdapter get() = _storyAdapter!!
+=======
+    private val navController get() = (requireActivity() as MainActivity).navController
+>>>>>>> 16696ed (Updata backstack management)
 
     companion object {
         const val VideoTrimResult = "VideoTrimResult"
@@ -247,8 +251,19 @@ class HomeFragment : Fragment(), StoryTypeOptions {
         super.onViewCreated(view, savedInstanceState)
         MyLogger.v(isFunctionCall = true)
 
+<<<<<<< HEAD
         handleInitialization()
 
+=======
+        //These checking because homeFragment created twice so take old one and destroy new one
+//        if (isHomeVisited
+//        ) {
+//            navController.popBackStack()
+            handleInitialization()
+//        }else{
+//            isHomeVisited =true
+//        }
+>>>>>>> 16696ed (Updata backstack management)
     }
 
     private fun handleInitialization() {
