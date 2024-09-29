@@ -1,10 +1,13 @@
 package com.aditya.socialguru.ui_layer.viewmodel
 
 import android.app.Application
+import android.app.DownloadManager
+import androidx.core.content.getSystemService
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
+import com.aditya.socialguru.data_layer.model.git.GitHubRelease
 import com.aditya.socialguru.data_layer.model.post.post_meta_data.LikedPostModel
 import com.aditya.socialguru.data_layer.model.post.post_meta_data.SavedPostModel
 import com.aditya.socialguru.data_layer.shared_model.ListenerEmissionType
@@ -14,15 +17,18 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.manager.SoftwareManager
 import com.aditya.socialguru.domain_layer.repository.MainRepository
+import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
-import com.aditya.socialguru.domain_layer.service.firebase_service.StoryManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import retrofit2.Response
+import java.io.File
 
 class MainViewModel(val app: Application) : AndroidViewModel(app) {
     val repository = MainRepository()
@@ -34,7 +40,6 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
     val isListenerSet get() = _isListenerSet
 
     private val jobList = mutableListOf<Job>()
-
 
 
     private val _user = MutableSharedFlow<Resource<User>>(
@@ -54,6 +59,20 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
         BufferOverflow.DROP_OLDEST
     )
     val fcmToken: SharedFlow<Resource<UpdateResponse>> get() = _fcmToken.asSharedFlow()
+
+    private val _appUpdating = MutableSharedFlow<Resource<File?>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val appUpdating get() = _appUpdating.asSharedFlow()
+
+    private val _appUpdate = MutableSharedFlow<Resource<GitHubRelease>>(
+        0,
+        64,
+        BufferOverflow.DROP_OLDEST
+    )
+    val appUpdate get() = _appUpdate.asSharedFlow()
 
 
     fun getUser() {
@@ -89,7 +108,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
 
     fun listenMySavedPost() {
         val job = viewModelScope.myLaunch {
-            if(SoftwareManager.isNetworkAvailable(app)){
+            if (SoftwareManager.isNetworkAvailable(app)) {
                 repository.listenMySavedPost().onEach {
                     handleSavedPostResponse(it)
                 }.launchIn(this)
@@ -136,7 +155,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
 
     fun listenMyLikedPost() {
         val job = viewModelScope.myLaunch {
-            if (SoftwareManager.isNetworkAvailable(app)){
+            if (SoftwareManager.isNetworkAvailable(app)) {
                 repository.listenMyLikedPost().onEach {
                     handleLikedPostResponse(it)
                 }.launchIn(this)
@@ -146,7 +165,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
     }
 
     fun listenAuthOfUser() = viewModelScope.myLaunch {
-        if (SoftwareManager.isNetworkAvailable(app)){
+        if (SoftwareManager.isNetworkAvailable(app)) {
             repository.listenAuthOfUser()
         }
     }
@@ -206,6 +225,53 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
         repository.updateUserAvailability(isUserAvailable)
     }
 
+    fun getLatestUpdate(packageName: String) = viewModelScope.myLaunch {
+        _appUpdate.tryEmit(Resource.Loading())
+        if (SoftwareManager.isNetworkAvailable(app)) {
+            _appUpdate.tryEmit(handleAppUpdate(repository.getLatestAppUpdate(packageName)))
+        } else {
+            _appUpdate.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
+        }
+    }
+
+    private fun handleAppUpdate(latestAppUpdate: Response<GitHubRelease>): Resource<GitHubRelease> {
+        if (latestAppUpdate.isSuccessful) {
+            latestAppUpdate.body()?.let {
+                return Resource.Success(it)
+            }
+        }
+        return Resource.Error(latestAppUpdate.message())
+    }
+
+    /*     fun updateApp(release: GitHubRelease) =  viewModelScope.myLaunch {
+            _appUpdating.tryEmit(Resource.Loading())
+            if(SoftwareManager.isNetworkAvailable(app)){
+                val downloadRequest = release.getDownloadRequest(app)
+                if (downloadRequest != null) {
+                    val downloadManager = app.getSystemService<DownloadManager>()
+                    if (downloadManager != null) {
+                        val pref = SharePref(app)
+                        val lastUpdateId = pref.getPrefLong(SharePref.PreferencesKeys.PREFERENCE_LAST_UPDATE_ID).first()
+                        if (lastUpdateId != 0L) {
+                            downloadManager.remove(lastUpdateId)
+                        }
+                        pref.setPrefLong(SharePref.PreferencesKeys.PREFERENCE_LAST_UPDATE_ID, downloadManager.enqueue(downloadRequest))
+                    }
+                }
+            }else{
+                _appUpdating.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
+            }
+        }*/
+    fun updateApp(release: GitHubRelease, onUpdate: (progress: Int?) -> Unit) =
+        viewModelScope.myLaunch {
+            _appUpdating.tryEmit(Resource.Loading())
+            if (SoftwareManager.isNetworkAvailable(app)) {
+                val apkFiles = release.getDownloadRequest(app, onUpdate)
+                _appUpdating.tryEmit(Resource.Success(apkFiles))
+            } else {
+                _appUpdating.tryEmit(Resource.Error(Constants.ErrorMessage.InternetNotAvailable.message))
+            }
+        }
 
     fun setDataLoadedStatus(status: Boolean) {
         _isDataLoaded = status

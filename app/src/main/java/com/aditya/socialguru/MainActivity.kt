@@ -4,12 +4,14 @@ import android.Manifest
 import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
+import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -28,7 +30,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.animation.addListener
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.PackageManagerCompat
+import androidx.core.content.getSystemService
+import androidx.core.database.getIntOrNull
+import androidx.core.database.getStringOrNull
 import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -47,14 +51,16 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.aditya.socialguru.data_layer.model.Resource
-import com.aditya.socialguru.data_layer.model.notification.payload.Android
+import com.aditya.socialguru.data_layer.model.git.GitHubRelease
 import com.aditya.socialguru.databinding.ActivityMainBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
+import com.aditya.socialguru.domain_layer.helper.Constants.ApkFolderName
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.launchCoroutineInDefaultThread
 import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
 import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myLaunch
@@ -68,6 +74,7 @@ import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
+import com.aditya.socialguru.ui_layer.fragment.dialog_fragment.AppUpdateDialog
 import com.aditya.socialguru.ui_layer.viewmodel.MainViewModel
 import com.google.android.material.navigation.NavigationBarView
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -77,7 +84,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import java.security.Permissions
+import java.io.File
 import java.time.Duration
 
 class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedListener,
@@ -91,6 +98,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     private var bottomMargin: Int = 0
     private var noInternetHideWork: Job? = null
     private val tagStory = Constants.LogTag.Story
+    private var appUpdateDialog: AppUpdateDialog? = null
     private val notificationPermission = Manifest.permission.POST_NOTIFICATIONS
     private var dialogInvokeType = MainActivityDialogInvokation.ForRationDialog
     private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
@@ -130,10 +138,38 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                     MyLogger.i(msg = "Story change event come !")
                     handleStoryChange(intent.getIntExtra(Constants.DATA, 0))
                 }
-            }
-        }
 
+                DownloadManager.ACTION_DOWNLOAD_COMPLETE -> {
+                    val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                    val downloadManager = getSystemService<DownloadManager>()
+
+                    downloadManager?.query(DownloadManager.Query().setFilterById(downloadId))
+                        ?.use { cursor ->
+                            if (cursor.moveToFirst()) {
+                                when (cursor.getIntOrNull(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))) {
+                                    DownloadManager.STATUS_SUCCESSFUL -> {
+                                        cursor.getStringOrNull(cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI))
+                                            ?.let { installApk(Uri.parse(it)) }
+                                    }
+
+                                    DownloadManager.STATUS_FAILED -> {
+                                        MyLogger.e(
+                                            msg = "Download failed: ${
+                                                cursor.getString(
+                                                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)
+                                                )
+                                            }"
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                }
+            }
+
+        }
     }
+
     private val requestNotificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -142,10 +178,22 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         } else {
             if (shouldShowRequestPermissionRationale(notificationPermission)) {
                 dialogInvokeType = MainActivityDialogInvokation.ForRationDialog
-                AlertDialog("Enable notifications to stay updated on comments, chat messages, likes, and friend requests. Stay connected!" , this,isForShowDelete = false, negativeMessage = "Cancel" , positiveMessage = "Yes").show(supportFragmentManager,"My_dialog")
+                AlertDialog(
+                    "Enable notifications to stay updated on comments, chat messages, likes, and friend requests. Stay connected!",
+                    this,
+                    isForShowDelete = false,
+                    negativeMessage = "Cancel",
+                    positiveMessage = "Yes"
+                ).show(supportFragmentManager, "My_dialog")
             } else {
                 dialogInvokeType = MainActivityDialogInvokation.ForAppSetting
-                AlertDialog("It looks like notifications are disabled. Enable them in settings to stay updated on comments, messages, likes, and friend requests!" ,this, isForShowDelete = false , negativeMessage = "Cancel" , positiveMessage = "Setting").show(supportFragmentManager,"My_dialog")
+                AlertDialog(
+                    "It looks like notifications are disabled. Enable them in settings to stay updated on comments, messages, likes, and friend requests!",
+                    this,
+                    isForShowDelete = false,
+                    negativeMessage = "Cancel",
+                    positiveMessage = "Setting"
+                ).show(supportFragmentManager, "My_dialog")
             }
         }
     }
@@ -199,12 +247,13 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         intentFilter.addAction(Constants.AppBroadCast.LogIn.name)
         intentFilter.addAction(Constants.AppBroadCast.LogOut.name)
         intentFilter.addAction(Constants.AppBroadCast.StoryChange.name)
+        intentFilter.addAction(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
 
         ContextCompat.registerReceiver(
             this,
             broadcastReceiver,
             intentFilter,
-            ContextCompat.RECEIVER_NOT_EXPORTED
+            ContextCompat.RECEIVER_EXPORTED
         )
     }
 
@@ -215,12 +264,18 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         getData()
         handleIntent()
         askPermission()
+        deleteOldApkFileFromAppPrivateFolder()
     }
 
+
     private fun askPermission() {
-        if(AuthManager.currentUserId()!=null){
-            if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU){
-                if (ActivityCompat.checkSelfPermission(this,notificationPermission)!= PackageManager.PERMISSION_GRANTED){
+        if (AuthManager.currentUserId() != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ActivityCompat.checkSelfPermission(
+                        this,
+                        notificationPermission
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
                     requestNotificationPermissionLauncher.launch(notificationPermission)
                 }
             }
@@ -303,6 +358,69 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                     }
                 }.launchIn(this)
 
+                mainViewModel.appUpdating.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            appUpdateDialog?.dismissNow()
+                            response.data?.let {
+                                installApk(it.toUri())
+                            }
+                        }
+
+                        is Resource.Loading -> {
+
+                        }
+
+                        is Resource.Error -> {
+                            appUpdateDialog?.dismissNow()
+                            if (!response.hasBeenMessagedToUser) {
+                                response.hasBeenMessagedToUser = true
+                                Helper.showSnackBar(
+                                    binding.coordLayout,
+                                    response.message.toString()
+                                )
+                            }
+                        }
+                    }
+                }.launchIn(this)
+
+                mainViewModel.appUpdate.onEach { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            MyLogger.i(
+                                Constants.LogTag.FCMToken,
+                                msg = response.data,
+                                isJson = true,
+                                jsonTitle = "App Update Info Come !"
+                            )
+                            handleAppUpdate(response.data)
+                        }
+
+                        is Resource.Loading -> {
+
+                        }
+
+                        is Resource.Error -> {
+                            if (!response.hasBeenMessagedToUser) {
+                                response.hasBeenMessagedToUser = true
+                                when (response.message) {
+                                    Constants.ErrorMessage.InternetNotAvailable.message -> {
+                                        jobQueue.add {
+                                            mainViewModel.getLatestUpdate(packageName)
+                                        }
+                                    }
+
+                                    else -> {
+                                        Helper.showSnackBar(
+                                            binding.coordLayout,
+                                            response.message.toString()
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }.launchIn(this)
                 monitorInternet().onEach { isInternetAvailable ->
                     if (isInternetAvailable) {
                         hideNoInternet()
@@ -324,6 +442,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                                 this@MainActivity, "Fcm Token Send Successfully !",
                                 Toast.LENGTH_SHORT
                             )
+                            mainViewModel.getLatestUpdate(packageName)
                         }
 
                         is Resource.Loading -> {
@@ -337,6 +456,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                                     Constants.ErrorMessage.InternetNotAvailable.message -> {
                                         jobQueue.add {
                                             getFCMToken()
+                                            mainViewModel.getLatestUpdate(packageName)
                                         }
                                     }
 
@@ -355,6 +475,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         }
 
     }
+
 
     @SuppressLint("RestrictedApi")
     private fun subscribeToDestinationChanges() {
@@ -552,7 +673,10 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
             Intent(this, MainActivity::class.java).addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK
             ).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                .putExtra(Constants.IntentTable.LogOutOrDeleteAccountActivityHappened.name, true)
+                .putExtra(
+                    Constants.IntentTable.LogOutOrDeleteAccountActivityHappened.name,
+                    true
+                )
         )
         overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
 
@@ -635,6 +759,27 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                         msg = "User setting is null and so that i cancel my worker !"
                     )
                     cancelWorker()
+                }
+            }
+        }
+    }
+
+    private fun handleAppUpdate(data: GitHubRelease?) {
+        data?.let {
+            launchCoroutineInIOThread {
+                if (it.isDownloadable(this@MainActivity)) {
+                    com.aditya.socialguru.domain_layer.helper.runOnUiThread {
+                       appUpdateDialog = AppUpdateDialog(it, "Cancel", "Update", negativeAction = null) {
+                            mainViewModel.updateApp(it){progress ->
+                                if(progress==null){
+                                    appUpdateDialog?.updateDialog("Apk Downloading" , null , false , true)
+                                }else{
+                                    appUpdateDialog?.updateDialog("Downloading" , progress , false , false)
+                                }
+                            }
+                        }
+                        appUpdateDialog?.show(supportFragmentManager,"Update_Dialog")
+                    }
                 }
             }
         }
@@ -826,6 +971,61 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
                                     directions,
                                     Helper.giveAnimationNavOptionWithSingleTop()
                                 )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun installApk(downloadedUri: Uri) {
+        launchCoroutineInDefaultThread {
+            pref.setPrefLong(
+                SharePref.PreferencesKeys.APK_INSTALLED_TIME,
+                System.currentTimeMillis()
+            )
+            pref.setPrefString(
+                SharePref.PreferencesKeys.APK_FILE_NAME,
+                downloadedUri.lastPathSegment.toString()
+            )
+        }
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(downloadedUri, "application/vnd.android.package-archive")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+
+        if (packageManager.canRequestPackageInstalls()) {
+            // If permission is granted, start the installation
+            startActivity(installIntent)
+        } else {
+            // Permission not granted, navigate to settings
+            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                data = Uri.parse("package:$packageName")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(intent)
+        }
+    }
+
+    private fun deleteOldApkFileFromAppPrivateFolder() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            launchCoroutineInDefaultThread {
+                val lastApkInstallTime =
+                    pref.getPrefLong(SharePref.PreferencesKeys.APK_INSTALLED_TIME).first()
+                val apkName =
+                    pref.getPrefString(SharePref.PreferencesKeys.APK_FILE_NAME).first()
+                if (lastApkInstallTime != 0L && apkName != null) {
+                    val currentTime = System.currentTimeMillis()
+                    val diffTime = currentTime - lastApkInstallTime
+
+                    if (diffTime > 1 * 60 * 60 * 1000) {
+                        val folderName = File(filesDir, ApkFolderName)
+                        if (folderName.exists()) {
+                            val isAllDeleted = folderName.deleteRecursively()
+                            if (isAllDeleted) {
+                                pref.deleteKey(SharePref.PreferencesKeys.APK_FILE_NAME)
+                                pref.deleteKey(SharePref.PreferencesKeys.APK_INSTALLED_TIME)
                             }
                         }
                     }

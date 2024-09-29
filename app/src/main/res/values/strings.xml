@@ -14,4 +14,5 @@
     <string name="already_friend">Already Friend</string>
     <string name="no_internet_available">No Internet Available!</string>
     <string name="internet_available">Internet Back!</string>
+    <string name="downloading_update">Downloading SocialGuru update</string>
 </resources>

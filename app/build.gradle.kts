@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
@@ -6,6 +8,13 @@ plugins {
     id("kotlin-kapt")
     id("com.google.devtools.ksp")
     id("com.google.firebase.crashlytics")
+}
+
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
 android {
@@ -29,18 +38,27 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(keystoreProperties["storeFile"] ?: error("Missing storeFile"))
+            storePassword = keystoreProperties["storePassword"] as String
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+        }
+    }
+
     buildTypes {
-        release {
+        getByName("release") {
             isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            isDebuggable = false
+
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -54,6 +72,7 @@ android {
     buildFeatures {
         viewBinding = true
         dataBinding = true
+        buildConfig = true
     }
     sourceSets {
         getByName("main") {
@@ -74,7 +93,7 @@ tasks.register("generateAppConfig") {
         }
 
         val appConfigFile = File(appConfigDir, "AppConfig.kt")
-        val logCanShow = false
+        val logCanShow = true
         appConfigFile.writeText("""
             package ${android.namespace}
             object AppConfig {
@@ -108,6 +127,13 @@ dependencies {
 
     //For Memory Leak
 //    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+
+    // For Git version compare
+    implementation(libs.versioncompare)
+
+    //MarkDown and html
+    implementation(libs.markdown.core)
+    implementation(libs.markdown.html)
 
     //add Module
     implementation(project(mapOf("path" to ":video-trimmer")))
@@ -156,7 +182,10 @@ dependencies {
     // Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation ("com.squareup.okhttp3:logging-interceptor:4.9.0")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    //Google gson
+    implementation(libs.gson)
 
     //Three dot
     implementation("com.github.ybq:Android-SpinKit:1.4.0")

@@ -22,6 +22,7 @@ import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isGone
@@ -42,6 +43,8 @@ import com.google.firebase.firestore.WriteBatch
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
+import io.noties.markwon.Markwon
+import io.noties.markwon.html.HtmlPlugin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -66,7 +69,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import java.lang.reflect.Field
+import java.text.DecimalFormat
 import kotlin.coroutines.resumeWithException
+import kotlin.math.log10
+import kotlin.math.pow
 import kotlin.system.measureTimeMillis
 
 
@@ -158,6 +164,14 @@ fun Fragment.isResume(): Boolean {
 
 fun String.convertParseUri(): Uri {
     return Uri.parse(this)
+}
+
+fun TextView.setMarkdownText(str: String) {
+    val markwon = Markwon.builder(context)
+        .usePlugin(HtmlPlugin.create())
+        .build()
+
+    markwon.setMarkdown(this, str)
 }
 
 
@@ -532,3 +546,16 @@ suspend fun <T, R> List<T>.mapAsync(transform: suspend (T) -> R): List<R> = coro
 fun getScreenWidth(): Int = Resources.getSystem().displayMetrics.widthPixels
 
 fun getScreenHeight() : Int = Resources.getSystem().displayMetrics.heightPixels
+
+fun Long.toFileSize(): String {
+    if (this <= 0) {
+        return "0 bytes"
+    }
+    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+    val digitGroups = (log10(this.toDouble()) / log10(1024.0)).toInt()
+    return String.format(
+        "%s %s",
+        DecimalFormat("#,##0.#").format(this / 1024.0.pow(digitGroups.toDouble())),
+        units[digitGroups]
+    )
+}

@@ -3,6 +3,7 @@
     <files-path
         name="my_files"
         path="." />
+    <files-path name="apk_folder" path="." />
     <cache-path
         name="cache"
         path="." />

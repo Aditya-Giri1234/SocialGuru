@@ -12,9 +12,13 @@ object Constants {
     //Notification  Constant
 
     const val BASE_URL="https://fcm.googleapis.com/"
+    const val RETROFIT_BASE_URL ="https://api.github.com/"
     const val FIREBASE_MESSAGING_SCOPE="https://www.googleapis.com/auth/firebase.messaging"
     const val CONTENT_TYPE="application/json"
     const val FCM_ACCESS_TOKEN="fa5759d13c4d96797883ba02d1e0053c9193d0bc"
+    const val DEFAULT_USER = "Aditya-Giri1234"
+    const val DEFAULT_REPO = "SocialGuru"
+    const val ApkFolderName ="ApkFolder"
 
     //User Table Constant
 

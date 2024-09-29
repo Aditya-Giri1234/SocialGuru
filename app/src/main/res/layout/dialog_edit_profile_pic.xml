@@ -43,7 +43,7 @@
             android:layout_height="0dp"
             android:orientation="horizontal"
             android:padding="@dimen/_10sdp"
-            app:constraint_referenced_ids="linearText,linearImage,linearVideo"
+            app:constraint_referenced_ids="linearText,linearImage"
             app:flow_horizontalGap="@dimen/_20sdp"
             app:flow_maxElementsWrap="3"
             app:flow_wrapMode="chain"
