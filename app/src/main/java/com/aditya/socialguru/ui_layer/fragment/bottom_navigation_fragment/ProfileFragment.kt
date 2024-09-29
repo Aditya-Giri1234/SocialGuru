@@ -86,11 +86,13 @@ class ProfileFragment : Fragment(), AlertDialogOption {
     ): View? {
         // Inflate the layout for this fragment
         _binding = FragmentProfileBinding.inflate(layoutInflater)
+        MyLogger.v(isFunctionCall = true)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        MyLogger.v(isFunctionCall = true)
         handleInitialization()
     }
 
@@ -224,6 +226,7 @@ class ProfileFragment : Fragment(), AlertDialogOption {
     }
 
     private fun FragmentProfileBinding.setListener() {
+<<<<<<< HEAD
 
         ivProfile.setSafeOnClickListener {
             if (ivProfile.tag == imageAvailable) {
@@ -363,12 +366,23 @@ class ProfileFragment : Fragment(), AlertDialogOption {
     override fun onResult(isYes: Boolean) {
         if (isYes) {
             profileViewModel.singOutUser()
+=======
+        tvClickMe.setOnClickListener {
+            val directions:NavDirections=ProfileFragmentDirections.actionProfileFragmentToUpdateProfileFragment2()
+            navController.navigate(directions,Helper.giveAnimationNavOption())
+>>>>>>> 16696ed (Updata backstack management)
         }
     }
 
     override fun onDestroyView() {
         _binding = null
+        MyLogger.v(isFunctionCall = true)
         super.onDestroyView()
+    }
+
+    override fun onDestroy() {
+        MyLogger.v(isFunctionCall = true)
+        super.onDestroy()
     }
 
 
