@@ -1,5 +1,8 @@
 *.iml
 .gradle
+/app/external/socialguru-keystore.jks
+/app/google-services.json
+/key.properties
 /local.properties
 /.idea/caches
 /.idea/libraries
