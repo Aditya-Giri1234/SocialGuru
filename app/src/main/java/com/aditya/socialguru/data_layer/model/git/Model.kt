@@ -121,16 +121,16 @@ class GitHubRelease(
         return null
     }*/
 
-    fun getDownloadRequest(context: Context , onUpdate: (progress:Int?)->Unit): File? {
+    fun getDownloadRequest(context: Context, onUpdate: (progress: Int?) -> Unit): File? {
         val apkAsset = downloads.firstOrNull { it.isApk }
         if (apkAsset != null) {
             val apkFileName = apkAsset.name
             val downloadUri = apkAsset.downloadUrl
-                val folderName = File(context.filesDir,ApkFolderName)
-                if(!folderName.exists()){
-                    folderName.mkdirs()
-                }
-            val downloadUriFile = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", File(folderName, apkAsset.name)).toFile().toUri()
+            val folderName = File(context.filesDir, ApkFolderName)
+            if (!folderName.exists()) {
+                folderName.mkdirs()
+            }
+            val apkFile = File(folderName, apkFileName)
             val client = OkHttpClient()
 
             // Prepare the request
@@ -142,7 +142,6 @@ class GitHubRelease(
             val response = client.newCall(request).execute()
 
             if (response.isSuccessful) {
-                val apkFile = File(context.filesDir, apkFileName)
                 val fos = FileOutputStream(apkFile)
                 val inputStream: InputStream? = response.body?.byteStream()
                 val totalBytes = response.body?.contentLength() ?: -1L
@@ -173,6 +172,7 @@ class GitHubRelease(
         }
         return null
     }
+
 
     fun getFormattedDate(): String? {
         val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())

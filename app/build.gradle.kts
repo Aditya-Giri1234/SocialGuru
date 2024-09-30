@@ -37,8 +37,8 @@ android {
         applicationId = "com.aditya.socialguru"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.0.0"
+        versionCode = 2
+        versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -55,8 +55,8 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
+            isShrinkResources=true
             isDebuggable = false
-
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("release")
         }
@@ -93,7 +93,7 @@ tasks.register("generateAppConfig") {
         }
 
         val appConfigFile = File(appConfigDir, "AppConfig.kt")
-        val logCanShow = true
+        val logCanShow = false
         appConfigFile.writeText("""
             package ${android.namespace}
             object AppConfig {
@@ -131,9 +131,10 @@ dependencies {
     // For Git version compare
     implementation(libs.versioncompare)
 
-    //MarkDown and html
+    //Markdown and HTML dependencies
     implementation(libs.markdown.core)
     implementation(libs.markdown.html)
+//    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.23.0")
 
     //add Module
     implementation(project(mapOf("path" to ":video-trimmer")))

@@ -31,7 +31,9 @@
 -keep class androidx.lifecycle.ViewModel { *; }
 -keep class * extends androidx.lifecycle.ViewModel { *; }
 
-# Keep Retrofit models
+# RetroFit
+-dontwarn retrofit.**
+-keep class retrofit.** { *; }
 -keep class com.squareup.retrofit2.** { *; }
 
 # Keep data binding classes
@@ -42,14 +44,23 @@
     public static final ** CREATOR;
 }
 
-# Keep Gson serialized classes
--keep class com.google.gson.** { *; }
--keepattributes Signature
+#Gson
+-keep class com.google.gson.reflect.TypeToken
+-keep class * extends com.google.gson.reflect.TypeToken
+-keep public class * implements java.lang.reflect.Type
 
-# Keep Glide classes
--keep public class com.bumptech.glide.** { *; }
--keep public class com.bumptech.glide.module.AppGlideModule { *; }
--keep public class * implements com.bumptech.glide.module.GlideModule { *; }
+# Glide
+-keep public class * implements com.bumptech.glide.module.GlideModule
+-keep class * extends com.bumptech.glide.module.AppGlideModule {
+ <init>(...);
+}
+-keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
+  **[] $VALUES;
+  public *;
+}
+-keep class com.bumptech.glide.load.data.ParcelFileDescriptorRewinder$InternalRewinder {
+  *** rewind();
+}
 
 # Keep Firebase Crashlytics
 -keep class com.google.firebase.crashlytics.** { *; }
@@ -76,3 +87,12 @@
 -keep interface com.squareup.okhttp3.** { *; }
 -dontwarn com.squareup.okhttp3.**
 
+# Keep the markdown and html  class and its dependencies
+-keep class io.noties.markwon.html.tag.StrikeHandler { *; }
+-keep class io.noties.markwon.** { *; }  # Keep all classes in the markwon package
+-keep class org.commonmark.** { *; }      # Keep all classes in the commonmark package
+-dontwarn org.commonmark.ext.gfm.strikethrough.**
+
+
+#This will generate mapping text file which tell us how our class name , member name map done.
+-printmapping mapping.txt

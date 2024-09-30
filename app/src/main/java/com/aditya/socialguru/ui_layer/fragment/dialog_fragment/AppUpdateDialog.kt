@@ -84,8 +84,8 @@ class AppUpdateDialog (val versionInfo:GitHubRelease ,val negativeMessage:String
             dismissNow()
         }
         btnYes.setOnClickListener {
+            updateDialog("Apk Downloading",null,false,true)
             positiveAction?.invoke()
-            dismissNow()
         }
     }
     private fun fillVersionInfo() {
@@ -99,8 +99,8 @@ class AppUpdateDialog (val versionInfo:GitHubRelease ,val negativeMessage:String
 
      fun updateDialog(message:String?, progress:Int? , isThreeDotHide:Boolean , inderminate:Boolean=false){
         binding.apply {
-            linearMainUpdateInfo.gone()
             linearDownloadView.myShow()
+            linearMainUpdateInfo.gone()
             tvMessage.isGone = message ==null
             callStatusLoader.isGone = isThreeDotHide
 
@@ -109,6 +109,7 @@ class AppUpdateDialog (val versionInfo:GitHubRelease ,val negativeMessage:String
                 tvProgress.gone()
                 progressCircular.myShow()
             }else{
+                tvProgress.myShow()
                 constProgress.isGone = progress ==null
             }
             progressCircular.isIndeterminate = inderminate
