@@ -21,6 +21,8 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myLaunch
+import com.aditya.socialguru.domain_layer.helper.resizeActivate
+import com.aditya.socialguru.domain_layer.helper.resizeStop
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -84,7 +86,7 @@ class WriteTextStoryFragment : Fragment() {
     }
 
     private fun handleInitialization() {
-
+        requireActivity().resizeActivate()
         initUi()
     }
 
@@ -247,6 +249,7 @@ class WriteTextStoryFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        requireActivity().resizeStop()
         _binding = null
         super.onDestroyView()
     }

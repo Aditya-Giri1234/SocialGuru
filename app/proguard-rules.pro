@@ -20,6 +20,8 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+-keepattributes SourceFile,LineNumberTable
+
 # Keep all public classes, fields, and methods for your app package
 -keep class com.aditya.socialguru.** { *; }
 
@@ -34,7 +36,14 @@
 # RetroFit
 -dontwarn retrofit.**
 -keep class retrofit.** { *; }
--keep class com.squareup.retrofit2.** { *; }
+# Keep generic signature of Call, Response (R8 full mode strips signatures from non-kept items).
+-keep,allowobfuscation,allowshrinking interface retrofit2.Call
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
+
+# With R8 full mode generic signatures are stripped for classes that are not
+# kept. Suspend functions are wrapped in continuations where the type argument
+# is used.
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 
 # Keep data binding classes
 -keep class androidx.databinding.** { *; }
@@ -45,9 +54,8 @@
 }
 
 #Gson
--keep class com.google.gson.reflect.TypeToken
--keep class * extends com.google.gson.reflect.TypeToken
--keep public class * implements java.lang.reflect.Type
+-keep class com.google.gson.reflect.*{*;}
+-keep class com.google.api.client.json.**{*;}
 
 # Glide
 -keep public class * implements com.bumptech.glide.module.GlideModule
@@ -78,12 +86,15 @@
 -keep class androidx.media3.** { *; }
 
 # Keep for Kotlin Coroutines
+-keep class kotlin.coroutines.** { *; }
 -keep class kotlinx.coroutines.** { *; }
 -keepclassmembers class kotlinx.coroutines.** { *; }
 
-# OkHttp
+#For Generic
 -keepattributes Signature
 -keepattributes *Annotation*
+
+# OkHttp
 -keep interface com.squareup.okhttp3.** { *; }
 -dontwarn com.squareup.okhttp3.**
 

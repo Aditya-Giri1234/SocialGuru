@@ -196,7 +196,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
 
                     is Resource.Success -> {
                         Helper.hideLoader()
-//                        showNoStatusView()
+                        showNoStatusView()
                         // This help to handle or change work manager status
                         requireActivity().sendBroadcast(
                             Intent(Constants.AppBroadCast.StoryChange.name).putExtra(

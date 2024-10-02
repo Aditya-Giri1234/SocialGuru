@@ -53,6 +53,8 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
     private val imageAvailable = "0"
     private val imageUnAvailable = "1"
+    private val NO_DATA_VIEW_MESSAGE= "Oops! We couldn't find any user matching your search."
+    private val DATA_LOADING_VIEW_MESSAGE = "Fetching user data... Hang tight!"
     private val jobQueue: ArrayDeque<()->Unit> = ArrayDeque()
     private var myLoader: MyLoader? = null
     private var userDetails: User? = null
@@ -298,6 +300,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
             profileViewModel.userDetails.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
+                        hideNoDataView()
                         hideDialog()
                         response.data?.let {
                             setData(it)
@@ -317,10 +320,12 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                     }
 
                     is Resource.Loading -> {
+                        showNoDataView(DATA_LOADING_VIEW_MESSAGE)
                         showDialog()
                     }
 
                     is Resource.Error -> {
+                        showNoDataView()
                         hideDialog()
                         if (!response.hasBeenMessagedToUser) {
                             response.hasBeenMessagedToUser = true
@@ -623,6 +628,28 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     private fun hideDialog() {
         myLoader?.dismiss()
         myLoader = null
+    }
+
+    private fun showNoDataView(message: String?= NO_DATA_VIEW_MESSAGE ){
+        binding.apply {
+            linearProfile.gone()
+            linearUserAction.gone()
+            linearFollower.gone()
+            linearPostLike.gone()
+            noDataView.myShow()
+            noDataView.text = message
+        }
+    }
+
+    private fun hideNoDataView() {
+        binding.apply {
+            linearProfile.myShow()
+            linearUserAction.myShow()
+            linearFollower.myShow()
+            linearPostLike.myShow()
+            noDataView.gone()
+            noDataView.text = DATA_LOADING_VIEW_MESSAGE
+        }
     }
 
     override fun onDestroyView() {

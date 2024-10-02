@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDirections
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -37,12 +38,14 @@ import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.ui_layer.adapter.post.UserAdapter
 import com.aditya.socialguru.ui_layer.viewmodel.profile.ProfileViewModel
 import com.vanniktech.ui.hideKeyboardAndFocus
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 class SearchUserGlobalFragment : Fragment() {
 
@@ -255,10 +258,13 @@ class SearchUserGlobalFragment : Fragment() {
     }
 
     private fun navigateToProfileScreen(id: String) {
-        binding.etSearch.hideKeyboardAndFocus()
-        val directions: NavDirections =
-            BottomNavigationBarDirections.actionGlobalProfileViewFragment(id)
-        navController.safeNavigate(directions)
+        hideKeyboard()
+        lifecycleScope.launch {
+            delay(100)
+            val directions: NavDirections =
+                BottomNavigationBarDirections.actionGlobalProfileViewFragment(id)
+            navController.safeNavigate(directions)
+        }
     }
 
     private fun showLoader() {
