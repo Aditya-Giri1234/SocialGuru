@@ -101,7 +101,6 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     private var noInternetHideWork: Job? = null
     private val tagStory = Constants.LogTag.Story
     private var appUpdateDialog: AppUpdateDialog? = null
-    private var downloadUri:Uri?=null
     private val notificationPermission = Manifest.permission.POST_NOTIFICATIONS
     private var dialogInvokeType = MainActivityDialogInvokation.ForRationDialog
     private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
@@ -200,26 +199,18 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
             }
         }
     }
-    private val manageUnknownAppSourcesLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        // Handle the result if needed
-        if (result.resultCode == Activity.RESULT_OK) {
-            // The user has granted permission for unknown apps
-            // Handle the case accordingly
-            this.downloadUri?.let { installApk(it) }
-        }
-    }
 
-    private val installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            // Installation was successful
-            Helper.customToast(this, "APK installed successfully.", Toast.LENGTH_SHORT )
-        } else {
-            // Installation failed
-            Helper.customToast(this, "APK installation failed.", Toast.LENGTH_SHORT)
+
+    private val installApkLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                // Installation was successful
+                Helper.customToast(this, "APK installed successfully.", Toast.LENGTH_SHORT)
+            } else {
+                // Installation failed
+                Helper.customToast(this, "APK installation failed.", Toast.LENGTH_SHORT)
+            }
         }
-    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -792,18 +783,29 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
             launchCoroutineInIOThread {
                 if (it.isDownloadable(this@MainActivity)) {
                     com.aditya.socialguru.domain_layer.helper.runOnUiThread {
-                       appUpdateDialog = AppUpdateDialog(it, "Cancel", "Update", negativeAction = null) {
-                            mainViewModel.updateApp(it){progress ->
-                                runOnUiThread {
-                                    if(progress==null){
-                                        appUpdateDialog?.updateDialog("Apk Downloading" , null , false , true)
-                                    }else{
-                                        appUpdateDialog?.updateDialog("Downloading" , progress , false , false)
+                        appUpdateDialog =
+                            AppUpdateDialog(it, "Cancel", "Update", negativeAction = null) {
+                                mainViewModel.updateApp(it) { progress ->
+                                    runOnUiThread {
+                                        if (progress == null) {
+                                            appUpdateDialog?.updateDialog(
+                                                "Apk Downloading",
+                                                null,
+                                                false,
+                                                true
+                                            )
+                                        } else {
+                                            appUpdateDialog?.updateDialog(
+                                                "Downloading",
+                                                progress,
+                                                false,
+                                                false
+                                            )
+                                        }
                                     }
                                 }
                             }
-                        }
-                        appUpdateDialog?.show(supportFragmentManager,"Update_Dialog")
+                        appUpdateDialog?.show(supportFragmentManager, "Update_Dialog")
                     }
                 }
             }
@@ -1005,7 +1007,6 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     }
 
     private fun installApk(downloadedUri: Uri) {
-        this.downloadUri = downloadedUri
 
         // Save preferences in a coroutine
         launchCoroutineInDefaultThread {
@@ -1020,7 +1021,9 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         }
 
         // Get the file from the downloaded URI
-        val apkFile = File(downloadedUri.path ?: "${filesDir}/$ApkFolderName/${downloadedUri.lastPathSegment}")
+        val apkFile = File(
+            downloadedUri.path ?: "${filesDir}/$ApkFolderName/${downloadedUri.lastPathSegment}"
+        )
 
         // Get the content URI using FileProvider
         val installUri: Uri = FileProvider.getUriForFile(
@@ -1034,18 +1037,8 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
         }
 
-        if (packageManager.canRequestPackageInstalls()) {
-            // If permission is granted, start the installation
-            installApkLauncher.launch(installIntent)
-        } else {
-            // Permission not granted, navigate to settings
-            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                data = Uri.parse("package:$packageName")
-            }
-            manageUnknownAppSourcesLauncher.launch(intent)
-        }
+        installApkLauncher.launch(installIntent)
     }
-
 
 
     private fun deleteOldApkFileFromAppPrivateFolder() {

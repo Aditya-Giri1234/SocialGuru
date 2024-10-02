@@ -1,12 +1,17 @@
 package com.aditya.socialguru.ui_layer.fragment.dialog_fragment
 
+import android.app.Activity
 import android.app.Dialog
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isGone
 import androidx.core.view.setPadding
 import androidx.fragment.app.DialogFragment
@@ -16,6 +21,7 @@ import com.aditya.socialguru.databinding.DeleteAlertDialogBinding
 import com.aditya.socialguru.databinding.DialogAppUpdateInfoBinding
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.isResume
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.setMarkdownText
 import com.aditya.socialguru.domain_layer.helper.setWidthPercent
@@ -25,6 +31,19 @@ class AppUpdateDialog (val versionInfo:GitHubRelease ,val negativeMessage:String
 
     private var _binding: DialogAppUpdateInfoBinding? = null
     private val binding get() = _binding!!
+
+    private val manageUnknownAppSourcesLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // Handle the result if needed
+        if (result.resultCode == Activity.RESULT_OK) {
+            // The user has granted permission for unknown apps
+            // Handle the case accordingly
+            proceedToAppUpdate()
+        }else{
+            showInitialDialog()
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -84,10 +103,31 @@ class AppUpdateDialog (val versionInfo:GitHubRelease ,val negativeMessage:String
             dismissNow()
         }
         btnYes.setOnClickListener {
-            updateDialog("Apk Downloading",null,false,true)
-            positiveAction?.invoke()
+            requireContext().apply {
+                if(requireContext().packageManager.canRequestPackageInstalls()){
+                    proceedToAppUpdate()
+                }else{
+                    updateDialog("Apk Downloading",null,false,true)
+                    val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                    manageUnknownAppSourcesLauncher.launch(intent)
+                }
+            }
         }
     }
+
+    private fun proceedToAppUpdate(){
+        updateDialog("Apk Downloading",null,false,true)
+        positiveAction?.invoke()
+    }
+    private fun showInitialDialog(){
+        binding.apply {
+            linearDownloadView.gone()
+            linearMainUpdateInfo.myShow()
+        }
+    }
+
     private fun fillVersionInfo() {
         binding.versionName.text = versionInfo.name
         if (versionInfo.body.isNotEmpty()) {
@@ -98,25 +138,27 @@ class AppUpdateDialog (val versionInfo:GitHubRelease ,val negativeMessage:String
     }
 
      fun updateDialog(message:String?, progress:Int? , isThreeDotHide:Boolean , inderminate:Boolean=false){
-        binding.apply {
-            linearDownloadView.myShow()
-            linearMainUpdateInfo.gone()
-            tvMessage.isGone = message ==null
-            callStatusLoader.isGone = isThreeDotHide
+         if(this.isResume()){
+             binding.apply {
+                 linearDownloadView.myShow()
+                 linearMainUpdateInfo.gone()
+                 tvMessage.isGone = message ==null
+                 callStatusLoader.isGone = isThreeDotHide
 
-            if(inderminate){
-                constProgress.myShow()
-                tvProgress.gone()
-                progressCircular.myShow()
-            }else{
-                tvProgress.myShow()
-                constProgress.isGone = progress ==null
-            }
-            progressCircular.isIndeterminate = inderminate
-            tvMessage.text = message
-            tvProgress.text = "$progress%"
-            progressCircular.progress = progress ?: 0
-        }
+                 if(inderminate){
+                     constProgress.myShow()
+                     tvProgress.gone()
+                     progressCircular.myShow()
+                 }else{
+                     tvProgress.myShow()
+                     constProgress.isGone = progress ==null
+                 }
+                 progressCircular.isIndeterminate = inderminate
+                 tvMessage.text = message
+                 tvProgress.text = "$progress%"
+                 progressCircular.progress = progress ?: 0
+             }
+         }
     }
 
     override fun onResume() {
