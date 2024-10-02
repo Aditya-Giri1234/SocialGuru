@@ -1,5 +1,6 @@
 *.iml
 .gradle
+/app/build/outputs/mapping/release/mapping.txt
 /app/external/socialguru-keystore.jks
 /key.properties
 /app/google-services.json
