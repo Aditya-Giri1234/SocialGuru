@@ -20,6 +20,7 @@ import androidx.navigation.NavDirections
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aditya.socialguru.BottomNavigationBarDirections
+import com.aditya.socialguru.BuildConfig
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
@@ -861,7 +862,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
 
         return FileProvider.getUriForFile(
             requireContext(),
-            "${requireContext().packageName}.provider",
+            "${BuildConfig.APPLICATION_ID}.fileprovider",
             imageFile
         )
     }

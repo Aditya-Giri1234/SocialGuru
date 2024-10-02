@@ -32,6 +32,8 @@ import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.myShow
+import com.aditya.socialguru.domain_layer.helper.resizeActivate
+import com.aditya.socialguru.domain_layer.helper.resizeStop
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
@@ -118,6 +120,7 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
         initUi()
         subscribeToObserver()
         setData()
+        requireActivity().resizeActivate()
     }
 
 
@@ -347,6 +350,7 @@ class MakingGroupFragment : Fragment(), ProfilePicEditOption {
     }
 
     override fun onDestroyView() {
+        requireActivity().resizeStop()
         _binding = null
         super.onDestroyView()
     }

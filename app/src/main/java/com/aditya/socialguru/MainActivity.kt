@@ -1028,7 +1028,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         // Get the content URI using FileProvider
         val installUri: Uri = FileProvider.getUriForFile(
             this,
-            "${packageName}.fileprovider",
+            "${BuildConfig.APPLICATION_ID}.fileprovider",
             apkFile
         )
 
