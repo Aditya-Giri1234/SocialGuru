@@ -46,365 +46,331 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias="0.5" />
 
-
-            <LinearLayout
-                android:id="@+id/linearProfile"
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardMain"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical"
+                app:cardElevation="@dimen/_4sdp"
+                app:cardBackgroundColor="@color/black"
                 android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="@id/guideLineStart"
-                app:layout_constraintTop_toTopOf="@id/guideLineUp">
-
-
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <de.hdodenhof.circleimageview.CircleImageView
-                        android:id="@+id/ivProfile"
-                        android:layout_width="@dimen/_70sdp"
-                        android:layout_height="@dimen/_70sdp"
-                        android:src="@drawable/ic_user"
-                        android:tag="0"
-                        app:civ_border_color="@color/blue"
-                        app:civ_border_overlay="false"
-                        app:civ_border_width="@dimen/_1sdp" />
-
-                    <TextView
-                        android:id="@+id/tvInitialMain"
-                        android:layout_width="@dimen/_70sdp"
-                        android:layout_height="@dimen/_70sdp"
-                        android:layout_marginStart="@dimen/_5sdp"
-                        android:background="@drawable/circle_shape_bg"
-                        android:fontFamily="@font/poppins_bold"
+                    android:paddingTop="@dimen/_5sdp"
+                    android:background="@drawable/profile_view_card_bg"
+                    android:orientation="vertical">
+                    <LinearLayout
+                        android:id="@+id/linearProfile"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:gravity="center"
-                        android:includeFontPadding="false"
-                        android:maxLength="1"
-                        android:text="A"
-                        android:textAlignment="center"
-                        android:textColor="@color/white"
-                        android:textSize="@dimen/_30ssp"
-                        android:visibility="gone" />
+                        android:orientation="vertical"
+                        android:visibility="visible">
+
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingHorizontal="@dimen/_10sdp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <de.hdodenhof.circleimageview.CircleImageView
+                                android:id="@+id/ivProfile"
+                                android:layout_width="@dimen/_50sdp"
+                                android:layout_height="@dimen/_50sdp"
+                                android:src="@drawable/ic_user"
+                                android:tag="0"
+                                app:civ_border_color="@color/blue"
+                                app:civ_border_overlay="false"
+                                app:civ_border_width="@dimen/_1sdp" />
+
+                            <TextView
+                                android:id="@+id/tvInitialMain"
+                                android:layout_width="@dimen/_60sdp"
+                                android:layout_height="@dimen/_60sdp"
+                                android:layout_marginStart="@dimen/_5sdp"
+                                android:background="@drawable/circle_shape_bg"
+                                android:fontFamily="@font/poppins_bold"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:maxLength="1"
+                                android:text="A"
+                                android:textAlignment="center"
+                                android:textColor="@color/white"
+                                android:textSize="@dimen/_30ssp"
+                                android:visibility="gone" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginStart="@dimen/_10sdp"
+                                android:gravity="start|center_vertical"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tvUserName"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/_4sdp"
+                                    android:fontFamily="@font/poppins_semi_bold"
+                                    android:text="Aditya Giri"
+                                    android:textColor="@color/white"
+                                    android:textSize="@dimen/_20ssp" />
+
+
+                                <TextView
+                                    android:id="@+id/tvProffesion"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/_4sdp"
+                                    android:fontFamily="@font/poppin_medium"
+                                    android:text="Android Developer"
+                                    android:textColor="@color/green"
+                                    android:textSize="@dimen/_15ssp" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvBio"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/_10sdp"
+                            android:layout_marginTop="@dimen/_8sdp"
+                            android:autoLink="all"
+                            android:background="@drawable/profile_bio_bg"
+                            android:elevation="4dp"
+                            android:fontFamily="@font/poppins_regular"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:justificationMode="inter_word"
+                            android:linksClickable="true"
+                            android:minHeight="@dimen/_50sdp"
+                            android:padding="@dimen/_10sdp"
+                            android:shadowColor="@color/black"
+                            android:shadowDx="0"
+                            android:shadowDy="1"
+                            android:shadowRadius="1"
+                            android:visibility="visible"
+                            android:text="Hi, I am a cool and passionate Android developer! Feel free to send a friend request and follow me to see my posts about mobile tech."
+                            android:textColor="@color/white"
+                            android:textColorLink="@color/blue"
+                            android:textSize="@dimen/_12ssp" />
+
+
+                        <Button
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="@dimen/_20sdp"
+                            android:layout_marginTop="@dimen/_10sdp"
+                            android:backgroundTint="@color/deep_dark_orange"
+                            android:fontFamily="@font/poppins_regular"
+                            android:text="Send Friend Request"
+                            android:textAllCaps="false"
+                            android:textColor="@color/white"
+                            android:textSize="@dimen/_14ssp"
+                            android:visibility="gone"
+                            app:cornerRadius="@dimen/_30sdp"
+                            app:layout_constraintEnd_toEndOf="@id/linearProfile"
+                            app:layout_constraintStart_toStartOf="@id/linearProfile"
+                            app:layout_constraintTop_toBottomOf="@id/linearProfile" />
+
+
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/linearFollower"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/_15sdp"
+                        android:background="@drawable/shape_media_upload_bg"
+                        android:backgroundTint="@color/lightBlack"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:padding="@dimen/_5sdp"
+                        android:visibility="visible"
+                        android:weightSum="3">
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+
+                            <TextView
+                                android:id="@+id/tvPost"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppins_bold"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:text="0"
+                                android:textColor="@color/green"
+                                android:textSize="@dimen/_16ssp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppin_medium"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:text="Post"
+                                android:textColor="@color/white"
+                                android:textSize="@dimen/_14ssp" />
+
+                        </LinearLayout>
+                        <View
+                            android:layout_width="@dimen/_1sdp"
+                            android:layout_height="match_parent"
+                            android:layout_marginVertical="@dimen/_10sdp"
+                            android:background="@color/lightWhite" />
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+
+                            <TextView
+                                android:id="@+id/tvFollowers"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppins_bold"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:text="0"
+                                android:textColor="@color/deep_dark_orange"
+                                android:textSize="@dimen/_16ssp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppin_medium"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:text="Followers"
+                                android:textColor="@color/white"
+                                android:textSize="@dimen/_14ssp" />
+
+                        </LinearLayout>
+                        <View
+                            android:layout_width="@dimen/_1sdp"
+                            android:layout_height="match_parent"
+                            android:layout_marginVertical="@dimen/_10sdp"
+                            android:background="@color/lightWhite" />
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+
+                            <TextView
+                                android:id="@+id/tvFollowing"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppins_bold"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:text="0"
+                                android:textColor="@color/blue"
+                                android:textSize="@dimen/_16ssp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppin_medium"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:text="Following"
+                                android:textColor="@color/white"
+                                android:textSize="@dimen/_14ssp" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
 
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:id="@+id/linearUserAction"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_marginTop="@dimen/_10sdp"
                         android:gravity="center"
-                        android:orientation="vertical">
+                        android:layout_marginBottom="@dimen/_10sdp"
+                        android:paddingHorizontal="@dimen/_10sdp"
+                        android:orientation="horizontal"
+                        android:visibility="visible"
+                        android:weightSum="2">
 
                         <TextView
-                            android:id="@+id/tvUserName"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/btnFollow"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="@dimen/_5sdp"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:padding="@dimen/_5sdp"
+                            android:fontFamily="@font/poppins_regular"
+                            android:text="@string/follow"
+                            android:textAllCaps="false"
+                            android:background="@drawable/follow_bg"
+                            android:textColor="@color/yellow"
+                            android:textSize="@dimen/_14ssp"
+                            android:visibility="visible"
+                            app:cornerRadius="@dimen/_30sdp"
+                            app:layout_constraintEnd_toEndOf="@id/linearProfile"
+                            app:layout_constraintStart_toStartOf="@id/linearProfile"
+                            app:layout_constraintTop_toBottomOf="@id/linearProfile" />
+
+                        <TextView
+                            android:id="@+id/btnFriend"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/_4sdp"
-                            android:fontFamily="@font/poppins_semi_bold"
-                            android:text="Aditya Giri"
+                            android:layout_marginStart="@dimen/_5sdp"
+                            android:layout_weight="1"
+                            android:padding="@dimen/_5sdp"
+                            android:fontFamily="@font/poppins_regular"
+                            android:text="@string/connect"
+                            android:gravity="center"
+                            android:background="@drawable/connect_bg"
                             android:textColor="@color/white"
-                            android:textSize="@dimen/_22ssp" />
-
-
-                        <TextView
-                            android:id="@+id/tvProffesion"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/_4sdp"
-                            android:fontFamily="@font/poppin_medium"
-                            android:text="Android Developer"
-                            android:textColor="@color/green"
-                            android:textSize="@dimen/_16ssp" />
+                            android:textSize="@dimen/_15ssp"
+                            android:visibility="visible"
+                            app:layout_constraintEnd_toEndOf="@id/linearProfile"
+                            app:layout_constraintStart_toStartOf="@id/linearProfile"
+                            app:layout_constraintTop_toBottomOf="@id/linearProfile" />
                     </LinearLayout>
                 </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
-                <TextView
-                    android:id="@+id/tvBio"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_8sdp"
-                    android:layout_marginBottom="@dimen/_8sdp"
-                    android:autoLink="all"
-                    android:background="@drawable/profile_bio_bg"
-                    android:elevation="4dp"
-                    android:fontFamily="@font/poppins_regular"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:justificationMode="inter_word"
-                    android:linksClickable="true"
-                    android:minHeight="@dimen/_50sdp"
-                    android:padding="@dimen/_10sdp"
-                    android:shadowColor="@color/black"
-                    android:shadowDx="0"
-                    android:shadowDy="1"
-                    android:shadowRadius="1"
-                    android:text="Hi, I am a cool and passionate Android developer! Feel free to send a friend request and follow me to see my posts about mobile tech."
-                    android:textColor="@color/white"
-                    android:textColorLink="@color/blue"
-                    android:textSize="@dimen/_16ssp" />
-
-
-                <Button
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="@dimen/_20sdp"
-                    android:layout_marginTop="@dimen/_10sdp"
-                    android:backgroundTint="@color/deep_dark_orange"
-                    android:fontFamily="@font/poppins_regular"
-                    android:text="Send Friend Request"
-                    android:textAllCaps="false"
-                    android:textColor="@color/white"
-                    android:textSize="@dimen/_14ssp"
-                    android:visibility="gone"
-                    app:cornerRadius="@dimen/_30sdp"
-                    app:layout_constraintEnd_toEndOf="@id/linearProfile"
-                    app:layout_constraintStart_toStartOf="@id/linearProfile"
-                    app:layout_constraintTop_toBottomOf="@id/linearProfile" />
-
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/linearUserAction"
+            <com.aditya.socialguru.domain_layer.custom_class.tab_layout.CustomTabLayout
+                android:id="@+id/tabHome"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/_10sdp"
-                android:gravity="center"
-                android:orientation="horizontal"
+                android:layout_height="@dimen/_50sdp"
+                android:entries="@array/activity_tabs"
+                android:layout_marginTop="@dimen/_15sdp"
+                android:textSize="@dimen/_14ssp"
                 android:visibility="gone"
-                android:weightSum="2"
-                app:layout_constraintEnd_toEndOf="@id/linearProfile"
-                app:layout_constraintStart_toStartOf="@id/linearProfile"
-                app:layout_constraintTop_toBottomOf="@id/linearProfile">
-
-                <Button
-                    android:id="@+id/btnFollow"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginEnd="@dimen/_5sdp"
-                    android:layout_weight="1"
-                    android:backgroundTint="@color/deep_dark_orange"
-                    android:fontFamily="@font/poppins_regular"
-                    android:text="@string/follow"
-                    android:textAllCaps="false"
-                    android:textColor="@color/white"
-                    android:textSize="@dimen/_12ssp"
-                    android:visibility="visible"
-                    app:cornerRadius="@dimen/_30sdp"
-                    app:layout_constraintEnd_toEndOf="@id/linearProfile"
-                    app:layout_constraintStart_toStartOf="@id/linearProfile"
-                    app:layout_constraintTop_toBottomOf="@id/linearProfile" />
-
-                <Button
-                    android:id="@+id/btnFriend"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/_5sdp"
-                    android:layout_weight="1"
-                    android:backgroundTint="@color/deep_dark_orange"
-                    android:fontFamily="@font/poppins_regular"
-                    android:minHeight="?actionBarSize"
-                    android:text="@string/send_friend_request"
-                    android:textAllCaps="false"
-                    android:textColor="@color/white"
-                    android:textSize="@dimen/_12ssp"
-                    android:visibility="visible"
-                    app:cornerRadius="@dimen/_30sdp"
-                    app:layout_constraintEnd_toEndOf="@id/linearProfile"
-                    app:layout_constraintStart_toStartOf="@id/linearProfile"
-                    app:layout_constraintTop_toBottomOf="@id/linearProfile" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/linearFollower"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/_20sdp"
-                android:background="@drawable/shape_media_upload_bg"
-                android:backgroundTint="@color/lightBlack"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:padding="@dimen/_5sdp"
-                android:visibility="gone"
-                android:weightSum="2"
-                app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+                app:layout_constraintEnd_toStartOf="@+id/guidelineEnd"
                 app:layout_constraintStart_toStartOf="@id/guideLineStart"
-                app:layout_constraintTop_toBottomOf="@id/linearUserAction">
+                app:layout_constraintTop_toBottomOf="@+id/cardMain" />
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:orientation="vertical">
-
-
-                    <TextView
-                        android:id="@+id/tvFollowers"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppins_bold"
-                        android:gravity="center"
-                        android:includeFontPadding="false"
-                        android:text="0"
-                        android:textColor="@color/deep_dark_orange"
-                        android:textSize="@dimen/_16ssp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppin_medium"
-                        android:gravity="center"
-                        android:includeFontPadding="false"
-                        android:text="Followers"
-                        android:textColor="@color/white"
-                        android:textSize="@dimen/_16ssp" />
-
-                </LinearLayout>
-
-
-                <View
-                    android:layout_width="@dimen/_2sdp"
-                    android:layout_height="match_parent"
-                    android:background="@color/lightWhite" />
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:orientation="vertical">
-
-
-                    <TextView
-                        android:id="@+id/tvFollowing"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppins_bold"
-                        android:gravity="center"
-                        android:includeFontPadding="false"
-                        android:text="0"
-                        android:textColor="@color/blue"
-                        android:textSize="@dimen/_16ssp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppin_medium"
-                        android:gravity="center"
-                        android:includeFontPadding="false"
-                        android:text="Following"
-                        android:textColor="@color/white"
-                        android:textSize="@dimen/_16ssp" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/linearPostLike"
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/viewPagerHome"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/_20sdp"
-                android:background="@drawable/shape_media_upload_bg"
-                android:backgroundTint="@color/lightBlack"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:padding="@dimen/_5sdp"
+                android:minHeight="@dimen/_150sdp"
+                android:layout_marginTop="@dimen/_5sdp"
                 android:visibility="gone"
-                android:weightSum="2"
-                app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
+                app:layout_constraintEnd_toStartOf="@+id/guidelineEnd"
                 app:layout_constraintStart_toStartOf="@id/guideLineStart"
-                app:layout_constraintTop_toBottomOf="@id/linearFollower">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:orientation="vertical">
-
-
-                    <TextView
-                        android:id="@+id/tvPost"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppins_bold"
-                        android:gravity="center"
-                        android:includeFontPadding="false"
-                        android:text="0"
-                        android:textColor="@color/green"
-                        android:textSize="@dimen/_16ssp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppin_medium"
-                        android:gravity="center"
-                        android:includeFontPadding="false"
-                        android:text="Post"
-                        android:textColor="@color/white"
-                        android:textSize="@dimen/_16ssp" />
-
-                </LinearLayout>
-
-
-                <View
-                    android:layout_width="@dimen/_2sdp"
-                    android:layout_height="match_parent"
-                    android:background="@color/lightWhite" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:orientation="vertical">
-
-
-                    <TextView
-                        android:id="@+id/tvLike"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppins_bold"
-                        android:gravity="center"
-                        android:includeFontPadding="false"
-                        android:text="0"
-                        android:textColor="@color/deep_pink"
-                        android:textSize="@dimen/_16ssp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppin_medium"
-                        android:gravity="center"
-                        android:includeFontPadding="false"
-                        android:text="Like"
-                        android:textColor="@color/white"
-                        android:textSize="@dimen/_16ssp" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-
-            <androidx.constraintlayout.widget.Guideline
-                android:id="@+id/guideLineUp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                app:layout_constraintGuide_begin="@dimen/_20sdp" />
-
-            <androidx.constraintlayout.widget.Guideline
-                android:id="@+id/guideLineBottom"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                app:layout_constraintGuide_end="@dimen/_20sdp" />
+                app:layout_constraintTop_toBottomOf="@id/tabHome" />
 
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guideLineStart"

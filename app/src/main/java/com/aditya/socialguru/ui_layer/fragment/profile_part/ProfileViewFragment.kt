@@ -9,7 +9,9 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.PopupWindow
+import android.widget.TextView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -21,6 +23,7 @@ import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
 import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.user_action.UserRelationshipStatus
+import com.aditya.socialguru.databinding.FragmentMyActivityBinding
 import com.aditya.socialguru.databinding.FragmentProfileViewBinding
 import com.aditya.socialguru.databinding.SampleProfileViewPopMenuBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
@@ -38,6 +41,10 @@ import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
+import com.aditya.socialguru.ui_layer.adapter.NormalPagerAdapter
+import com.aditya.socialguru.ui_layer.fragment.profile_part.my_activity.ShowMyCommentPostFragment
+import com.aditya.socialguru.ui_layer.fragment.profile_part.my_activity.ShowMyLikedPostFragment
+import com.aditya.socialguru.ui_layer.fragment.profile_part.my_activity.ShowMyPostFragment
 import com.aditya.socialguru.ui_layer.viewmodel.profile.ProfileViewModel
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.flow.launchIn
@@ -53,11 +60,13 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
     private val imageAvailable = "0"
     private val imageUnAvailable = "1"
-    private val NO_DATA_VIEW_MESSAGE= "Oops! We couldn't find any user matching your search."
+    private val NO_DATA_VIEW_MESSAGE = "Oops! We couldn't find any user matching your search."
     private val DATA_LOADING_VIEW_MESSAGE = "Fetching user data... Hang tight!"
-    private val jobQueue: ArrayDeque<()->Unit> = ArrayDeque()
+    private val jobQueue: ArrayDeque<() -> Unit> = ArrayDeque()
     private var myLoader: MyLoader? = null
     private var userDetails: User? = null
+    private var _pagerAdapter: NormalPagerAdapter? = null
+    private val pagerAdapter get() = _pagerAdapter!!
     private var defaultDialogOption: ProfileViewDialogOption =
         ProfileViewDialogOption.PendingRequest
 
@@ -114,10 +123,6 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
             profileViewModel.postCount.onEach {
                 binding.tvPost.text = it.toString()
             }.launchIn(this)
-            profileViewModel.likeCount.onEach {
-                binding.tvLike.text = it.toString()
-            }.launchIn(this)
-
             profileViewModel.followUser.onEach { response ->
                 when (response) {
                     is Resource.Success -> {
@@ -250,7 +255,8 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                                         profileViewModel.getUserRelationshipStatus(userId)
                                     }
                                 }
-                                else ->{
+
+                                else -> {
                                     showSnackBar(message = response.message)
                                 }
                             }
@@ -335,7 +341,8 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                                         profileViewModel.getUser(userId)
                                     }
                                 }
-                                else ->{
+
+                                else -> {
                                     showSnackBar(message = response.message)
                                 }
                             }
@@ -345,7 +352,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
             }.launchIn(this)
             requireContext().monitorInternet().onEach { isInternetAvailable ->
-                if(isInternetAvailable){
+                if (isInternetAvailable) {
                     jobQueue.forEach {
                         it.invoke()
                     }
@@ -359,11 +366,36 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     private fun initUI() {
         binding.apply {
             myToolbar.apply {
+                root.setBackgroundColor(requireContext().giveMeColor(R.color.lightBlack))
                 icBack.myShow()
                 profileImage.gone()
                 tvHeaderUserName.text = "Profile"
+                if (binding.btnFriend.text != getString(R.string.already_friend) && userId != AuthManager.currentUserId()!!) {
+                    icSetting.gone()
+                } else {
+                    icSetting.myShow()
+                }
             }
+
             setListener()
+            setUpViewPager()
+        }
+    }
+
+    private fun FragmentProfileViewBinding.setUpViewPager() {
+        _pagerAdapter = NormalPagerAdapter(
+            listOf(
+                ShowMyPostFragment(userId),
+                ShowMyCommentPostFragment(userId),
+                ShowMyLikedPostFragment(userId)
+            ), childFragmentManager, viewLifecycleOwner.lifecycle
+        )
+        viewPagerHome.apply {
+            adapter = pagerAdapter
+        }
+
+        tabHome.apply {
+            attachTo(viewPagerHome)
         }
     }
 
@@ -450,7 +482,6 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
             linearProfile.myShow()
             linearUserAction.myShow()
             linearFollower.myShow()
-            linearPostLike.myShow()
             noDataView.gone()
 
             userId.let {
@@ -494,7 +525,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
             when (relation.friendStatus) {
                 Constants.FriendStatus.FRIEND -> {
-                    btnFriend.setAlreadyFriendBackground()
+                    btnFriend.setConnectedBackground()
                 }
 
                 Constants.FriendStatus.FRIEND_REQUEST -> {
@@ -502,11 +533,11 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 }
 
                 Constants.FriendStatus.PENDING_REQUEST -> {
-                    btnFriend.setFriendRequestPendingBackground()
+                    btnFriend.setPendingBackground()
                 }
 
                 Constants.FriendStatus.NOT_FRIEND -> {
-                    btnFriend.setSendFriendRequestBackground()
+                    btnFriend.setConnectBackground()
                 }
 
 
@@ -515,38 +546,38 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
     }
 
-    private fun Button.setFollowBackground() {
-        setBackgroundColor(requireContext().giveMeColor(R.color.deep_dark_orange))
-        setTextColor(requireContext().giveMeColor(R.color.white))
+    private fun TextView.setFollowBackground() {
+        background = ContextCompat.getDrawable(requireContext(), R.drawable.follow_bg)
+        setTextColor(requireContext().giveMeColor(R.color.yellow))
         text = getString(R.string.follow)
     }
 
-    private fun Button.setFollowingBackground() {
-        setBackgroundColor(requireContext().giveMeColor(R.color.green))
+    private fun TextView.setFollowingBackground() {
+        background = ContextCompat.getDrawable(requireContext(), R.drawable.following_bg)
         setTextColor(requireContext().giveMeColor(R.color.white))
         text = getString(R.string.following)
     }
 
-    private fun Button.setSendFriendRequestBackground() {
-        setBackgroundColor(requireContext().giveMeColor(R.color.deep_dark_orange))
+    private fun TextView.setConnectBackground() {
+        background = ContextCompat.getDrawable(requireContext(), R.drawable.connect_bg)
         setTextColor(requireContext().giveMeColor(R.color.white))
         text = getString(R.string.send_friend_request)
     }
 
-    private fun Button.setFriendRequestPendingBackground() {
-        setBackgroundColor(requireContext().giveMeColor(R.color.grey))
-        setTextColor(requireContext().giveMeColor(R.color.white))
+    private fun TextView.setPendingBackground() {
+        background = ContextCompat.getDrawable(requireContext(), R.drawable.pending_bg)
+        setTextColor(requireContext().giveMeColor(R.color.lightWhite))
         text = getString(R.string.pending_request)
     }
 
-    private fun Button.setAcceptBackground() {
-        setBackgroundColor(requireContext().giveMeColor(R.color.blue))
+    private fun TextView.setAcceptBackground() {
+        background = ContextCompat.getDrawable(requireContext(), R.drawable.accept_bg)
         setTextColor(requireContext().giveMeColor(R.color.white))
         text = getString(R.string.accept)
     }
 
-    private fun Button.setAlreadyFriendBackground() {
-        setBackgroundColor(requireContext().giveMeColor(R.color.green))
+    private fun TextView.setConnectedBackground() {
+        background = ContextCompat.getDrawable(requireContext(), R.drawable.connected_bg)
         setTextColor(requireContext().giveMeColor(R.color.white))
         text = getString(R.string.already_friend)
     }
@@ -567,22 +598,10 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
         popUp.animationStyle = R.style.popup_window_animation
         popUp.showAsDropDown(binding.myToolbar.icSetting)
 
-        if (binding.btnFriend.text != getString(R.string.already_friend) && userId != AuthManager.currentUserId()!!) {
-            bindingPopUp.linearItemStories.gone()
-            bindingPopUp.viewDevider1.gone()
-        }
-
-        bindingPopUp.linearItemPostRequest.setSafeOnClickListener {
-            navigateToPostScreen()
-            popUp.dismiss()
-        }
-
         bindingPopUp.linearItemStories.setSafeOnClickListener {
             navigateToStoriesScreen()
             popUp.dismiss()
         }
-
-
     }
 
     private fun navigateToStoriesScreen() {
@@ -630,12 +649,11 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
         myLoader = null
     }
 
-    private fun showNoDataView(message: String?= NO_DATA_VIEW_MESSAGE ){
+    private fun showNoDataView(message: String? = NO_DATA_VIEW_MESSAGE) {
         binding.apply {
-            linearProfile.gone()
-            linearUserAction.gone()
-            linearFollower.gone()
-            linearPostLike.gone()
+           cardMain.gone()
+            tabHome.gone()
+            viewPagerHome.gone()
             noDataView.myShow()
             noDataView.text = message
         }
@@ -643,10 +661,9 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
     private fun hideNoDataView() {
         binding.apply {
-            linearProfile.myShow()
-            linearUserAction.myShow()
-            linearFollower.myShow()
-            linearPostLike.myShow()
+           cardMain.myShow()
+            tabHome.myShow()
+            viewPagerHome.myShow()
             noDataView.gone()
             noDataView.text = DATA_LOADING_VIEW_MESSAGE
         }
