@@ -30,8 +30,10 @@ android {
             excludes +="META-INF/DEPENDENCIES"
             excludes +="META-INF/LICENSE.md"
             excludes +="META-INF/NOTICE.md"
+            excludes += "image/app_banner.png"
         }
     }
+
 
     defaultConfig {
         applicationId = "com.aditya.socialguru"
