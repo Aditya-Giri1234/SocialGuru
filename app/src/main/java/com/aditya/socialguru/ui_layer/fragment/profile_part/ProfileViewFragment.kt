@@ -455,7 +455,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
         }
         btnFriend.setSafeOnClickListener {
             when (btnFriend.text.toString()) {
-                getString(R.string.send_friend_request) -> {
+                getString(R.string.connect) -> {
                     profileViewModel.sendFriendRequest(userId!!)
                 }
 
@@ -463,7 +463,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                     profileViewModel.acceptFriendRequest(userId!!)
                 }
 
-                getString(R.string.pending_request) -> {
+                getString(R.string.pending) -> {
                     defaultDialogOption = ProfileViewDialogOption.PendingRequest
                     AlertDialog(
                         "Are you sure delete friend request ?",
@@ -472,7 +472,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                     ).show(childFragmentManager, "My_Dialog")
                 }
 
-                getString(R.string.already_friend) -> {
+                getString(R.string.connected) -> {
                     defaultDialogOption = ProfileViewDialogOption.AlreadyFriend
                     AlertDialog(
                         "Are you sure you want to remove this friend?",
