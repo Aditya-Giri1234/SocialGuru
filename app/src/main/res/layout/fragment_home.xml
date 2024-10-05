@@ -39,7 +39,7 @@
                 android:gravity="center"
                 android:text="Stories"
                 android:textColor="@color/white"
-                android:textSize="@dimen/_20ssp"
+                android:textSize="@dimen/_16ssp"
                 app:layout_constraintStart_toStartOf="@id/guideLineStart"
                 app:layout_constraintTop_toBottomOf="@id/guideLineUp" />
 
@@ -63,6 +63,7 @@
                 android:layout_height="@dimen/_50sdp"
                 android:layout_marginTop="@dimen/_30sdp"
                 android:entries="@array/tabs"
+                android:textSize="@dimen/_13ssp"
                 app:layout_constraintEnd_toEndOf="@id/guideLineEnd"
                 app:layout_constraintStart_toStartOf="@id/guideLineStart"
                 app:layout_constraintTop_toBottomOf="@id/rvStories" />

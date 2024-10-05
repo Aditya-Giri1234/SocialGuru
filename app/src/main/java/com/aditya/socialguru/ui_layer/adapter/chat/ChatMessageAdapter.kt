@@ -322,7 +322,9 @@ class ChatMessageAdapter(val chatMessageOption: ChatMessageOption) :
                                 tvInitial.text = it.userName?.get(0).toString()
                                 tvInitial.setCircularBackground(userColor ?: Color.GREEN)
                             }
+                            tvSenderName.text = "~ ${it.userName ?: ""}"
                         } ?: run {
+                            tvSenderName.text = "~ "
                             ivProfileImage.myShow()
                             tvInitial.gone()
                             Glide.with(ivProfileImage.context).load(R.drawable.ic_user)

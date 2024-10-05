@@ -57,81 +57,85 @@ class NotificationAdapter(val onNotificationDelete:(data:NotificationData)->Unit
         fun bind(data: UserNotificationModel) {
             viewBinderHelper.setOpenOnlyOne(true)
             binding.apply {
-                data.user.let {
-                    if (it.userProfileImage==null){
-                        tvInitial.myShow()
-                        tvInitial.text = it.userName?.get(0).toString()
-                        tvInitial.setCircularBackground(Helper.setUserProfileColor(it))
-                    }else{
-                        tvInitial.gone()
-                        Glide.with(ivProfilePic).load(it.userProfileImage).placeholder(R.drawable.ic_user).error(
-                            R.drawable.ic_user).into(ivProfilePic)
-                    }
-
-                    data.notificationData.let { notificationData ->
-
-                        //Bind swipe layout to this id
-                        viewBinderHelper.bind(binding.swipeLayout,notificationData.notificationId!!)
-
-
-                        val (message, isProfileView) = when (notificationData.type) {
-                            NotificationType.NEW_FOLLOWER.name -> {
-                                Pair(it.userName?.let {
-                                    "$it follow you."
-                                } ?: "You get new Follower!", true)
-
-                            }
-
-                            NotificationType.FRIEND_REQUEST_COME.name -> {
-                                Pair(it.userName?.let {
-                                    "$it send friend request."
-                                } ?: "You get new friend request!", true)
-
-                            }
-
-                            NotificationType.ACCEPT_FRIEND_REQUEST.name -> {
-                                Pair(
-                                    it.userName?.let {
-                                        "$it accept your friend request."
-                                    } ?: "Your friend request accepted.", true)
-
-                            }
-
-                            NotificationType.LIKE_IN_POST.name -> {
-                                Pair(it.userName?.let {
-                                    "$it like your post."
-                                } ?: "Someone like your post!", false)
-                            }
-
-                            NotificationType.COMMENT_IN_POST.name -> {
-                                Pair(it.userName?.let {
-                                    "$it comment your post."
-                                } ?: "Someone comment your post!", false)
-
-                            }
-
-                            else -> {
-                                Pair("You get some new notification.", true)
-                            }
-                        }
-                        tvNotificationMessage.text = message
-                        notificationData.notificationTimeInTimeStamp?.let {
-                            tvNotificationTime.text = Helper.getTimeAgo(it.toLong())
-                        } ?: run {
-                            tvNotificationTime.gone()
+                if(data.user.userId==null&&data.notificationData.notificationId==null){
+                    root.gone()
+                }else{
+                    root.myShow()
+                    data.user.let {
+                        if (it.userProfileImage==null){
+                            tvInitial.myShow()
+                            tvInitial.text = it.userName?.get(0).toString()
+                            tvInitial.setCircularBackground(Helper.setUserProfileColor(it))
+                        }else{
+                            tvInitial.gone()
+                            Glide.with(ivProfilePic).load(it.userProfileImage).placeholder(R.drawable.ic_user).error(
+                                R.drawable.ic_user).into(ivProfilePic)
                         }
 
-                        frameGrpMain.setSafeOnClickListener {
-                            onNotificationClick(data.notificationData,isProfileView)
-                        }
-                        frameDelete.setSafeOnClickListener {
-                            onNotificationDelete(data.notificationData)
-                        }
+                        data.notificationData.let { notificationData ->
+
+                            //Bind swipe layout to this id
+                            viewBinderHelper.bind(binding.swipeLayout,notificationData.notificationId!!)
 
 
+                            val (message, isProfileView) = when (notificationData.type) {
+                                NotificationType.NEW_FOLLOWER.name -> {
+                                    Pair(it.userName?.let {
+                                        "$it follow you."
+                                    } ?: "You get new Follower!", true)
+
+                                }
+
+                                NotificationType.FRIEND_REQUEST_COME.name -> {
+                                    Pair(it.userName?.let {
+                                        "$it send friend request."
+                                    } ?: "You get new friend request!", true)
+
+                                }
+
+                                NotificationType.ACCEPT_FRIEND_REQUEST.name -> {
+                                    Pair(
+                                        it.userName?.let {
+                                            "$it accept your friend request."
+                                        } ?: "Your friend request accepted.", true)
+
+                                }
+
+                                NotificationType.LIKE_IN_POST.name -> {
+                                    Pair(it.userName?.let {
+                                        "$it like your post."
+                                    } ?: "Someone like your post!", false)
+                                }
+
+                                NotificationType.COMMENT_IN_POST.name -> {
+                                    Pair(it.userName?.let {
+                                        "$it comment your post."
+                                    } ?: "Someone comment your post!", false)
+
+                                }
+
+                                else -> {
+                                    Pair("You get some new notification.", true)
+                                }
+                            }
+                            tvNotificationMessage.text = message
+                            notificationData.notificationTimeInTimeStamp?.let {
+                                tvNotificationTime.text = Helper.getTimeAgo(it.toLong())
+                            } ?: run {
+                                tvNotificationTime.gone()
+                            }
+
+                            frameGrpMain.setSafeOnClickListener {
+                                onNotificationClick(data.notificationData,isProfileView)
+                            }
+                            frameDelete.setSafeOnClickListener {
+                                onNotificationDelete(data.notificationData)
+                            }
+
+
+                        }
                     }
                 }
-
             }
         }
     }

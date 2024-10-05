@@ -18,6 +18,7 @@ import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.databinding.FragmentSignUpBinding
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
+import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.customError
 import com.aditya.socialguru.domain_layer.helper.myDelay
 import com.aditya.socialguru.domain_layer.helper.getStringText
@@ -44,24 +45,17 @@ class SignUpFragment : Fragment() {
         SharePref(requireContext())
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        MyLogger.w(isFunctionCall = true)
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
         _binding = FragmentSignUpBinding.inflate(layoutInflater)
-        MyLogger.v(isFunctionCall = true)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        MyLogger.v(isFunctionCall = true)
         handleInitialization()
     }
 
@@ -71,7 +65,7 @@ class SignUpFragment : Fragment() {
     }
 
     private fun subscribeToObserve() {
-        viewLifecycleOwner.lifecycleScope.launch {
+        observeFlow {
             authViewModel.signUpStatus.collect{
                 it?.let { response ->
                     when (response) {
@@ -129,7 +123,7 @@ class SignUpFragment : Fragment() {
         tvNavigateToSignIn.setOnClickListener {
 
             // Here dynamically pop because xml part is not work and keep in mind back stack is working on stack principal lifo.
-            navController?.safeNavigate(
+            navController.safeNavigate(
                 SignUpFragmentDirections.actionSignUpFragmentToSignInFragment(),
                 Helper.giveAnimationNavOption(R.id.signUpFragment, true)
             )
@@ -137,12 +131,7 @@ class SignUpFragment : Fragment() {
         }
 
         btnSignUp.setOnClickListener {
-            MyLogger.d(tagLogin, msg = "User click sign up button !")
             if (validateData()) {
-                MyLogger.i(
-                    tagLogin,
-                    msg = "All field is right so that now user creation request send !"
-                )
                 authViewModel.createUser(
                     User(
                         userId = null,
@@ -169,57 +158,52 @@ class SignUpFragment : Fragment() {
 
             return when {
                 tiEtName.text.isNullOrEmpty() -> {
-                    tilName.customError("Name must not null !")
+                    tilName.customError("Please enter your name.")
                 }
 
                 tiEtProfession.text.isNullOrEmpty() -> {
-                    tilProfession.customError("Profession must not null !")
+                    tilProfession.customError("Please specify your profession.")
                 }
 
                 tiEtBio.text.isNullOrEmpty() -> {
-                    tilBio.customError("Bio must not null !")
+                    tilBio.customError("A short bio is required.")
                 }
 
                 tiEtEmail.text.isNullOrEmpty() -> {
-                    tilEmail.customError("Email must not null !")
+                    tilEmail.customError("Please provide your email address.")
                 }
 
                 !Helper.isEmailValid(tiEtEmail.text.toString()) -> {
-                    tilEmail.customError("Please enter valid email address!")
+                    tilEmail.customError("The email address you entered is invalid. Please check and try again.")
                 }
 
                 tiEtPassword.text.isNullOrEmpty() -> {
-                    tilPassword.customError("Password must not null !")
+                    tilPassword.customError("Please enter a password.")
                 }
 
                 !Helper.isPasswordValid(tiEtPassword.text.toString()) -> {
                     tilPassword.customError(
-                        "At least 8 characters long\n" +
-                                "Contains at least one digit\n" +
-                                "Contains at least one lowercase letter\n" +
-                                "Contains at least one uppercase letter\n" +
-                                "Contains at least one special character from @#\$%^&+=!\n" +
-                                "Doesn't contain whitespace characters"
+                        "Your password must meet the following criteria:\n" +
+                                "- At least 8 characters long\n" +
+                                "- Includes at least one digit\n" +
+                                "- Includes at least one lowercase letter\n" +
+                                "- Includes at least one uppercase letter\n" +
+                                "- Includes at least one special character (@#\$%^&+=!)\n" +
+                                "- No whitespace characters allowed"
                     )
                 }
 
                 else -> {
                     true
                 }
-
             }
         }
     }
 
 
+
     override fun onDestroyView() {
         _binding = null
-        MyLogger.v(isFunctionCall = true)
         super.onDestroyView()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        MyLogger.w(isFunctionCall = true)
     }
 }

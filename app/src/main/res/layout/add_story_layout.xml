@@ -53,7 +53,8 @@
             android:layout_width="@dimen/_30sdp"
             android:layout_height="@dimen/_30sdp"
             android:layout_marginTop="@dimen/_5sdp"
-            android:background="@drawable/circular_shape_button"
+            app:tint="@color/white"
+            android:background="@drawable/add_story_button_bg"
             android:src="@drawable/ic_add" />
 
     </LinearLayout>

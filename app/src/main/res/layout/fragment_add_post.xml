@@ -310,8 +310,8 @@
             android:layout_height="wrap_content"
             app:fabSize="normal"
             android:tag="0"
-            android:backgroundTint="@color/yellow"
-            app:tint="@android:color/black"
+            app:tint="@color/white"
+            android:backgroundTint="@color/blue"
             android:layout_margin="@dimen/_3sdp"
             app:srcCompat="@drawable/ic_add" />
 

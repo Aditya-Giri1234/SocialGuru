@@ -85,8 +85,9 @@ bottom"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@drawable/ic_add"
+                app:tint="@color/lightBlack"
                 android:visibility="gone"
-                app:backgroundTint="#FFE501"
+                app:backgroundTint="@color/yellow"
                 app:layout_anchor="@id/bottomApp" />
 
         </androidx.coordinatorlayout.widget.CoordinatorLayout>

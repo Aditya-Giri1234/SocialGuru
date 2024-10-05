@@ -25,9 +25,9 @@
 
             <TextView
                 android:id="@+id/tvInitial"
-                android:layout_width="@dimen/_40sdp"
-                android:layout_height="@dimen/_40sdp"
-                android:fontFamily="@font/poppins_semi_bold"
+                android:layout_width="@dimen/_30sdp"
+                android:layout_height="@dimen/_30sdp"
+                android:fontFamily="@font/poppin_medium"
                 android:layout_marginStart="@dimen/_5sdp"
                 android:text="A"
                 android:textAlignment="center"
@@ -37,11 +37,11 @@
                 android:includeFontPadding="false"
                 android:maxLength="1"
                 android:textColor="@color/white"
-                android:textSize="@dimen/_25ssp"/>
+                android:textSize="@dimen/_15ssp"/>
             <de.hdodenhof.circleimageview.CircleImageView
                 android:id="@+id/ivPostUserImage"
-                android:layout_width="@dimen/_40sdp"
-                android:layout_height="@dimen/_40sdp"
+                android:layout_width="@dimen/_30sdp"
+                android:layout_height="@dimen/_30sdp"
                 android:layout_marginStart="@dimen/_5sdp"
                 android:visibility="gone"
                 app:civ_border_color="@color/blue"
@@ -63,7 +63,7 @@
                     android:gravity="center_vertical|start"
                     android:text="Aditya Giri"
                     android:textColor="@color/white"
-                    android:textSize="@dimen/_15ssp" />
+                    android:textSize="@dimen/_14ssp" />
                 <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/tvPostTime"
                     android:layout_width="match_parent"
@@ -92,8 +92,8 @@
 
             <ImageView
                 android:id="@+id/icSave"
-                android:layout_width="@dimen/_30sdp"
-                android:layout_height="@dimen/_30sdp"
+                android:layout_width="@dimen/_24sdp"
+                android:layout_height="@dimen/_24sdp"
                 android:layout_marginHorizontal="@dimen/_5sdp"
                 android:scaleType="centerCrop"
                 android:src="@drawable/ic_un_save" />
@@ -118,10 +118,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/_5sdp"
                 android:ellipsize="end"
-                android:fontFamily="@font/poppins_bold"
+                android:fontFamily="@font/poppin_medium"
                 android:text="This post is about how you increase meditation capacity to 10 min. Meditation is awesome thing in life . It increse productivity."
                 android:textColor="@color/white"
-                android:textSize="@dimen/_12ssp"
+                android:textSize="@dimen/_13ssp"
                 android:autoLink="all"
                 android:linksClickable="true"
                 android:visibility="gone" />
@@ -210,8 +210,8 @@
 
                     <ImageView
                         android:id="@+id/ivLike"
-                        android:layout_width="@dimen/_24sdp"
-                        android:layout_height="@dimen/_24sdp"
+                        android:layout_width="@dimen/_20sdp"
+                        android:layout_height="@dimen/_20sdp"
                         android:src="@drawable/like" />
 
                     <com.google.android.material.textview.MaterialTextView
@@ -235,8 +235,8 @@
 
                     <ImageView
                         android:id="@+id/ivComment"
-                        android:layout_width="@dimen/_24sdp"
-                        android:layout_height="@dimen/_24sdp"
+                        android:layout_width="@dimen/_20sdp"
+                        android:layout_height="@dimen/_20sdp"
                         android:src="@drawable/rescent_chat" />
 
                     <com.google.android.material.textview.MaterialTextView
@@ -259,8 +259,8 @@
 
                     <ImageView
                         android:id="@+id/ivSend"
-                        android:layout_width="@dimen/_24sdp"
-                        android:layout_height="@dimen/_24sdp"
+                        android:layout_width="@dimen/_20sdp"
+                        android:layout_height="@dimen/_20sdp"
                         android:layout_gravity="top"
                         android:src="@drawable/share" />
 
@@ -285,7 +285,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/_5sdp"
                 android:ellipsize="end"
-                android:fontFamily="@font/poppins_bold"
+                android:fontFamily="@font/poppins_semi_bold"
                 android:text="This post is about how you increase meditation capacity to 10 min. Meditation is awesome thing in life . It increse productivity."
                 android:autoLink="all"
                 android:linksClickable="true"

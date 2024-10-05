@@ -41,7 +41,6 @@ import com.aditya.socialguru.domain_layer.helper.enabled
 import com.aditya.socialguru.domain_layer.helper.getQueryTextChangeStateFlow
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.hideKeyboard
-import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.resizeActivate
 import com.aditya.socialguru.domain_layer.helper.resizeStop
@@ -50,6 +49,7 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.NetworkManager.monitorInternet
 import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.remote_service.chat.ChatMessageOption
@@ -1001,15 +1001,26 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
         navController.safeNavigate(directions, Helper.giveAnimationNavOption())
     }
 
+    private fun updateOnlineStatusOfCreatorOnPost(status: Boolean) {
+        commentViewModel.updateMyOnlineStatus(
+            postId, status, if (::post.isInitialized) {
+                post
+            } else {
+                null
+            }
+        )
+
+    }
+
     private fun onImageClick(imageUri: Uri) {
         val directions: NavDirections =
-            DetailPostFragmentDirections.actionDetailPostFragment2ToShowImageFragment(imageUri)
+            DetailPostFragmentDirections.actionDetailPostFragment2ToShowImageFragment(imageUri , true)
         navController.safeNavigate(directions, Helper.giveAnimationNavOption())
     }
 
     private fun onVideoClick(videoUri: Uri) {
         val directions: NavDirections =
-            DetailPostFragmentDirections.actionDetailPostFragment2ToShowVideoFragment(videoUri)
+            DetailPostFragmentDirections.actionDetailPostFragment2ToShowVideoFragment(videoUri , true)
         navController.safeNavigate(directions, Helper.giveAnimationNavOption())
     }
 
@@ -1161,16 +1172,6 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
         super.onResume()
     }
 
-    private fun updateOnlineStatusOfCreatorOnPost(status: Boolean) {
-        commentViewModel.updateMyOnlineStatus(
-            postId, status, if (::post.isInitialized) {
-                post
-            } else {
-                null
-            }
-        )
-
-    }
 
     override fun onPause() {
         hideKeyboard()

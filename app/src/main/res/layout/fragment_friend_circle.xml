@@ -18,7 +18,7 @@
         android:layout_height="@dimen/_50sdp"
         android:entries="@array/friend_circle"
         android:layout_marginTop="@dimen/_10sdp"
-        android:textSize="@dimen/_14ssp"
+        android:textSize="@dimen/_13ssp"
         app:layout_constraintEnd_toStartOf="@+id/guideLineEnd"
         app:layout_constraintTop_toTopOf="@id/guideLineUp"
         app:layout_constraintStart_toStartOf="@id/guideLineStart"/>

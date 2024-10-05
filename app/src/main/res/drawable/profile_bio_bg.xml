@@ -6,7 +6,7 @@
                 android:startColor="@color/darkGray"
             android:endColor="@color/darkGray"
             android:angle="45"/>
-            <corners android:radius="@dimen/_20sdp"/>
+            <corners android:radius="@dimen/_15sdp"/>
             <stroke
                 android:color="@color/lightWhite"
                 android:width="@dimen/_1sdp"/>
@@ -15,7 +15,7 @@
     <item android:right="2dp" android:left="2dp" android:top="2dp" android:bottom="2dp">
         <shape>
             <solid android:color="@android:color/transparent"/>
-            <corners android:radius="@dimen/_20sdp"/>
+            <corners android:radius="@dimen/_15sdp"/>
         </shape>
     </item>
 </layer-list>

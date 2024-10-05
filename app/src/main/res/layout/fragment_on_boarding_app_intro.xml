@@ -14,6 +14,7 @@
         android:layout_height="@dimen/_150sdp"
         android:scaleType="fitCenter"
         android:src="@drawable/app_icon"
+        android:padding="@dimen/_20sdp"
         app:layout_constraintBottom_toTopOf="@id/tvText"
         app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
         app:layout_constraintStart_toStartOf="@id/guidelineStart"

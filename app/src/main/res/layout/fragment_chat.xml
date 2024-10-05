@@ -115,7 +115,8 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="vertical"
-
+        android:textSize="@dimen/_14ssp"
+        android:fontFamily="@font/poppin_medium"
         app:layout_constraintBottom_toTopOf="@id/linearFooter"
         app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
         app:layout_constraintStart_toStartOf="@id/guidelineStart"

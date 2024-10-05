@@ -40,6 +40,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.get
+import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -64,7 +65,6 @@ import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
 import com.aditya.socialguru.domain_layer.helper.launchCoroutineInDefaultThread
 import com.aditya.socialguru.domain_layer.helper.launchCoroutineInIOThread
-import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
@@ -72,6 +72,8 @@ import com.aditya.socialguru.domain_layer.helper.worker.MyWorker
 import com.aditya.socialguru.domain_layer.manager.FCMTokenManager
 import com.aditya.socialguru.domain_layer.manager.MyLogger
 import com.aditya.socialguru.domain_layer.manager.MyNotificationManager
+import com.aditya.socialguru.domain_layer.manager.NetworkManager
+import com.aditya.socialguru.domain_layer.manager.NetworkManager.monitorInternet
 import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.SharePref
@@ -273,6 +275,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
 
     private fun handleInitialization() {
         initUi()
+        subscribeToInternetObserver()
         subscribeToObserver()
         subscribeToDestinationChanges()
         getData()
@@ -281,6 +284,13 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
         deleteOldApkFileFromAppPrivateFolder()
     }
 
+    private fun subscribeToInternetObserver() {
+        NetworkManager.registerNetworkCallback(this)
+    }
+
+    private fun unRegisterToInternetObserver(){
+        NetworkManager.unregisterNetworkCallback()
+    }
 
     private fun askPermission() {
         if (AuthManager.currentUserId() != null) {
@@ -731,8 +741,23 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
             }
 
             else -> {
-                MyLogger.w(msg = "Normal back stack removal !")
-                navController.popBackStack()
+                binding.apply {
+                    if(coordinateBottomAppBar.isVisible){
+                        MyLogger.w(msg = "Special back stack removal !")
+                        val currentFragmentId = navController.currentDestination?.id
+                        // Check if the current fragment is not the HomeFragment
+                        if (currentFragmentId != R.id.homeFragment) {
+                            // Clear backstack until HomeFragment is visible
+                            navController.popBackStack(R.id.homeFragment, false)
+                        } else {
+                            // If HomeFragment is visible, execute the default behavior (exit app)
+                            finish()
+                        }
+                    }else{
+                        MyLogger.w(msg = "Normal back stack removal !")
+                        navController.popBackStack()
+                    }
+                }
             }
         }
     }
@@ -1092,6 +1117,7 @@ class MainActivity : AppCompatActivity(), NavigationBarView.OnItemReselectedList
     }
 
     override fun onDestroy() {
+        unRegisterToInternetObserver()
         backPressedCallback.remove()
         mainViewModel.removeAllListener()
         unregisterReceiver(broadcastReceiver)

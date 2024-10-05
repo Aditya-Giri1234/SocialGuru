@@ -126,12 +126,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="@dimen/_1sdp"
-                    android:background="@color/black"
                     android:gravity="center"
                     android:orientation="vertical"
                     android:padding="@dimen/_5sdp"
                     android:weightSum="3"
-                    app:layout_constraintEnd_toEndOf="@id/linearHeader"
                     app:layout_constraintStart_toStartOf="@id/linearHeader"
                     app:layout_constraintTop_toBottomOf="@id/linearHeader">
 
@@ -197,10 +195,11 @@
                     android:id="@+id/linearPostOption"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:alpha="0.7"
+                    android:layout_margin="@dimen/_1sdp"
+                    android:background="@drawable/detail_post_footer_bg"
                     android:gravity="center_vertical|start"
-                    android:minHeight="@dimen/_50sdp"
-                    android:padding="@dimen/_5sdp">
+                    android:padding="@dimen/_5sdp"
+                    android:minHeight="@dimen/_50sdp">
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -288,8 +287,8 @@
                 android:layout_height="wrap_content"
                 android:text="Loading your post... Please wait a moment!"
                 android:textColor="@color/white"
-                android:textSize="@dimen/_16ssp"
-                android:fontFamily="@font/poppins_semi_bold"
+                android:textSize="@dimen/_14ssp"
+                android:fontFamily="@font/poppin_medium"
                 android:gravity="center"
                 android:paddingHorizontal="@dimen/_20sdp"
                 android:visibility="visible"
@@ -332,8 +331,8 @@
                 android:text="No comments yet. Be the first to share your thoughts!"
                 android:textAlignment="center"
                 android:textColor="@color/white"
-                android:textSize="@dimen/_16ssp"
-                android:fontFamily="@font/poppins_semi_bold"
+                android:textSize="@dimen/_14ssp"
+                android:fontFamily="@font/poppin_medium"
                 android:gravity="center"
                 android:paddingHorizontal="@dimen/_20sdp"
                 android:visibility="gone"

@@ -207,33 +207,32 @@ class EmailPasswordChangeDialog : BottomSheetDialogFragment() {
             return when {
 
                 tiEtEmail.text.isNullOrEmpty() -> {
-                    tilEmail.customError("Email must not null !")
+                    tilEmail.customError("Please provide your email address.")
                 }
 
                 !Helper.isEmailValid(tiEtEmail.text.toString()) -> {
-                    tilEmail.customError("Please enter valid email address!")
+                    tilEmail.customError("The email address entered is invalid. Please try again.")
                 }
 
                 tiEtPassword.text.isNullOrEmpty() -> {
-                    tilPassword.customError("Password must not null !")
+                    tilPassword.customError("Please enter your password.")
                 }
-
 
                 !Helper.isPasswordValid(tiEtPassword.text.toString()) -> {
                     tilPassword.customError(
-                        "At least 8 characters long\n" +
-                                "Contains at least one digit\n" +
-                                "Contains at least one lowercase letter\n" +
-                                "Contains at least one uppercase letter\n" +
-                                "Contains at least one special character from @#\$%^&+=!\n" +
-                                "Doesn't contain whitespace characters"
+                        "Your password must meet the following criteria:\n" +
+                                "- At least 8 characters long\n" +
+                                "- Includes at least one digit\n" +
+                                "- Includes at least one lowercase letter\n" +
+                                "- Includes at least one uppercase letter\n" +
+                                "- Includes at least one special character (@#\$%^&+=!)\n" +
+                                "- No whitespace characters allowed"
                     )
                 }
 
                 else -> {
                     true
                 }
-
             }
         }
     }
@@ -243,38 +242,40 @@ class EmailPasswordChangeDialog : BottomSheetDialogFragment() {
             return when {
 
                 tiEtCurPassword.text.isNullOrEmpty() -> {
-                    tilCurPassword.customError("Current Password must not null !")
+                    tilCurPassword.customError("Please enter your current password.")
                 }
 
                 !Helper.isPasswordValid(tiEtCurPassword.text.toString()) -> {
                     tilCurPassword.customError(
-                        "At least 8 characters long\n" +
-                                "Contains at least one digit\n" +
-                                "Contains at least one lowercase letter\n" +
-                                "Contains at least one uppercase letter\n" +
-                                "Contains at least one special character from @#\$%^&+=!\n" +
-                                "Doesn't contain whitespace characters"
+                        "The current password must meet the following criteria:\n" +
+                                "- At least 8 characters long\n" +
+                                "- Includes at least one digit\n" +
+                                "- Includes at least one lowercase letter\n" +
+                                "- Includes at least one uppercase letter\n" +
+                                "- Includes at least one special character (@#\$%^&+=!)\n" +
+                                "- No whitespace characters allowed"
                     )
                 }
+
                 tiEtNewPassword.text.isNullOrEmpty() -> {
-                    tilNewPassword.customError("Current Password must not null !")
+                    tilNewPassword.customError("Please enter your new password.")
                 }
 
                 !Helper.isPasswordValid(tiEtNewPassword.text.toString()) -> {
                     tilNewPassword.customError(
-                        "At least 8 characters long\n" +
-                                "Contains at least one digit\n" +
-                                "Contains at least one lowercase letter\n" +
-                                "Contains at least one uppercase letter\n" +
-                                "Contains at least one special character from @#\$%^&+=!\n" +
-                                "Doesn't contain whitespace characters"
+                        "The new password must meet the following criteria:\n" +
+                                "- At least 8 characters long\n" +
+                                "- Includes at least one digit\n" +
+                                "- Includes at least one lowercase letter\n" +
+                                "- Includes at least one uppercase letter\n" +
+                                "- Includes at least one special character (@#\$%^&+=!)\n" +
+                                "- No whitespace characters allowed"
                     )
                 }
 
                 else -> {
                     true
                 }
-
             }
         }
     }
@@ -284,20 +285,20 @@ class EmailPasswordChangeDialog : BottomSheetDialogFragment() {
             return when {
 
                 tiEtResetEmail.text.isNullOrEmpty() -> {
-                    tilResetEmail.customError("Email must not null !")
+                    tilResetEmail.customError("Please provide your email address.")
                 }
 
                 !Helper.isEmailValid(tiEtResetEmail.text.toString()) -> {
-                    tilResetEmail.customError("Please enter valid email address!")
+                    tilResetEmail.customError("The email address entered is invalid. Please try again.")
                 }
 
                 else -> {
                     true
                 }
-
             }
         }
     }
+
 
     private fun showDialog() {
         myLoader?.dismiss()
