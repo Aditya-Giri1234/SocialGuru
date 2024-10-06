@@ -314,7 +314,7 @@ class ShowMyStoryFragment : Fragment(), AlertDialogOption {
         popUp.animationStyle = R.style.popup_window_animation
         popUp.showAsDropDown(binding.icSetting)
 
-        bindingPopUp.tvClear.text = "Delete All Post "
+        bindingPopUp.tvClear.text = "Delete All Status "
         bindingPopUp.linearItemDeleteAll.setSafeOnClickListener {
             Constants.ChatDialogInvokeAction.ClearChat
             dialogInvokeType = DialogInvokeTypeForMyStoryScreen.ForAllStatusDelete
