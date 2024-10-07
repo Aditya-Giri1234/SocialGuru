@@ -13,6 +13,7 @@
         layout="@layout/custom_toolbar" />
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nestedProfileView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="?actionBarSize"
@@ -34,9 +35,9 @@
                 android:layout_height="wrap_content"
                 android:text="Fetching user data... Hang tight!"
                 android:textColor="@color/white"
-                android:textSize="@dimen/_16ssp"
+                android:textSize="@dimen/_14ssp"
+                android:fontFamily="@font/poppin_medium"
                 android:visibility="visible"
-                android:fontFamily="@font/poppins_semi_bold"
                 android:gravity="center"
                 android:paddingHorizontal="@dimen/_20sdp"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -80,8 +81,8 @@
 
                             <de.hdodenhof.circleimageview.CircleImageView
                                 android:id="@+id/ivProfile"
-                                android:layout_width="@dimen/_50sdp"
-                                android:layout_height="@dimen/_50sdp"
+                                android:layout_width="@dimen/_45sdp"
+                                android:layout_height="@dimen/_45sdp"
                                 android:src="@drawable/ic_user"
                                 android:tag="0"
                                 app:civ_border_color="@color/blue"
@@ -90,8 +91,8 @@
 
                             <TextView
                                 android:id="@+id/tvInitialMain"
-                                android:layout_width="@dimen/_60sdp"
-                                android:layout_height="@dimen/_60sdp"
+                                android:layout_width="@dimen/_45sdp"
+                                android:layout_height="@dimen/_45sdp"
                                 android:layout_marginStart="@dimen/_5sdp"
                                 android:background="@drawable/circle_shape_bg"
                                 android:fontFamily="@font/poppins_bold"
@@ -120,7 +121,7 @@
                                     android:fontFamily="@font/poppins_semi_bold"
                                     android:text="Aditya Giri"
                                     android:textColor="@color/white"
-                                    android:textSize="@dimen/_20ssp" />
+                                    android:textSize="@dimen/_16ssp" />
 
 
                                 <TextView
@@ -131,7 +132,7 @@
                                     android:fontFamily="@font/poppin_medium"
                                     android:text="Android Developer"
                                     android:textColor="@color/green"
-                                    android:textSize="@dimen/_15ssp" />
+                                    android:textSize="@dimen/_14ssp" />
                             </LinearLayout>
                         </LinearLayout>
 
@@ -149,8 +150,9 @@
                             android:includeFontPadding="false"
                             android:justificationMode="inter_word"
                             android:linksClickable="true"
-                            android:minHeight="@dimen/_50sdp"
-                            android:padding="@dimen/_10sdp"
+                            android:minHeight="@dimen/_40sdp"
+                            android:paddingHorizontal="@dimen/_10sdp"
+                            android:paddingVertical="@dimen/_5sdp"
                             android:shadowColor="@color/black"
                             android:shadowDx="0"
                             android:shadowDy="1"
@@ -205,12 +207,12 @@
                                 android:id="@+id/tvPost"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:fontFamily="@font/poppins_bold"
+                                android:fontFamily="@font/poppins_semi_bold"
                                 android:gravity="center"
                                 android:includeFontPadding="false"
                                 android:text="0"
                                 android:textColor="@color/green"
-                                android:textSize="@dimen/_16ssp" />
+                                android:textSize="@dimen/_15ssp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
@@ -240,12 +242,12 @@
                                 android:id="@+id/tvFollowers"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:fontFamily="@font/poppins_bold"
+                                android:fontFamily="@font/poppins_semi_bold"
                                 android:gravity="center"
                                 android:includeFontPadding="false"
                                 android:text="0"
                                 android:textColor="@color/deep_dark_orange"
-                                android:textSize="@dimen/_16ssp" />
+                                android:textSize="@dimen/_15ssp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
@@ -275,12 +277,12 @@
                                 android:id="@+id/tvFollowing"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:fontFamily="@font/poppins_bold"
+                                android:fontFamily="@font/poppins_semi_bold"
                                 android:gravity="center"
                                 android:includeFontPadding="false"
                                 android:text="0"
                                 android:textColor="@color/blue"
-                                android:textSize="@dimen/_16ssp" />
+                                android:textSize="@dimen/_15ssp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
@@ -355,7 +357,7 @@
                 android:layout_height="@dimen/_50sdp"
                 android:entries="@array/activity_tabs"
                 android:layout_marginTop="@dimen/_15sdp"
-                android:textSize="@dimen/_14ssp"
+                android:textSize="@dimen/_13ssp"
                 android:visibility="gone"
                 app:layout_constraintEnd_toStartOf="@+id/guidelineEnd"
                 app:layout_constraintStart_toStartOf="@id/guideLineStart"
@@ -389,6 +391,46 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
+
+    <LinearLayout
+        android:id="@+id/linearBackToTop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="@dimen/_60sdp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:alpha=".8"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:background="@drawable/circle_shape_for_button"
+            android:backgroundTint="@color/blue">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:rotation="90"
+                android:src="@drawable/ic_left_arrow_without_line" />
+
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BACK TO TOP"
+            android:textColor="@color/white"
+            android:includeFontPadding="false"
+            android:fontFamily="@font/poppin_medium"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:textSize="@dimen/_13ssp"/>
+
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 

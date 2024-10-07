@@ -61,7 +61,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
     val fcmToken: SharedFlow<Resource<UpdateResponse>> get() = _fcmToken.asSharedFlow()
 
     private val _appUpdating = MutableSharedFlow<Resource<File?>>(
-        0,
+        1,
         64,
         BufferOverflow.DROP_OLDEST
     )
@@ -84,9 +84,12 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
                 AuthManager.currentUserId()?.let {
                     repository.subscribeToCurrentUser(it).onEach {
 
+                        if (it == null && AppBroadcastHelper.isAccountDeleted.first()) {
+                            return@onEach
+                        }
                         _user.tryEmit(
                             if (it == null) {
-                                Resource.Error("No user current user found !")
+                                Resource.Error("No  current user found !")
                             } else {
                                 Resource.Success(it)
                             }
@@ -280,6 +283,7 @@ class MainViewModel(val app: Application) : AndroidViewModel(app) {
     fun setListenerSetStatus(status: Boolean) {
         _isListenerSet = status
     }
+
 
     fun removeAllListener() {
         _isListenerSet = false

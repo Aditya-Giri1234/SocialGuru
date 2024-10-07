@@ -107,7 +107,7 @@ class AppUpdateDialog (val versionInfo:GitHubRelease ,val negativeMessage:String
                 if(requireContext().packageManager.canRequestPackageInstalls()){
                     proceedToAppUpdate()
                 }else{
-                    updateDialog("Apk Downloading",null,false,true)
+                    updateDialog("App Updating",null,false,true)
                     val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                         data = Uri.parse("package:$packageName")
                     }
@@ -118,7 +118,7 @@ class AppUpdateDialog (val versionInfo:GitHubRelease ,val negativeMessage:String
     }
 
     private fun proceedToAppUpdate(){
-        updateDialog("Apk Downloading",null,false,true)
+        updateDialog("App Updating",null,false,true)
         positiveAction?.invoke()
     }
     private fun showInitialDialog(){
@@ -164,6 +164,7 @@ class AppUpdateDialog (val versionInfo:GitHubRelease ,val negativeMessage:String
     override fun onResume() {
         super.onResume()
         this.setWidthPercent(80)
+
     }
 
     override fun onDestroyView() {

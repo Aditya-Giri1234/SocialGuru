@@ -24,6 +24,7 @@ import com.aditya.socialguru.BottomNavigationBarDirections
 import com.aditya.socialguru.MainActivity
 import com.aditya.socialguru.R
 import com.aditya.socialguru.data_layer.model.Resource
+import com.aditya.socialguru.data_layer.model.User
 import com.aditya.socialguru.data_layer.model.notification.NotificationData
 import com.aditya.socialguru.data_layer.model.notification.UserNotificationModel
 import com.aditya.socialguru.databinding.FragmentNotificationBinding
@@ -35,11 +36,11 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
-import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.NetworkManager.monitorInternet
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.ui_layer.adapter.NotificationAdapter
 import com.aditya.socialguru.ui_layer.fragment.post.DetailPostFragmentArgs
@@ -270,7 +271,10 @@ class NotificationFragment : Fragment()  , AlertDialogOption{
         } else {
             hideNoDataView()
         }
-        notificationAdapter.submitList(list)
+        val updatedList  = mutableListOf<UserNotificationModel>()
+        updatedList.addAll(list)
+        updatedList.add(UserNotificationModel(User(),NotificationData()))
+        notificationAdapter.submitList(updatedList)
     }
 
     private fun showBackToTopView() {

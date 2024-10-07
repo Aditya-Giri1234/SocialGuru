@@ -19,10 +19,12 @@ import com.aditya.socialguru.databinding.FragmentSettingBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
 import com.aditya.socialguru.domain_layer.custom_class.dialog.DeleteAccountPasswordDialog
+import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
+import com.aditya.socialguru.domain_layer.helper.hideKeyboard
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
@@ -88,15 +90,18 @@ class SettingFragment : Fragment(), AlertDialogOption, DeleteAccountPasswordResu
                         hideDialog()
                         response.hasBeenMessagedToUser = true
                         showSnackBar("Account Deleted Successfully", isSuccess = true)
+                        AppBroadcastHelper.setIsAccountDeleted(false)
                         Helper.setLogout(requireContext())
                         navigateToOnboardingScreen()
                     }
 
                     is Resource.Loading -> {
+                        AppBroadcastHelper.setIsAccountDeleted(true)
                         showDialog()
                     }
 
                     is Resource.Error -> {
+                        AppBroadcastHelper.setIsAccountDeleted(false)
                         hideDialog()
                         response.hasBeenMessagedToUser = true
                         showSnackBar(response.message.toString())
@@ -353,6 +358,11 @@ class SettingFragment : Fragment(), AlertDialogOption, DeleteAccountPasswordResu
                 }
             }
         }
+    }
+
+    override fun onPause() {
+        hideKeyboard()
+        super.onPause()
     }
 
     override fun onDestroyView() {

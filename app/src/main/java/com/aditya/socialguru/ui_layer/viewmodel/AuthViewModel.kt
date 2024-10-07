@@ -58,7 +58,8 @@ class AuthViewModel(val app: Application) : AndroidViewModel(app) {
                 userBio = user.userBio,
                 userProfession = user.userProfession,
                 userEmailId = user.userEmailId,
-                userPassword = user.userPassword, fcmToken = fcmToken
+                userPassword = user.userPassword, fcmToken = fcmToken ,
+                userSetting = user.userSetting
             )
             val saveResult = repositoryImpl.saveUserToDatabase(saveUser)
             if (saveResult.first) {

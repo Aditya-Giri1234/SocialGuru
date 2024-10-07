@@ -29,11 +29,11 @@ import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.gone
-import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.NetworkManager.monitorInternet
 import com.aditya.socialguru.domain_layer.manager.ShareManager
 import com.aditya.socialguru.domain_layer.remote_service.post.OnPostClick
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
@@ -268,6 +268,12 @@ class ShowMyCommentPostFragment(val userId: String) : Fragment(), OnPostClick {
 
 
     //region:: Post Operation
+    override fun onResume() {
+        super.onResume()
+        // This done because when first viewpager have data and height increase then user come this fragment and this fragment data not loaded or not have data but it take previous fragment height so avoid this below line put.
+        binding.root.requestLayout()
+    }
+
     override fun onImageClick(): (Uri) -> Unit = {}
 
     override fun onVideoClick(): (Uri) -> Unit = {}

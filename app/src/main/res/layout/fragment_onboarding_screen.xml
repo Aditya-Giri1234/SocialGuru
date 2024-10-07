@@ -44,15 +44,18 @@
     <Button
         android:id="@+id/btnFinished"
         android:layout_width="wrap_content"
-        android:layout_height="@dimen/_40sdp"
+        android:layout_height="@dimen/_48sdp"
         android:backgroundTint="@color/dark_orange"
         android:text="Get Started"
+        android:gravity="center"
+        android:fontFamily="@font/poppins_regular"
         android:textAllCaps="false"
         android:textColor="@color/white"
-        android:textSize="@dimen/_14ssp"
+        android:textSize="@dimen/_15ssp"
         app:cornerRadius="@dimen/_30sdp"
         app:layout_constraintBottom_toBottomOf="@id/guideLineBottom"
         app:layout_constraintEnd_toEndOf="@id/guideLineEnd" />
+
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideLineUp"

@@ -27,6 +27,8 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     private val repository = DiscoverPostRepository()
 
+    private var discoverUserPostListJob: Job? = null
+
     private var _isDataLoaded = false
     val isDataLoaded get() = _isDataLoaded
 
@@ -55,19 +57,21 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     //region:: Get Discover Post
 
-     fun getDiscoverPost() = viewModelScope.myLaunch {
-        _userPost.tryEmit(Resource.Loading())
-        MyLogger.v(tagPost, msg = "Request sending ....")
-        if (SoftwareManager.isNetworkAvailable(app)) {
-            MyLogger.v(tagPost, msg = "Network available !")
-            repository.getDiscoverPost().onEach {
-                _userPost.tryEmit(handleGetDiscover(it))
-            }.launchIn(this)
-        } else {
-            MyLogger.v(tagPost, msg = "Network not available !")
-            _userPost.tryEmit(Resource.Error(message = Constants.ErrorMessage.InternetNotAvailable.message))
-        }
-    }
+     fun getDiscoverPost() {
+          discoverUserPostListJob = viewModelScope.myLaunch {
+             _userPost.tryEmit(Resource.Loading())
+             MyLogger.v(tagPost, msg = "Request sending ....")
+             if (SoftwareManager.isNetworkAvailable(app)) {
+                 MyLogger.v(tagPost, msg = "Network available !")
+                 repository.getDiscoverPost().onEach {
+                     _userPost.tryEmit(handleGetDiscover(it))
+                 }.launchIn(this)
+             } else {
+                 MyLogger.v(tagPost, msg = "Network not available !")
+                 _userPost.tryEmit(Resource.Error(message = Constants.ErrorMessage.InternetNotAvailable.message))
+             }
+         }
+     }
 
     private suspend fun handleGetDiscover(response: List<ListenerEmissionType<UserPostModel, UserPostModel>>): Resource<List<UserPostModel>> {
 
@@ -166,6 +170,11 @@ class DiscoverPostViewModel(val app: Application) : AndroidViewModel(app) {
 
     fun setDataLoadedStatus(status: Boolean) {
         _isDataLoaded = status
+    }
+
+    fun removeListener() {
+        _isDataLoaded = false
+        discoverUserPostListJob?.cancel()
     }
 
 }

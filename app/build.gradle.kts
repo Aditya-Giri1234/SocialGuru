@@ -39,8 +39,8 @@ android {
         applicationId = "com.aditya.socialguru"
         minSdk = 26
         targetSdk = 34
-        versionCode = 6
-        versionName = "0.2.2"
+        versionCode = 11
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -164,7 +164,7 @@ dependencies {
 
 
     //Firebase Dependency
-    implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-auth")

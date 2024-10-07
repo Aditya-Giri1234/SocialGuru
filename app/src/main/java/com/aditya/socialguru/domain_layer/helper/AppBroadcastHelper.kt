@@ -67,6 +67,8 @@ object AppBroadcastHelper {
     val likedPost get() = _likedPost.asSharedFlow()
 
 
+    private val _isAccountDeleted = MutableSharedFlow<Boolean>( 1, 64 , BufferOverflow.DROP_OLDEST )
+    val isAccountDeleted get() =  _isAccountDeleted.asSharedFlow<Boolean>()
 
 
 
@@ -96,5 +98,9 @@ object AppBroadcastHelper {
 
     fun setLikedPostList (list: List<LikedPostModel>){
         _likedPost.tryEmit(list)
+    }
+
+    fun setIsAccountDeleted(isDeleted:Boolean){
+        _isAccountDeleted.tryEmit(isDeleted)
     }
 }

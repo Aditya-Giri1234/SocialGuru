@@ -44,7 +44,6 @@ import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.bufferWithDelay
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
-import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myLaunch
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.runOnUiThread
@@ -52,6 +51,7 @@ import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
 import com.aditya.socialguru.domain_layer.manager.MyLogger
+import com.aditya.socialguru.domain_layer.manager.NetworkManager.monitorInternet
 import com.aditya.socialguru.domain_layer.remote_service.StoryTypeOptions
 import com.aditya.socialguru.domain_layer.service.SharePref
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
@@ -135,7 +135,8 @@ class HomeFragment : Fragment(), StoryTypeOptions {
                             guidelines = CropImageView.Guidelines.ON,
                             outputCompressFormat = Bitmap.CompressFormat.PNG,
                             activityBackgroundColor = requireContext().giveMeColor(R.color.lightBlack),
-                            toolbarColor = requireContext().giveMeColor(R.color.black)
+                            toolbarColor = requireContext().giveMeColor(R.color.black),
+                            cropperLabelText = "Crop & Upload"
                         )
                     )
                 )

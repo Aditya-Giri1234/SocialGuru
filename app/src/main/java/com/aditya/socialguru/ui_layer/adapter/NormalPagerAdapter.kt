@@ -8,7 +8,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 
 
 class NormalPagerAdapter(
-    list: List<Fragment>, fm: FragmentManager, lifecycle: Lifecycle
+    val list: List<Fragment>, fm: FragmentManager, lifecycle: Lifecycle
 ) : FragmentStateAdapter(fm, lifecycle) {
     // A custom ArrayList to hold the list of Fragments
     private val fragmentList = list
@@ -23,6 +23,11 @@ class NormalPagerAdapter(
         // Returns the relevant Fragment for a specific position
         return fragmentList[position]
     }
-
-
+    fun getItemByPosition(position: Int) : Fragment?{
+        return if(position>=list.size){
+            null
+        }else{
+            list[position]
+        }
+    }
 }

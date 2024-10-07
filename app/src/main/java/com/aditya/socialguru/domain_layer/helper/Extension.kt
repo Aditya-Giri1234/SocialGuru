@@ -332,41 +332,6 @@ fun (() -> Any).getTime(): Long {
 }*/
 
 
-fun Context.monitorInternet(): SharedFlow<Boolean> {
-    // MutableSharedFlow with replay = 1 to keep the latest emitted value
-    val internetState = MutableSharedFlow<Boolean>(
-        replay = 1,
-        extraBufferCapacity = 64,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-
-    val callback = object : ConnectivityManager.NetworkCallback() {
-        override fun onAvailable(network: Network) {
-            super.onAvailable(network)
-            internetState.tryEmit(true) // Emit 'true' when network is available
-        }
-
-        override fun onLost(network: Network) {
-            super.onLost(network)
-            internetState.tryEmit(false) // Emit 'false' when network is lost
-        }
-    }
-
-    val manager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-    // Register the network callback
-    manager.registerDefaultNetworkCallback(callback)
-
-    // Check the initial network state and emit it
-    val isConnected = SoftwareManager.isNetworkAvailable(this)
-    internetState.tryEmit(isConnected) // Emit the current network state
-
-    // Return the shared flow, and ensure cleanup of the callback when flow is no longer needed
-    return internetState.also {
-        it.onCompletion { manager.unregisterNetworkCallback(callback) }
-    }
-}
-
 
 @OptIn(ExperimentalCoroutinesApi::class)
 fun <T> Flow<T>.bufferWithDelay(delay: Long): Flow<T> {

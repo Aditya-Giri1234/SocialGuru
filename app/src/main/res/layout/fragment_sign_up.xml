@@ -35,10 +35,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/_20sdp"
-                android:fontFamily="@font/poppins_bold"
-                android:text="Create Account"
+                android:fontFamily="@font/poppins_semi_bold"
+                android:text="Sign Up to Get Started"
                 android:textColor="@color/white"
-                android:textSize="@dimen/_20ssp"
+                android:textSize="@dimen/_18ssp"
                 app:layout_constraintStart_toStartOf="@id/guidelineStart"
                 app:layout_constraintTop_toBottomOf="@id/ivAppIcon" />
 
@@ -257,7 +257,7 @@
                     android:fontFamily="@font/poppins_semi_bold"
                     android:text="Login"
                     android:textColor="@color/dark_orange"
-                    android:textSize="@dimen/_14ssp"
+                    android:textSize="@dimen/_12ssp"
                     app:layout_constraintStart_toStartOf="@id/guidelineStart"
                     app:layout_constraintTop_toBottomOf="@id/ivAppIcon" />
             </LinearLayout>

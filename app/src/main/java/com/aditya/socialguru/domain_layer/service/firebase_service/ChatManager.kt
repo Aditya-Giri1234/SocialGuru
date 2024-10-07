@@ -2309,7 +2309,7 @@ object ChatManager {
         val tempStatus = when {
             isMessageSeenByAllMembers -> Constants.SeenStatus.MessageSeen.status
             isMessageReceivedByAllMembers -> Constants.SeenStatus.Received.status
-            else -> message.seenStatus!!
+            else -> message.seenStatus ?: Constants.SeenStatus.Sending.status
         }
 
         return message.copy(

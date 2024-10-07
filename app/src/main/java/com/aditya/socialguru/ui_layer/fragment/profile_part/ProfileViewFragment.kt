@@ -3,6 +3,8 @@ package com.aditya.socialguru.ui_layer.fragment.profile_part
 import android.content.Context
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,17 +30,18 @@ import com.aditya.socialguru.databinding.FragmentProfileViewBinding
 import com.aditya.socialguru.databinding.SampleProfileViewPopMenuBinding
 import com.aditya.socialguru.domain_layer.custom_class.AlertDialog
 import com.aditya.socialguru.domain_layer.custom_class.MyLoader
+import com.aditya.socialguru.domain_layer.helper.AppBroadcastHelper
 import com.aditya.socialguru.domain_layer.helper.Constants
 import com.aditya.socialguru.domain_layer.helper.Helper
 import com.aditya.socialguru.domain_layer.helper.Helper.observeFlow
 import com.aditya.socialguru.domain_layer.helper.getBitmapByDrawable
 import com.aditya.socialguru.domain_layer.helper.giveMeColor
 import com.aditya.socialguru.domain_layer.helper.gone
-import com.aditya.socialguru.domain_layer.helper.monitorInternet
 import com.aditya.socialguru.domain_layer.helper.myShow
 import com.aditya.socialguru.domain_layer.helper.safeNavigate
 import com.aditya.socialguru.domain_layer.helper.setCircularBackground
 import com.aditya.socialguru.domain_layer.helper.setSafeOnClickListener
+import com.aditya.socialguru.domain_layer.manager.NetworkManager.monitorInternet
 import com.aditya.socialguru.domain_layer.remote_service.AlertDialogOption
 import com.aditya.socialguru.domain_layer.service.firebase_service.AuthManager
 import com.aditya.socialguru.ui_layer.adapter.NormalPagerAdapter
@@ -405,6 +408,23 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
             showPopupMenu()
         }
 
+        nestedProfileView.setOnScrollChangeListener { v, scrollX, scrollY, oldScrollX, oldScrollY ->
+            if (scrollY > oldScrollY) {
+                //Scroll Down
+                linearBackToTop.gone()
+            }
+            if (scrollY < oldScrollY) {
+                //Scroll Up
+                showBackToTopView()
+            }
+
+            if (scrollY == 0) {
+                //Top Scroll
+                linearBackToTop.gone()
+            }
+        }
+
+
         ivProfile.setSafeOnClickListener {
             if (ivProfile.tag == imageAvailable) {
                 Helper.showImageDialog(requireActivity(), ivProfile.getBitmapByDrawable())
@@ -435,7 +455,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
         }
         btnFriend.setSafeOnClickListener {
             when (btnFriend.text.toString()) {
-                getString(R.string.send_friend_request) -> {
+                getString(R.string.connect) -> {
                     profileViewModel.sendFriendRequest(userId!!)
                 }
 
@@ -443,7 +463,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                     profileViewModel.acceptFriendRequest(userId!!)
                 }
 
-                getString(R.string.pending_request) -> {
+                getString(R.string.pending) -> {
                     defaultDialogOption = ProfileViewDialogOption.PendingRequest
                     AlertDialog(
                         "Are you sure delete friend request ?",
@@ -452,7 +472,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                     ).show(childFragmentManager, "My_Dialog")
                 }
 
-                getString(R.string.already_friend) -> {
+                getString(R.string.connected) -> {
                     defaultDialogOption = ProfileViewDialogOption.AlreadyFriend
                     AlertDialog(
                         "Are you sure you want to remove this friend?",
@@ -463,6 +483,18 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
             }
         }
+
+
+    }
+
+    private fun showBackToTopView() {
+        binding.linearBackToTop.myShow()
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (this@ProfileViewFragment.isResumed) {
+                binding.linearBackToTop.gone()
+            }
+        }, 2000)
 
     }
 
@@ -546,6 +578,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
 
     }
 
+
     private fun TextView.setFollowBackground() {
         background = ContextCompat.getDrawable(requireContext(), R.drawable.follow_bg)
         setTextColor(requireContext().giveMeColor(R.color.yellow))
@@ -561,13 +594,13 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     private fun TextView.setConnectBackground() {
         background = ContextCompat.getDrawable(requireContext(), R.drawable.connect_bg)
         setTextColor(requireContext().giveMeColor(R.color.white))
-        text = getString(R.string.send_friend_request)
+        text = getString(R.string.connect)
     }
 
     private fun TextView.setPendingBackground() {
         background = ContextCompat.getDrawable(requireContext(), R.drawable.pending_bg)
         setTextColor(requireContext().giveMeColor(R.color.lightWhite))
-        text = getString(R.string.pending_request)
+        text = getString(R.string.pending)
     }
 
     private fun TextView.setAcceptBackground() {
@@ -579,7 +612,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     private fun TextView.setConnectedBackground() {
         background = ContextCompat.getDrawable(requireContext(), R.drawable.connected_bg)
         setTextColor(requireContext().giveMeColor(R.color.white))
-        text = getString(R.string.already_friend)
+        text = getString(R.string.connected)
     }
 
     private fun showPopupMenu() {
@@ -670,6 +703,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     override fun onDestroyView() {
+        binding.linearBackToTop.gone()
         _binding = null
         super.onDestroyView()
     }

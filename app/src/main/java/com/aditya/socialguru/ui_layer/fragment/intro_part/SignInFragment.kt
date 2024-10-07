@@ -4,6 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.UnderlineSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -113,6 +116,11 @@ class SignInFragment : Fragment() {
 
     private fun initUi() {
         binding.apply {
+            val originalText = tvForgetPassword.text.toString()
+            val spannableString = SpannableString(originalText).apply {
+                setSpan(UnderlineSpan(), 0, originalText.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            tvForgetPassword.text = spannableString
             setListener()
         }
     }
@@ -126,9 +134,7 @@ class SignInFragment : Fragment() {
             )
         }
         btnLogin.setOnClickListener {
-            MyLogger.v(tagLogin, msg = "User click login button !")
             if (validateData()) {
-                MyLogger.i(tagLogin, msg = "All is ok now login to user request send !")
                 authViewModel.loginUser(tiEtEmail.getStringText(), tiEtPassword.getStringText())
             }
         }
@@ -149,26 +155,26 @@ class SignInFragment : Fragment() {
             return when {
 
                 tiEtEmail.text.isNullOrEmpty() -> {
-                    tilEmail.customError("Email must not null !")
+                    tilEmail.customError("Please provide an email address.")
                 }
 
                 !Helper.isEmailValid(tiEtEmail.text.toString()) -> {
-                    tilEmail.customError("Please enter valid email address!")
+                    tilEmail.customError("The email address you entered is invalid. Please try again.")
                 }
 
                 tiEtPassword.text.isNullOrEmpty() -> {
-                    tilPassword.customError("Password must not null !")
+                    tilPassword.customError("Please enter your password.")
                 }
-
 
                 !Helper.isPasswordValid(tiEtPassword.text.toString()) -> {
                     tilPassword.customError(
-                        "At least 8 characters long\n" +
-                                "Contains at least one digit\n" +
-                                "Contains at least one lowercase letter\n" +
-                                "Contains at least one uppercase letter\n" +
-                                "Contains at least one special character from @#\$%^&+=!\n" +
-                                "Doesn't contain whitespace characters"
+                        "Your password must meet the following criteria:\n" +
+                                "- At least 8 characters in length\n" +
+                                "- Include at least one digit\n" +
+                                "- Include at least one lowercase letter\n" +
+                                "- Include at least one uppercase letter\n" +
+                                "- Include at least one special character (@#\$%^&+=!)\n" +
+                                "- No whitespace characters"
                     )
                 }
 
@@ -179,6 +185,7 @@ class SignInFragment : Fragment() {
             }
         }
     }
+
 
     override fun onDestroyView() {
         _binding = null

@@ -62,7 +62,7 @@
         android:background="@android:color/transparent"
         android:fontFamily="@font/poppin_medium"
         android:gravity="center"
-        android:hint="Enter your text ..."
+        android:hint="What's on your mind?"
         android:inputType="textMultiLine|textPersonName"
         android:maxLines="4"
         android:textColor="@color/white"
@@ -74,16 +74,24 @@
         app:layout_constraintStart_toStartOf="@id/linearHeader"
         app:layout_constraintTop_toBottomOf="@id/linearHeader" />
 
-    <Button
+    <TextView
         android:id="@+id/btnDone"
         android:layout_width="wrap_content"
-        android:layout_height="@dimen/_40sdp"
-        android:backgroundTint="@color/lightBlack"
+        android:layout_height="wrap_content"
+        android:paddingVertical="@dimen/_5sdp"
+        android:paddingHorizontal="@dimen/_20sdp"
+        android:background="@drawable/rounded_white_border_bg"
+        android:backgroundTint="@color/blue"
         android:text="Done"
         android:textAllCaps="false"
         android:textColor="@color/white"
         android:textSize="@dimen/_14ssp"
+        android:fontFamily="@font/poppin_medium"
         app:cornerRadius="@dimen/_30sdp"
+        android:shadowColor="@color/black"
+        android:shadowDx="0"
+        android:shadowDy="2"
+        android:shadowRadius="4"
         app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
         app:layout_constraintBottom_toBottomOf="@id/guidelineBottom"/>
 

@@ -65,7 +65,7 @@
                             android:layout_height="wrap_content"
                             android:text="Remove Story"
                             android:textColor="@color/white"
-                            android:textSize="@dimen/_16ssp"
+                            android:textSize="@dimen/_14ssp"
                             android:layout_weight="1"
                             android:fontFamily="@font/poppin_medium"/>
                         <TextView
@@ -74,7 +74,7 @@
                             android:text="If select then story remove after 24 hour after when you upload."
                             android:layout_weight="1"
                             android:textColor="@color/lightWhite"
-                            android:textSize="@dimen/_12ssp"
+                            android:textSize="@dimen/_10ssp"
                             android:fontFamily="@font/poppin_medium"/>
                     </LinearLayout>
 
@@ -116,7 +116,7 @@
                         android:text="Hide Last Seeen"
                         android:textColor="@color/white"
                         android:layout_weight="1"
-                        android:textSize="@dimen/_16ssp"
+                        android:textSize="@dimen/_14ssp"
                         android:fontFamily="@font/poppin_medium"/>
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/switchLastSeen"
@@ -155,7 +155,7 @@
                         android:text="Update Email"
                         android:textColor="@color/white"
                         android:layout_weight="1"
-                        android:textSize="@dimen/_16ssp"
+                        android:textSize="@dimen/_14ssp"
                         android:fontFamily="@font/poppin_medium"/>
 
                     <ImageView
@@ -190,7 +190,7 @@
                         android:text="Change Password"
                         android:textColor="@color/white"
                         android:layout_weight="1"
-                        android:textSize="@dimen/_16ssp"
+                        android:textSize="@dimen/_14ssp"
                         android:fontFamily="@font/poppin_medium"/>
 
                     <ImageView
@@ -226,7 +226,7 @@
                         android:text="Reset Password"
                         android:textColor="@color/white"
                         android:layout_weight="1"
-                        android:textSize="@dimen/_16ssp"
+                        android:textSize="@dimen/_14ssp"
                         android:fontFamily="@font/poppin_medium"/>
 
                     <ImageView
@@ -261,7 +261,7 @@
                         android:text="Handle Notification"
                         android:textColor="@color/white"
                         android:layout_weight="1"
-                        android:textSize="@dimen/_16ssp"
+                        android:textSize="@dimen/_14ssp"
                         android:fontFamily="@font/poppin_medium"/>
 
                     <ImageView
@@ -309,7 +309,7 @@
         android:layout_height="?actionBarSize"
         android:text="Delete Account"
         android:backgroundTint="@color/red"
-        android:textSize="@dimen/_16ssp"
+        android:textSize="@dimen/_14ssp"
         android:textColor="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

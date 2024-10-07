@@ -20,20 +20,22 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_marginTop="@dimen/_4sdp"
             android:layout_weight="1"
-            android:fontFamily="@font/poppins_semi_bold"
+            android:fontFamily="@font/poppin_medium"
             android:text="Profile"
+            android:gravity="center_vertical"
             android:textColor="@color/white"
-            android:textSize="@dimen/_20ssp" />
+            android:textSize="@dimen/_16ssp" />
 
 
         <ImageView
             android:id="@+id/ivProfileOption"
-            android:layout_width="@dimen/_22sdp"
-            android:layout_height="@dimen/_22sdp"
+            android:layout_width="@dimen/_20sdp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:src="@drawable/three_dot" />
 
 
@@ -69,8 +71,8 @@
 
                 <de.hdodenhof.circleimageview.CircleImageView
                     android:id="@+id/ivProfile"
-                    android:layout_width="@dimen/_90sdp"
-                    android:layout_height="@dimen/_90sdp"
+                    android:layout_width="@dimen/_80sdp"
+                    android:layout_height="@dimen/_80sdp"
                     android:src="@drawable/ic_user"
                     android:tag="0"
                     app:civ_border_color="@color/blue"
@@ -79,11 +81,11 @@
 
                 <TextView
                     android:id="@+id/tvInitialMain"
-                    android:layout_width="@dimen/_90sdp"
-                    android:layout_height="@dimen/_90sdp"
+                    android:layout_width="@dimen/_80sdp"
+                    android:layout_height="@dimen/_80sdp"
                     android:layout_marginStart="@dimen/_5sdp"
                     android:background="@drawable/circle_shape_bg"
-                    android:fontFamily="@font/poppins_bold"
+                    android:fontFamily="@font/poppin_medium"
                     android:gravity="center"
                     android:includeFontPadding="false"
                     android:maxLength="1"
@@ -102,7 +104,7 @@
                     android:fontFamily="@font/poppins_semi_bold"
                     android:text="Aditya Giri"
                     android:textColor="@color/white"
-                    android:textSize="@dimen/_22ssp" />
+                    android:textSize="@dimen/_20ssp" />
 
                 <TextView
                     android:id="@+id/tvProffesion"
@@ -112,7 +114,7 @@
                     android:fontFamily="@font/poppin_medium"
                     android:text="Android Developer"
                     android:textColor="@color/green"
-                    android:textSize="@dimen/_16ssp" />
+                    android:textSize="@dimen/_15ssp" />
 
                 <TextView
                     android:id="@+id/tvBio"
@@ -128,8 +130,9 @@
                     android:includeFontPadding="false"
                     android:justificationMode="inter_word"
                     android:linksClickable="true"
-                    android:minHeight="@dimen/_50sdp"
-                    android:padding="@dimen/_10sdp"
+                    android:minHeight="@dimen/_40sdp"
+                    android:paddingVertical="@dimen/_5sdp"
+                    android:paddingHorizontal="@dimen/_10sdp"
                     android:shadowColor="@color/black"
                     android:shadowDx="0"
                     android:shadowDy="1"
@@ -137,7 +140,7 @@
                     android:text="Love your professtion not company."
                     android:textColor="@color/white"
                     android:textColorLink="@color/blue"
-                    android:textSize="@dimen/_16ssp" />
+                    android:textSize="@dimen/_12ssp" />
 
 
                 <Button
@@ -170,7 +173,7 @@
                 android:backgroundTint="@color/lightBlack"
                 android:gravity="center"
                 android:orientation="horizontal"
-                android:padding="@dimen/_5sdp"
+                android:paddingVertical="@dimen/_2sdp"
                 android:weightSum="2"
                 app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
                 app:layout_constraintStart_toStartOf="@id/guideLineStart"
@@ -191,13 +194,13 @@
                         android:includeFontPadding="false"
                         android:text="Followers"
                         android:textColor="@color/white"
-                        android:textSize="@dimen/_16ssp" />
+                        android:textSize="@dimen/_15ssp" />
 
                     <TextView
                         android:id="@+id/tvFollowers"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppins_bold"
+                        android:fontFamily="@font/poppins_semi_bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
                         android:text="0"
@@ -208,8 +211,9 @@
 
 
                 <View
-                    android:layout_width="@dimen/_2sdp"
+                    android:layout_width="@dimen/_1sdp"
                     android:layout_height="match_parent"
+                    android:layout_marginVertical="@dimen/_10sdp"
                     android:background="@color/lightWhite" />
 
                 <LinearLayout
@@ -227,13 +231,13 @@
                         android:includeFontPadding="false"
                         android:text="Following"
                         android:textColor="@color/white"
-                        android:textSize="@dimen/_16ssp" />
+                        android:textSize="@dimen/_15ssp" />
 
                     <TextView
                         android:id="@+id/tvFollowing"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppins_bold"
+                        android:fontFamily="@font/poppins_semi_bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
                         android:text="0"
@@ -253,7 +257,7 @@
                 android:backgroundTint="@color/lightBlack"
                 android:gravity="center"
                 android:orientation="horizontal"
-                android:padding="@dimen/_5sdp"
+                android:paddingVertical="@dimen/_2sdp"
                 android:weightSum="2"
                 app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
                 app:layout_constraintStart_toStartOf="@id/guideLineStart"
@@ -274,13 +278,13 @@
                         android:includeFontPadding="false"
                         android:text="Post"
                         android:textColor="@color/white"
-                        android:textSize="@dimen/_16ssp" />
+                        android:textSize="@dimen/_15ssp" />
 
                     <TextView
                         android:id="@+id/tvPost"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppins_bold"
+                        android:fontFamily="@font/poppins_semi_bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
                         android:text="0"
@@ -291,8 +295,9 @@
 
 
                 <View
-                    android:layout_width="@dimen/_2sdp"
+                    android:layout_width="@dimen/_1sdp"
                     android:layout_height="match_parent"
+                    android:layout_marginVertical="@dimen/_10sdp"
                     android:background="@color/lightWhite" />
 
                 <LinearLayout
@@ -310,13 +315,13 @@
                         android:includeFontPadding="false"
                         android:text="Like"
                         android:textColor="@color/white"
-                        android:textSize="@dimen/_16ssp" />
+                        android:textSize="@dimen/_15ssp" />
 
                     <TextView
                         android:id="@+id/tvLike"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppins_bold"
+                        android:fontFamily="@font/poppins_semi_bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
                         android:text="0"
