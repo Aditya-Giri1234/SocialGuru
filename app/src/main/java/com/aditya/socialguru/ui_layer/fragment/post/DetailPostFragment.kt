@@ -13,6 +13,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.isGone
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -1077,6 +1078,7 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
         }
     }
 
+    @Synchronized
     private fun initialShowCommentView() {
         binding.apply {
 
@@ -1088,11 +1090,14 @@ class DetailPostFragment : Fragment(), AlertDialogOption, ChatMessageOption,
         }
     }
 
+    @Synchronized
     private fun showNoCommentView() {
         binding.apply {
             progressBar.gone()
             rvComment.gone()
-            noCommentDataView.myShow()
+            if(noDataView.isGone){
+                noCommentDataView.myShow()
+            }
         }
     }
 

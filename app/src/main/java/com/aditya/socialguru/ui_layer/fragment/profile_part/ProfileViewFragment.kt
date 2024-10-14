@@ -373,7 +373,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
                 icBack.myShow()
                 profileImage.gone()
                 tvHeaderUserName.text = "Profile"
-                if (binding.btnFriend.text != getString(R.string.already_friend) && userId != AuthManager.currentUserId()!!) {
+                if (binding.btnFriend.text != getString(R.string.connected) && userId != AuthManager.currentUserId()!!) {
                     icSetting.gone()
                 } else {
                     icSetting.myShow()
@@ -509,8 +509,6 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
         userDetails = user
 
         binding.apply {
-            myToolbar.icSetting.myShow()
-
             linearProfile.myShow()
             linearUserAction.myShow()
             linearFollower.myShow()
@@ -592,6 +590,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     private fun TextView.setConnectBackground() {
+        binding.myToolbar.icSetting.gone()
         background = ContextCompat.getDrawable(requireContext(), R.drawable.connect_bg)
         setTextColor(requireContext().giveMeColor(R.color.white))
         text = getString(R.string.connect)
@@ -610,6 +609,7 @@ class ProfileViewFragment : Fragment(), AlertDialogOption {
     }
 
     private fun TextView.setConnectedBackground() {
+        binding.myToolbar.icSetting.myShow()
         background = ContextCompat.getDrawable(requireContext(), R.drawable.connected_bg)
         setTextColor(requireContext().giveMeColor(R.color.white))
         text = getString(R.string.connected)
