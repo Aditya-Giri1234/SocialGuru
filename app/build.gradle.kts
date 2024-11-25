@@ -31,6 +31,8 @@ android {
             excludes +="META-INF/LICENSE.md"
             excludes +="META-INF/NOTICE.md"
             excludes += "image/app_banner.png"
+            excludes += "image/SocialGuru.mp4"
+
         }
     }
 
