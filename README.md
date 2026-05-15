@@ -68,7 +68,6 @@ Download the latest version of SocialGuru from [here](https://github.com/Aditya-
 ---
 
 ## 📷 **Screenshots**
-Showcase your app with screenshots or a GIF of its functionality here:  
 
 ![SocialGuru Banner](./image/app_banner.png?raw=true) 
 
